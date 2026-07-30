@@ -167,6 +167,7 @@ async function main() {
   if (!existsSync(imagePath)) throw new Error(`Missing image: ${imagePath}`);
   if (!existsSync(metaPath)) throw new Error(`Missing meta: ${metaPath}`);
 
+  const sourceBytes = await readFile(imagePath);
   const srcUrl = await imageDataUrl(imagePath);
   const meta = JSON.parse(await readFile(metaPath, 'utf8'));
   const imageSize = await getImageSize(srcUrl);
@@ -187,6 +188,8 @@ async function main() {
     insetCss,
     viewport: meta.viewport,
     imageSize,
+    sourceMimeType: mimeTypeForBytes(sourceBytes, imagePath),
+    outputMimeType: 'image/png',
     cssCrop: cropInfo.cssCrop,
     pixelCrop: cropInfo.pixelCrop,
     scale: cropInfo.scale,

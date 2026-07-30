@@ -7,6 +7,31 @@ creator names, source URLs, screenshots, private room identifiers, or
 source-derived measurements. Private evidence, when needed, stays in ignored
 local output and is deleted after the verification batch.
 
+## Latest Wrapper Geometry Reconciliation - 2026-07-31
+
+- VERIFIED EXTERNAL: The dedicated Legacy verification tab measured a
+  `1495 x 582` page viewport at DPR `1.25`, a `900 x 283.55` iframe, and a
+  `420 x 180` sheet crop. The saved geometry sidecar is anonymous and ignored.
+- FIXED LOCAL: The frame probe now records viewport, visual viewport,
+  document-element/body box, client, and scroll metrics. The crop helper also
+  records source/output MIME types; the current browser screenshot surface
+  returned JPEG bytes even when PNG was requested.
+- MEASURED / VERIFY: Exact-region PNG conversion and direct comparison measured
+  mean channel difference `2.414` and threshold-60 mismatch `3.016%`; the best
+  tested `-1px` local alignment measured `1.851` and `2.601%`. This is still
+  `MEASURED_NOT_PARITY`, not a visual-parity claim.
+- OPEN: Lossless browser capture, generic layout-control sidecars, arbitrary
+  sheet parity, worker mutation, and reference-image parity remain unproven.
+- UNVERIFIED EXTERNAL: The current anonymous payload has no standard row,
+  column, table, textarea, or select nodes. The frame probe now records those
+  counts and representative styles; a generic layout payload is still needed.
+
+## Current Pushed Checkpoint - 2026-07-31
+
+- The active branch is `claude/design-reset` at `f095066`; no product source
+  changed in the cleanup-only commit. The current probe/crop-tool changes in
+  this batch are local and pending their own verification commit.
+
 ## Latest Legacy Render Correction - 2026-07-31
 
 - VERIFIED EXTERNAL: The anonymous Legacy iframe computed-style sidecar shows

@@ -366,6 +366,36 @@ async function probeSheetFrames(page, hints) {
             },
           };
         };
+        const boxMetric = (node) => {
+          if (!node) return null;
+          const rect = node.getBoundingClientRect?.();
+          return {
+            rect: rect ? {
+              x: finite(rect.x),
+              y: finite(rect.y),
+              width: finite(rect.width),
+              height: finite(rect.height),
+            } : null,
+            clientWidth: finite(node.clientWidth),
+            clientHeight: finite(node.clientHeight),
+            scrollWidth: finite(node.scrollWidth),
+            scrollHeight: finite(node.scrollHeight),
+          };
+        };
+        const viewport = {
+          innerWidth: finite(window.innerWidth),
+          innerHeight: finite(window.innerHeight),
+          outerWidth: finite(window.outerWidth),
+          outerHeight: finite(window.outerHeight),
+          devicePixelRatio: finite(window.devicePixelRatio),
+          visual: window.visualViewport ? {
+            width: finite(window.visualViewport.width),
+            height: finite(window.visualViewport.height),
+            offsetLeft: finite(window.visualViewport.offsetLeft),
+            offsetTop: finite(window.visualViewport.offsetTop),
+            scale: finite(window.visualViewport.scale),
+          } : null,
+        };
         const rootSurfaces = rootNodes.slice(0, 8)
           .map((node) => surfaceMetric(node, 'roll20-root'));
         const markerAncestors = [];
@@ -378,7 +408,35 @@ async function probeSheetFrames(page, hints) {
             markerAncestors.push({ node: ancestor, depth });
           }
         }
+        const layoutSelectors = [
+          '.sheet-2colrow',
+          '.sheet-3colrow',
+          '.sheet-col',
+          'table',
+          'thead',
+          'tbody',
+          'tr',
+          'td',
+          'th',
+          'input',
+          'textarea',
+          'select',
+          "button[type='roll']",
+        ];
+        const layout = Object.fromEntries(layoutSelectors.map((selector) => {
+          const nodes = Array.from(document.querySelectorAll(selector));
+          return [selector, {
+            count: nodes.length,
+            samples: nodes.slice(0, 8).map((node) => surfaceMetric(node, 'layout-sample')),
+          }];
+        }));
         return {
+          viewport,
+          documentMetrics: {
+            documentElement: boxMetric(document.documentElement),
+            body: boxMetric(document.body),
+          },
+          layout,
           bodyLen: bodyText.length,
           bodySnippet: bodyText.slice(0, 1200),
           rootCount: rootNodes.length,

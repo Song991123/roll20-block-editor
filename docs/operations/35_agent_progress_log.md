@@ -1,3 +1,26 @@
+## 2026-07-31 - Wrapper geometry and capture-format reconciliation
+
+- Read the current dedicated Legacy verification tab without changing room
+  settings. The anonymous page viewport measured `1495 x 582` at DPR `1.25`,
+  the sheet iframe measured `900 x 283.55`, and the visible sheet crop measured
+  `420 x 180`.
+- Updated `scripts/roll20_sheet_frame_probe.mjs` to retain viewport, visual
+  viewport, document-element/body rect, client, and scroll metrics for each
+  frame. Updated `scripts/roll20_actual_screenshot_crop.mjs` to record source
+  and output MIME types.
+- Re-cropped the exact sheet region from the current JPEG browser capture into
+  an ignored PNG evidence file. Direct `420 x 180` comparison measured mean
+  channel difference `2.414` and threshold-60 mismatch `3.016%`; best tested
+  `-1px` local alignment measured `1.851` and `2.601%`.
+- Claim boundary: this is improved measurement, not parity. The capture is
+  JPEG-compressed and generic row/column/table coverage, lossless capture,
+  worker mutation, arbitrary-sheet parity, and reference-image parity remain
+  open.
+- The frame probe now records standard `.sheet-2colrow`, `.sheet-3colrow`,
+  `.sheet-col`, table, input, textarea, select, and roll-button samples. The
+  current anonymous payload contains only the input and roll-button families;
+  absent families remain unverified rather than being counted as matches.
+
 ## 2026-07-31 - Anonymous protected-corpus static inventory
 
 - Read two protected external input roots in read-only mode and recorded only

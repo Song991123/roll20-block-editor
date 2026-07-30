@@ -1,3 +1,30 @@
+## 2026-07-31 Wrapper geometry and capture-format reconciliation
+
+- VERIFIED EXTERNAL: The dedicated Legacy tab's current page viewport measured
+  `1495 x 582` CSS px at DPR `1.25`; the sheet iframe measured `900 x 283.55`.
+  The sheet crop was `420 x 180` at the observed viewport scale. Evidence is
+  anonymous and stored only under ignored local reports.
+- VERIFIED TOOLING: `roll20_sheet_frame_probe.mjs` now records viewport,
+  visual viewport, document-element/body rect, client, and scroll metrics for
+  every inspected frame. `roll20_actual_screenshot_crop.mjs` now records source
+  and output MIME types so a JPEG capture cannot be mistaken for lossless PNG
+  evidence.
+- MEASURED / VERIFY: Re-cropping the exact sheet region from the captured JPEG
+  into PNG reduced the direct `420 x 180` comparison to mean channel difference
+  `2.414` and threshold-60 mismatch `3.016%`. A `-1px` local alignment probe
+  reduced it to `1.851` and `2.601%`. This remains `MEASURED_NOT_PARITY` because
+  the source capture is JPEG-compressed and native-control/font rasterization
+  are still mixed into the pixel result.
+- UNVERIFIED EXTERNAL: The current anonymous payload has zero
+  `.sheet-2colrow`, `.sheet-3colrow`, `.sheet-col`, table, textarea, and select
+  nodes. Input and roll-button samples exist and were already covered by the
+  leaf-style sidecar; the absent layout families require a separate generic
+  payload before they can be compared.
+- OPEN: Capture lossless browser evidence if the browser surface permits it;
+  otherwise keep computed-style/context and geometry evidence separate from any
+  pixel parity claim. Expand the sidecar probe to generic row/column/table
+  controls before promoting a renderer CSS change.
+
 ## 2026-07-31 Legacy computed-style/context correction
 
 - VERIFIED EXTERNAL: An anonymous computed-style sidecar was captured from the

@@ -477,3 +477,15 @@ external material remain preserved.
   canonical reports, and four-zone markers.
 - This supersedes the earlier current-state **NOT DELETED** note; prior host
   rejections remain historical records.
+
+## 2026-07-31 post-verification build-output cleanup
+
+- RECHECKED: the production build and preview/edit smoke recreated only the
+  generated `.next/` and `out/` directories in the active worktree. No project
+  or CDP listener was active.
+- DELETED: both exact generated directories were removed after verification.
+  Any `.next` junction was removed as a link only; its target under the active
+  dependency tree was preserved.
+- VERIFIED: source, dependencies, worktrees, protected external sources,
+  fixtures, and canonical reports remain intact; the two build-output paths
+  are absent and server hygiene remains clear.

@@ -2,6 +2,30 @@
 
 Date: 2026-07-31
 
+## Latest Wrapper Geometry Reconciliation - 2026-07-31
+
+- VERIFIED EXTERNAL: The dedicated Legacy verification tab measured a
+  `1495 x 582` page viewport at DPR `1.25`, a `900 x 283.55` sheet iframe,
+  and a `420 x 180` visible sheet crop. The wrapper evidence is anonymous and
+  remains local-only.
+- FIXED LOCAL: The frame probe now records viewport/document/body geometry and
+  the crop helper records source/output image formats.
+- MEASURED / VERIFY: Direct PNG comparison after cropping the exact sheet
+  region from the JPEG capture measured mean channel difference `2.414` and
+  threshold-60 mismatch `3.016%`; best tested `-1px` local alignment measured
+  `1.851` and `2.601%`. This is still not a parity PASS.
+- NOT PROVEN: lossless browser capture, arbitrary-sheet parity, generic
+  row/column/table parity, live worker mutation, and reference-image parity.
+- UNVERIFIED EXTERNAL: The current anonymous payload contains no standard
+  2-column/3-column/table/textarea/select nodes. The new probe records these
+  as absent rather than treating absence as a parity pass.
+
+## Latest Pushed Checkpoint - 2026-07-31
+
+- The current pushed checkpoint is `f095066` on `claude/design-reset`. The
+  latest cleanup/docs-only push did not change product render code; the probe
+  and crop-tool edits in the current work batch still require commit/CI.
+
 ## Latest Legacy Computed-Style Reconciliation - 2026-07-31
 
 - VERIFIED EXTERNAL: The anonymous dedicated Legacy iframe sidecar shows the

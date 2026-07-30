@@ -1009,3 +1009,15 @@ directories that had been recreated by the local build.
   fixtures policy, canonical reports, and the active dependency tree.
 - This entry supersedes the earlier current-state **NOT DELETED** note;
   earlier host-rejected attempts remain historical audit records.
+
+## 2026-07-31 post-verification build-output cleanup
+
+- RECHECKED: the production build and preview/edit smoke recreated only the
+  generated `web-push-main/.next/` and `web-push-main/out/` directories. No
+  project or CDP listener was active.
+- DELETED: both exact generated directories were removed after the render and
+  diagnostic gates passed. Any `.next` junction encountered was removed as a
+  link only; the active dependency target was preserved.
+- VERIFIED: the active worktree source and `node_modules` remain present; the
+  two build-output paths are absent and server hygiene still reports no
+  project or CDP listener.
