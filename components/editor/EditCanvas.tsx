@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent as ReactDragEvent } from 'react';
-import { ChevronDown, ChevronRight, Layers, Redo2, Search, Undo2, Ungroup } from 'lucide-react';
+import { ChevronDown, ChevronRight, CircleHelp, Layers, Redo2, Search, Undo2, Ungroup } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import type { BlockSnapshot } from '@/lib/blockly/adapter';
@@ -441,9 +441,9 @@ function EditLayerPanel({
           className="r20-help-dot"
           role="img"
           aria-label="레이어 색 띠 설명"
-          title={'왼쪽 세로 색 띠의 뜻\n· 분홍: 다른 요소를 담을 수 있는 틀\n· 초록: 틀 안에 들어있는 요소\n· 회색: 낱개 요소\n행을 끌어 순서를 바꾸거나 틀 안에 넣을 수 있어요.'}
+            title={'왼쪽 세로 색 띠의 뜻\n· 분홍: 다른 요소를 담을 수 있는 틀\n· 초록: 틀 안에 들어있는 요소\n· 회색: 낱개 요소\n행을 끌어 순서를 바꾸거나 틀 안에 넣을 수 있어요.'}
         >
-          ?
+          <CircleHelp className="h-4 w-4" aria-hidden="true" />
         </span>
       </div>
       <div
