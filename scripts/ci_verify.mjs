@@ -17,6 +17,7 @@ if (!pnpm) {
 const tasks = [
   'test:server-hygiene',
   'test:chat-diagnostics',
+  'test:rolltemplate-render',
   'test:asset-refs',
   'test:asset-replacements',
   'test:translation-payload',

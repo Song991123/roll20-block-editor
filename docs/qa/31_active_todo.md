@@ -7081,3 +7081,10 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `VERIFY / OPEN`: These are local runtime checks only. They do not prove
   actual Roll20 Sandbox upload, Roll20 chat typography/assets, or legacy-room
   parity. Both external checks remain separate P0 gates.
+
+- `DONE CI`: Added a focused rolltemplate renderer test to `ci:verify`. It
+  covers Roll20 class prefixing, field and translation replacement, conditional
+  critical sections, inline-roll classes, and HTML escaping.
+- `VERIFIED CI`: `corepack pnpm run ci:verify` passed after the new task was
+  added; the evidence guard still found no tracked private fixture, report, or
+  example.

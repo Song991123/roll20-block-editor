@@ -7825,3 +7825,13 @@ visibility verification passed. No external room was opened or modified.
   width.
 - Scope boundary: this proves local iframe-to-ChatPane behavior only. Actual
   Roll20 Sandbox upload and the participant-gated legacy room remain unverified.
+
+## 2026-07-30 - Rolltemplate renderer CI contract
+
+- Added `lib/dice/__tests__/rolltemplateRender.test.ts` and registered it in
+  `ci:verify`. The test checks custom class prefixing, translated literal
+  fields, dice totals and breakdowns, conditional critical sections, preserved
+  Roll20 runtime classes, and HTML escaping for field text.
+- `corepack pnpm run ci:verify` passed with the new test included. The suite
+  still reports 40/40 import checks, 7/7 i18n checks, 16/16 legacy CSS checks,
+  and passing privacy/evidence and UI-copy guards.

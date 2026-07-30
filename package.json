@@ -40,6 +40,7 @@
     "test:import-structure": "tsx lib/import/__tests__/basic.test.ts && tsx lib/import/__tests__/i18n_comment_format.test.ts && tsx lib/blocks/__tests__/preservedAttributes.test.ts",
     "test:server-hygiene": "node scripts/server_hygiene_check.mjs --self-test",
     "test:chat-diagnostics": "tsx lib/dice/__tests__/chatDiagnostics.test.ts",
+    "test:rolltemplate-render": "tsx lib/dice/__tests__/rolltemplateRender.test.ts",
     "check:server-hygiene": "node scripts/server_hygiene_check.mjs",
     "test:legacy-css-sanitize": "tsx lib/emit/__tests__/sanitize.test.ts",
     "test:roll20-sandbox-sanitize": "tsx lib/emit/__tests__/roll20SandboxSanitize.test.ts",
