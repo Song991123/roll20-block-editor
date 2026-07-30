@@ -7689,3 +7689,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: Use the user-visible Sandbox file selection for the anonymous
   payload, then capture worker execution, input state, roll control, and chat
   evidence without retaining source-identifying material.
+
+## 2026-07-30 Sandbox native file handoff retry
+
+- `VERIFIED READ-ONLY`: The authenticated Sandbox Tools dialog was visible;
+  the browser session remained on the dedicated verification page and no room
+  settings or chat were changed.
+- `BLOCKED EXTERNAL`: The supported file chooser API returned `Not allowed`,
+  and a screen-level click did not open a native chooser. The three Sandbox
+  file inputs remained empty and no sheet root/iframe/form appeared.
+- `NEXT P0`: User-visible selection of the anonymous HTML, CSS, and translation
+  files is still required. After selection, verify the applied root, assets,
+  default state, worker execution, roll control, and chat in modern Sandbox;
+  use a separate dedicated legacy room for legacy verification.

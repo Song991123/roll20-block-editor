@@ -8435,3 +8435,14 @@ visibility verification passed. No external room was opened or modified.
 - OPEN EXTERNAL: Actual Roll20 worker API behavior, Sandbox activation, and
   legacy-room execution remain unverified. The local smoke must not be used as
   a claim of Roll20 parity.
+
+## 2026-07-30 - Sandbox native file handoff retry
+
+- VERIFIED READ-ONLY: The logged-in Sandbox Tools dialog remained available in
+  the dedicated verification tab; no existing room or chat state was changed.
+- BLOCKED EXTERNAL: The supported chooser returned `Not allowed`, and the
+  screen-level click/type attempt did not open a native picker. All three file
+  inputs stayed empty and the page exposed no sheet root, iframe, or form.
+- NEXT: Keep the tab as a user handoff. Apply only the anonymous synthetic
+  payload through a visible file selection, then gather positive modern
+  Sandbox evidence before beginning any separate legacy-room run.

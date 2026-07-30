@@ -43,6 +43,10 @@ local output and is deleted after the verification batch.
 - EXTERNAL BLOCKED: The supported native file chooser timed out and reset the
   browser connection. No Sandbox screenshot or generated-sheet parity diff was
   captured.
+- EXTERNAL BLOCKED (latest retry): The connected Sandbox dialog stayed open,
+  but the supported chooser returned `Not allowed`; the native screen-level
+  attempt did not populate any file input. No sheet root, iframe, or form
+  appeared, and no room or chat state was changed.
 - HANDOFF READY: An anonymous synthetic HTML/CSS/translation payload has been
   regenerated in ignored local output for a user-visible Sandbox file choice.
   This is preparation only; the sheet is not yet proven active in Roll20.
