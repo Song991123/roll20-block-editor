@@ -9173,3 +9173,14 @@ same-hash modern/legacy comparison.
   baseline was audited explicitly and returned `issues=0`.
 - This confirms the local file/export contract only; it does not promote the
   blocked external Roll20 same-hash evidence.
+
+## 2026-07-31 - Roll20 chooser capability recheck
+
+- The dedicated modern Sandbox exposed the three upload controls and emitted
+  a fresh filechooser event for HTML.
+- The supported file setter was rejected with `Not allowed`; HTML, CSS, and
+  Translation inputs remained empty. No Sandbox save or existing-room change
+  occurred.
+- The external parity task remains at the file-injection boundary. User
+  assisted selection or a permitted Chrome session is required before hash,
+  screenshot, and legacy-room evidence can be accepted.

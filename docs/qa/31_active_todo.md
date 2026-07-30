@@ -8475,3 +8475,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   synthetic baseline was passed explicitly and reported `issues=0`.
 - `VERIFY / BLOCKED EXTERNAL`: these checks prove the local file/export
   contract only; they do not replace actual Roll20 same-hash screenshots.
+
+## 2026-07-31 Roll20 chooser capability recheck
+
+- `MEASURED EXTERNAL`: the dedicated modern Sandbox still exposed all three
+  upload controls. A fresh filechooser event was emitted for HTML.
+- `VERIFY / BLOCKED EXTERNAL`: `fileChooser.setFiles` was rejected with
+  `Not allowed`; HTML, CSS, and Translation inputs all remained empty after
+  the attempt. No Sandbox save or existing-room change occurred.
+- `NEXT P0`: use user-assisted selection or a Chrome profile/session with
+  local file injection permitted, then verify all three payload hashes before
+  capturing modern and legacy screenshots.

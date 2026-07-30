@@ -423,3 +423,11 @@ reported zero console/page errors. The legacy export audit passed. The default
 payload-audit alias had no `current` baseline after local evidence cleanup;
 running it against the remaining anonymous synthetic baseline explicitly
 returned `issues=0`. This is local contract evidence, not actual Roll20 parity.
+
+## Roll20 chooser capability recheck - 2026-07-31
+
+The dedicated modern Sandbox emitted a fresh filechooser event for its HTML
+control, but the supported file setter was rejected with `Not allowed`. HTML,
+CSS, and Translation inputs all remained empty afterward. No Sandbox save or
+existing-room mutation occurred; same-hash modern/legacy parity remains
+`VERIFY / BLOCKED EXTERNAL`.
