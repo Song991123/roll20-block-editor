@@ -726,3 +726,21 @@ directories that had been recreated by the local build.
   workaround, or safety bypass was used.
 - VERIFIED: none of the selected targets changed, and no source, active
   dependency tree, worktree, protected sheet, or tracked policy file changed.
+
+## 2026-07-30 user-authorized complete-deletion retry (current)
+
+- RECHECKED: the exact approved generated targets were inside the workspace:
+  old `web/node_modules/`, `web/.next/`, `web/out/`, canonical
+  `web-push-main/.next/`, `web-push-main/out/`, `web-push-main/.tmp/`, and
+  generated child directories under `web-push-main/reports/`. The active
+  `web-push-main/node_modules/`, source, fixtures policy, `reports/README.md`,
+  worktrees, and protected external sheet roots were excluded.
+- ATTEMPTED: the user explicitly authorized complete deletion after the
+  boundary and project-listener checks passed.
+- BLOCKED: the host rejected the exact boundary-checked PowerShell
+  `Remove-Item -Recurse -Force` operation before PowerShell execution.
+  User approval cannot override this execution boundary.
+- NOT DELETED: no target changed. No alternate shell, native API, per-file
+  deletion loop, or safety bypass was used.
+- VERIFIED: source, active dependencies, Git worktrees, report policy, and
+  protected external sheet roots remain untouched.
