@@ -7779,3 +7779,15 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: Complete the three-file selection manually in the handoff tab,
   then capture positive modern Sandbox render/runtime/roll evidence before
   opening a separate legacy-enabled test-room track.
+
+## 2026-07-30 Sandbox visible chooser interaction recheck
+
+- `VERIFIED EXTERNAL`: The dedicated Sandbox surface rendered normally, and
+  the visible HTML/CSS/Translation controls were present in the dialog.
+- `BLOCKED EXTERNAL`: A screen click reached the file chooser event, but
+  automated injection was rejected and entering the anonymous HTML path left
+  the page input value empty. No applied sheet root or iframe appeared.
+- `NO MUTATION`: No existing room, chat, campaign setting, or source-derived
+  artifact was changed. The Sandbox tab remains a handoff, not a parity pass.
+- `NEXT P0`: User-visible selection of all three anonymous files is required
+  before modern render/runtime/roll evidence can be collected.

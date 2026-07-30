@@ -8504,3 +8504,15 @@ visibility verification passed. No external room was opened or modified.
 - NEXT: Keep the Sandbox tab as a user handoff. Positive render/runtime/roll
   evidence requires manual selection of the anonymous HTML, CSS, and
   translation files; legacy verification remains a separate destination.
+
+## 2026-07-30 - Sandbox visible chooser interaction recheck
+
+- VERIFIED EXTERNAL: The dedicated Sandbox page rendered normally with all
+  three visible upload controls.
+- BLOCKED EXTERNAL: The visible click reached the native chooser boundary,
+  but automation could not inject the file and a path-entry attempt left the
+  HTML input empty. No positive sheet root or iframe evidence appeared.
+- NO MUTATION: Existing room, chat, campaign settings, and source-derived
+  material were untouched.
+- NEXT: Leave the tab as a handoff for manual three-file selection, then
+  capture modern runtime/roll/chat evidence and start the separate legacy path.
