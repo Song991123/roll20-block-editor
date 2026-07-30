@@ -8259,6 +8259,19 @@ visibility verification passed. No external room was opened or modified.
   keep generated evidence local-only and keep modern/legacy verification
   separate.
 
+## 2026-07-30 - Roll20 Sandbox upload retry
+
+- VERIFIED EXTERNAL: The dedicated Sandbox tools page accepted synthetic
+  file-input change dispatches for HTML, CSS, and Translation, and the
+  observed runtime mode matched modern.
+- BLOCKED EXTERNAL: No visible sheet root, iframe, form, attribute, or roll
+  button appeared after dispatch. The supported native chooser timed out and
+  reset the browser connection, so no actual sheet screenshot or parity claim
+  was made.
+- BOUNDARY: This is an upload/activation blocker, not evidence that the local
+  renderer matches or fails Roll20. Re-run only with a stable visible chooser
+  or a Sandbox character sheet ready to display the uploaded payload.
+
 ## 2026-07-30 - Disposable evidence purge
 
 - DELETED LOCAL: Removed the generated report evidence under

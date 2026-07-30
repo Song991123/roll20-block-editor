@@ -1,3 +1,18 @@
+## 2026-07-30 Roll20 Sandbox upload retry
+
+- VERIFIED EXTERNAL: The dedicated `Sheet Sandbox Tools` dialog was present;
+  the anonymous synthetic payload was dispatched to the HTML/CSS/Translation
+  inputs and Roll20 reported modern runtime (`legacySanitization=false`).
+- BLOCKED_EXTERNAL: The Sandbox page exposed no active sheet root, iframe,
+  form, attribute, or roll button after dispatch, so activation was not
+  visible and no parity screenshot was captured. The supported native chooser
+  then timed out and reset the browser connection.
+- NOT PROVEN: Upload persistence, sheet-root rendering, rolltemplate/chat,
+  and visual parity. Do not treat the dispatch result as Roll20 parity.
+- NEXT P0: Recover a stable visible chooser or open a Sandbox character sheet
+  after user-assisted upload; then capture root/state/chat evidence. Keep
+  legacy verification in a separate dedicated test room.
+
 ## 2026-07-30 Disposable evidence purge
 
 - DONE LOCAL: Removed generated report evidence under `reports/`, retaining

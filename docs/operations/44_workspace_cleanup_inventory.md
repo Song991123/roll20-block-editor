@@ -510,3 +510,14 @@ directories that had been recreated by the local build.
   generated report, fixture, or build output.
 - PRESERVED: product source, `node_modules/`, Git metadata and worktrees,
   reference/archive zone roots, and all protected external sheet sources.
+
+## 2026-07-30 post-Sandbox verification cleanup
+
+- DELETED: the anonymous synthetic `.tmp/visual-synthetic`, build output, and
+  generated `reports/` evidence created for the modern Sandbox retry; only
+  the tracked `reports/README.md` remains.
+- VERIFIED: the Sandbox retry's external evidence was recorded as blocked
+  before cleanup; no source-identifying sheet data or screenshots remain in
+  the local report tree.
+- PRESERVED: product source, dependencies, Git worktrees, reference/archive
+  roots, and protected external sheet sources.
