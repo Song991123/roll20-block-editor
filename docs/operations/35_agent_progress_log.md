@@ -7697,3 +7697,13 @@ visibility verification passed. No external room was opened or modified.
 - This is a focused legacy specificity correction, not a universal parity
   claim. The local `850px` default canvas and external `900px` iframe /
   `860px` sheet-root wrapper still require normalized comparison evidence.
+
+## 2026-07-30 - Final authorized workspace cleanup recheck
+
+- DONE LOCAL: Rechecked the approved cleanup ledger after the latest generated
+  files were removed. Build output, disposable evidence, duplicate reports,
+  stale cache/metadata, and `next-env.d.ts` are absent.
+- VERIFIED HYGIENE: no project development listener remains; Git status is
+  clean on `claude/design-reset`.
+- PRESERVED: active `node_modules/`, product source, docs, report policy, Git
+  worktrees, reference/archive zones, and protected external sheet sources.

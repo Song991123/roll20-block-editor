@@ -380,3 +380,12 @@ directories that had been recreated by the local build.
   tracked file was included in the deletion.
 - PRESERVED: `reports/README.md`, `node_modules/`, source roots, Git metadata,
   both worktrees, external sheet/source folders, and all user-authored data.
+
+## 2026-07-30 final user-authorized cleanup recheck
+
+- RECHECKED: all approved generated, cache, duplicate-report, and stale-metadata
+  targets are absent, including the regenerated `next-env.d.ts` file.
+- VERIFIED: no project listener remains on the checked development ports and
+  the active branch is clean.
+- PRESERVED: `node_modules/`, `reports/README.md`, product source, Git metadata,
+  both worktrees, archive/reference zones, and all external sheet/source roots.

@@ -224,3 +224,12 @@ worktrees were preserved.
 - Verified that `.next/`, `out/`, `.tmp/`, `next-env.d.ts`,
   `reports/edit-flow-smoke/`, and `tsconfig.tsbuildinfo` are absent.
 - The Figma MCP process remains running because it is not a project server.
+
+## 2026-07-30 final user-authorized cleanup recheck
+
+- All approved disposable targets are absent after the final recheck:
+  generated build output, local evidence, duplicate reports, stale cache and
+  metadata, and the Next-generated `next-env.d.ts` file.
+- The active dependency tree, product source, report policy, Git worktrees,
+  reference/archive zones, and protected external source folders were kept.
+- No project listener was active during the check.
