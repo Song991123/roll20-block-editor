@@ -372,3 +372,17 @@ external material remain preserved.
   `4199`; protected source roots, product source, Git metadata, active
   dependencies, the Sandbox payload, and `reports/README.md` were not
   changed.
+
+## 2026-07-30 latest user-authorized complete deletion retry
+
+- RECHECKED: the seven exact disposable targets were inside the workspace,
+  generated/stale, untracked, and outside protected source ownership. No
+  project listener was active on the checked development ports.
+- REQUESTED: the user explicitly authorized complete deletion, including the
+  anonymous Sandbox payload and the old `web/` dependency/build output.
+- NOT DELETED: the host rejected the boundary-checked recursive deletion
+  before PowerShell executed it. No alternate shell, per-file workaround,
+  native API, or safety bypass was used.
+- VERIFIED: all seven targets remain, while the canonical active dependency
+  tree, product source, worktrees, protected external sources, and tracked
+  report policy remain intact.

@@ -592,3 +592,24 @@ directories that had been recreated by the local build.
   They are reproducible cleanup candidates, not deleted items.
 - VERIFIED: no project listener remains on the checked development ports, and
   no protected source or tracked product file was touched.
+
+## 2026-07-30 latest user-authorized complete deletion retry
+
+- RECHECKED: no project listener was active on ports `3000`, `4197`, `4198`,
+  `4199`, or `9222`; the canonical worktree was clean and no generated path
+  is Git-tracked except the retained `reports/README.md` policy file.
+- TARGETED: the exact generated/stale paths `web/.next/`, `web/out/`,
+  `web/node_modules/`, `web-push-main/.next/`, `web-push-main/out/`,
+  `web-push-main/.tmp/compat-fixtures/`, and
+  `web-push-main/.tmp/roll20-sandbox-synthetic/`.
+- ATTEMPTED: the user explicitly authorized complete deletion after the
+  boundary and source checks passed.
+- NOT DELETED: the host rejected the guarded recursive PowerShell operation
+  before execution. No alternate shell, native API, per-file workaround, or
+  safety bypass was used.
+- CURRENT RESIDUALS: all seven exact targets remain present and total about
+  `689.89 MiB`; the active canonical `web-push-main/node_modules/` tree,
+  source, worktrees, protected external sheet roots, and report policy remain
+  preserved.
+- VERIFIED: no product source, external sheet source, Git worktree, or server
+  was changed by this retry.
