@@ -534,3 +534,19 @@ keeps table, section, row, cell, and list constraints consistent for new
 objects as well as existing moved blocks. The contract is covered by focused
 tests and the full local verification gate; it remains local evidence and does
 not close the external Roll20 parity rows above.
+
+## 2026-07-30 Latest Evidence Reconciliation
+
+- `VERIFIED LOCAL`: persistent preview/edit surface, strict imported-edit
+  synchronization, fresh-sheet creation, edit-flow drag/reparent, 5,200-item
+  layer navigation, and the modern/legacy synthetic visual comparison all
+  passed. The synthetic visual comparison measured `0%` mismatch and i18n
+  `1/1` in both local modes.
+- `VERIFIED SAFETY`: the public example registry remains empty; the evidence
+  guard found no tracked private fixture, report, or public example, and the UI
+  copy guard passed.
+- `VERIFY / BLOCKED EXTERNAL`: the isolated Sandbox tab reconnected and its
+  three file inputs were visible, but the supported chooser did not emit after
+  the HTML control click. No current-payload hash was attached and no fresh
+  Roll20 screenshot was accepted. Modern Sandbox and dedicated legacy-room
+  visual parity remain open; do not promote local synthetic results to L4.
