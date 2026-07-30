@@ -101,8 +101,8 @@ function testDirectTextNodePreserved(): void {
   const r = importSheet({ html });
   assert(r.html.includes('r20_label_container'), 'label remains structural');
   assert((r.html.match(/r20_text_node/g) || []).length === 2, 'both direct text nodes preserved');
-  assert(r.html.includes('>Name<'), 'leading text preserved');
-  assert(r.html.includes('>suffix<'), 'trailing text preserved');
+  assert(r.html.includes('>Name <'), 'leading text and its inline boundary space preserved');
+  assert(r.html.includes('> suffix<'), 'trailing text and its inline boundary space preserved');
   assert(r.stats.htmlRawFallback === 0, 'no raw fallback for direct text');
 }
 
@@ -110,14 +110,22 @@ function testWhitespaceOnlyTextDoesNotInflate(): void {
   const html = `<div>\n  <label> Name <input name="attr_name"> </label>\n</div>`;
   const r = importSheet({ html });
   assert((r.html.match(/r20_text_node/g) || []).length === 1, 'indentation whitespace is ignored');
-  assert(r.html.includes('>Name<'), 'meaningful label text remains');
+  assert(r.html.includes('>Name <'), 'meaningful label text and inline boundary remain');
   assert(r.stats.htmlRawFallback === 0, 'no raw fallback for formatted container');
+}
+
+function testInlineWhitespaceBetweenSiblingsPreserved(): void {
+  const html = '<div><span>A</span> <span>B</span></div>';
+  const r = importSheet({ html });
+  assert(r.html.includes('<field name="TEXT"> </field>'), 'inline sibling space is preserved');
+  assert((r.html.match(/r20_static_text/g) || []).length === 2, 'both inline text elements remain editable');
+  assert(r.stats.htmlRawFallback === 0, 'no raw fallback for inline whitespace');
 }
 
 function testFormattedDirectTextHasStableWhitespace(): void {
   const html = `<div><span>Name</span>\n          :\n        <input name="attr_name"></div>`;
   const r = importSheet({ html });
-  assert(r.html.includes('<field name="TEXT">:</field>'), 'formatted punctuation text trims layout edges');
+  assert(r.html.includes('<field name="TEXT"> : </field>'), 'formatted inline punctuation keeps rendered spaces');
   assert(r.stats.htmlRawFallback === 0, 'no raw fallback for formatted inline text');
 }
 
@@ -411,6 +419,7 @@ const tests = [
   ['list containers', testListContainers],
   ['direct text node', testDirectTextNodePreserved],
   ['whitespace-only text', testWhitespaceOnlyTextDoesNotInflate],
+  ['inline sibling whitespace', testInlineWhitespaceBetweenSiblingsPreserved],
   ['stable formatted text', testFormattedDirectTextHasStableWhitespace],
   ['radio label wrapper', testRadioLabelDoesNotNestOnEmit],
   ['default control state', testDefaultControlStateIsEditable],

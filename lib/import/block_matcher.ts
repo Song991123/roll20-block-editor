@@ -93,14 +93,19 @@ export function newMatchContext(): MatchContext {
  */
 export function matchTree(root: DomNode, ctx: MatchContext): MatchedBlock[] {
   const out: MatchedBlock[] = [];
-  for (const c of root.children) {
+  for (let index = 0; index < root.children.length; index += 1) {
+    const c = root.children[index];
     if (c.type === 'comment') {
       const slot = parsePageJsSlotComment(c.text || '');
       if (slot) out.push({ blockType: 'r20_page_js_slot', fields: { SLOT: slot }, children: {} });
       continue;
     }
     if (c.type === 'text') {
-      const text = meaningfulText(c.text, root.tag);
+      const text = meaningfulText(
+        c.text,
+        root.tag,
+        inlineTextBoundary(root.children, index),
+      );
       if (text !== null) {
         out.push(textNodeBlock(text));
       }
@@ -1133,10 +1138,19 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function meaningfulText(raw: string | undefined, parentTag = ''): string | null {
+function meaningfulText(
+  raw: string | undefined,
+  parentTag = '',
+  boundary: { leading: boolean; trailing: boolean } = { leading: false, trailing: false },
+): string | null {
   if (!raw) return null;
   const text = String(raw);
-  if (!text.trim() && parentTag !== 'pre' && parentTag !== 'textarea') return null;
+  if (!text.trim() && parentTag !== 'pre' && parentTag !== 'textarea') {
+    // A space between inline siblings is rendered by the browser. Dropping it
+    // changes e.g. `<span>A</span> <span>B</span>` into `AB`, while retaining
+    // indentation between block children only inflates the workspace.
+    return boundary.leading && boundary.trailing ? ' ' : null;
+  }
 
   // Ordinary HTML collapses runs of whitespace during layout. Keep the raw
   // payload for pre/textarea, but canonicalize formatted text nodes elsewhere
@@ -1147,7 +1161,11 @@ function meaningfulText(raw: string | undefined, parentTag = ''): string | null 
       .replace(/^[ \t]*\r?\n[ \t]*/, '')
       .replace(/[ \t]*\r?\n[ \t]*$/, '')
       .replace(/[ \t\r\n]+/g, ' ');
-    return normalized.trim() || null;
+    const trimmed = normalized.trim();
+    if (!trimmed) return null;
+    const leading = boundary.leading && /^[ \t\r\n]/.test(text);
+    const trailing = boundary.trailing && /[ \t\r\n]$/.test(text);
+    return `${leading ? ' ' : ''}${trimmed}${trailing ? ' ' : ''}`;
   }
   return text;
 }
@@ -1162,14 +1180,19 @@ function textNodeBlock(text: string): MatchedBlock {
 
 function matchChildren(node: DomNode, ctx: MatchContext): MatchedBlock[] {
   const out: MatchedBlock[] = [];
-  for (const c of node.children) {
+  for (let index = 0; index < node.children.length; index += 1) {
+    const c = node.children[index];
     if (c.type === 'comment') {
       const slot = parsePageJsSlotComment(c.text || '');
       if (slot) out.push({ blockType: 'r20_page_js_slot', fields: { SLOT: slot }, children: {} });
       continue;
     }
     if (c.type === 'text') {
-      const text = meaningfulText(c.text, node.tag);
+      const text = meaningfulText(
+        c.text,
+        node.tag,
+        inlineTextBoundary(node.children, index),
+      );
       if (text !== null) out.push(textNodeBlock(text));
       continue;
     }
@@ -1193,6 +1216,29 @@ function matchChildren(node: DomNode, ctx: MatchContext): MatchedBlock[] {
 const INLINE_TEXT_TAGS = new Set([
   'b', 'strong', 'em', 'small', 'u', 'i', 'br', 'span', 'sub', 'sup',
 ]);
+
+const INLINE_WHITESPACE_TAGS = new Set([
+  ...INLINE_TEXT_TAGS,
+  'a', 'abbr', 'button', 'code', 'data', 'del', 'ins', 'kbd', 'mark',
+  'q', 's', 'samp', 'select', 'textarea', 'time', 'var', 'input', 'img',
+]);
+
+function isInlineWhitespaceNode(node: DomNode | undefined): boolean {
+  if (!node) return false;
+  if (node.type === 'text') return Boolean(node.text?.trim());
+  return node.type === 'element' && INLINE_WHITESPACE_TAGS.has(node.tag ?? '');
+}
+
+/** Preserve only the text edges that touch inline rendered siblings. */
+function inlineTextBoundary(
+  children: DomNode[],
+  index: number,
+): { leading: boolean; trailing: boolean } {
+  return {
+    leading: isInlineWhitespaceNode(children[index - 1]),
+    trailing: isInlineWhitespaceNode(children[index + 1]),
+  };
+}
 
 function hasOnlyTextOrInline(node: DomNode): boolean {
   return node.children.every((c) => {

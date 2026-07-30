@@ -442,3 +442,22 @@ directories that had been recreated by the local build.
   reference/archive zones, and every protected external sheet/source folder.
 - VERIFIED: no project listener is active on ports `3000`, `4197`, `4198`,
   `4199`, or `9222`.
+
+## 2026-07-30 post-build disposable cleanup
+
+- DELETED: the exact `.next/`, `out/`, generated `next-env.d.ts`, and
+  `reports/legacy-export-audit/` outputs created by the lint/build and CI
+  verification pass. `.tmp/` and `tsconfig.tsbuildinfo` were already absent.
+- VERIFIED: all selected generated targets are absent and `reports/` contains
+  only the tracked policy README. A transient `.next/node_modules/jsdom-*`
+  lock was allowed to release before the same guarded deletion was retried.
+- PRESERVED: product source, dependencies, Git worktrees, four-zone folders,
+  protected external sheet/source roots, and all user-authored files.
+
+## 2026-07-30 post-smoke disposable cleanup
+
+- DELETED: the static build output and local smoke reports recreated for the
+  ordered build → persistent-preview → edit-flow verification:
+  `.next/`, `out/`, `next-env.d.ts`, `reports/persistent-preview-surface/`,
+  and `reports/edit-flow-smoke/`.
+- VERIFIED: `reports/` contains only `README.md`; no project listener remains.

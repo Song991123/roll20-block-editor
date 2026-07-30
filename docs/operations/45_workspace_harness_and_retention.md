@@ -287,3 +287,19 @@ generated `next-env.d.ts`; the other approved build/cache targets were already
 absent. `reports/README.md`, source, dependencies, Git worktrees, and all
 protected external material were explicitly retained. No project listener was
 active during the final check.
+
+## 2026-07-30 post-build disposable cleanup
+
+The lint/build and CI verification pass recreated only ignored local outputs.
+After the transient `jsdom-*` entry released, `.next/`, `out/`, generated
+`next-env.d.ts`, and `reports/legacy-export-audit/` were removed with an exact
+canonical-worktree boundary check. The report policy README, source,
+dependencies, worktrees, and protected external material remain intact.
+
+## 2026-07-30 post-smoke disposable cleanup
+
+The ordered build and browser smoke run recreated ignored local output only.
+After the transient dependency lock released, `.next/`, `out/`, generated
+`next-env.d.ts`, and the two local smoke report directories were removed.
+The report policy README, source, dependencies, worktrees, and protected
+external material remain preserved.

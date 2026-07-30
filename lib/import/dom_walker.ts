@@ -148,7 +148,7 @@ function convertNative(node: Node, parent: DomNode): DomNode | null {
   }
   if (node.nodeType === 3) {
     const text = (node as Text).data;
-    if (!text || !text.trim()) return null;
+    if (!text) return null;
     return { type: 'text', text, children: [], parent };
   }
   if (node.nodeType === 8) {
@@ -276,7 +276,7 @@ function parseWithFallback(html: string): DomNode {
     const nextLt = html.indexOf('<', i);
     const stop = nextLt < 0 ? len : nextLt;
     const text = html.slice(i, stop);
-    if (text.trim()) {
+    if (text) {
       appendText(stack, text);
     }
     i = stop;

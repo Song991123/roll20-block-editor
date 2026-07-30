@@ -7934,3 +7934,21 @@ visibility verification passed. No external room was opened or modified.
 - Preserved the five anonymous synthetic fixture files, active dependencies,
   source, worktrees, and protected external sources. No Roll20 room or saved
   Sandbox payload was changed.
+
+## 2026-07-30 - Generic inline whitespace import fix
+
+- Reproduced a universal import loss where inline siblings such as
+  `<span>A</span> <span>B</span>` became `AB` because both parsers discarded
+  whitespace-only text nodes before matching.
+- Updated the browser and fallback DOM walkers to retain those nodes, then
+  made the matcher preserve only inline boundary spaces. Text edges around
+  inline controls are retained as well; block indentation remains ignored.
+- Local evidence: import structure `41/41`, i18n comment `7/7`, preserved
+  attributes, layer roles, iframe drop, edit bridge, and build-doc tests pass;
+  `ci:verify`, lint, production build, persistent preview-surface smoke, and
+  edit-flow smoke pass when run after the static build output is generated.
+- An initial smoke invocation after disposable-output cleanup correctly failed
+  with static-file `404` because `out/` was absent; the ordered build-then-smoke
+  rerun passed in both modern/legacy preview modes with iframe loads `0`.
+- Scope remains local import fidelity only. No actual Roll20 screenshot or
+  Sandbox payload was produced, so modern/legacy external parity remains open.

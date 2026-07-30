@@ -7174,3 +7174,20 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `DONE LOCAL`: The temporary build output and generated comparison/audit
   folders from this retry were removed after the blocker was recorded;
   `reports/` retains only its policy README.
+
+## 2026-07-30 Generic inline whitespace import fix
+
+- `DONE LOCAL`: The HTML walker now retains whitespace-only text nodes until
+  matching, and the matcher preserves only spaces at inline boundaries. This
+  keeps `<span>A</span> <span>B</span>` and `Name <input> suffix` visually
+  separated without reintroducing formatted block indentation into Blockly.
+- `VERIFIED LOCAL`: Import structure tests pass `41/41`; i18n comment tests
+  pass `7/7`; preserved-attribute, layer-role, iframe-drop, edit-bridge, and
+  build-doc tests pass. `ci:verify`, lint, production build, persistent
+  preview-surface smoke, and edit-flow smoke pass when run after the static
+  build output is generated.
+- `CLAIM BOUNDARY`: This closes a generic local import fidelity bug. It does
+  not upgrade the universal import claim or actual modern/legacy Roll20 parity
+  beyond the existing evidence boundary.
+- `NEXT P0`: Continue the permitted modern Sandbox upload, then collect
+  separate legacy-room evidence before promoting the external render gate.
