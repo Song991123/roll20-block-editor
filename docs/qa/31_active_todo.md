@@ -7088,3 +7088,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `VERIFIED CI`: `corepack pnpm run ci:verify` passed after the new task was
   added; the evidence guard still found no tracked private fixture, report, or
   example.
+
+## 2026-07-30 Rolltemplate app-boundary hardening
+
+- `DONE LOCAL`: Sanitized custom rolltemplate bodies before they enter the
+  React chat surface. The browser path uses a DOM allow-list; the SSR/test path
+  uses a conservative fallback. Executable tags, inline event handlers, inline
+  styles, and unsafe `javascript:`/`vbscript:` URLs are removed while common
+  Roll20 table/formatting/media markup remains available.
+- `VERIFIED LOCAL`: Rolltemplate unit tests, ordinary/template chat smoke,
+  lint, and the full `ci:verify` suite pass after the boundary change.
+- `VERIFY / OPEN`: This protects the local editor surface; it does not claim
+  Roll20 Sandbox's own sanitizer or actual chat parity. External modern and
+  legacy Roll20 evidence remains open.

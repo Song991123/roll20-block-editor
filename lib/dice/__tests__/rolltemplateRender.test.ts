@@ -10,6 +10,8 @@ const source = `
     <caption>{{title}}</caption>
     <tr class="critical-row">{{#rollWasCrit()}}<td class="label">Critical</td>{{/rollWasCrit()}}</tr>
     <tr><td class="label">{{unsafe}}</td><td class="inlinerollresult">{{total}}</td></tr>
+    <img src="javascript:alert(1)" onerror="alert(2)" style="color:red">
+    <script>alert(3)</script>
   </table>
 </rolltemplate>`;
 
@@ -50,6 +52,7 @@ assert.match(rendered, /Critical/);
 assert.match(rendered, /&lt;img src=x&gt;/);
 assert.doesNotMatch(rendered, /<img src=x>/);
 assert.match(rendered, /class="inlinerollresult"/);
+assert.doesNotMatch(rendered, /javascript:|onerror|style=|<script/i);
 
 const hiddenCritical = renderTemplateBody(
   body,

@@ -7835,3 +7835,18 @@ visibility verification passed. No external room was opened or modified.
 - `corepack pnpm run ci:verify` passed with the new test included. The suite
   still reports 40/40 import checks, 7/7 i18n checks, 16/16 legacy CSS checks,
   and passing privacy/evidence and UI-copy guards.
+
+## 2026-07-30 - Rolltemplate app-boundary hardening
+
+- Found that the custom rolltemplate body was injected into the app chat DOM
+  after field rendering without an HTML boundary. Added a DOMParser-backed
+  allow-list sanitizer with a conservative SSR/test fallback before class
+  prefixing and `dangerouslySetInnerHTML`.
+- The boundary removes executable tags, `on*` attributes, inline `style`, and
+  unsafe `javascript:`/`vbscript:` URLs while preserving Roll20-style tables,
+  formatting, images, links, and data/i18n attributes needed by templates.
+- Verified unit coverage for escaped field text, preserved runtime classes,
+  conditional critical blocks, and the malicious-tag cases. Both local chat
+  fixtures pass as `expr` and `rolltemplate`; `ci:verify` passes in full.
+- This is local app containment only. It is deliberately not presented as
+  evidence of the actual Roll20 Sandbox sanitizer or external chat parity.

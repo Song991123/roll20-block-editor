@@ -14,6 +14,7 @@
  */
 
 import type { RolltemplateFieldResult, RolltemplateResult } from './executor';
+import { sanitizeRolltemplateHtml } from './sanitizeRolltemplateHtml';
 
 /** 안전한 HTML 이스케이프 — 사용자 입력 그대로 박지 않도록. */
 export function escapeHtml(s: string): string {
@@ -58,7 +59,8 @@ export function renderTemplateBody(
 ): string {
   const map = new Map<string, RolltemplateFieldResult>();
   for (const f of fields) map.set(f.key, f);
-  const sectionRendered = prefixRolltemplateClasses(renderRolltemplateSections(body, map, flags));
+  const safeBody = sanitizeRolltemplateHtml(body);
+  const sectionRendered = prefixRolltemplateClasses(renderRolltemplateSections(safeBody, map, flags));
 
   // Mustache `{{ key }}` 토큰 (식별자 only) 치환.
   const rendered = sectionRendered.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (full, raw) => {
