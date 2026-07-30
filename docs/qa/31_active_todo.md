@@ -1,3 +1,18 @@
+## 2026-07-31 Roll20 modern Sandbox actual smoke
+
+- VERIFIED EXTERNAL: The dedicated authenticated Custom Sheet Sandbox saved an
+  anonymous synthetic modern payload successfully and opened it in the
+  editor. The visible iframe contained a translated label, input, and Roll
+  button.
+- VERIFIED EXTERNAL: Clicking the synthetic Roll button produced the expected
+  template message in the Roll20 chat surface.
+- SAFETY: No existing room was written to. The existing one-participant room
+  remains observation-only; the browser capture was inspected in-session and
+  no screenshot or source payload was committed.
+- VERIFY / OPEN: This is a modern Sandbox runtime smoke, not screenshot
+  parity. Legacy proof still requires a separate legacy-enabled test room,
+  and actual reference-image comparison remains open.
+
 ## 2026-07-31 Anonymous protected-corpus static inventory
 
 - VERIFIED STATIC: Two protected external input roots were scanned read-only;

@@ -9537,3 +9537,16 @@ same-hash modern/legacy comparison.
 - This is local sanitizer evidence only. Actual Roll20 Sandbox screenshot
   parity and dedicated legacy-room behavior remain open while no Roll20
   browser session is attached.
+## 2026-07-31 - Dedicated modern Sandbox actual smoke
+
+- VERIFIED EXTERNAL: An anonymous synthetic modern payload was saved in the
+  dedicated authenticated Sandbox and rendered in the editor's visible iframe
+  with translation, an input, and a Roll button.
+- VERIFIED EXTERNAL: The Roll button produced the synthetic template message
+  in chat. The worker's attribute mutation was not promoted because no visible
+  state change was observed.
+- SAFETY: Existing room observation remained read-only and no protected or
+  third-party source was uploaded. The browser capture was inspected in-session
+  and no screenshot or source payload was committed.
+- OPEN: Dedicated legacy-enabled room verification and actual screenshot
+  comparison remain the next external gates.

@@ -9,10 +9,10 @@ local output and is deleted after the verification batch.
 
 ## Current Checkpoint - 2026-07-31
 
-- Active branch: `claude/design-reset` at `72a8250`. The branch is pushed to
+- Active branch: `claude/design-reset` at `0abdf6c`. The branch is pushed to
   `origin` and the worktree is clean.
-- Remote CI: run `30573668133` passed safety/unit verification, lint, and
-  build for `72a8250`.
+- Remote CI: run `30573906380` passed safety/unit verification, lint, and
+  build for `0abdf6c`.
 - Static corpus inventory: two protected external roots were read-only scanned;
   the anonymous aggregate contains `1,428` sheet directories and `18,550`
   candidate files. This is inventory evidence only and does not establish
@@ -40,10 +40,19 @@ local output and is deleted after the verification batch.
   assertions in the build-doc test. Synthetic modern/legacy preview-edit
   visual smoke reports `0%` mismatch and persistent iframe smoke reports
   `loads=0`; this is local cascade evidence only.
-- Roll20 external state: the current in-app browser has no attached tab and
-  the existing Chrome tab inventory has no Roll20 target, so authenticated
-  Sandbox and dedicated legacy-room verification remain open. No credentials
-  or external sheet payload were transmitted.
+- Roll20 actual-screen checkpoint: the dedicated authenticated Custom Sheet
+  Sandbox accepted and saved one anonymous synthetic modern payload. After
+  opening it in the editor, the visible iframe contained a translated label,
+  text input, and Roll button; clicking the button produced the expected
+  template message in chat. This proves a current modern Sandbox render and
+  chat smoke only, not screenshot parity or arbitrary-sheet fidelity.
+- Roll20 safety boundary: the existing one-participant room remains
+  read-only observation only. No existing room settings, sheet source, or
+  chat state was changed. A dedicated legacy-enabled room is still required
+  for legacy proof because the Sandbox path is modern-only.
+- Local anonymous evidence: the browser capture was inspected in the
+  authenticated session and no source payload, source identity, screenshot,
+  or external URL was tracked or documented.
 - Local interaction recheck: `smoke:edit-flow`, strict imported-edit sync, and
   persistent preview surface passed; modern and legacy each retained one
   iframe with zero reloads.
