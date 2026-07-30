@@ -24,6 +24,8 @@ edit surface, not a promise that every arbitrary HTML pattern is editable.
 | `r20_inline_bold`, `r20_inline_italic` | Text | No | Free | Inline text styling that remains selectable as visible content |
 | `r20_radio` | Input | No | Free | Radio control with a visible label |
 | `r20_table_col`, `r20_table_caption` | Table atom | No | Flow | Atomic table metadata that can be reordered but cannot receive children |
+| `r20_hr`, `r20_spacer`, `r20_inline_break` | Flow atom | No | Flow | Visible flow utility that can be reordered but cannot receive children |
+| `r20_icon` | Image | No | Free | CSS-backed icon glyph that remains selectable as a visual layer |
 | `r20_on_*`, `r20_worker_*` | Sheet action | No | None | Worker event/code, preserved outside the visual sheet |
 | `r20_attribute_card` | Flow row | No | Flow | Composite cell group that moves as one unit inside its source row |
 | `r20_skill_row` | Flow row | No | Flow | Composite `<tr>` that moves as one table row |
@@ -89,6 +91,14 @@ layer color remains Flow; this keeps a packed row insertable under `tbody` or
 The packed `r20_attribute_card` is instead a `cell_group`: it may reorder
 within its source `tr`, but cannot be inserted directly under `table` or
 `tbody` because it emits sibling cells without a wrapper.
+
+Display atoms such as a horizontal rule, spacer, or line break use the Flow
+role for ordering and color, but explicitly set `data-r20-can-drop="0"`.
+This keeps the layer panel honest: the user can move the visible utility in
+the authored flow without seeing an invalid inside drop target. The icon block
+uses the Image role because its glyph is supplied by sheet CSS and is a leaf
+visual object. Translation dictionary entries remain export-only source blocks
+and are not presented as visual DOM layers.
 
 This describes the current local interaction contract. It does not claim that
 every arbitrary runtime script or third-party markup pattern is decomposed into

@@ -106,6 +106,20 @@ function testGenericElementEmit(): void {
   workspace.dispose();
 }
 
+function testInlineBreakClassEmit(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const block = workspace.newBlock('r20_inline_break');
+  block.setFieldValue('line-break', 'CLASS');
+  block.setFieldValue('display: block', 'STYLE');
+
+  const result = emitAll({ html: workspace });
+  assert(result.html.includes('<br'), 'inline break element is emitted');
+  assert(result.html.includes('class="sheet-line-break"'), 'inline break class is preserved');
+  assert(result.html.includes('style="display: block"'), 'inline break style is preserved');
+  workspace.dispose();
+}
+
 function testGenericCssTagEmit(): void {
   registerAllBlocks();
   const workspace = new Blockly.Workspace();
@@ -266,6 +280,7 @@ testInlineStylePair();
 testGeneratedPositionCss();
 testSemanticContainerEmit();
 testGenericElementEmit();
+testInlineBreakClassEmit();
 testGenericCssTagEmit();
 testTypedPageScriptExportPreserved();
 testUntypedPageScriptExportPreserved();

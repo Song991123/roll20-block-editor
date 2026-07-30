@@ -2,6 +2,20 @@
 
 Date: 2026-06-12
 
+## Latest Local Role Reconciliation: 2026-07-30
+
+- The visual layer classifier now covers the remaining built-in display atoms:
+  horizontal rule, spacer, line break, and CSS-backed icon. Atomic display
+  elements remain reorderable but are not child drop targets; translation
+  dictionary entries remain export-only source blocks.
+- Focused import, emit, and role tests pass. This is a generic local mapping
+  improvement; full CI, lint, build, edit-flow smoke, and strict imported-edit
+  sync also pass. This does not promote the modern Sandbox or legacy-room
+  parity gate.
+- Actual Roll20 evidence remains `VERIFY/BLOCKED at browser handoff` because
+  the authenticated Chrome tab could not be claimed or controlled in the
+  current connection.
+
 ## Latest Reconciliation: 2026-07-30
 
 - The current active evidence boundary is the latest TODO/progress entry, not

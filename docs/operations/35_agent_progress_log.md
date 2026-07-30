@@ -8113,6 +8113,18 @@ visibility verification passed. No external room was opened or modified.
 - Added focused role assertions and updated the DOM-layer contract table.
 - This is a local editor-role correction only. It does not prove universal
   import fidelity or modern/legacy Roll20 visual parity.
+## 2026-07-30 - Visual display-atom role audit
+
+- FIXED: `r20_hr`, `r20_spacer`, and `r20_inline_break` now classify as
+  atomic Flow layers, while `r20_icon` classifies as a leaf Image layer.
+  Their drop contracts explicitly reject `inside` placement.
+- FIXED: `<br>` export now keeps the block's authored class and style.
+- VERIFIED: Focused role, emit, and import-structure tests, `ci:verify`, lint,
+  build, edit-flow browser smoke, and strict imported-edit sync pass. Server
+  hygiene reports zero project/CDP listeners. No claim of actual Roll20
+  modern/legacy parity is made; the authenticated Chrome tab remains
+  unavailable for direct DOM control.
+
 ## 2026-07-30 - Layer mini-map drop contract
 
 - FIXED LOCAL: `LayerMiniMap` no longer infers an actionable container from a

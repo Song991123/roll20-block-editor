@@ -560,7 +560,8 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
     generator: (block) => {
       const b = block as Blockly.Block;
       const style = String(b.getFieldValue('STYLE') ?? '');
-      return `<br${styleAttr(style)}>`;
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      return `<br${sheetClassAttr(cls)}${styleAttr(style)}>`;
     },
   },
 ];

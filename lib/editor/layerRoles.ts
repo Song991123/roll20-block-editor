@@ -110,6 +110,12 @@ const ROLE_KIND_OVERRIDES: Record<string, LayerRoleKind> = {
   r20_toggle_off_area: 'frame',
   r20_inline_bold: 'text',
   r20_inline_italic: 'text',
+  // These display blocks are visible in the sheet but are atomic: they
+  // participate in authored flow and must not advertise an inside drop.
+  r20_hr: 'flow',
+  r20_spacer: 'flow',
+  r20_inline_break: 'flow',
+  r20_icon: 'media',
   r20_radio: 'control',
   r20_template_invoke: 'action',
   r20_computed_attr: 'runtime',
@@ -135,6 +141,10 @@ const CAN_RECEIVE_CHILDREN_OVERRIDES: Record<string, boolean> = {
   // This composite emits one complete <tr>; it is reorderable in table flow,
   // but arbitrary blocks cannot be inserted into the atomic row itself.
   r20_skill_row: false,
+  r20_hr: false,
+  r20_spacer: false,
+  r20_inline_break: false,
+  r20_icon: false,
 };
 
 const RUNTIME_BLOCK_TYPES = new Set([

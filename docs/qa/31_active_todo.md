@@ -1,3 +1,20 @@
+## 2026-07-30 Visual display-atom role audit
+
+- FIXED LOCAL: Visible `hr`, spacer, and line-break blocks now use the Flow
+  layer role for authored ordering while explicitly advertising
+  `canReceiveChildren=false`; icons use the Image role. They no longer look
+  like invalid inside-drop containers in the layer panel or Shadow surface.
+- FIXED LOCAL: The line-break generator now preserves its authored class in
+  emitted HTML instead of silently dropping it.
+- VERIFIED LOCAL: `test:layer-roles`, `test:emit-contract`,
+  `test:import-structure`, `ci:verify`, lint, build, `smoke:edit-flow`, and
+  strict imported-edit sync pass. Post-run server hygiene reports zero
+  project/CDP listeners. Actual modern/legacy Roll20 parity remains
+  unverified; the browser handoff gate is unchanged.
+- NEXT P0: Run the full local CI/browser gates, then resume modern Sandbox and
+  separate legacy-room evidence only through the participant/file-selection
+  safety rules.
+
 ## 2026-07-30 Layer mini-map drop contract
 
 - FIXED LOCAL: The layer mini-map now uses the same `canReceiveChildren`
