@@ -20,8 +20,9 @@ Date: 2026-07-31
 
 ## Latest External Reconciliation - 2026-07-31
 
-- The current code checkpoint before this validation-harness update is
-  `bbafd08`; its remote CI run `30574906436` passed.
+- The current local code checkpoint is `15bf7fc`; its local lint, build,
+  `ci:verify`, and parity-focused smoke gates passed. Remote CI is pending
+  after the push of this checkpoint.
 - VERIFIED EXTERNAL: The authenticated modern Sandbox rendered the anonymous
   synthetic payload with translation, input, Roll button, and chat template.
 - VERIFIED EXTERNAL: A newly created dedicated Legacy room showed exactly one

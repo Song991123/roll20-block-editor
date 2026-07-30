@@ -26,11 +26,9 @@ local output and is deleted after the verification batch.
 
 ## Current Checkpoint - 2026-07-31
 
-- Active branch: `claude/design-reset` at `bbafd08` before the current
-  validation-harness update. The branch is pushed to
-  `origin` and the worktree is clean.
-- Remote CI: run `30574906436` passed safety/unit verification, lint, and
-  build for `bbafd08`.
+- Active branch: `claude/design-reset` at local checkpoint `15bf7fc`, which
+  includes the legacy computed-style correction and sidecar diagnostic.
+  Local verification is complete; remote CI is pending after push.
 - Static corpus inventory: two protected external roots were read-only scanned;
   the anonymous aggregate contains `1,428` sheet directories and `18,550`
   candidate files. This is inventory evidence only and does not establish
