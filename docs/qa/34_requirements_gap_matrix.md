@@ -612,3 +612,12 @@ not close the external Roll20 parity rows above.
   message-channel diagnostics were also observed.
 - `VERIFY / BLOCKED EXTERNAL`: the legacy read-only participant preflight timed
   out; no fresh legacy evidence is counted.
+
+## 2026-07-30 Visible chooser retry
+
+- `MEASURED EXTERNAL`: closing the character viewer exposed the dedicated
+  Sandbox Tools file controls.
+- `PARTIAL EXTERNAL`: HTML selection succeeded and reloaded the Sandbox, but
+  CSS selection returned `Not allowed` twice; translation was not selected.
+- `VERIFY / OPEN`: all-three-file same-hash binding, normalized screenshot
+  parity, and independent legacy evidence remain unproven.

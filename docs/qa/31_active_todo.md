@@ -8391,3 +8391,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: bind the current anonymous payload through a supported file-input
   path, then collect independent modern and legacy evidence with normalized
   screenshots and console diagnostics.
+
+## 2026-07-30 Visible Sandbox chooser retry
+
+- `MEASURED EXTERNAL`: the Sandbox Tools dialog was revealed by closing only
+  the character viewer. The visible HTML/CSS/Translation controls were then
+  uniquely addressable.
+- `PARTIAL EXTERNAL`: the supported chooser accepted `sheet.html` and caused a
+  Sandbox reload. After the reload, `sheet.css` was rejected with `Not allowed`
+  on two fresh attempts; Translation was not selected.
+- `VERIFY / OPEN`: no three-file binding or same-hash screenshot was accepted.
+  The rendered proof state and Roll result remain observation evidence only.
+- `NEXT P0`: recover a chooser session that accepts all three files in one
+  run, then bind the exact payload before comparing modern and legacy surfaces.

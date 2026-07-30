@@ -9110,3 +9110,13 @@ same-hash modern/legacy comparison.
   extension message-channel errors.
 - The legacy read-only preflight timed out and was not promoted to fresh
   evidence. No legacy room or existing room was modified.
+
+## 2026-07-30 - Visible Sandbox chooser retry
+
+- Found that the Sandbox Tools dialog was visible but layered below the
+  character viewer. Closing only the viewer exposed the three file controls.
+- The supported chooser accepted the anonymous HTML file and the Sandbox
+  reloaded. On two fresh post-reload attempts the CSS chooser returned
+  `Not allowed`; translation selection was not attempted.
+- This is partial external handoff evidence only. No three-file same-hash
+  binding or parity screenshot was accepted, and no existing room was changed.

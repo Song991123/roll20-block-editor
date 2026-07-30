@@ -372,3 +372,11 @@ empty, so this is an external rendered observation rather than same-hash local
 payload proof. Missing-template and extension message-channel diagnostics were
 present, and the legacy preflight timed out; actual modern/legacy parity remains
 `VERIFY / BLOCKED EXTERNAL`.
+
+## Visible Sandbox chooser retry - 2026-07-30
+
+The Sandbox Tools dialog was found behind the character viewer and exposed by
+closing only the viewer. The supported chooser accepted HTML and reloaded the
+Sandbox, but rejected CSS with `Not allowed` on two fresh attempts; translation
+was not selected. No three-file same-hash binding was established, so actual
+modern/legacy parity remains `VERIFY / BLOCKED EXTERNAL`.
