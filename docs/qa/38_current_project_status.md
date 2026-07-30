@@ -506,3 +506,12 @@ singular, no Blockly SVG surface was created, layer selection worked, and
 browser/page errors were zero. This is local import/edit performance evidence
 only; source-derived counts and identities are intentionally omitted, and
 actual Roll20 modern/legacy parity remains open.
+
+## Page/worker runtime boundary recheck - 2026-07-31
+
+After a fresh static build, the import-dialog browser smoke passed the local
+page-JS/worker-JS separation boundary, worker export retention, hidden preview
+runtime-node check, and zero console/page errors. Worker-state, emit-contract,
+and worker-parser checks passed as well. This remains local runtime evidence;
+actual modern Sandbox same-payload parity, legacy-room behavior, and universal
+source coverage remain open.

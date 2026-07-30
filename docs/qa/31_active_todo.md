@@ -8649,3 +8649,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   Roll20 same-payload/legacy evidence remains open.
 - `NEXT P0`: recover the supported modern Sandbox three-file handoff, then
   bind the same payload before collecting modern and legacy evidence.
+
+## 2026-07-31 Page/worker runtime boundary recheck
+
+- `VERIFIED LOCAL`: after rebuilding the static output, the import-dialog
+  browser smoke passed page-JS and worker-JS workspace separation, worker
+  export retention, hidden preview runtime nodes, and zero console/page errors.
+- `VERIFIED LOCAL`: worker state smoke, emit-contract tests, and worker-parser
+  tests passed.
+- `VERIFY / OPEN`: this proves the local runtime boundary only; it does not
+  prove actual Roll20 same-payload parity, legacy-room behavior, or universal
+  source coverage.
+- `NEXT P0`: recover the supported modern Sandbox three-file handoff, then
+  bind the same payload before collecting modern and legacy evidence.

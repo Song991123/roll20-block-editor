@@ -9335,3 +9335,12 @@ same-hash modern/legacy comparison.
 - This confirms the large-import interaction boundary locally without
   recording source-derived counts, names, paths, or visual assets.
 - Roll20 same-payload parity and legacy-room behavior remain external gates.
+
+## 2026-07-31 - Page/worker runtime boundary recheck
+
+- The static output was rebuilt before the browser smoke; the fresh import
+  dialog run passed page-JS and worker-JS workspace separation, worker export
+  retention, hidden preview runtime nodes, and zero console/page errors.
+- Worker state smoke, emit-contract tests, and worker-parser tests also passed.
+- This is local runtime-boundary evidence only. Actual Roll20 same-payload and
+  legacy-room parity remain external verification gates.
