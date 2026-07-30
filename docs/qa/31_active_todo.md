@@ -8126,3 +8126,20 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   pixel-identical before this local typography correction, and a normalized
   post-fix screenshot diff has not been captured. Arbitrary-sheet visual parity,
   assets, worker execution, and non-default templates remain open.
+
+## 2026-07-30 Post-fix root comparison
+
+- `DONE LOCAL`: Rebuilt modern and legacy local baselines from the current
+  static bundle. Both passed import, preview/edit capture, export, and
+  zero-warning checks. The baseline JSON now records root and label computed
+  styles, including the distinct legacy values.
+- `MEASURED EXTERNAL`: Native-size `420x180` anonymous root crops compare at
+  threshold-20 mismatch `5.35%` modern and `6.10%` legacy; mean channel deltas
+  are `2.34` and `3.49` respectively.
+- `VERIFY / OPEN`: The external screenshot's sidecar and current local payload
+  disagree on authored roll-button margin, and the screenshot is not linked to
+  the current payload hash. This evidence cannot prove a generic CSS cascade
+  bug or parity. Do not mark Roll20 visual parity done.
+- `NEXT P0`: bind the exact current payload hash to a fresh modern Sandbox and
+  dedicated legacy-room capture, then rerun the crop/diff. Keep arbitrary
+  imported DOM, assets, worker JS, and non-default rolltemplate coverage open.

@@ -8849,3 +8849,29 @@ visibility verification passed. No external room was opened or modified.
 - `PRESERVED`: No source, active dependency, Git worktree, report policy, or
   external sheet material changed. The generated targets remain disposable
   cleanup candidates for a permitted maintenance operation.
+
+## 2026-07-30 - Post-fix local baseline and root comparison
+
+- `VERIFIED LOCAL`: Rebuilt the static bundle's anonymous baseline after the
+  mode-specific surface correction. Both fresh modern and legacy runs passed
+  import, preview, edit, export, and zero-warning checks. The captured legacy
+  report now records `sans-serif` authored content at `16px/20px`, labels at
+  `19.2px` with `8px` bottom margin, and roll buttons at `20.8px`; modern
+  records the corresponding `13px/18px`, `15.6px`/`10px`, and `16.9px` values.
+- `VERIFIED TOOLING`: The local baseline collector now records the root and
+  representative label computed styles, not only inputs/buttons. This makes
+  a stale mode capture detectable from JSON instead of relying on screenshots.
+- `MEASURED EXTERNAL / ANONYMOUS`: Native-size `420x180` crops were taken
+  from the saved one-member modern Sandbox and dedicated legacy-room screens.
+  Against the rebuilt local roots, threshold-20 mismatch was `5.35%` modern
+  (mean channel delta `2.34`) and `6.10%` legacy (mean `3.49`).
+- `VERIFY / OPEN`: These are scoped anonymous screenshot-diff measurements,
+  not visual-parity passes. The saved external sidecar reports a roll-button
+  margin of `0 3px`, while the current local payload reports `12px 3px 0`
+  from its authored CSS. Because the external screenshot is not bound to the
+  current payload hash, this is classified as payload/capture provenance drift;
+  no generic renderer cascade change is promoted from it.
+- `NEXT P0`: recapture modern and legacy external roots with the exact current
+  payload hash, then rerun the same native-size diff before changing the
+  generic Roll20 CSS order. Keep arbitrary-sheet, asset, worker, and chat
+  template parity open.

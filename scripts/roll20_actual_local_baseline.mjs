@@ -544,9 +544,11 @@ function summarizeSheetElement(sheetEl) {
     workerScriptCount: sheetEl.querySelectorAll('script[type="text/worker"]').length,
     rolltemplateCount: sheetEl.querySelectorAll('rolltemplate, .sheet-rolltemplate').length,
     targetGeometry: {
+      root: target(sheetEl, 2),
       rows: Array.from(sheetEl.querySelectorAll('.sheet-2colrow')).map((row, index) => ({ index, ...target(row) })),
       tables: Array.from(sheetEl.querySelectorAll('table')).slice(0, 12).map((table, index) => ({ index, ...target(table) })),
       images: Array.from(sheetEl.querySelectorAll('img')).map((image, index) => ({ index, ...target(image) })),
+      labels: Array.from(sheetEl.querySelectorAll('label')).slice(0, 20).map((label, index) => ({ index, ...target(label) })),
       inputs: Array.from(sheetEl.querySelectorAll('input')).slice(0, 20).map((input, index) => ({ index, ...target(input) })),
       rollButtons: Array.from(sheetEl.querySelectorAll('button[type="roll"], button.roll')).slice(0, 20).map((button, index) => ({ index, ...target(button) })),
       actionButtons: Array.from(sheetEl.querySelectorAll('button[type="action"]')).slice(0, 20).map((button, index) => ({ index, ...target(button) })),

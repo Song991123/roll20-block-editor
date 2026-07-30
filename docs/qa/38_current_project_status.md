@@ -196,3 +196,19 @@ modern -> legacy -> modern without replacing the persistent iframe. Local
 computed-style verification matches the measured mode distinction, and the
 persistent-preview/edit-flow smokes pass. The remaining P0 is normalized
 post-fix screenshot comparison and broader anonymous structure/asset coverage.
+
+## Post-fix root comparison - 2026-07-30
+
+The local baseline was rebuilt after the latest renderer bundle rather than
+reusing the earlier pre-fix capture. Modern and legacy both passed the local
+import/preview/edit/export baseline, and the JSON now records root and label
+computed styles. A native-size `420x180` crop comparison against the saved
+anonymous external screens measured threshold-20 mismatch of `5.35%` modern
+and `6.10%` legacy, with mean channel deltas `2.34` and `3.49`.
+
+This remains `VERIFY/PARTIAL`, not parity: the external button sidecar reports
+`margin: 0 3px`, while the current local payload's authored CSS reports
+`margin: 12px 3px 0`. The external screenshot is not bound to the current
+payload hash, so the difference is currently classified as capture/payload
+provenance drift. A fresh same-hash external capture is required before
+changing generic Roll20 cascade order. Evidence remains ignored and local-only.
