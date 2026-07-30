@@ -340,6 +340,30 @@ function testWorkerIfDoesNotDuplicateReporterGrouping(): void {
   workspace.dispose();
 }
 
+function testWorkerDeclarationKindIsEmitted(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const varBlock = workspace.newBlock('r20_worker_var_let');
+  const varValue = workspace.newBlock('r20_literal_string');
+  varBlock.setFieldValue('var', 'KIND');
+  varBlock.setFieldValue('legacyValue', 'VAR');
+  varValue.setFieldValue('5', 'STR');
+  varBlock.getInput('VALUE')?.connection?.connect(varValue.outputConnection!);
+
+  const constBlock = workspace.newBlock('r20_worker_var_let');
+  const constValue = workspace.newBlock('r20_literal_string');
+  constBlock.setFieldValue('const', 'KIND');
+  constBlock.setFieldValue('stableValue', 'VAR');
+  constValue.setFieldValue('5', 'STR');
+  constBlock.getInput('VALUE')?.connection?.connect(constValue.outputConnection!);
+  varBlock.nextConnection?.connect(constBlock.previousConnection!);
+
+  const result = emitWorkspace(workspace, 'worker').code;
+  assert(result.includes('var legacyValue = 5;'), 'var declaration keyword is emitted');
+  assert(result.includes('const stableValue = 5;'), 'const declaration keyword is emitted');
+  workspace.dispose();
+}
+
 function testMalformedRawTagDoesNotReceivePartialBlockId(): void {
   registerAllBlocks();
   const workspace = new Blockly.Workspace();
@@ -384,5 +408,6 @@ testDedicatedPageScriptWorkspaceAppendsExportOnly();
 testImportedPageScriptReturnsToItsHtmlSlot();
 testPageScriptOrderAndWorkerUniqueness();
 testWorkerIfDoesNotDuplicateReporterGrouping();
+testWorkerDeclarationKindIsEmitted();
 testMalformedRawTagDoesNotReceivePartialBlockId();
 console.log('Emit Roll20 class-pair tests passed.');
