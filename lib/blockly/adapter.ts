@@ -880,14 +880,20 @@ class DefaultAdapter implements BlocklyAdapter {
     const ws = this.workspaces[key];
     const target = ws?.getBlockById(targetId);
     if (!ws || !target || !movingType) return false;
-    return this.canNestInContainer(key, targetId) && canNestLayerChild(movingType, target.type);
+    const movingTag = '';
+    const targetTag = String(target.getFieldValue?.('TAG') ?? '');
+    return this.canNestInContainer(key, targetId) && canNestLayerChild(movingType, target.type, movingTag, targetTag);
   }
 
   canNestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean {
     const ws = this.workspaces[key];
     const moving = ws?.getBlockById(blockId);
     if (!ws || !moving || moving.id === targetId) return false;
-    return this.canNestTypeInContainer(key, moving.type, targetId);
+    const target = ws.getBlockById(targetId);
+    const movingTag = String(moving.getFieldValue?.('TAG') ?? '');
+    const targetTag = String(target?.getFieldValue?.('TAG') ?? '');
+    return this.canNestInContainer(key, targetId)
+      && canNestLayerChild(moving.type, target?.type ?? '', movingTag, targetTag);
   }
 
   nestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean {

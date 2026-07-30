@@ -7,6 +7,25 @@ creator names, source URLs, screenshots, private room identifiers, or
 source-derived measurements. Private evidence, when needed, stays in ignored
 local output and is deleted after the verification batch.
 
+## Actual Generic Layout Proof - 2026-07-31
+
+- VERIFIED EXTERNAL: The same anonymous payload rendered in the dedicated
+  modern Sandbox and dedicated legacy test destination; both had a fresh
+  visible participant count of exactly one. No ordinary room was touched.
+- VERIFIED EXTERNAL: The live sheet displayed translated labels, form controls,
+  table cells, authored styling, and a `760x320` panel. In-memory screenshots
+  were non-blank and were not written to the repository.
+- MEASURED EXTERNAL: Modern Roll20 computed the row as `block` and columns as
+  `inline-block`; legacy computed the row as `flex` and columns as `block`.
+  The renderer therefore preserves separate modern/legacy contracts.
+- VERIFIED EXTERNAL: Both dedicated destinations returned the anonymous
+  `Layout proof` rolltemplate/result in chat after a Roll click.
+- FIXED LOCAL: TAG-aware table-cell layer validation now permits valid
+  `th`/`td` sibling reorder. Rebuilt full synthetic imported-edit smoke passed
+  all five fixtures with stable re-import and no console/page errors.
+- OPEN: Normalized cross-destination pixel parity, same-hash upload proof,
+  worker mutation, asset/reference-image parity, and arbitrary-sheet coverage.
+
 ## Latest Dual-Destination Roll20 Runtime Recheck - 2026-07-31
 
 - VERIFIED EXTERNAL: The dedicated modern Sandbox and dedicated legacy test

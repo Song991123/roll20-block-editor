@@ -1057,3 +1057,19 @@ directories that had been recreated by the local build.
   native API, per-file workaround, or safety bypass was used.
 - PRESERVED: active dependencies, source, reports, worktrees, local evidence
   policy, and protected external sheet roots remain untouched.
+
+## 2026-07-31 explicit retry after latest approval
+
+- RECHECKED: the only approved cleanup targets currently present are the
+  ignored generated directories `web-push-main/.next/` and
+  `web-push-main/out/`. They are inside the active worktree, untracked, and
+  outside protected source ownership. No project listener was active.
+- ATTEMPTED: the exact two absolute paths were passed to one guarded native
+  PowerShell recursive deletion after workspace, worktree, tracking, and
+  protected-root checks passed.
+- BLOCKED: the host rejected the deletion invocation before PowerShell ran.
+  User approval cannot override this host execution boundary.
+- NOT DELETED: both generated directories remain present. No alternate shell,
+  native API, per-file workaround, or safety bypass was used.
+- PRESERVED: active dependencies, product source, reports, worktrees, local
+  evidence policy, and protected external sheet roots remain untouched.

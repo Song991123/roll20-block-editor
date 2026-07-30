@@ -191,7 +191,11 @@ type StructuralNodeKind =
  * invalid markup such as a button directly under <tr> or a div directly under
  * ul/ol.
  */
-function structuralNodeKind(type: string): StructuralNodeKind | null {
+function structuralNodeKind(type: string, tag?: string): StructuralNodeKind | null {
+  const normalizedTag = String(tag ?? '').trim().toLowerCase();
+  if (normalizedTag === 'td' || normalizedTag === 'th') return 'cell';
+  if (normalizedTag === 'tr') return 'row';
+  if (normalizedTag === 'thead' || normalizedTag === 'tbody' || normalizedTag === 'tfoot') return 'section';
   const normalized = type.toLowerCase().replace(/^r20[-_]?/, '').replace(/[^a-z0-9]+/g, '_');
   if (normalized === 'table') return 'table';
   if (normalized === 'table_col' || normalized === 'col') return 'col';
@@ -212,10 +216,15 @@ function structuralNodeKind(type: string): StructuralNodeKind | null {
 }
 
 /** Return whether a moving layer can be a direct child of a target layer. */
-export function canNestLayerChild(movingType: string, targetType: string): boolean {
-  const target = structuralNodeKind(targetType);
+export function canNestLayerChild(
+  movingType: string,
+  targetType: string,
+  movingTag?: string,
+  targetTag?: string,
+): boolean {
+  const target = structuralNodeKind(targetType, targetTag);
   if (!target) return true;
-  const moving = structuralNodeKind(movingType);
+  const moving = structuralNodeKind(movingType, movingTag);
   switch (target) {
     case 'table':
       return moving === 'caption'

@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import * as Blockly from 'blockly';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
+import { registerAllBlocks } from '@/lib/blocks/registry';
+
+registerAllBlocks();
 
 Blockly.Blocks.r20_test_container = {
   init() {
@@ -45,6 +48,26 @@ try {
 } finally {
   adapter.unregisterWorkspace('html');
   workspace.dispose();
+}
+
+const tableWorkspace = new Blockly.Workspace();
+const tableRow = tableWorkspace.newBlock('r20_tr');
+const tableHead = tableWorkspace.newBlock('r20_i18n_text');
+const tableState = tableWorkspace.newBlock('r20_i18n_text');
+tableHead.setFieldValue('th', 'TAG');
+tableState.setFieldValue('th', 'TAG');
+tableRow.getInput('CONTENT')!.connection!.connect(tableHead.previousConnection!);
+tableHead.nextConnection!.connect(tableState.previousConnection!);
+
+adapter.registerWorkspace('html', tableWorkspace as unknown as Blockly.WorkspaceSvg);
+try {
+  assert.equal(adapter.canNestBlockInContainer('html', tableState.id, tableRow.id), true);
+  assert.equal(adapter.moveBlockBefore('html', tableState.id, tableHead.id), true);
+  assert.equal(tableRow.getInput('CONTENT')!.connection!.targetBlock()?.id, tableState.id);
+  assert.equal(tableState.nextConnection!.targetBlock()?.id, tableHead.id);
+} finally {
+  adapter.unregisterWorkspace('html');
+  tableWorkspace.dispose();
 }
 
 const beforeWorkspace = new Blockly.Workspace();

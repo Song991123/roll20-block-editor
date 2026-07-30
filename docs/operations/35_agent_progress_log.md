@@ -1,3 +1,24 @@
+## 2026-07-31 - Actual generic layout and table-layer proof
+
+- Ran the same anonymous layout payload only in the dedicated modern Sandbox
+  and dedicated legacy test destination. Fresh visible participant preflight
+  was exactly one for each; ordinary rooms remained untouched.
+- Confirmed live translated labels, input, textarea, select, table cells, and
+  Roll control in both. The authored panel measured `760x320`; in-memory
+  captures were non-blank and were not persisted.
+- Measured the real generation split: modern Roll20 base computed the row as
+  `block` with inline-block columns, while legacy computed the row as `flex`
+  with block columns. Recorded as runtime evidence, not pixel parity.
+- Clicked Roll in both destinations; each produced the anonymous `Layout proof`
+  rolltemplate/result in chat.
+- Fixed local layer validation to use preserved i18n `TAG=th/td` when deciding
+  whether a table-cell sibling can move. After rebuilding the static bundle,
+  the full five-fixture imported-edit smoke passed with stable re-import and
+  zero console/page errors.
+- Remaining P0 evidence: normalized cross-destination screenshots, exact
+  same-hash upload proof, worker mutation, asset loading, reference-image
+  diff, and arbitrary-sheet coverage.
+
 ## 2026-07-31 - Dual-destination Roll20 runtime recheck
 
 - Reconnected only the two dedicated verification tabs. Both showed exactly

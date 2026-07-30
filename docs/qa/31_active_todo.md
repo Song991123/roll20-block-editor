@@ -1,3 +1,27 @@
+## 2026-07-31 Actual generic layout proof
+
+- VERIFIED EXTERNAL: The same anonymous generic HTML/CSS/translation payload
+  was applied only to the dedicated modern Sandbox and dedicated legacy test
+  destination. Fresh visible participant preflight was exactly one in both;
+  no ordinary room was touched.
+- VERIFIED EXTERNAL: Both destinations rendered the expected translated
+  labels, input, textarea, select, table cells, and Roll control. The authored
+  panel measured `760x320`. In-memory iframe captures were non-blank and were
+  not saved to the repository.
+- MEASURED EXTERNAL: The modern runtime computed `.sheet-2colrow` as
+  `display:block` with inline-block columns; the legacy runtime computed the
+  row as `display:flex` with block columns. This is generation-specific
+  Roll20 base behavior, not a claim of pixel parity.
+- VERIFIED EXTERNAL: A Roll click in both destinations produced the
+  anonymous `Layout proof` rolltemplate/result in chat.
+- FIXED LOCAL: The imported edit smoke now accepts i18n text blocks with
+  preserved `TAG=th/td` as table cells during layer reordering. After a fresh
+  build, fixture-A, fixture-B, and all three anonymous synthetic fixtures
+  passed canonical edit sync, stable re-import, and zero console/page errors.
+- VERIFY / OPEN: Normalized screenshot diff, same-hash upload proof, worker
+  mutation, asset loading, reference-image comparison, and arbitrary-sheet
+  coverage remain open.
+
 ## 2026-07-31 Dual-destination Roll20 runtime recheck
 
 - VERIFIED EXTERNAL: The dedicated modern Sandbox and dedicated legacy test

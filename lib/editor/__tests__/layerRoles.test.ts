@@ -72,6 +72,16 @@ assert.equal(getLayerRole('r20_table').label, '표');
 assert.equal(getLayerRole('r20_text_input').label, '입력');
 assert.equal(getLayerRole('r20_roll_button').label, '버튼');
 assert.equal(getLayerRole('r20_i18n_text').label, '텍스트');
+assert.equal(
+  canNestLayerChild('r20_i18n_text', 'r20_tr', 'th'),
+  true,
+  'i18n text with TAG=th behaves as a table cell for row drops',
+);
+assert.equal(
+  canNestLayerChild('r20_i18n_text', 'r20_tr', 'span'),
+  false,
+  'ordinary i18n text cannot be inserted directly under a table row',
+);
 assert.equal(getLayerRole('r20_image').label, '이미지');
 assert.equal(getLayerRole('r20_worker_script').label, '시트 동작');
 assert.equal(getLayerRole('unknown_block').label, '기타');

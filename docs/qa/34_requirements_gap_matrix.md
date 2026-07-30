@@ -2,6 +2,25 @@
 
 Date: 2026-07-31
 
+## Actual Generic Layout Proof - 2026-07-31
+
+- VERIFIED EXTERNAL: The same anonymous generic layout payload rendered in the
+  dedicated modern Sandbox and dedicated legacy test destination after fresh
+  one-participant preflight. Existing rooms were not used.
+- VERIFIED EXTERNAL: Both showed translated labels, input, textarea, select,
+  table header/body cells, authored pink styling, and a `760x320` panel.
+  In-memory captures were non-blank and were not retained.
+- MEASURED EXTERNAL: Modern computed row/column behavior was
+  `block` + `inline-block`; legacy was `flex` + `block`. This demonstrates
+  separate Roll20 generation contracts and is not a normalized parity PASS.
+- VERIFIED EXTERNAL: Both Roll controls produced the anonymous `Layout proof`
+  template/result in chat.
+- FIXED LOCAL: `TAG=th/td` is now passed into structural layer-drop checks, so
+  valid table-cell siblings can be reordered. The rebuilt full synthetic
+  imported-edit smoke passed all five fixtures.
+- OPEN: Exact same-hash attachment comparison, worker mutation, assets,
+  reference images, and arbitrary-sheet support remain unproven.
+
 ## Latest Dual-Destination Roll20 Runtime Recheck - 2026-07-31
 
 - VERIFIED EXTERNAL: The dedicated modern Sandbox and dedicated legacy test
