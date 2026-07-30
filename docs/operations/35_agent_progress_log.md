@@ -8477,3 +8477,18 @@ visibility verification passed. No external room was opened or modified.
   hygiene all pass. No generated report or fixture is tracked.
 - OPEN: Actual Sandbox upload and separate legacy-room verification remain
   external gates. No full-sheet or worker parity claim is made.
+
+## 2026-07-30 - Dual-roll composite importer
+
+- IMPLEMENTED: Added a specific importer for the generated dual-roll wrapper.
+  It carries both labels, both roll values, the row class, and each button
+  class into the composite fields.
+- PRESERVED: The importer rejects unsupported attributes and nested button
+  markup instead of silently losing source information; generic row/button
+  matching remains the fallback.
+- VERIFIED: dual-roll import `25/25`, high-priority generator `22/22`,
+  composite `11/11` and `13/13`, conditional `12/12`, lint, build, and
+  full `ci:verify` pass.
+- OPEN: This is a local roundtrip correction only. Actual modern Sandbox
+  activation, legacy-room rendering, arbitrary sheet coverage, and worker/chat
+  parity remain unverified.

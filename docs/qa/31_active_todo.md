@@ -7746,3 +7746,23 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   visual parity, or worker/chat parity.
 - `NEXT P1`: Audit the remaining non-visual no-`CLASS` entries and keep them
   explicitly semantic/runtime rather than making the layer tree noisy.
+
+## 2026-07-30 Dual-roll import roundtrip correction
+
+- `DONE LOCAL`: The importer now recognizes the explicit
+  `sheet-row sheet-dual-roll` output marker and reconstructs
+  `r20_dual_roll_button` with row, button-class, label, and roll-expression
+  fields.
+- `DONE LOCAL`: The matcher is fail-safe. Named buttons, inline styles,
+  unsupported attributes, nested label markup, or empty values remain atomic
+  instead of being packed with information loss.
+- `VERIFIED LOCAL`: dual-roll import tests `25/25`, generator tests
+  `22/22`, composite tests `11/11` and `13/13`, conditional tests
+  `12/12`, lint, production build, and full `ci:verify` pass.
+- `VERIFY / OPEN`: This proves the local dual-roll import/export contract,
+  not arbitrary third-party composite coverage or actual Roll20 visual/chat
+  parity. Modern Sandbox activation and the separate legacy-room check remain
+  open.
+- `NEXT P1`: Continue only with remaining composites whose output marker and
+  unsupported-attribute boundary can be proven lossless; do not broaden this
+  into a generic row heuristic.

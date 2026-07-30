@@ -186,6 +186,37 @@ function testValueSwitchPanelPanelOnly(): void {
   expectContains(r.html, '>a<', 'VALUE=a');
 }
 
+// --- 5) r20_dual_roll_button ----------------------------------------------
+
+function testDualRollCompositeImportPreservesFields(): void {
+  const html = `
+    <div class="sheet-row sheet-dual-roll sheet-attack-row">
+      <button type="roll" class="sheet-attack-roll" value="/r 1d20+@{atk}">공격</button>
+      <button type="roll" class="sheet-damage-roll" value="/r 1d8+@{dmg}">피해</button>
+    </div>
+  `;
+  const r = importSheet({ html });
+  expectContains(r.html, 'r20_dual_roll_button', 'dual roll composite matched');
+  expectContains(r.html, '>attack-row<', 'row class carried');
+  expectContains(r.html, '>attack-roll<', 'button A class carried');
+  expectContains(r.html, '>damage-roll<', 'button B class carried');
+  expectContains(r.html, '>/r 1d20+@{atk}<', 'roll A carried');
+  expectContains(r.html, '>/r 1d8+@{dmg}<', 'roll B carried');
+  assert(r.stats.htmlRawFallback === 0, 'dual roll marker has no raw fallback');
+}
+
+function testDualRollCompositeRejectsUnrepresentableAttributes(): void {
+  const html = `
+    <div class="sheet-row sheet-dual-roll">
+      <button type="roll" name="roll_attack" value="/r 1d20">공격</button>
+      <button type="roll" value="/r 1d8">피해</button>
+    </div>
+  `;
+  const r = importSheet({ html });
+  expectNotContains(r.html, 'r20_dual_roll_button', 'named button stays atomic');
+  expectContains(r.html, 'r20_row', 'generic row remains available');
+}
+
 // --- 5) r20_attr_ref SCOPE -------------------------------------------------
 
 function testAttrRefSelfToken(): void {
@@ -280,6 +311,8 @@ const tests = [
   ['value switch panel custom classes', testValueSwitchPanelPreservesCustomClasses],
   ['value switch panel no false match', testValueSwitchPanelNoMatch],
   ['value switch panel only', testValueSwitchPanelPanelOnly],
+  ['dual roll composite import', testDualRollCompositeImportPreservesFields],
+  ['dual roll composite rejects extra attrs', testDualRollCompositeRejectsUnrepresentableAttributes],
   ['attr_ref self token', testAttrRefSelfToken],
   ['attr_ref selected token', testAttrRefSelectedToken],
   ['attr_ref target token', testAttrRefTargetToken],

@@ -17,7 +17,7 @@
 import type { DomNode } from './dom_walker';
 import { serializePreservedAttributes, PRESERVED_ATTRS_FIELD } from '../blocks/preservedAttributes';
 import type { CompositePackStats } from './composite_matcher';
-import { firstTextContent, allTextContent } from './dom_walker';
+import { elementChildren, firstTextContent, allTextContent } from './dom_walker';
 import { parseAttrRefToken } from './expression_parser';
 import { parseSheetWorkerScript } from './script_parser';
 import { isRoll20WorkerScript } from './worker_source';
@@ -853,6 +853,11 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
 
   if (tag === 'div') {
     const cls = a.class || '';
+    // The composite generator emits a deliberately specific marker. Match it
+    // before the generic row branch so import -> export keeps the user's
+    // dual-roll grouping and authored class fields intact.
+    const dualRoll = matchDualRollButton(node, cls);
+    if (dualRoll) return dualRoll;
     // value switch panel 매칭 (Stage 22 §4) — `sheet-X-switch` wrapper.
     // 내부에 inline `<style>` + radio + panel div 들이 묶여 있을 때 묶음 분해.
     const switchMatch = matchValueSwitchPanel(node, cls, ctx);
@@ -966,6 +971,75 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       children: { CONTENT: matchChildren(node, ctx) },
     };
   }
+
+/**
+ * Rehydrate the explicit `r20_dual_roll_button` composite emitted by the
+ * catalog. This is intentionally narrower than a visual heuristic: the
+ * marker class and the two direct roll buttons must both be present, and any
+ * attribute the composite cannot represent keeps the source atomic.
+ */
+function matchDualRollButton(node: DomNode, cls: string): MatchedBlock | null {
+  if (node.tag !== 'div') return null;
+  const tokens = cls.split(/\s+/).filter(Boolean);
+  if (!tokens.includes('sheet-row') || !tokens.includes('sheet-dual-roll')) {
+    return null;
+  }
+
+  const allowedRowAttrs = new Set(['class', 'data-r20-block-id']);
+  if (Object.keys(node.attrs ?? {}).some((name) => !allowedRowAttrs.has(name))) {
+    return null;
+  }
+  if (node.children.some((child) => child.type === 'text' && child.text?.trim())) {
+    return null;
+  }
+
+  const buttons = elementChildren(node);
+  if (buttons.length !== 2 || buttons.some((button) => button.tag !== 'button')) {
+    return null;
+  }
+
+  const buttonAttrs = buttons.map((button) => button.attrs ?? {});
+  const allowedButtonAttrs = new Set(['type', 'value', 'class', 'data-r20-block-id']);
+  if (
+    buttonAttrs.some((attrs) =>
+      Object.keys(attrs).some((name) => !allowedButtonAttrs.has(name)),
+    )
+  ) {
+    return null;
+  }
+
+  const rollButtons = buttons.map((button) => {
+    const attrs = button.attrs ?? {};
+    const label = allTextContent(button);
+    const value = attrs.value ?? '';
+    const type = (attrs.type ?? '').toLowerCase();
+    const hasOnlyText = button.children.every(
+      (child) => child.type === 'text' || child.type === 'comment',
+    );
+    if (type !== 'roll' || !value || !label || !hasOnlyText) return null;
+    return {
+      label,
+      value,
+      className: stripSheetPrefix(attrs.class || ''),
+    };
+  });
+  if (!rollButtons[0] || !rollButtons[1]) return null;
+
+  return {
+    blockType: 'r20_dual_roll_button',
+    fields: {
+      LABEL_A: rollButtons[0].label,
+      ROLL_A: rollButtons[0].value,
+      LABEL_B: rollButtons[1].label,
+      ROLL_B: rollButtons[1].value,
+      ROW_CLASS: stripKnownClasses(cls, ['sheet-row', 'sheet-dual-roll']),
+      BUTTON_A_CLASS: rollButtons[0].className,
+      BUTTON_B_CLASS: rollButtons[1].className,
+    },
+    children: {},
+    hint: 'composite:dual_roll_button',
+  };
+}
 
   if (tag === 'span') {
     return {

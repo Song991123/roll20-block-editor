@@ -38,6 +38,7 @@ const tasks = [
   'test:emit-contract',
   'test:preview-prefix',
   'test:import-structure',
+  'test:high-priority-mapping',
   'test:imported-edit-budget',
   'test:legacy-css-sanitize',
   'audit:legacy-export',

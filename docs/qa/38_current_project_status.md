@@ -91,6 +91,12 @@ composites with distinct styling surfaces and inspector fields. This is still
 local authoring support, not proof that arbitrary imported HTML has been
 decomposed into those composites.
 
+The explicit dual-roll composite now also has a narrow importer. It recognizes
+only the generator's structural marker plus two direct, attribute-safe Roll20
+roll buttons; unsupported attributes intentionally fall back to atomic blocks.
+This closes one local import/export preservation gap without expanding the
+universal-support claim.
+
 ## Goal Progress
 
 These are planning estimates, not completion claims.
