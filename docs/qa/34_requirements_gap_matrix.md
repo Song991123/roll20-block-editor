@@ -560,3 +560,12 @@ not close the external Roll20 parity rows above.
 - `VERIFY / OPEN`: worker parser/source preservation is not worker runtime
   parity. Imported arbitrary worker APIs, Roll20-side execution order, and
   external modern/legacy screenshots remain unverified.
+
+## 2026-07-30 External file handoff boundary
+
+- `MEASURED EXTERNAL`: modern Sandbox and the separate legacy observation tab
+  each retained a fresh visible participant count of exactly one.
+- `VERIFY / BLOCKED EXTERNAL`: the available browser surface cannot select or
+  construct files in the Roll20 page (`setInputFiles`, `File`, `Blob`, and
+  `DataTransfer` are unavailable). No current payload hash, screenshot, or
+  settings write was accepted as evidence.

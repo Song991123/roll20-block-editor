@@ -9032,3 +9032,15 @@ same-hash modern/legacy comparison.
   without depending on deleted source corpora.
 - Default state-selector and worker-source audits pass. Lint, build, and full
   `ci:verify` pass. The external same-hash upload/screenshot gate is unchanged.
+
+## 2026-07-30 - Browser file handoff capability recheck
+
+- Reconnected the dedicated modern Sandbox and confirmed a fresh visible
+  participant count of exactly one. The three upload controls were present,
+  but the browser wrapper has no `setInputFiles` method.
+- The page evaluation context also lacked constructible `File`, `Blob`, and
+  `DataTransfer` primitives. The in-page dispatch attempt was stopped before
+  any endpoint or settings write; HTML/CSS/translation remained unselected.
+- Rechecked the separate legacy tab: one visible member, no upload controls,
+  no navigation or mutation. External same-hash and pixel evidence remain
+  `VERIFY / BLOCKED EXTERNAL`.

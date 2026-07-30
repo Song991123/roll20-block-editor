@@ -8314,3 +8314,18 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   audit pass. Full `ci:verify`, lint, and build pass.
 - `VERIFY / OPEN`: payload/sanitize audits still require an explicit local
   upload-baseline folder; no external same-hash capture exists yet.
+
+## 2026-07-30 Browser file handoff capability recheck
+
+- `OBSERVED`: the dedicated modern Sandbox still showed exactly one visible
+  member and one visible control for each HTML/CSS/translation input.
+- `VERIFY / BLOCKED EXTERNAL`: the browser control surface exposes no supported
+  `setInputFiles` operation, and its page evaluation context exposes no
+  constructible `File`, `Blob`, or `DataTransfer`. The normal click path and
+  in-page File dispatch therefore could not attach a file; all three
+  `files.length` values remained `0`.
+- `PRESERVED`: no endpoint fallback, settings save, navigation, room change,
+  chat message, or source mutation was attempted. The separate legacy tab
+  also remained at a fresh visible member count of exactly one.
+- `NEXT P0`: continue only with a user-visible native file selection or a
+  CDP-enabled browser that supports the already-generated local handoff.

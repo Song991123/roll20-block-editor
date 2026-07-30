@@ -324,3 +324,13 @@ one manifest-backed fixture rather than passing with an empty set. Build,
 worker-parser, synthetic preview/edit visual, persistent-preview, and strict
 imported-edit-sync checks pass. This is generic local evidence only; actual
 Roll20 same-hash and pixel parity remain blocked at the file-selection handoff.
+
+## Browser file handoff capability recheck - 2026-07-30
+
+The dedicated modern Sandbox remained a one-member observation target. Its
+three upload inputs were present, but the connected browser wrapper does not
+provide a file setter and the page evaluation context does not expose
+constructible `File`, `Blob`, or `DataTransfer` objects. No endpoint fallback
+or settings save was attempted; all three inputs remained empty. The separate
+legacy tab also remained one-member and unchanged. This is a confirmed tooling
+boundary, not a renderer success or parity result.
