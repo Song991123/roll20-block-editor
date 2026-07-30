@@ -16,6 +16,9 @@
 - FIXED LOCAL: atomic table metadata blocks (`col` and `caption`) no longer
   advertise an `inside` child drop even though their shared Table styling is
   still used for ordering and color.
+- VERIFIED BROWSER: `smoke:edit-flow` and imported edit-sync pass after the
+  role inventory update; the post-run server hygiene check reports no project
+  dev/smoke listener.
 - NEXT P0: finish the remaining local imported-edit role/inventory coverage,
   then resume the separate modern Sandbox and legacy-room evidence gate.
 

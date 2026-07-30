@@ -7975,6 +7975,14 @@ visibility verification passed. No external room was opened or modified.
 - VERIFIED LOCAL: role regression tests cover both `canReceiveChildren=false`
   contracts. No imported sheet or private evidence is involved.
 
+## 2026-07-30 - Role inventory browser smoke
+
+- VERIFIED BROWSER: edit-flow smoke and imported edit-sync smoke pass after the
+  role corrections, including the synthetic generic-element and non-leaf-flow
+  interactions.
+- VERIFIED HYGIENE: the post-smoke check reports no project dev/smoke listener;
+  generated output remains ignored local evidence.
+
 ## 2026-07-30 - Generic inline whitespace import fix
 
 - Reproduced a universal import loss where inline siblings such as
