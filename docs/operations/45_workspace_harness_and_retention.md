@@ -303,3 +303,16 @@ After the transient dependency lock released, `.next/`, `out/`, generated
 `next-env.d.ts`, and the two local smoke report directories were removed.
 The report policy README, source, dependencies, worktrees, and protected
 external material remain preserved.
+
+## 2026-07-30 archive deletion retry
+
+- REVIEWED: `03_ARCHIVE/legacy-single-file/` contains 43 reference/recovery
+  files (6,324,287 bytes), has no reparse points, and is outside the protected
+  source roots and active product worktree.
+- REQUESTED: the user explicitly authorized complete deletion of this archive
+  directory after the archive review.
+- NOT DELETED: the host rejected the exact boundary-checked recursive
+  `Remove-Item` operation before PowerShell executed it. No alternate shell,
+  native API, per-file workaround, or safety bypass was used.
+- VERIFIED: the archive directory remains intact; no source, worktree, report,
+  or user-authored file outside this exact target was changed.
