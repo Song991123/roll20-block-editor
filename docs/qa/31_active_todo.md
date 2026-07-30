@@ -8046,3 +8046,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   chat, room setting, or source payload was changed.
 - `HANDOFF`: The exact Sandbox tab was left open for user-visible native file
   selection. Actual modern render parity remains unverified.
+
+## 2026-07-30 Import smoke follow-up
+
+- `DONE LOCAL`: Import conversion now exposes a stable test id and the
+  browser smoke no longer relies on translated button text.
+- `VERIFIED LOCAL`: lint, Node syntax, UI-copy guard, production build, and
+  import browser smoke pass; HTML, page JS, worker JS, single-iframe, runtime
+  hiding, and console/page error checks all passed.
+- `VERIFY / OPEN`: This does not change the external Roll20 gate. Sandbox
+  activation, real render parity, roll/chat behavior, and separate legacy
+  destination verification remain open.

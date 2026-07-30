@@ -8748,3 +8748,18 @@ visibility verification passed. No external room was opened or modified.
 - Left the exact Sandbox tab in handoff state for user-visible native file
   selection. Actual modern render/runtime/roll/chat evidence and legacy-room
   parity remain open.
+
+## 2026-07-30 - Import browser smoke locator hardening
+
+- Added a stable `data-testid="import-submit"` contract to the import dialog
+  conversion action. The smoke no longer depends on user-facing translated
+  button copy.
+- The browser smoke now uses a DOM click after locating that stable control;
+  this is required when the long dialog places its footer outside the current
+  viewport while the button remains enabled.
+- Verification: lint, Node syntax check, UI-copy guard, production build, and
+  the browser import smoke pass. The smoke reported one iframe, preserved
+  page/worker JavaScript workspaces, retained the worker export boundary,
+  zero visible runtime nodes, and zero console/page errors.
+- Scope note: this is local import-path evidence only. Actual Roll20 Sandbox
+  activation and modern/legacy visual parity remain open.

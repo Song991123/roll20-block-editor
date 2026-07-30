@@ -484,7 +484,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
           <Button type="button" variant="ghost" onClick={handleReset} disabled={busy}>
             초기화
           </Button>
-          <Button type="button" onClick={handleImport} disabled={busy || !anyInput}>
+          <Button type="button" onClick={handleImport} disabled={busy || !anyInput} data-testid="import-submit">
             {busy ? (progress ? `${progress.pct}% 불러오는 중...` : '변환 중...') : '블록으로 변환하기'}
           </Button>
         </DialogFooter>

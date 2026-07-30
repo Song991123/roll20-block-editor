@@ -2,8 +2,8 @@
 /**
  * User-facing import dialog smoke.
  *
- * Uses only an anonymous HTML snippet. This intentionally exercises the
- * visible dialog instead of calling the diagnostic perf hook directly.
+ * Uses an anonymous HTML snippet and stable test ids rather than translated
+ * button text. This keeps the smoke test independent from UI copy changes.
  */
 
 import http from 'node:http';
@@ -36,7 +36,10 @@ function startServer() {
         response.writeHead(403).end();
         return;
       }
-      response.writeHead(200, { 'content-type': MIME[path.extname(file)] ?? 'application/octet-stream' });
+      response.writeHead(200, {
+        'content-type': MIME[path.extname(file)] ?? 'application/octet-stream',
+        'cache-control': 'no-store',
+      });
       response.end(await fs.readFile(file));
     } catch {
       response.writeHead(404).end('not found');
@@ -70,6 +73,7 @@ async function main() {
         // Sandboxed preview frames do not have origin-backed storage.
       }
     });
+
     const url = `http://127.0.0.1:${PORT}${BASE_PATH}/`;
     await page.goto(url, { waitUntil: 'load' });
     await page.waitForFunction(() => Boolean(window.__perfHook), null, { timeout: 30000 });
@@ -78,10 +82,9 @@ async function main() {
 
     const html = '<div class="sheet-root"><label>name</label><input type="text" name="attr_character_name"></div>';
     await page.locator('[data-testid="import-dialog"] textarea').fill(html);
-    const clickConvert = async () => {
-      const button = page.getByRole('button', { name: '블록으로 변환하기' });
-      await button.evaluate((node) => node.click());
-    };
+    const importButton = page.getByTestId('import-submit');
+    assert(await importButton.count() === 1, 'import submit button is not unique');
+    const clickConvert = () => importButton.evaluate((node) => node.click());
     await clickConvert();
 
     await page.waitForFunction(
@@ -104,11 +107,7 @@ async function main() {
     }));
     assert(result.workspace.blockCount.html >= 3, 'dialog import created fewer than three HTML blocks');
     assert(result.iframeCount === 1, `import remounted the preview surface: ${result.iframeCount}`);
-    assert(consoleErrors.length === 0, `console errors: ${consoleErrors.join(' | ')}`);
-    assert(pageErrors.length === 0, `page errors: ${pageErrors.join(' | ')}`);
 
-    // External page JS and Roll20 worker files use the same import dialog
-    // boundary as embedded scripts, but are routed to separate workspaces.
     await page.getByRole('tab', { name: 'JS' }).click();
     await page.locator('[data-testid="import-js-textarea"]').fill('window.r20ExternalPageProbe = true;');
     await clickConvert();
@@ -151,24 +150,26 @@ async function main() {
         visibleRuntimeNodeCount: visibleRuntimeNodes.length,
       };
     });
-    assert(
-      /<script\s+type=["']text\/worker/i.test(workerJs.html),
-      'worker JS was not retained in the Roll20 export HTML boundary',
-    );
-    assert(
-      previewRuntime.visibleRuntimeNodeCount === 0,
-      `runtime node became visible in preview: ${JSON.stringify(previewRuntime)}`,
-    );
-    assert(consoleErrors.length === 0, `console errors after external JS import: ${consoleErrors.join(' | ')}`);
-    assert(pageErrors.length === 0, `page errors after external JS import: ${pageErrors.join(' | ')}`);
+    assert(/<script\s+type=["']text\/worker/i.test(workerJs.html), 'worker JS was not retained in the export HTML boundary');
+    assert(previewRuntime.visibleRuntimeNodeCount === 0, `runtime node became visible in preview: ${JSON.stringify(previewRuntime)}`);
+    assert(consoleErrors.length === 0, `console errors: ${consoleErrors.join(' | ')}`);
+    assert(pageErrors.length === 0, `page errors: ${pageErrors.join(' | ')}`);
 
-    result.externalJs = {
-      pageWorkspace: pageJs.js.includes('r20ExternalPageProbe'),
-      workerWorkspace: workerJs.worker.includes('external_worker_probe'),
-      workerExportedToHtml: /<script\s+type=["']text\/worker/i.test(workerJs.html),
-      previewRuntime,
-    };
-    console.log(JSON.stringify({ pass: true, result, consoleErrors, pageErrors }, null, 2));
+    console.log(JSON.stringify({
+      pass: true,
+      result: {
+        ...result,
+        dialogStillVisible: result.dialogStillVisible,
+        externalJs: {
+          pageWorkspace: pageJs.js.includes('r20ExternalPageProbe'),
+          workerWorkspace: workerJs.worker.includes('external_worker_probe'),
+          workerExportedToHtml: /<script\s+type=["']text\/worker/i.test(workerJs.html),
+          previewRuntime,
+        },
+      },
+      consoleErrors,
+      pageErrors,
+    }, null, 2));
   } finally {
     await browser.close();
     await new Promise((resolve) => server.close(resolve));
