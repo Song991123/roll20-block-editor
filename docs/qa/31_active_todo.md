@@ -7142,3 +7142,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   modern Sandbox and separate legacy-room comparisons can be rerun.
 - `VERIFIED REMOTE`: GitHub Actions CI for commit `90edf10` completed
   successfully. Safety/unit verification, lint, and build all passed.
+
+## 2026-07-30 Disposable workspace cleanup
+
+- `DONE LOCAL`: Removed the current ignored build output, temporary evidence,
+  and seven generated report folders from the canonical worktree after the
+  listener, worktree, boundary, and Git-tracking checks passed.
+- `PRESERVED`: The anonymous synthetic fixtures remain because local
+  regression tests recreate/use them; active dependencies, source, policy
+  docs, both worktrees, and protected external sources were not touched.
+- `VERIFIED LOCAL`: `.next/`, `out/`, `.tmp/`, and all selected report folders
+  are absent; `reports/` contains only its README and project ports are clear.
+- `NEXT`: External Roll20 Sandbox upload and the separate legacy-room parity
+  gate remain open; this cleanup does not change their verification status.

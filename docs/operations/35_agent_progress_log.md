@@ -7891,3 +7891,19 @@ visibility verification passed. No external room was opened or modified.
   Roll20 parity claim is added.
 - GitHub Actions CI for commit `90edf10` completed successfully; safety/unit
   verification, lint, and build all passed remotely.
+
+## 2026-07-30 - User-authorized disposable-output cleanup
+
+- Rechecked the canonical `claude/design-reset` worktree, project listeners,
+  and exact deletion boundaries before acting.
+- Deleted the reproducible `.next/`, `out/`, `.tmp/`, and seven generated
+  report directories, totaling about 45.5 MiB. The first `.next` attempt
+  encountered a transient `jsdom-*` lock; after it released, the same guarded
+  path check succeeded.
+- Preserved the five anonymous synthetic fixture files, active
+  `node_modules`, report policy README, source, worktrees, reference/archive
+  zones, and protected external source roots. No parent-repository change was
+  staged or altered.
+- Post-check: all ten exact disposable targets are absent, `reports/` has only
+  `README.md`, canonical Git status is clean before this doc update, and ports
+  `3000`, `4197`, `4198`, and `4199` have no listeners.

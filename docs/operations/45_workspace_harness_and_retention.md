@@ -247,3 +247,22 @@ worktrees were preserved.
   per-file workaround, or safety bypass was used.
 - **NOT DELETED:** all five exact targets remain present. No product source,
   external sheet source, worktree, dependency tree, or server was changed.
+
+## 2026-07-30 current user-authorized disposable-output cleanup
+
+- RECHECKED: no project listener was active on ports `3000`, `4197`, `4198`,
+  or `4199`; the canonical worktree was clean before the cleanup.
+- DELETED: the exact canonical-worktree `.next/`, `out/`, and `.tmp/`
+  directories plus the seven generated report directories under `reports/`
+  (`edit-flow-smoke`, `imported-edit-sync`, `legacy-export-audit`,
+  `persistent-preview-surface`, `preview-edit-visual`,
+  `preview-edit-visual-synthetic`, and `rolltemplate-chat-smoke`). These
+  paths contained about 45.5 MiB of reproducible local output.
+- PRESERVED: anonymous synthetic regression fixtures, `reports/README.md`,
+  active `node_modules/`, product source, Git metadata, both worktrees, the
+  four-zone folders, and all protected external sheet/source roots.
+- VERIFIED: all ten exact disposable targets are absent; `reports/` contains
+  only its policy README; the canonical branch remains clean apart from this
+  documentation update. Parent-repository changes were not staged or altered.
+- REBUILD RULE: future verification may recreate these ignored paths, but a
+  later cleanup must repeat the same boundary, tracking, and listener checks.

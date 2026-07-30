@@ -401,3 +401,20 @@ directories that had been recreated by the local build.
 - PRESERVED: `node_modules/`, source files, report policy, Git metadata,
   fixtures, both worktrees, and all protected external sheet/source folders.
   No alternate shell, per-file workaround, or safety bypass was used.
+
+## 2026-07-30 current user-authorized disposable-output cleanup
+
+- RECHECKED: the canonical worktree had no project listener on ports `3000`,
+  `4197`, `4198`, or `4199`, and all selected paths were ignored,
+  reproducible, and inside `web-push-main/`.
+- DELETED: `.next/`, `out/`, `.tmp/`, and the seven generated report folders
+  `edit-flow-smoke`, `imported-edit-sync`, `legacy-export-audit`,
+  `persistent-preview-surface`, `preview-edit-visual`,
+  `preview-edit-visual-synthetic`, and `rolltemplate-chat-smoke` (about
+  45.5 MiB total).
+- PRESERVED: `test-fixtures/visual/` anonymous synthetic cases, the reports
+  policy README, active dependencies, product source, worktrees, reference
+  and archive zones, and protected external source roots.
+- VERIFIED: every one of the ten selected disposable targets is absent and
+  `reports/` contains only `README.md`. The parent repository's unrelated
+  changes were not staged or modified.
