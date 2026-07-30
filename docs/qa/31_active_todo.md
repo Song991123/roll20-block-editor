@@ -7653,3 +7653,17 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P0: Use a user-visible native file selection for the three generated
   files, then capture the applied Sandbox root, assets, default state, worker
   visibility, and chat result. Keep legacy-room verification separate.
+
+## 2026-07-30 User-authorized cleanup retry after host rejection
+
+- `DONE LOCAL`: Rechecked the archive boundary; `03_ARCHIVE/legacy-single-file/`
+  is already absent and `03_ARCHIVE/` contains only its permanent marker.
+- `VERIFY / BLOCKED_BY_HOST_POLICY`: The exact regenerated local targets
+  (`.next/`, `out/`, `.tmp/compat-fixtures/`, and generated report folders)
+  were re-resolved inside the canonical worktree, but the host rejected the
+  recursive deletion before execution. No workaround was used.
+- `PRESERVED`: `node_modules/`, `reports/README.md`, anonymous Sandbox
+  payload, source roots, worktrees, and protected external sheet folders.
+- `NEXT P1`: Repeat this disposable-output purge only in an environment that
+  permits the approved recursive maintenance operation; do not report these
+  targets as deleted meanwhile.

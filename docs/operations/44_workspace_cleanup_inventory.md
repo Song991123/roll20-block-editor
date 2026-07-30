@@ -575,3 +575,20 @@ directories that had been recreated by the local build.
   shell, per-file workaround, or safety bypass was used.
 - VERIFIED: No project listener remained; protected external sources,
   product code, `node_modules/`, and tracked documentation were untouched.
+
+## 2026-07-30 user-authorized cleanup retry after host rejection
+
+- RECHECKED: `03_ARCHIVE/legacy-single-file/` is already absent; the archive
+  zone contains only its permanent marker.
+- TARGETED: the regenerated local-only `.next/`, `out/`,
+  `.tmp/compat-fixtures/`, and generated report directories. The tracked
+  `reports/README.md`, active `node_modules/`, and anonymous
+  `.tmp/roll20-sandbox-synthetic/` payload were excluded.
+- NOT DELETED: the host rejected the exact boundary-checked recursive
+  PowerShell deletion before execution. No safety-policy workaround was
+  attempted.
+- CURRENT STATE: old `web/` build/dependency output and current
+  `web-push-main` build, fixture, and generated report output remain on disk.
+  They are reproducible cleanup candidates, not deleted items.
+- VERIFIED: no project listener remains on the checked development ports, and
+  no protected source or tracked product file was touched.

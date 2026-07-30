@@ -352,3 +352,23 @@ external material remain preserved.
   `web/node_modules/`, `web-push-main/.next/`, and `web-push-main/out/`.
   The active product dependency tree `web-push-main/node_modules/` remains
   intentionally preserved.
+
+## 2026-07-30 user-authorized cleanup retry after host rejection
+
+- RECHECKED: `03_ARCHIVE/legacy-single-file/` is absent. `03_ARCHIVE/`
+  contains only its permanent README marker, so there was no archive target
+  left to delete in this retry.
+- REQUESTED: deletion of the exact regenerated local targets `.next/`, `out/`,
+  `.tmp/compat-fixtures/`, and the generated report directories under
+  `reports/`, while preserving `reports/README.md`, `node_modules/`, and the
+  anonymous `.tmp/roll20-sandbox-synthetic/` upload payload.
+- NOT DELETED: the host rejected the boundary-checked recursive PowerShell
+  operation before execution. No alternate shell, native API, per-file
+  workaround, or safety bypass was used.
+- CURRENT RESIDUALS: old `web/.next/`, `web/out/`, and `web/node_modules/`
+  remain; current `web-push-main/.next/`, `web-push-main/out/`,
+  `.tmp/compat-fixtures/`, and generated report folders also remain.
+- VERIFIED: no project listener is active on ports `3000`, `4197`, `4198`, or
+  `4199`; protected source roots, product source, Git metadata, active
+  dependencies, the Sandbox payload, and `reports/README.md` were not
+  changed.
