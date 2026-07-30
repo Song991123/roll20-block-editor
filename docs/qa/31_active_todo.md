@@ -7,7 +7,9 @@
   the existing layer at the pointer coordinate, with cycle and container
   compatibility checks before Blockly changes.
 - VERIFIED BROWSER: `smoke:edit-flow` confirms model parent, emitted HTML,
-  and rendered iframe parent agree after a layer-panel-to-canvas drop.
+  and rendered iframe parent agree after both flow and free
+  layer-panel-to-canvas drops; free mode also persists finite `left/top` and
+  managed absolute CSS.
 - VERIFIED LOCAL: bridge, build-doc, drop-target, design-position, lint, build,
   `ci:verify`, and server-hygiene checks pass.
 - CLAIM BOUNDARY: This is anonymous local editor evidence only. It does not

@@ -779,6 +779,71 @@ async function main() {
     );
     assert(result.tests.layerCanvasDrop.result.emittedNested, 'layer canvas drop did not update emitted HTML');
 
+    await page.click('[data-testid="edit-placement-free"]');
+    result.tests.layerCanvasFreeDrop = await frame.evaluate(({ movingId, targetId }) => {
+      const target = document.querySelector(`[data-r20-block-id="${CSS.escape(targetId)}"]`);
+      if (!target) return { dispatched: false, reason: 'missing target' };
+      const rect = target.getBoundingClientRect();
+      const dataTransfer = new DataTransfer();
+      dataTransfer.setData('application/x-r20-layer-block', movingId);
+      const init = {
+        bubbles: true,
+        cancelable: true,
+        clientX: rect.right - 2,
+        clientY: rect.top + rect.height / 2,
+      };
+      const dragover = new DragEvent('dragover', init);
+      Object.defineProperty(dragover, 'dataTransfer', { value: dataTransfer });
+      target.dispatchEvent(dragover);
+      const drop = new DragEvent('drop', init);
+      Object.defineProperty(drop, 'dataTransfer', { value: dataTransfer });
+      target.dispatchEvent(drop);
+      return {
+        dispatched: true,
+        dragoverPrevented: dragover.defaultPrevented,
+        dropPrevented: drop.defaultPrevented,
+      };
+    }, { movingId: ids.rowAId, targetId: ids.frameId });
+    await page.waitForTimeout(700);
+    const renderedLayerCanvasFreeDrop = await frame.evaluate(({ movingId, targetId }) => {
+      const movingNode = document.querySelector(`[data-r20-block-id="${CSS.escape(movingId)}"]`);
+      const frameNode = document.querySelector(`[data-r20-block-id="${CSS.escape(targetId)}"]`);
+      const movingStyle = movingNode ? getComputedStyle(movingNode) : null;
+      return {
+        renderedParentId: movingNode?.parentElement?.closest('[data-r20-block-id]')?.getAttribute('data-r20-block-id') ?? null,
+        position: movingStyle?.position ?? null,
+        left: movingStyle ? Number.parseFloat(movingStyle.left) : null,
+        top: movingStyle ? Number.parseFloat(movingStyle.top) : null,
+        framePosition: frameNode ? getComputedStyle(frameNode).position : null,
+      };
+    }, { movingId: ids.rowAId, targetId: ids.frameId });
+    const modelLayerCanvasFreeDrop = await page.evaluate(({ movingId, targetId }) => {
+      const graph = window.__perfHook.getLayerSnapshot('html');
+      const moving = graph.find((node) => node.id === movingId);
+      const html = window.__perfHook.getEmitContent().html;
+      const css = window.__perfHook.getEmitContent().css;
+      const movingMarkupIndex = html.indexOf(`data-r20-block-id="${movingId}"`);
+      const targetMarkupIndex = html.indexOf(`data-r20-block-id="${targetId}"`);
+      return {
+        modelParentId: moving?.layerParentId ?? null,
+        emittedNested: movingMarkupIndex > targetMarkupIndex,
+        emittedManagedAbsolute: /position\s*:\s*absolute/i.test(css),
+      };
+    }, { movingId: ids.rowAId, targetId: ids.frameId });
+    result.tests.layerCanvasFreeDrop.result = {
+      ...modelLayerCanvasFreeDrop,
+      ...renderedLayerCanvasFreeDrop,
+    };
+    assert(result.tests.layerCanvasFreeDrop.dispatched, 'free layer canvas drop did not dispatch');
+    assert(result.tests.layerCanvasFreeDrop.dragoverPrevented, 'iframe did not accept free layer dragover');
+    assert(result.tests.layerCanvasFreeDrop.dropPrevented, 'iframe did not accept free layer drop');
+    assert(result.tests.layerCanvasFreeDrop.result.modelParentId === ids.frameId, 'free layer canvas drop changed the wrong model parent');
+    assert(result.tests.layerCanvasFreeDrop.result.renderedParentId === ids.frameId, 'free layer canvas drop did not update the rendered parent');
+    assert(result.tests.layerCanvasFreeDrop.result.position === 'absolute', 'free layer canvas drop did not persist absolute positioning');
+    assert(Number.isFinite(result.tests.layerCanvasFreeDrop.result.left), 'free layer canvas drop did not persist left');
+    assert(Number.isFinite(result.tests.layerCanvasFreeDrop.result.top), 'free layer canvas drop did not persist top');
+    assert(result.tests.layerCanvasFreeDrop.result.emittedManagedAbsolute, 'free layer canvas drop did not emit managed CSS');
+
     result.tests.tableDropGuard = await page.evaluate(async ({ movingId, validMovingId, invalidTargetId, validTargetId }) => {
       const dispatchDragover = async (targetId, draggedId) => {
         const target = document.querySelector(

@@ -3,10 +3,11 @@
 - FIXED LOCAL: Layer rows now publish `r20:layer-drag` from the panel into the
   persistent Roll20 iframe. The parent validates the existing layer graph and
   commits flow or free placement through the shared adapter.
-- VERIFIED BROWSER: `smoke:edit-flow` passed the layer-panel-to-canvas flow
-  drop and confirmed the model parent, emitted HTML, and rendered iframe
-  parent match. Existing gallery, widget, layer-tree, and cycle checks also
-  passed in the same run.
+- VERIFIED BROWSER: `smoke:edit-flow` passed both flow and free
+  layer-panel-to-canvas drops. The model parent, emitted HTML, and rendered
+  iframe parent match; free mode also reports persisted finite `left/top` and
+  managed absolute CSS. Existing gallery, widget, layer-tree, and cycle
+  checks passed in the same run.
 - VERIFIED LOCAL: bridge/drop-target/build-doc tests, lint, production build,
   full `ci:verify`, and server hygiene passed. Generated evidence remains
   ignored and source-independent.
