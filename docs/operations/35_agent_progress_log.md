@@ -9162,3 +9162,14 @@ same-hash modern/legacy comparison.
 - No payload was attached, no Sandbox settings were saved, and no existing
   room was modified. User-assisted selection or a permitted Chrome file-input
   path is still required for same-hash modern/legacy evidence.
+
+## 2026-07-30 - Import/export separation verification
+
+- Import-dialog smoke preserved ordinary page JS in the Page JS workspace and
+  Roll20 worker JS in the worker workspace. Preview showed zero visible runtime
+  script nodes and zero console/page errors.
+- Legacy export audit passed. The default payload-audit alias had no `current`
+  baseline after local evidence cleanup, so the remaining anonymous synthetic
+  baseline was audited explicitly and returned `issues=0`.
+- This confirms the local file/export contract only; it does not promote the
+  blocked external Roll20 same-hash evidence.

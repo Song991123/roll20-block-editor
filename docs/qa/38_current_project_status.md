@@ -414,3 +414,12 @@ one-member state. A screen-level click on the HTML control did not open a
 usable native file picker through the connected browser surface; all three
 inputs remained empty. No Sandbox save, room change, or payload attachment was
 counted. Same-hash modern/legacy parity remains `VERIFY / BLOCKED EXTERNAL`.
+
+## Import/export separation verification - 2026-07-30
+
+The browser import smoke preserved ordinary page JS and Roll20 worker JS in
+their separate workspaces, hid all runtime script nodes from preview, and
+reported zero console/page errors. The legacy export audit passed. The default
+payload-audit alias had no `current` baseline after local evidence cleanup;
+running it against the remaining anonymous synthetic baseline explicitly
+returned `issues=0`. This is local contract evidence, not actual Roll20 parity.

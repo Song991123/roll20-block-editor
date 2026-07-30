@@ -8464,3 +8464,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   no Sandbox settings were saved, and no existing room was changed.
 - `NEXT P0`: user-assisted file selection or a Chrome session with permitted
   local file injection is required before same-hash modern/legacy comparison.
+
+## 2026-07-30 Import/export separation verification
+
+- `VERIFIED LOCAL`: import-dialog smoke preserved ordinary page JS in the Page
+  JS workspace and worker JS in the worker workspace, while the preview runtime
+  contained zero visible script nodes. Console/page errors were zero.
+- `VERIFIED LOCAL`: legacy export audit passed. The default payload-audit
+  alias had no `current` baseline after cleanup, so the remaining anonymous
+  synthetic baseline was passed explicitly and reported `issues=0`.
+- `VERIFY / BLOCKED EXTERNAL`: these checks prove the local file/export
+  contract only; they do not replace actual Roll20 same-hash screenshots.
