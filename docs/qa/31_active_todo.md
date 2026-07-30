@@ -8444,3 +8444,12 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: continue only with a supported Sandbox upload route or a user
   manual file-selection handoff; do not promote local smoke evidence to actual
   Roll20 parity.
+
+## 2026-07-30 Local render parity recheck
+
+- `VERIFIED LOCAL`: synthetic preview/edit visual smoke is exact in both
+  modern and legacy modes (`0%` mismatch, `0` pixels, i18n `1/1`). Persistent
+  preview surface smoke also passes in both modes with zero reloads.
+- `VERIFY / BLOCKED EXTERNAL`: this remains local renderer evidence only;
+  current-payload Roll20 binding, actual screenshot comparison, and legacy
+  room verification are still open.

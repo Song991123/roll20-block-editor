@@ -398,3 +398,11 @@ reparenting, emits nested preview DOM, and reports zero console/page errors.
 Remote CI run `30553196837` also passed build, lint, and the full verification
 gate. This strengthens local editor evidence only; it does not change the
 external same-hash Roll20 or legacy-room parity status.
+
+## Local render parity recheck - 2026-07-30
+
+The synthetic preview/edit visual smoke remains exact in both modern and
+legacy compatibility modes (`0%` mismatch, `0` pixels, i18n `1/1`). The
+persistent preview surface smoke also reports zero reloads in both modes.
+These are local renderer invariants and do not count as actual Roll20
+same-payload or legacy-room visual evidence.

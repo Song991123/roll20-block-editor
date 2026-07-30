@@ -9144,3 +9144,11 @@ same-hash modern/legacy comparison.
   smokes also pass; production build and remote CI run `30553196837` are green.
 - The external Roll20 same-hash and legacy-room checks remain blocked by the
   browser file-binding capability and are not promoted by these local results.
+
+## 2026-07-30 - Local render parity recheck
+
+- Synthetic preview/edit visual smoke remains exact in modern and legacy
+  compatibility modes (`0%` mismatch, `0` pixels, i18n `1/1`).
+- Persistent preview surface smoke reports zero reloads in both modes.
+- These results strengthen local renderer evidence only; they do not promote
+  the external Roll20 same-payload or legacy-room checks.
