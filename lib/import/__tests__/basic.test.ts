@@ -394,6 +394,14 @@ function testScriptSourceClassification(): void {
   assert(classifyRoll20Script('text/javascript', 'on("click", fn);') === 'page', 'typed page type wins');
   assert(isOrdinaryPageScript('', 'window.ready = true;'), 'ordinary untyped page script is page JavaScript');
   assert(!isOrdinaryPageScript('', 'getAttrs(["hp"], function () {});'), 'untyped worker API is not page JavaScript');
+  assert(
+    isOrdinaryPageScript('', 'const docs = "getAttrs([hp])"; // setAttrs({ hp: 1 });'),
+    'worker API names inside strings and comments do not classify page JavaScript as worker',
+  );
+  assert(
+    isOrdinaryPageScript('', '/* getAttrs([hp]) */ window.ready = true;'),
+    'worker API names inside block comments do not classify page JavaScript as worker',
+  );
 }
 
 function testPageScriptMapsToEditableBlock(): void {

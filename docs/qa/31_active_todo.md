@@ -20,6 +20,16 @@
 - NEXT P1: Expand anonymous worker syntax coverage before claiming broad JS
   support; keep unsupported statements in the explicit raw-worker boundary.
 
+## 2026-07-30 Worker classification false-positive guard
+
+- FIXED LOCAL: Untyped legacy-script detection now ignores JavaScript strings
+  and line/block comments before looking for Roll20 worker API calls. Ordinary
+  page code containing documentation text is no longer moved to worker space.
+- VERIFIED LOCAL: Import structure, emit contract, lint, build, and full
+  `ci:verify` pass with explicit string/comment regression cases.
+- LIMIT: This remains a lightweight classifier, not a complete JavaScript
+  parser; unsupported worker statements must remain in the raw-worker block.
+
 ## 2026-07-30 Local compatibility roundtrip regression fix
 
 - DONE LOCAL: Browser L2 import -> emit -> re-import -> emit now passes for

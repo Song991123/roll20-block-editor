@@ -21,6 +21,16 @@
 - NEXT: Add generic anonymous syntax cases for unsupported worker statements
   without weakening the raw-worker fallback or preview safety boundary.
 
+## 2026-07-30 - Untyped worker classifier false-positive guard
+
+- FIXED LOCAL: The legacy heuristic now blanks strings and line/block comments
+  before checking for Roll20 worker API calls, preventing ordinary page JS
+  documentation text from being classified as a worker.
+- VERIFIED LOCAL: Import structure, emit contract, lint, production build, and
+  full `ci:verify` passed with explicit string/comment regression coverage.
+- BOUNDARY: This is a lexical heuristic, not full JavaScript parsing; raw
+  worker fallback remains the source-of-truth for unsupported syntax.
+
 ## 2026-07-30 - Local render/edit gate refresh
 
 - VERIFIED LOCAL: `ci:verify` passed the full current safety, import,

@@ -10,8 +10,77 @@ const ROLL20_WORKER_API =
  * until a dedicated JS workspace can represent it.
  */
 export function isLikelyRoll20WorkerSource(body: string): boolean {
-  const source = String(body ?? '');
-  return ROLL20_WORKER_API.test(source);
+  return ROLL20_WORKER_API.test(stripNonCodeForWorkerDetection(String(body ?? '')));
+}
+
+/**
+ * Remove strings and comments before the legacy worker heuristic runs.
+ *
+ * Some older sheets omit `type="text/worker"`, so we still need a small
+ * source-based fallback. A raw regex over the original body, however, can
+ * mistake documentation text such as `"getAttrs("` for a Roll20 API call and
+ * move an ordinary page script into the worker workspace. Preserve newlines
+ * and code characters while blanking literals/comments so the existing API
+ * regex remains cheap and deterministic without executing JavaScript.
+ */
+function stripNonCodeForWorkerDetection(source: string): string {
+  let out = '';
+  let i = 0;
+  let quote = '';
+
+  while (i < source.length) {
+    const c = source[i];
+    const next = source[i + 1] ?? '';
+
+    if (quote) {
+      if (c === '\\') {
+        out += '  ';
+        i += 2;
+        continue;
+      }
+      if (c === quote) quote = '';
+      out += c === '\n' || c === '\r' ? c : ' ';
+      i += 1;
+      continue;
+    }
+
+    if (c === '"' || c === "'" || c === '`') {
+      quote = c;
+      out += ' ';
+      i += 1;
+      continue;
+    }
+
+    if (c === '/' && next === '/') {
+      out += '  ';
+      i += 2;
+      while (i < source.length && source[i] !== '\n' && source[i] !== '\r') {
+        out += ' ';
+        i += 1;
+      }
+      continue;
+    }
+
+    if (c === '/' && next === '*') {
+      out += '  ';
+      i += 2;
+      while (i < source.length) {
+        if (source[i] === '*' && source[i + 1] === '/') {
+          out += '  ';
+          i += 2;
+          break;
+        }
+        out += source[i] === '\n' || source[i] === '\r' ? source[i] : ' ';
+        i += 1;
+      }
+      continue;
+    }
+
+    out += c;
+    i += 1;
+  }
+
+  return out;
 }
 
 export function isExplicitRoll20WorkerType(type: string): boolean {

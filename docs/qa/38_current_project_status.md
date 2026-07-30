@@ -39,6 +39,9 @@ local output and is deleted after the verification batch.
 - LOCAL PASS: Worker workspace, worker state, and emit-contract smokes were
   rechecked. Page JavaScript remains separate, visible worker nodes stay hidden,
   and the local output keeps one worker script without proving Roll20 runtime.
+- LOCAL FIX: Untyped worker detection ignores strings and comments before its
+  API heuristic, with import/emit regression coverage. It is still not a full
+  JavaScript parser.
 - LEGACY VERIFY OPEN: Legacy output must be checked separately in a dedicated
   legacy-enabled test room. A modern Sandbox result cannot satisfy that gate.
 
