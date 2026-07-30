@@ -9,9 +9,9 @@ local output and is deleted after the verification batch.
 
 ## Current Checkpoint - 2026-07-31
 
-- Active branch: `claude/design-reset` at `3e32e66`. The worktree is clean and
+- Active branch: `claude/design-reset` at `6932914`. The worktree is clean and
   the branch is pushed to `origin`.
-- Remote CI: run `30559743246` passed safety/unit verification, lint, and build.
+- Remote CI: run `30560623512` passed safety/unit verification, lint, and build.
 - Latest local upload contract: resumable HTML/CSS/Translation handoff with
   page-token retry detection; no source payload is stored in public files.
 - External state: no Chrome Roll20 tabs were available at the latest recheck,
@@ -19,6 +19,13 @@ local output and is deleted after the verification batch.
 - User-sheet capture count remains `0`; dedicated legacy-room capture count
   remains `0`. Historical anonymous synthetic runtime observations are not
   promoted to current user-sheet parity.
+- Cleanup boundary: the five regenerated workspace-local dependency/build
+  directories were rechecked, but the host rejected recursive deletion before
+  execution. They remain `NOT DELETED`; no alternate deletion path was used.
+- UI copy guard: `corepack pnpm run guard:ui-copy` passes for 66 product-source
+  files. The large-workspace browser's Korean copy is source-valid; the earlier
+  garbled terminal display was an output-encoding artifact, not a product-file
+  regression.
 
 ## Current Evidence
 
@@ -32,7 +39,7 @@ local output and is deleted after the verification batch.
   Pages URL as HTTP 200 and matches the latest successful `main` Pages run at
   `98d4b4965be2` (`30399580622`).
 - DEPLOYMENT BOUNDARY: the current integration branch is
-  `claude/design-reset` at `3e32e66`; Pages deploys only `main`, so this
+  `claude/design-reset` at `6932914`; Pages deploys only `main`, so this
   branch is CI-verified but not publicly deployed.
 
 - LOCAL FIX: `setAttrs(attributes, options)` calls whose options argument is
