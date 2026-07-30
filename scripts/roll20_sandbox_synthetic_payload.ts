@@ -17,6 +17,7 @@ async function main() {
       '  <label data-i18n="name"></label>',
       '  <input type="text" name="attr_name" value="">',
       '  <button type="roll" name="roll_check" value="&amp;{template:default} {{name=Sandbox proof}} {{result=[[1d20]]}}">Roll</button>',
+      '  <script type="text/worker">on(\'clicked:roll_check\', function () { setAttrs({ clicked: \'1\' }); });</script>',
       '</div>',
     ].join('\n'),
     css: [

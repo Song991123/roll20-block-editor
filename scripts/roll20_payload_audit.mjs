@@ -15,7 +15,7 @@ import JSZip from 'jszip';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const positional = args.filter((arg, index) => !arg.startsWith('--') && args[index - 1] !== '--report-dir');
-const runDir = path.resolve(positional[0] ?? 'reports/roll20-actual-compare/2026-06-18-actual-diff-ready');
+const runDir = path.resolve(positional[0] ?? '.tmp/roll20-actual-compare/current');
 const requestedReportDir = path.resolve(argOf('--report-dir', path.join(runDir, 'payload-audit')));
 
 function argOf(name, fallback) {
@@ -223,7 +223,7 @@ async function prepareReportDir() {
 
 async function main() {
   if (!(await exists(path.join(runDir, 'local-baseline')))) {
-    throw new Error(`missing local-baseline under ${runDir}`);
+    throw new Error(`missing local-baseline under ${runDir}; pass a generated local run folder explicitly`);
   }
   const reportDir = await prepareReportDir();
   const fixtures = await listFixtures();

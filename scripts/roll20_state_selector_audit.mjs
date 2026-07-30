@@ -29,7 +29,7 @@ function argOf(name, fallback) {
   return i >= 0 && args[i + 1] ? args[i + 1] : fallback;
 }
 
-const FIXTURES_DIR = path.resolve(argOf('--fixtures', 'test-fixtures/visual'));
+const FIXTURES_DIR = path.resolve(argOf('--fixtures', '.tmp/visual-synthetic'));
 const PAYLOAD_RUN = argOf('--payload-run', '');
 const PAYLOAD_RUN_DIR = PAYLOAD_RUN ? path.resolve(PAYLOAD_RUN) : '';
 const REPORT_DIR = path.resolve(argOf('--report-dir', 'reports/state-selector-audit'));
@@ -40,6 +40,9 @@ const STATE_SELECTOR_RE = /:checked\b|\[\s*(?:name|value)\s*(?:[*^$|~]?=)/i;
 
 async function main() {
   const fixtureIds = await listFixtures();
+  if (fixtureIds.length === 0) {
+    throw new Error(`no fixtures with manifest.json under ${FIXTURES_DIR}`);
+  }
   const entries = [];
   for (const fixtureId of fixtureIds) {
     entries.push(await auditFixture(fixtureId));

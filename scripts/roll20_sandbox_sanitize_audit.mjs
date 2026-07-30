@@ -31,7 +31,7 @@ const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const positional = args.filter((arg, index) => (
   !arg.startsWith('--') && !['--report-dir', '--build-dir'].includes(args[index - 1])
 ));
-const runDir = resolve(positional[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1');
+const runDir = resolve(positional[0] ?? '.tmp/roll20-actual-compare/current');
 const requestedReportDir = resolve(argOf('--report-dir', join(runDir, 'sandbox-sanitize-audit')));
 const requestedBuildDir = resolve(argOf('--build-dir', join(tmpdir(), `roll20-sandbox-sanitize-audit-build-${process.pid}`)));
 
@@ -201,7 +201,7 @@ async function prepareReportDir() {
 
 async function main() {
   if (!(await exists(join(runDir, 'local-baseline')))) {
-    throw new Error(`missing local-baseline under ${runDir}`);
+    throw new Error(`missing local-baseline under ${runDir}; pass a generated local run folder explicitly`);
   }
   const sanitizer = require(compileSandboxSanitizerModule());
   if (

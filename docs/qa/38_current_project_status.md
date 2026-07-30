@@ -314,3 +314,13 @@ HTML control was clicked, so no current-payload hash binding or fresh
 external screenshot was accepted. The dedicated modern and legacy tabs remain
 handoff-only; no room mutation occurred. Actual Roll20 parity remains
 `VERIFY / BLOCKED EXTERNAL` pending a supported file-selection or CDP path.
+
+## Synthetic worker audit coverage - 2026-07-30
+
+The local anonymous fixture now contains one generic worker event and a
+manifest. Worker source audit measured one source script, one worker block,
+and an exact canonical emitted match. The state-selector audit now exercises
+one manifest-backed fixture rather than passing with an empty set. Build,
+worker-parser, synthetic preview/edit visual, persistent-preview, and strict
+imported-edit-sync checks pass. This is generic local evidence only; actual
+Roll20 same-hash and pixel parity remain blocked at the file-selection handoff.

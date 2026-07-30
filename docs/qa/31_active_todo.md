@@ -8286,3 +8286,31 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   was changed.
 - `NEXT P0`: resume with a user-visible supported file selection or a
   connected CDP endpoint, then bind the three file hashes before capture.
+
+## 2026-07-30 Synthetic worker audit coverage
+
+- `FIXED LOCAL`: the anonymous synthetic visual fixture now includes a
+  copyright-safe `text/worker` click handler and a manifest, so worker and
+  state-selector audits cannot silently pass with zero fixtures.
+- `VERIFIED LOCAL`: worker source audit reports `scripts=1`,
+  `workerBlocks=1`, `exact=yes`; the modern/legacy preview-edit visual smoke
+  remains `0%` mismatch with translation `1/1`; isolated persistent-preview,
+  strict imported-edit-sync, build, and worker-parser checks pass.
+- `VERIFY / OPEN`: this proves generic synthetic worker preservation only. It
+  does not prove arbitrary imported worker runtime parity or current-payload
+  Roll20 screenshot parity.
+- `NEXT P0`: bind the exact current three-file payload in modern Sandbox and
+  the separate legacy test room, then capture normalized root/chat evidence.
+
+## 2026-07-30 Audit command reproducibility
+
+- `FIXED LOCAL`: payload and Sandbox-sanitize audits no longer point at stale
+  dated report folders by default; they now fail with an actionable generated
+  run-folder message when external evidence is absent.
+- `FIXED LOCAL`: worker and state-selector audits auto-generate the anonymous
+  synthetic fixture before running. Both now execute one real fixture by
+  default instead of depending on deleted source corpora.
+- `VERIFIED LOCAL`: default state-selector audit and default worker-source
+  audit pass. Full `ci:verify`, lint, and build pass.
+- `VERIFY / OPEN`: payload/sanitize audits still require an explicit local
+  upload-baseline folder; no external same-hash capture exists yet.

@@ -9007,3 +9007,28 @@ and no fresh root or screenshot evidence was produced. The two dedicated tabs
 were left for handoff; no room or source material was modified. A supported
 user-visible file selection or CDP-enabled browser is still required before
 same-hash modern/legacy comparison.
+
+## 2026-07-30 - Synthetic worker audit coverage
+
+- Added a generic, anonymous `text/worker` click handler and manifest to the
+  local visual fixture. No external sheet source or identity was introduced.
+- Fixed the worker and state-selector audit defaults to the generated
+  `.tmp/visual-synthetic` fixture root. The state audit now fails when no
+  manifest-backed fixture exists instead of producing a vacuous PASS.
+- Local evidence: worker audit `scripts=1`, `workerBlocks=1`, `exact=yes`;
+  preview/edit visual smoke is `0%` mismatch in both modes with translation
+  `1/1`; isolated persistent preview and strict imported edit sync pass;
+  build passes.
+- The external same-hash upload and normalized modern/legacy screenshot gate
+  remain open because the supported Sandbox file chooser still did not emit.
+
+## 2026-07-30 - Audit command reproducibility
+
+- Removed stale dated defaults from the payload and Sandbox-sanitize audits;
+  missing external evidence now reports the current local path and asks for an
+  explicit generated run folder.
+- Added pre-audit synthetic fixture generation for the worker and
+  state-selector commands. Default runs now exercise one anonymous fixture
+  without depending on deleted source corpora.
+- Default state-selector and worker-source audits pass. Lint, build, and full
+  `ci:verify` pass. The external same-hash upload/screenshot gate is unchanged.

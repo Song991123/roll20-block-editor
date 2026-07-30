@@ -550,3 +550,13 @@ not close the external Roll20 parity rows above.
   the HTML control click. No current-payload hash was attached and no fresh
   Roll20 screenshot was accepted. Modern Sandbox and dedicated legacy-room
   visual parity remain open; do not promote local synthetic results to L4.
+
+## 2026-07-30 Worker coverage reconciliation
+
+- `VERIFIED LOCAL`: the synthetic fixture now exercises one generic
+  `text/worker` event; source-to-emitted worker comparison is exact
+  (`scripts=1`, `workerBlocks=1`, `exact=yes`). Its manifest also makes the
+  state-selector audit non-vacuous.
+- `VERIFY / OPEN`: worker parser/source preservation is not worker runtime
+  parity. Imported arbitrary worker APIs, Roll20-side execution order, and
+  external modern/legacy screenshots remain unverified.

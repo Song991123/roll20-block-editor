@@ -24,7 +24,7 @@ function argOf(name, fallback) {
 const OUT_DIR = path.resolve(argOf('--out-dir', './out'));
 const BASE_PATH = argOf('--base-path', '/roll20-block-editor');
 const REPORT_DIR = path.resolve(argOf('--report-dir', 'reports/worker-source-audit'));
-const FIXTURES_DIR = path.resolve(argOf('--fixtures', 'test-fixtures/visual'));
+const FIXTURES_DIR = path.resolve(argOf('--fixtures', '.tmp/visual-synthetic'));
 const ONLY = argOf('--only', '');
 const PORT = Number(argOf('--port', '4182'));
 
