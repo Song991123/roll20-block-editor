@@ -8597,3 +8597,15 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: use user-assisted selection or a Chrome profile/session with
   local file injection permitted, then verify all three payload hashes before
   capturing modern and legacy screenshots.
+
+## 2026-07-31 Imported edit synchronization recheck
+
+- `VERIFIED LOCAL`: server hygiene reported zero project/CDP listeners before
+  the run. The anonymous imported-edit smoke passed for both built-in
+  structural cases, including pointer interaction, resource checks,
+  edit-to-preview synchronization, and emitted HTML/CSS content.
+- `VERIFY / OPEN`: this is local renderer evidence only; it does not prove
+  actual Roll20 same-payload parity, legacy-room behavior, or all-sheet
+  coverage.
+- `NEXT P0`: recover a supported modern Sandbox three-file handoff, then bind
+  the same payload before collecting modern and legacy evidence.

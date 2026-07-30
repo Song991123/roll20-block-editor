@@ -9291,3 +9291,13 @@ same-hash modern/legacy comparison.
 - The external parity task remains at the file-injection boundary. User
   assisted selection or a permitted Chrome session is required before hash,
   screenshot, and legacy-room evidence can be accepted.
+
+## 2026-07-31 - Imported edit synchronization recheck
+
+- `check:server-hygiene` reported no project or CDP listeners before the run.
+- The anonymous imported-edit smoke passed for both built-in structural cases:
+  pointer interaction, resource checks, edit-to-preview synchronization, and
+  emitted content all passed.
+- This is local renderer/edit-surface evidence only. It does not prove actual
+  Roll20 same-payload parity, legacy-room behavior, or arbitrary user-sheet
+  coverage.

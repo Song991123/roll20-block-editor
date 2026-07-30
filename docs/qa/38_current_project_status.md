@@ -468,3 +468,13 @@ control, but the supported file setter was rejected with `Not allowed`. HTML,
 CSS, and Translation inputs all remained empty afterward. No Sandbox save or
 existing-room mutation occurred; same-hash modern/legacy parity remains
 `VERIFY / BLOCKED EXTERNAL`.
+
+## Imported edit synchronization recheck - 2026-07-31
+
+The latest local run found no project or CDP listeners before starting. The
+anonymous imported-edit smoke passed for both built-in structural cases,
+including pointer interaction, resource checks, edit-to-preview synchronization,
+and emitted HTML/CSS content. This strengthens the shared local render surface
+and edit bridge only; it does not promote actual Roll20 same-payload parity,
+legacy-room behavior, or all-sheet support. The next P0 remains a supported
+three-file modern Sandbox handoff followed by independent legacy evidence.
