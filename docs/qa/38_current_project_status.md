@@ -9,9 +9,9 @@ local output and is deleted after the verification batch.
 
 ## Current Checkpoint - 2026-07-31
 
-- Active branch: `claude/design-reset` at `85534d1`. The worktree is clean and
+- Active branch: `claude/design-reset` at `e34de27`. The worktree is clean and
   the branch is pushed to `origin`.
-- Remote CI: run `30561952616` passed safety/unit verification, lint, and build.
+- Remote CI: run `30562129412` passed safety/unit verification, lint, and build.
 - Latest local upload contract: resumable HTML/CSS/Translation handoff with
   page-token retry detection; no source payload is stored in public files.
 - External state: no Chrome Roll20 tabs were available at the latest recheck,
@@ -43,7 +43,7 @@ local output and is deleted after the verification batch.
   Pages URL as HTTP 200 and matches the latest successful `main` Pages run at
   `98d4b4965be2` (`30399580622`).
 - DEPLOYMENT BOUNDARY: the current integration branch is
-  `claude/design-reset` at `85534d1`; Pages deploys only `main`, so this
+  `claude/design-reset` at `e34de27`; Pages deploys only `main`, so this
   branch is CI-verified but not publicly deployed.
 
 - LOCAL FIX: `setAttrs(attributes, options)` calls whose options argument is
