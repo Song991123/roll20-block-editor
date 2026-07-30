@@ -9855,6 +9855,9 @@ same-hash modern/legacy comparison.
   browser `File.arrayBuffer()` result using Web Crypto SHA-256.
 - A mismatch now stops both delegated file-input dispatch and endpoint fallback;
   missing crypto support is reported as `unavailable`, never as a match.
+- Resumable reloads now retain only per-file hash metadata and require HTML,
+  CSS, and translation to all be `fileHashStatus: match` before activation can
+  be treated as same-payload evidence.
 - Local verification passed: upload-file, payload-fidelity, provenance,
   CDP-helper, snippet self-tests, lint, production build, and `ci:verify`.
 - External boundary is unchanged: the supported browser handoff has not yet

@@ -715,7 +715,23 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
   const PAGE_TOKEN = typeof performance !== 'undefined' && Number.isFinite(performance.timeOrigin)
     ? String(performance.timeOrigin)
     : 'page-' + String(Date.now());
-  const defaultUploadState = () => ({ nextIndex: 0, pendingIndex: null, pendingPageToken: null, complete: false, settingsSubmitted: false });
+  const defaultUploadState = () => ({ nextIndex: 0, pendingIndex: null, pendingPageToken: null, complete: false, settingsSubmitted: false, verifiedHashes: {} });
+  const normalizeVerifiedHashes = (value) => {
+    const normalized = {};
+    if (!value || typeof value !== 'object') return normalized;
+    for (const { key, item } of UPLOAD_ITEMS) {
+      const record = value[key];
+      if (!record || record.expectedSha256 !== String(item.sha256 || '').toLowerCase()) continue;
+      if (!['match', 'mismatch', 'unavailable'].includes(record.fileHashStatus)) continue;
+      normalized[key] = {
+        expectedSha256: record.expectedSha256,
+        sourceBytesSha256: record.sourceBytesSha256 || null,
+        fileBytesSha256: record.fileBytesSha256 || null,
+        fileHashStatus: record.fileHashStatus,
+      };
+    }
+    return normalized;
+  };
   const readUploadState = () => {
     if (!RESUME_UPLOAD) return defaultUploadState();
     try {
@@ -736,6 +752,7 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
           pendingPageToken: null,
           complete: Math.max(nextIndex, pendingIndex + 1) >= UPLOAD_ITEMS.length,
           settingsSubmitted: Boolean(parsed?.settingsSubmitted),
+          verifiedHashes: normalizeVerifiedHashes(parsed?.verifiedHashes),
         };
         sessionStorage.setItem(UPLOAD_STATE_KEY, JSON.stringify(resumed));
         return resumed;
@@ -746,6 +763,7 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
         pendingPageToken,
         complete: Boolean(parsed?.complete) || nextIndex >= UPLOAD_ITEMS.length,
         settingsSubmitted: Boolean(parsed?.settingsSubmitted),
+        verifiedHashes: normalizeVerifiedHashes(parsed?.verifiedHashes),
       };
     } catch {
       return defaultUploadState();
@@ -762,6 +780,37 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
   };
   const clearUploadState = () => {
     try { sessionStorage.removeItem(UPLOAD_STATE_KEY); } catch {}
+  };
+  const mergeVerifiedHashes = (previous, results) => {
+    const merged = normalizeVerifiedHashes(previous);
+    for (const result of results) {
+      const key = result?.key;
+      const item = UPLOAD_ITEMS.find((candidate) => candidate.key === key);
+      if (!item || !result?.fileHashStatus) continue;
+      merged[key] = {
+        expectedSha256: String(item.item.sha256 || '').toLowerCase(),
+        sourceBytesSha256: result.sourceBytesSha256 || null,
+        fileBytesSha256: result.fileBytesSha256 || null,
+        fileHashStatus: result.fileHashStatus,
+      };
+    }
+    return merged;
+  };
+  const buildHashVerification = (verifiedHashes) => {
+    const statuses = Object.fromEntries(UPLOAD_ITEMS.map(({ key }) => [
+      key,
+      verifiedHashes?.[key]?.fileHashStatus || 'missing',
+    ]));
+    const missingKeys = Object.keys(statuses).filter((key) => statuses[key] === 'missing');
+    const unavailableKeys = Object.keys(statuses).filter((key) => statuses[key] === 'unavailable');
+    const mismatchKeys = Object.keys(statuses).filter((key) => statuses[key] === 'mismatch');
+    return {
+      statuses,
+      missingKeys,
+      unavailableKeys,
+      mismatchKeys,
+      allMatch: missingKeys.length === 0 && unavailableKeys.length === 0 && mismatchKeys.length === 0,
+    };
   };
   const dispatchChange = (element, type) => {
     if (typeof Event !== 'function' || typeof element?.dispatchEvent !== 'function') return false;
@@ -967,13 +1016,14 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
       results,
     };
   };
-  const setFileInput = async (selector, item, type) => {
+  const setFileInput = async (selector, item, type, key) => {
     const input = document.querySelector(selector);
     if (!input) return { selector, status: 'missing' };
     if (!canConstructByteArray() || typeof File !== 'function') {
       return { selector, status: 'unsupported-browser-primitive' };
     }
-    const file = new File([bytesFromBase64(item.base64)], item.name, { type });
+    const bytes = bytesFromBase64(item.base64);
+    const file = new File([bytes], item.name, { type });
     // Some supported browser surfaces expose File but not the DataTransfer
     // constructor. The Roll20 delegated handler only needs a FileList-like
     // value with length and index access, so keep the endpoint fallback usable
@@ -982,6 +1032,7 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     transfer.items?.add?.(file);
     const result = {
       selector,
+      key,
       status: 'pending',
       fileName: item.name,
       transferFiles: transfer.files.length,
@@ -996,7 +1047,7 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
       fileBytesSha256: null,
       fileHashStatus: 'unavailable',
     };
-    Object.assign(result, await verifyFilePayload(file, bytesFromBase64(item.base64), item.sha256));
+    Object.assign(result, await verifyFilePayload(file, bytes, item.sha256));
     if (result.fileHashStatus === 'mismatch') {
       result.status = 'hash-mismatch';
       return result;
@@ -1172,7 +1223,7 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
       },
     };
   };
-  const classifyActivation = (before, after, fileInputs, sandboxMessages) => {
+  const classifyActivation = (before, after, fileInputs, sandboxMessages, hashVerification) => {
     const hitCount = (probe) => Object.values(probe?.hits || {}).reduce((sum, values) => sum + (Array.isArray(values) ? values.length : 0), 0);
     const sheetHitCount = (probe) => (probe?.hits?.rollButtonNames?.length || 0)
       + (probe?.hits?.attrNames?.length || 0)
@@ -1185,7 +1236,8 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     const afterSheetIframeCount = after?.visible?.sheetIframeCount || 0;
     const afterCharacterDialogCount = (after?.visible?.characterEditorCount || 0) + (after?.visible?.characterDialogCount || 0);
     const afterSandboxInputCount = after?.visible?.sheetSandboxInputCount || 0;
-    const fileHashMismatchCount = fileInputs.filter((item) => item.fileHashStatus === 'mismatch').length;
+    const fileHashMismatchCount = hashVerification?.mismatchKeys?.length
+      || fileInputs.filter((item) => item.fileHashStatus === 'mismatch').length;
     const addedHits = Object.fromEntries(Object.entries(after?.hits || {}).map(([key, values]) => {
       const previous = new Set(before?.hits?.[key] || []);
       return [key, values.filter((value) => !previous.has(value))];
@@ -1194,6 +1246,8 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     const allFileInputsDispatched = fileInputs.every((item) => item.status === 'dispatched');
     const status = fileHashMismatchCount > 0
       ? 'UPLOAD_FILE_HASH_MISMATCH'
+      : hashVerification?.allMatch !== true
+        ? 'UPLOAD_FILE_HASH_NOT_PROVEN'
       : sandboxMessages?.roll20EditorParseError
       ? 'ROLL20_EDITOR_PARSE_ERROR'
       : after?.runtime?.matches === false
@@ -1218,11 +1272,16 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
       afterSheetHits,
       afterChatTemplateHits,
       fileHashMismatchCount,
+      hashVerification,
       addedHits,
       addedHitCount,
       runtime: after?.runtime ?? null,
       note: status === 'VISIBLE_MATCH'
         ? 'Expected sheet markers are visible after upload; still capture screenshots before claiming parity.'
+        : status === 'UPLOAD_FILE_HASH_MISMATCH'
+          ? 'The browser File bytes do not match the locally generated payload hash. Do not dispatch or capture evidence; regenerate the snippet and inspect the local payload handoff.'
+        : status === 'UPLOAD_FILE_HASH_NOT_PROVEN'
+          ? 'All three payload files do not have a browser-side hash match across the resumable upload. Do not promote visible markers to same-payload evidence.'
         : status === 'SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE'
           ? 'A character-sheet iframe is present, but top-document JS did not prove expected markers. Use a frame-aware browser probe before deciding upload failed or before capturing parity evidence.'
         : status === 'CHARACTER_DIALOG_NO_SHEET_BODY'
@@ -1235,8 +1294,6 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
           ? 'Roll20 editor returned a parse error after upload/settings save. Do not capture evidence; restore the sandbox and fix the upload manifest/settings shape first.'
         : status === 'RUNTIME_MODE_MISMATCH'
           ? 'The visible Roll20 runtime mode does not match this payload. Set legacy sanitization to the expected mode, reload, and probe again.'
-        : status === 'UPLOAD_FILE_HASH_MISMATCH'
-          ? 'The browser File bytes do not match the locally generated payload hash. Do not dispatch or capture evidence; regenerate the snippet and inspect the local payload handoff.'
         : 'Roll20 file-input handlers ran, but visible activation is not proven. Save/reload settings and use the frame-aware probe before capturing parity evidence.',
     };
   };
@@ -1273,37 +1330,38 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     ? (currentItem ? [currentItem] : [])
     : UPLOAD_ITEMS;
   if (RESUME_UPLOAD && currentItem && fileInputCapable) {
-    writeUploadState({ nextIndex: currentIndex, pendingIndex: currentIndex, pendingPageToken: PAGE_TOKEN, complete: false, settingsSubmitted: uploadStateBefore.settingsSubmitted });
+    writeUploadState({ nextIndex: currentIndex, pendingIndex: currentIndex, pendingPageToken: PAGE_TOKEN, complete: false, settingsSubmitted: uploadStateBefore.settingsSubmitted, verifiedHashes: uploadStateBefore.verifiedHashes });
   }
   const results = uploadAlreadyComplete
     ? [{ selector: 'resume-state', status: 'already-complete' }]
     : fileInputCapable
       ? (await (async () => {
         const output = [];
-        for (const { selector, item, type } of selectedItems) {
-          output.push(await setFileInput(selector, item, type));
+        for (const { key, selector, item, type } of selectedItems) {
+          output.push(await setFileInput(selector, item, type, key));
         }
         return output;
       })())
-      : selectedItems.map(({ selector }) => ({ selector, status: 'unsupported-browser-primitive' }));
+      : selectedItems.map(({ key, selector }) => ({ key, selector, status: 'unsupported-browser-primitive' }));
   const anyFileInputHandlerRan = results.some((item) => item.status === 'dispatched');
   const fileInputHandlerRan = results.length === UPLOAD_ITEMS.length
     && results.every((item) => item.status === 'dispatched');
-  const hasFileHashMismatch = results.some((item) => item.fileHashStatus === 'mismatch');
+  const verifiedHashes = mergeVerifiedHashes(uploadStateBefore.verifiedHashes, results);
+  const hashVerification = buildHashVerification(verifiedHashes);
   if (RESUME_UPLOAD && currentItem && anyFileInputHandlerRan) {
     const nextIndex = Math.min(UPLOAD_ITEMS.length, currentIndex + 1);
-    writeUploadState({ nextIndex, pendingIndex: null, pendingPageToken: null, complete: nextIndex >= UPLOAD_ITEMS.length, settingsSubmitted: uploadStateBefore.settingsSubmitted });
+    writeUploadState({ nextIndex, pendingIndex: null, pendingPageToken: null, complete: nextIndex >= UPLOAD_ITEMS.length, settingsSubmitted: uploadStateBefore.settingsSubmitted, verifiedHashes });
   }
   const endpointFallback = USE_ENDPOINT_FALLBACK
     && !uploadAlreadyComplete
     && !anyFileInputHandlerRan
-    ? hasFileHashMismatch
+    ? hashVerification.mismatchKeys.length > 0
       ? { status: 'blocked-file-hash-mismatch', results: [] }
       : await postEndpointFallback()
     : { status: fileInputHandlerRan || anyFileInputHandlerRan ? 'not-needed-file-input-handler-dispatched' : 'disabled' };
   const endpointCompletedUpload = endpointFallback.status === 'posted';
   if (RESUME_UPLOAD && endpointCompletedUpload) {
-    writeUploadState({ nextIndex: UPLOAD_ITEMS.length, pendingIndex: null, pendingPageToken: null, complete: true, settingsSubmitted: uploadStateBefore.settingsSubmitted });
+    writeUploadState({ nextIndex: UPLOAD_ITEMS.length, pendingIndex: null, pendingPageToken: null, complete: true, settingsSubmitted: uploadStateBefore.settingsSubmitted, verifiedHashes });
   }
   const uploadProgress = {
     mode: RESUME_UPLOAD ? 'resumable-single-file-step' : 'single-pass',
@@ -1319,6 +1377,7 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
       || endpointCompletedUpload
       || (anyFileInputHandlerRan && currentIndex + 1 >= UPLOAD_ITEMS.length),
     rerunAfterReload: Boolean(RESUME_UPLOAD && currentItem && !uploadAlreadyComplete),
+    hashVerification,
   };
   let settingsSave = { status: 'disabled' };
   if (SUBMIT_SETTINGS_FORM && uploadProgress.complete) {
@@ -1327,7 +1386,7 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     } else {
       const button = document.querySelector('#save-changes-button');
       if (button) {
-        writeUploadState({ nextIndex: UPLOAD_ITEMS.length, pendingIndex: null, pendingPageToken: null, complete: true, settingsSubmitted: true });
+        writeUploadState({ nextIndex: UPLOAD_ITEMS.length, pendingIndex: null, pendingPageToken: null, complete: true, settingsSubmitted: true, verifiedHashes });
         button.click();
         settingsSave = { status: 'clicked' };
       } else {
@@ -1338,12 +1397,13 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
   await sleep(1500);
   const sandboxMessages = inspectSandboxMessages();
   const activationAfter = collectActivationProbe('after-upload');
-  const activation = classifyActivation(activationBefore, activationAfter, results, sandboxMessages);
+  const activation = classifyActivation(activationBefore, activationAfter, results, sandboxMessages, hashVerification);
   if (typeof console.table === 'function') console.table(results);
   console.log('Manifest:', manifest);
   console.log('Settings save:', settingsSave);
   console.log('Endpoint fallback:', endpointFallback);
   console.log('Upload progress:', uploadProgress);
+  console.log('Hash verification:', hashVerification);
   console.log('Sandbox messages:', sandboxMessages);
   console.log('Activation probe:', activation);
   console.log('Fixture:', DATA.fixtureId);
@@ -1374,6 +1434,7 @@ function renderReadme(report) {
     'For an anonymous local payload directory containing only `sheet.html`, `sheet.css`, and `translation.json`, pass `--payload-dir <ignored-local-folder>`. A synthetic modern/legacy manifest is created in memory only; no settings endpoint is enabled unless `--apply-settings` is explicitly supplied.',
     '',
     'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. A 2026-07-16 live handler inspection confirmed that this invokes the same Roll20 delegated handler as a manual file choice: FileReader reads raw text, the page POSTs base64 source to `/sheetsandbox/savesheetsettings`, then reloads sheet data and open characters. The resumable path writes only payload hashes and the next-file index to sessionStorage, never the sheet source; clear the generated state key to restart. The helper also fills the submitted `customcharsheet_json` control with the settings-page `{ sheet, userOptions, jsoninfo }` wrapper derived from exported `sheet.json` when the settings page is open. When file inputs are unavailable, the explicit endpoint fallback uses the same form-encoded payload shape and triggers the same reload helpers. Upload execution is still not proof that Roll20 rendered the sheet unless the activation probe reports `VISIBLE_MATCH`; `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE` means a character-sheet iframe exists but top-document JS could not prove its markers, and `CHAT_TEMPLATE_ONLY` means chat rolltemplate evidence exists but sheet body markers are not proven.',
+    'The resumable state also keeps only per-file expected/browser SHA-256 metadata across page reloads. The activation result is `UPLOAD_FILE_HASH_NOT_PROVEN` until HTML, CSS, and translation all have `fileHashStatus: match`; a visible marker without all three matches is not same-payload evidence.',
     'Before dispatch, the helper hashes both the decoded source bytes and `File.arrayBuffer()` with browser Web Crypto. Each result reports `expectedSha256`, `sourceBytesSha256`, `fileBytesSha256`, and `fileHashStatus`; a mismatch blocks the file-input handler and endpoint fallback. `unavailable` is not a hash match and must not be promoted to same-payload evidence.',
     '',
     'After settings save and editor reload, run the matching `*-activation-check-snippet.js` on `https://app.roll20.net/editor`. It returns `VISIBLE_MATCH`, `RUNTIME_MODE_MISMATCH`, `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE`, `CHARACTER_DIALOG_NO_SHEET_BODY`, `CHAT_TEMPLATE_ONLY`, `ROLL20_EDITOR_PARSE_ERROR`, or `NOT_PROVEN`. The expected modern/legacy mode comes from `sheet.json` unless `--expected-runtime-mode modern|legacy` overrides it. Capture Roll20 sheet-root evidence only after `VISIBLE_MATCH`, a matching runtime mode, and a visual check that the visible sheet belongs to the intended fixture.',
@@ -1494,7 +1555,7 @@ function runSelfTest() {
   if (!snippet.includes('pendingIndex')) failures.push('resumable snippet missing pending upload state');
   if (!snippet.includes('const PAGE_TOKEN')) failures.push('resumable snippet missing page token');
   if (!snippet.includes('pendingPageToken !== PAGE_TOKEN')) failures.push('resumable snippet should distinguish reload from same-page retry');
-  if (!snippet.includes('for (const { selector, item, type } of selectedItems)')) failures.push('upload files should be dispatched sequentially');
+  if (!snippet.includes('for (const { key, selector, item, type } of selectedItems)')) failures.push('upload files should be dispatched sequentially');
   if (snippet.includes('Promise.all(selectedItems')) failures.push('upload files must not dispatch concurrently');
   if (!applySnippet.includes('const SUBMIT_SETTINGS_FORM = true;')) failures.push('apply snippet missing submit settings flag');
   if (!applySnippet.includes('const USE_ENDPOINT_FALLBACK = true;')) failures.push('apply snippet missing endpoint fallback flag');
@@ -1507,7 +1568,10 @@ function runSelfTest() {
   if (!snippet.includes('const sha256Hex = async (value)')) failures.push('generated snippet missing browser SHA-256 helper');
   if (!snippet.includes('const verifyFilePayload = async (file, bytes, expectedSha256)')) failures.push('generated snippet missing File byte verification helper');
   if (!snippet.includes('fileHashStatus')) failures.push('generated snippet missing File hash status fields');
+  if (!snippet.includes('verifiedHashes')) failures.push('generated snippet missing resumable hash records');
+  if (!snippet.includes('const buildHashVerification = (verifiedHashes)')) failures.push('generated snippet missing all-file hash verification');
   if (!snippet.includes('UPLOAD_FILE_HASH_MISMATCH')) failures.push('generated snippet missing upload hash mismatch status');
+  if (!snippet.includes('UPLOAD_FILE_HASH_NOT_PROVEN')) failures.push('generated snippet missing incomplete hash status');
   if (!applySnippet.includes('blocked-file-hash-mismatch')) failures.push('apply snippet should block endpoint fallback after a hash mismatch');
   if (!snippet.includes("const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'")) failures.push('generated snippet missing base64 decoder fallback');
   if (!snippet.includes('jsoninfo: parsed')) failures.push('generated snippet missing jsoninfo wrapper builder');
@@ -1547,6 +1611,7 @@ function runSelfTest() {
   if (!readme.includes('--payload-dir <ignored-local-folder>')) failures.push('generated README missing direct payload instruction');
   if (!readme.includes('sessionStorage state resumes')) failures.push('generated README missing resumable upload instruction');
   if (!readme.includes('File.arrayBuffer()')) failures.push('generated README missing browser File hash verification instruction');
+  if (!readme.includes('fileHashStatus: match')) failures.push('generated README missing all-file hash evidence instruction');
   if (failures.length) throw new Error(`roll20_upload_snippet self-test failed: ${failures.join(', ')}`);
   console.log('ROLL20 UPLOAD SNIPPET SELF-TEST PASS');
 }

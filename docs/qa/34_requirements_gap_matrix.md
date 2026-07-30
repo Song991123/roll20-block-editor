@@ -892,6 +892,10 @@ not close the external Roll20 parity rows above.
   locally expected SHA-256 with both decoded payload bytes and the browser
   `File.arrayBuffer()` result before dispatch. Mismatch blocks the upload and
   endpoint fallback; unavailable Web Crypto is reported explicitly.
+- `IMPLEMENTED / VERIFIED LOCAL`: resumable page reloads retain only per-file
+  hash metadata in session storage and require all three current-payload files
+  to be `match` before activation can be promoted beyond
+  `UPLOAD_FILE_HASH_NOT_PROVEN`.
 - `VERIFIED LOCAL`: upload-file, fidelity, provenance, CDP-helper, snippet
   self-tests, lint, build, and `ci:verify` pass.
 - `NOT PROVEN EXTERNAL`: no live Sandbox run has yet produced a `fileHashStatus:

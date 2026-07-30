@@ -9239,6 +9239,9 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `FIXED LOCAL`: a file hash mismatch blocks both the delegated file-input
   dispatch and the explicit endpoint fallback; `unavailable` remains visible
   and is never treated as proof.
+- `FIXED LOCAL`: resumable uploads retain only per-file hash metadata across
+  Roll20 reloads. Activation is `UPLOAD_FILE_HASH_NOT_PROVEN` until HTML, CSS,
+  and translation all report `fileHashStatus: match` for the current payload.
 - `VERIFIED LOCAL`: upload-file, payload-fidelity, provenance, CDP-helper,
   upload-snippet self-tests, lint, production build, and `ci:verify` pass.
 - `VERIFY / OPEN`: no live Roll20 payload was accepted in this turn. Browser
