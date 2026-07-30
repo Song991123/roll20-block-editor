@@ -10,6 +10,9 @@ const blocks = new Map<string, Map<string, TestBlock>>([
     ['subject', block('subject', 'r20_text_input', { CLASS: 'sheet-input', STYLE: 'left: 1px; color: red' })],
     ['positioned', block('positioned', 'r20_positioned', { LEFT_PX: '2', TOP_PX: '3' })],
     ['unsupported', block('unsupported', 'r20_raw_html', { HTML: '<hr>' })],
+    ['dual', block('dual', 'r20_dual_roll_button', { ROW_CLASS: 'dual-row' })],
+    ['row', block('row', 'r20_skill_row', { TR_CLASS: 'skill-row', TR_STYLE: 'display: table-row' })],
+    ['wrapper', block('wrapper', 'r20_repeating_section_wrapper', { FIELDSET_CLASS: 'inventory', FIELDSET_STYLE: 'padding: 4px' })],
   ])],
   ['css', new Map()],
   ['i18n', new Map()],
@@ -83,6 +86,33 @@ const unsupported = commitManagedDesignPosition(adapter, {
 assert.equal(unsupported.moved, false);
 assert.equal(unsupported.reason, 'missing-style-or-class');
 assert.equal(adapter.listAllBlocks('css').length, cssCountBeforeFailure);
+
+const stylelessComposite = commitManagedDesignPosition(adapter, {
+  workspace: 'html',
+  blockId: 'dual',
+  left: 20,
+  top: 24,
+  containingBlockId: null,
+  containingBlockNeedsRelative: false,
+});
+assert.equal(stylelessComposite.moved, true);
+assert.equal(stylelessComposite.reason, 'managed-css');
+assert.match(adapter.getBlockField('html', 'dual', 'ROW_CLASS') ?? '', /sheet-r20-node-dual/);
+
+const semanticRoot = commitManagedDesignPosition(adapter, {
+  workspace: 'html',
+  blockId: 'row',
+  left: 12,
+  top: 18,
+  containingBlockId: 'wrapper',
+  containingBlockNeedsRelative: true,
+});
+assert.equal(semanticRoot.moved, true);
+assert.equal(semanticRoot.reason, 'managed-css');
+assert.match(adapter.getBlockField('html', 'row', 'TR_CLASS') ?? '', /sheet-r20-node-row/);
+assert.match(adapter.getBlockField('html', 'wrapper', 'FIELDSET_CLASS') ?? '', /sheet-r20-node-wrapper/);
+assert.equal(adapter.getBlockField('html', 'row', 'TR_STYLE'), 'display: table-row');
+assert.equal(adapter.getBlockField('html', 'wrapper', 'FIELDSET_STYLE'), 'padding: 4px');
 
 console.log('designPosition.test PASS');
 

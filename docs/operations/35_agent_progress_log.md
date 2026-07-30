@@ -9301,3 +9301,16 @@ same-hash modern/legacy comparison.
 - This is local renderer/edit-surface evidence only. It does not prove actual
   Roll20 same-payload parity, legacy-room behavior, or arbitrary user-sheet
   coverage.
+
+## 2026-07-31 - Composite root position-field contract
+
+- The position commit path now resolves the class and style field that belong
+  to a composite block's emitted root element. Generic HTML still uses
+  `CLASS`/`STYLE`; table rows, repeating fieldsets, and button rows use their
+  existing semantic root fields without adding a wrapper element.
+- A styleless root is now positioned through the managed CSS workspace while
+  preserving the original HTML shape. This keeps table/fieldset semantics
+  intact and avoids sheet-specific layout assumptions.
+- The focused position test, imported edit sync smoke, server hygiene, and
+  full `ci:verify` pass. Actual Roll20 same-payload and legacy-room parity
+  remain external verification items.

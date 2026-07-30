@@ -1,5 +1,9 @@
 import type { BlocklyAdapter } from '@/lib/blockly/adapter';
 import type { WorkspaceKey } from '@/lib/stores/workspaceStore';
+import {
+  designClassFieldForBlockType,
+  designStyleFieldForBlockType,
+} from './designClassField';
 
 export const DESIGN_CSS_MARKER = 'r20-design-css:managed';
 
@@ -52,8 +56,7 @@ export function commitManagedDesignPosition(
   }
 
   if (
-    !adapter.hasBlockField(workspace, blockId, 'STYLE')
-    || !adapter.hasBlockField(workspace, blockId, 'CLASS')
+    !resolveDesignClassField(adapter, workspace, blockId)
   ) {
     return failure('missing-style-or-class');
   }
@@ -61,8 +64,7 @@ export function commitManagedDesignPosition(
     request.containingBlockId
     && request.containingBlockNeedsRelative
     && (
-      !adapter.hasBlockField(workspace, request.containingBlockId, 'STYLE')
-      || !adapter.hasBlockField(workspace, request.containingBlockId, 'CLASS')
+      !resolveDesignClassField(adapter, workspace, request.containingBlockId)
     )
   ) {
     return failure('missing-style-or-class');
@@ -76,25 +78,31 @@ export function commitManagedDesignPosition(
   if (request.containingBlockId && request.containingBlockNeedsRelative) {
     containingClass = ensureDesignClass(adapter, workspace, request.containingBlockId);
     if (!containingClass) return failure('missing-style-or-class');
-    const parentStyle = adapter.getBlockField(workspace, request.containingBlockId, 'STYLE') ?? '';
-    adapter.setBlockField(
-      workspace,
-      request.containingBlockId,
-      'STYLE',
-      removeCssDeclarations(parentStyle, ['position']),
-    );
+    const parentStyleField = resolveDesignStyleField(adapter, workspace, request.containingBlockId);
+    if (parentStyleField) {
+      const parentStyle = adapter.getBlockField(workspace, request.containingBlockId, parentStyleField) ?? '';
+      adapter.setBlockField(
+        workspace,
+        request.containingBlockId,
+        parentStyleField,
+        removeCssDeclarations(parentStyle, ['position']),
+      );
+    }
     css = upsertCssRule(css, containingClass, { position: 'relative' });
   }
 
   const designClass = ensureDesignClass(adapter, workspace, blockId);
   if (!designClass) return failure('missing-style-or-class');
-  const style = adapter.getBlockField(workspace, blockId, 'STYLE') ?? '';
-  adapter.setBlockField(
-    workspace,
-    blockId,
-    'STYLE',
-    removeCssDeclarations(style, ['position', 'left', 'top']),
-  );
+  const styleField = resolveDesignStyleField(adapter, workspace, blockId);
+  if (styleField) {
+    const style = adapter.getBlockField(workspace, blockId, styleField) ?? '';
+    adapter.setBlockField(
+      workspace,
+      blockId,
+      styleField,
+      removeCssDeclarations(style, ['position', 'left', 'top']),
+    );
+  }
   css = upsertCssRule(css, designClass, {
     position: 'absolute',
     left: `${request.left}px`,
@@ -139,14 +147,43 @@ function ensureDesignClass(
   workspace: WorkspaceKey,
   blockId: string,
 ): string | null {
-  if (!adapter.hasBlockField(workspace, blockId, 'CLASS')) return null;
+  const classField = resolveDesignClassField(adapter, workspace, blockId);
+  if (!classField) return null;
   const token = designClassForBlock(blockId);
-  const current = adapter.getBlockField(workspace, blockId, 'CLASS') ?? '';
+  const current = adapter.getBlockField(workspace, blockId, classField) ?? '';
   const classes = current.split(/\s+/).filter(Boolean);
   if (!classes.includes(token)) {
-    adapter.setBlockField(workspace, blockId, 'CLASS', [...classes, token].join(' '));
+    adapter.setBlockField(workspace, blockId, classField, [...classes, token].join(' '));
   }
   return token;
+}
+
+function resolveDesignClassField(
+  adapter: DesignPositionAdapter,
+  workspace: WorkspaceKey,
+  blockId: string,
+): string | null {
+  const block = adapter.getBlock(workspace, blockId);
+  if (!block) return null;
+  const preferred = designClassFieldForBlockType(block.type);
+  if (adapter.hasBlockField(workspace, blockId, preferred)) return preferred;
+  // Keep compatibility with older serialized composite blocks that may have
+  // been upgraded to the generic CLASS field.
+  if (preferred !== 'CLASS' && adapter.hasBlockField(workspace, blockId, 'CLASS')) {
+    return 'CLASS';
+  }
+  return null;
+}
+
+function resolveDesignStyleField(
+  adapter: DesignPositionAdapter,
+  workspace: WorkspaceKey,
+  blockId: string,
+): string | null {
+  const block = adapter.getBlock(workspace, blockId);
+  if (!block) return null;
+  const preferred = designStyleFieldForBlockType(block.type);
+  return adapter.hasBlockField(workspace, blockId, preferred) ? preferred : null;
 }
 
 function findOrCreateDesignCssBlock(

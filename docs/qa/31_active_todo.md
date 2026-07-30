@@ -8609,3 +8609,18 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   coverage.
 - `NEXT P0`: recover a supported modern Sandbox three-file handoff, then bind
   the same payload before collecting modern and legacy evidence.
+
+## 2026-07-31 Composite root position-field contract
+
+- `DONE LOCAL`: position editing now resolves the emitted root's semantic
+  class/style fields for generic blocks and composite table/fieldset/button
+  roots. Styleless roots use the managed CSS workspace without changing HTML
+  structure.
+- `VERIFIED LOCAL`: focused position tests, imported edit synchronization,
+  server hygiene, and full `ci:verify` all pass. The safety/evidence guard also
+  passes with no tracked private fixtures or reports.
+- `VERIFY / OPEN`: this improves the generic local edit path only; actual
+  modern Roll20 same-payload parity, dedicated legacy-room behavior, and
+  arbitrary user-sheet coverage remain unverified.
+- `NEXT P0`: recover a supported modern Sandbox three-file handoff and bind
+  the same payload before collecting modern and legacy evidence.

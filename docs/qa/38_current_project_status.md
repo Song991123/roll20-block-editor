@@ -478,3 +478,13 @@ and emitted HTML/CSS content. This strengthens the shared local render surface
 and edit bridge only; it does not promote actual Roll20 same-payload parity,
 legacy-room behavior, or all-sheet support. The next P0 remains a supported
 three-file modern Sandbox handoff followed by independent legacy evidence.
+
+## Composite root position-field contract - 2026-07-31
+
+Position editing now resolves the semantic class/style fields used by emitted
+composite roots, including table rows, repeating fieldsets, and button rows.
+Styleless roots are managed through the separate CSS workspace without adding
+an HTML wrapper. Focused position tests, imported edit synchronization, server
+hygiene, and the full local CI verification gate pass. This is still local
+editor evidence; actual modern Roll20 same-payload parity, legacy-room
+behavior, and arbitrary user-sheet coverage remain open.
