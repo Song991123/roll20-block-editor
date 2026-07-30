@@ -9,6 +9,10 @@ local output and is deleted after the verification batch.
 
 ## Current Evidence
 
+- LOCAL PASS: The latest persistent-preview smoke passed modern and legacy
+  modes with zero iframe reloads, and strict imported-edit synchronization
+  passed for anonymous structures. The same iframe retained live input/runtime
+  state across compatibility changes and edit flow.
 - LOCAL PASS: Browser L2 compatibility roundtrip passed for one anonymous
   custom fixture and one anonymous legacy fixture. HTML/CSS/translation/worker
   output remained stable with zero browser console/page errors. The

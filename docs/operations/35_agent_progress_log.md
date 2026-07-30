@@ -1,3 +1,15 @@
+## 2026-07-30 - Shared preview/edit surface audit
+
+- VERIFIED LOCAL: Persistent preview surface smoke passed for modern and
+  legacy compatibility modes with zero iframe reloads while state survived a
+  live compatibility toggle.
+- VERIFIED LOCAL: Edit-flow and strict imported-edit synchronization smokes
+  passed for anonymous fixtures, including flow/free placement and emitted
+  HTML/CSS position checks.
+- VERIFIED HYGIENE: No project or CDP listener remained after the smoke runs.
+- BOUNDARY: No external Roll20 parity claim; Sandbox activation and the
+  dedicated legacy-room check remain open.
+
 ## 2026-07-30 - Anonymous Sandbox upload handoff prepared
 
 - PREPARED LOCAL: Regenerated the anonymous synthetic HTML, CSS, and

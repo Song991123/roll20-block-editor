@@ -1,3 +1,18 @@
+## 2026-07-30 Shared preview/edit render-surface audit
+
+- VERIFIED LOCAL: `smoke:persistent-preview-surface` passed for modern and
+  legacy modes with iframe load count `0`; the same iframe retained input and
+  worker/runtime state while the compatibility mode changed.
+- VERIFIED LOCAL: `smoke:edit-flow` passed and
+  `smoke:imported-edit-sync:strict` passed for anonymous imported structures.
+  Flow/free placement, iframe overlay, emitted HTML/CSS position state, and
+  preview/edit synchronization stayed aligned.
+- VERIFIED HYGIENE: server and CDP listener checks are clear after the run.
+- CLAIM BOUNDARY: This confirms the local shared-surface contract only. It is
+  not proof of visual equality with actual Roll20.
+- NEXT P0: Complete the user-assisted modern Sandbox upload, then run the
+  separate participant-gated legacy-room verification.
+
 ## 2026-07-30 Roll20 Sandbox handoff preparation
 
 - DONE LOCAL: Regenerated an anonymous synthetic Sandbox payload containing
