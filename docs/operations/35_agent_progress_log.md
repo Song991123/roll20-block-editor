@@ -6,6 +6,8 @@
 - `corepack pnpm run ci:verify`, `guard:roll20-evidence`, `guard:ui-copy`,
   `git diff --check`, and current `check:server-hygiene` also passed; no
   project or CDP listener was found.
+- Remote CI `30568385840` passed safety/unit verification, lint, and build for
+  commit `73ca762`.
 - Rechecked the explicit generated cleanup targets `.next/` and `out/` inside
   the canonical worktree. The host rejected both boundary-checked recursive
   deletion attempts before PowerShell execution, so no deletion occurred and

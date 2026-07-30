@@ -12,8 +12,8 @@ local output and is deleted after the verification batch.
 - Active branch: `claude/design-reset` at `facdc38`. The branch is pushed
   to `origin`; the renderer-boundary patch is committed and the worktree is
   clean after this documentation update.
-- Remote CI: run `30567906550` passed safety/unit verification, lint, and
-  build for `facdc38`.
+- Remote CI: run `30568385840` passed safety/unit verification, lint, and
+  build for `73ca762`.
 - Local interaction recheck: `smoke:edit-flow`, strict imported-edit sync, and
   persistent preview surface passed; modern and legacy each retained one
   iframe with zero reloads.
