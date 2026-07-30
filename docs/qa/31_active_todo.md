@@ -1,3 +1,25 @@
+## 2026-07-31 Dual-destination Roll20 runtime recheck
+
+- VERIFIED EXTERNAL: The dedicated modern Sandbox and dedicated legacy test
+  room each passed a fresh visible participant preflight of exactly one.
+  Existing rooms were not used.
+- VERIFIED EXTERNAL: Both current destinations rendered the same anonymous
+  synthetic marker set: translated `Name`, one input, one Roll control,
+  authored pink paint, and one visible `.charactersheet` root measured at
+  `860x200`; the authored panel measured `420x180` and inherited Roll20's
+  sampled `13px Helvetica Neue` base.
+- VERIFIED EXTERNAL: In-session iframe clips were captured for both targets.
+  The wrapper clips measured `900x285.6875` (modern) and `900x283.55`
+  (legacy), so this is a context/runtime comparison, not a normalized pixel
+  parity PASS. Screenshots were not written to the repository.
+- VERIFIED EXTERNAL: Clicking the Roll control in each dedicated destination
+  produced the anonymous `Sandbox proof` template/result in the Roll20 chat.
+  This verifies a runtime smoke only; worker mutation and template-by-template
+  visual parity remain open.
+- VERIFY / OPEN: Exact byte-hash attachment parity, generic row/table layout
+  payload parity, asset loading, reference-image comparison, and arbitrary
+  sheet support remain unproven.
+
 ## 2026-07-31 Chrome Roll20 observation and Sandbox handoff boundary
 
 - VERIFIED EXTERNAL OBSERVATION: The dedicated modern Sandbox tab and separate

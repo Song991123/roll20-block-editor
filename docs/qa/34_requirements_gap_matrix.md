@@ -2,6 +2,25 @@
 
 Date: 2026-07-31
 
+## Latest Dual-Destination Roll20 Runtime Recheck - 2026-07-31
+
+- VERIFIED EXTERNAL: The dedicated modern Sandbox and dedicated legacy test
+  room each passed a fresh visible participant preflight of exactly one.
+  Existing rooms remained observation-only and untouched.
+- VERIFIED EXTERNAL: Both destinations rendered the same anonymous synthetic
+  marker set with translated `Name`, one input, one Roll control, authored
+  pink styling, a `420x180` panel, and a visible `860x200` sheet root using
+  the sampled Roll20 `13px Helvetica Neue` base.
+- VERIFIED EXTERNAL: In-session wrapper clips measured `900x285.6875` for
+  modern and `900x283.55` for legacy. This supports runtime/context
+  reconciliation only; it is not a normalized pixel-diff PASS.
+- VERIFIED EXTERNAL: Real Roll clicks in both dedicated destinations produced
+  the anonymous `Sandbox proof` template/result in chat. Worker mutation,
+  template-by-template visual parity, asset parity, and arbitrary-sheet
+  coverage remain unproven.
+- VERIFY / OPEN: Exact same-hash attachment parity and generic layout-family
+  screenshot/computed-style comparison remain the next external gates.
+
 ## Latest Canonical Imported Edit Verification - 2026-07-31
 
 - FIXED LOCAL: Imported layer/non-leaf smoke now reads the canonical persistent

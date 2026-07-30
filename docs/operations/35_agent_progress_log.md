@@ -1,3 +1,22 @@
+## 2026-07-31 - Dual-destination Roll20 runtime recheck
+
+- Reconnected only the two dedicated verification tabs. Both showed exactly
+  one visible participant before any interaction; ordinary rooms stayed
+  read-only and untouched.
+- The modern Sandbox and legacy test-room iframe DOMs matched the same
+  anonymous synthetic markers: translated `Name`, one input, one Roll control,
+  `420x180` authored panel, and `860x200` visible sheet root. Both used the
+  sampled Roll20 `13px Helvetica Neue` base.
+- Captured both iframe wrapper clips in memory only. Modern measured
+  `900x285.6875`; legacy measured `900x283.55`. The small wrapper-height
+  difference is why this run is recorded as runtime/context evidence rather
+  than a normalized pixel-diff PASS.
+- Clicked the Roll control in both dedicated destinations. Each produced the
+  anonymous `Sandbox proof` template/result in chat. No existing room, source
+  corpus, public asset, screenshot file, or source-derived report was changed.
+- Remaining evidence gap: exact same-hash upload proof, generic layout-family
+  capture, asset/reference-image parity, and live worker mutation.
+
 ## 2026-07-31 - Chrome Roll20 observation and Sandbox handoff boundary
 
 - Reconnected the existing Chrome session and inspected only the two dedicated

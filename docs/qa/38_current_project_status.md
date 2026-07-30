@@ -7,6 +7,25 @@ creator names, source URLs, screenshots, private room identifiers, or
 source-derived measurements. Private evidence, when needed, stays in ignored
 local output and is deleted after the verification batch.
 
+## Latest Dual-Destination Roll20 Runtime Recheck - 2026-07-31
+
+- VERIFIED EXTERNAL: The dedicated modern Sandbox and dedicated legacy test
+  room each passed a fresh visible participant preflight of exactly one.
+  Existing rooms remained read-only and were not used.
+- VERIFIED EXTERNAL: Both current iframe DOMs rendered the same anonymous
+  synthetic markers: translated `Name`, one input, one Roll control, authored
+  pink styling, a `420x180` panel, and one visible `860x200` sheet root with
+  the sampled Roll20 `13px Helvetica Neue` base.
+- VERIFIED EXTERNAL: In-memory wrapper clips measured `900x285.6875` for
+  modern and `900x283.55` for legacy. The clips were visually inspected but
+  not promoted to a pixel-parity PASS because wrapper height/capture context
+  still differs.
+- VERIFIED EXTERNAL: A real Roll click in each dedicated destination produced
+  the anonymous `Sandbox proof` template/result in chat. This is runtime smoke
+  evidence, not proof of worker mutation or universal rolltemplate parity.
+- OPEN: Exact same-hash upload parity, generic row/table/asset comparison,
+  reference-image diff, and arbitrary-sheet coverage remain VERIFY/PARTIAL.
+
 ## Latest Canonical Imported Edit Verification - 2026-07-31
 
 - VERIFIED LOCAL: Imported edit-sync now uses the persistent preview iframe for

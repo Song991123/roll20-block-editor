@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     ".tmp/**",
     "scripts/**",
     "lib/**/__tests__/**",
+    "reports/**",
+    "test-fixtures/**",
   ]),
   {
     rules: {
