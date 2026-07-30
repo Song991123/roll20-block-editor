@@ -9,6 +9,17 @@
   then capture positive sheet-root, state, roll-control, and chat evidence.
   Keep legacy verification in a separate dedicated legacy-enabled room.
 
+## 2026-07-30 Worker workspace boundary recheck
+
+- VERIFIED LOCAL: The worker workspace smoke keeps ordinary page JavaScript in
+  the separate JS workspace, moves Roll20 worker blocks out of visible HTML,
+  emits one worker script, and survives the local re-import check.
+- VERIFIED LOCAL: Worker state smoke and HTML/CSS/translation/worker emit
+  contract tests pass. This confirms the local boundary only; actual Roll20
+  worker execution and generated-sheet parity remain external gates.
+- NEXT P1: Expand anonymous worker syntax coverage before claiming broad JS
+  support; keep unsupported statements in the explicit raw-worker boundary.
+
 ## 2026-07-30 Local compatibility roundtrip regression fix
 
 - DONE LOCAL: Browser L2 import -> emit -> re-import -> emit now passes for

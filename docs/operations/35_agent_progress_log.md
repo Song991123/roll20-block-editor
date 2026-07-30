@@ -10,6 +10,17 @@
   and matching modern runtime, then capture root/state/roll/chat evidence.
   Legacy remains a separate dedicated-room gate.
 
+## 2026-07-30 - Worker workspace boundary rechecked
+
+- VERIFIED LOCAL: Worker workspace smoke passed with page JavaScript separated,
+  visible HTML free of worker nodes, and one final Roll20 worker script after
+  emit/re-import.
+- VERIFIED LOCAL: Worker state smoke and emit contract tests passed. This is
+  local source/runtime evidence only; actual Roll20 worker execution remains
+  unverified until Sandbox/test-room evidence exists.
+- NEXT: Add generic anonymous syntax cases for unsupported worker statements
+  without weakening the raw-worker fallback or preview safety boundary.
+
 ## 2026-07-30 - Local render/edit gate refresh
 
 - VERIFIED LOCAL: `ci:verify` passed the full current safety, import,

@@ -36,6 +36,9 @@ local output and is deleted after the verification batch.
 - HANDOFF READY: An anonymous synthetic HTML/CSS/translation payload has been
   regenerated in ignored local output for a user-visible Sandbox file choice.
   This is preparation only; the sheet is not yet proven active in Roll20.
+- LOCAL PASS: Worker workspace, worker state, and emit-contract smokes were
+  rechecked. Page JavaScript remains separate, visible worker nodes stay hidden,
+  and the local output keeps one worker script without proving Roll20 runtime.
 - LEGACY VERIFY OPEN: Legacy output must be checked separately in a dedicated
   legacy-enabled test room. A modern Sandbox result cannot satisfy that gate.
 
