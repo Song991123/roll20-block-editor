@@ -171,3 +171,12 @@ Local evidence: UI-copy guard passed for 66 files; lint passed; import structure
 full `ci:verify` gate passed. This is source/UI integrity evidence only. The
 modern Sandbox upload, legacy-room render, and universal Roll20 visual parity
 claims remain open.
+
+## Sandbox Handoff Recheck - 2026-07-30
+
+The isolated Roll20 Sandbox was found through the existing Chrome session. The
+visible room state showed exactly one member and the Sheet Sandbox Tools dialog
+contained the three expected HTML/CSS/Translation inputs. The extension denied
+the automated file chooser assignment, so no file was uploaded and no room or
+chat state changed. The tab remains a user handoff; actual modern rendering and
+legacy-room comparison are still unverified.

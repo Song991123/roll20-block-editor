@@ -8736,3 +8736,15 @@ visibility verification passed. No external room was opened or modified.
   16/16 before the successful full rerun.
 - Scope note: no source-derived fixture was restored, no public sheet sample
   was added, and actual modern/legacy Roll20 visual parity remains unverified.
+
+## 2026-07-30 - Sandbox upload handoff recheck
+
+- Connected to the exact isolated Roll20 Sandbox tab and verified the visible
+  participant count was `1`. The Sheet Sandbox Tools dialog exposed the
+  expected HTML, CSS, and Translation file controls.
+- The browser extension rejected the file chooser assignment before a file
+  was attached. No source payload was transmitted, and no room, setting,
+  character sheet, or chat state was changed.
+- Left the exact Sandbox tab in handoff state for user-visible native file
+  selection. Actual modern render/runtime/roll/chat evidence and legacy-room
+  parity remain open.

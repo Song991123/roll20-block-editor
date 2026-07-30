@@ -8035,3 +8035,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   not prove arbitrary-sheet visual parity or actual Roll20 Sandbox parity.
 - `NEXT P0`: Recover the supported modern Sandbox upload path, then continue
   with positive render/runtime/roll/chat evidence before claiming parity.
+
+## 2026-07-30 Sandbox upload handoff recheck
+
+- `VERIFIED EXTERNAL`: The isolated Sandbox tab was found with exactly
+  `1 구성원`; the Sheet Sandbox Tools dialog exposed HTML, CSS, and
+  Translation controls.
+- `BLOCKED EXTERNAL`: The browser extension rejected the file chooser's
+  `setFiles` operation before any file was attached. No sheet root, runtime,
+  chat, room setting, or source payload was changed.
+- `HANDOFF`: The exact Sandbox tab was left open for user-visible native file
+  selection. Actual modern render parity remains unverified.
