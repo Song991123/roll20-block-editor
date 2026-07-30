@@ -8404,3 +8404,13 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   The rendered proof state and Roll result remain observation evidence only.
 - `NEXT P0`: recover a chooser session that accepts all three files in one
   run, then bind the exact payload before comparing modern and legacy surfaces.
+
+## 2026-07-30 ASCII-path chooser retry
+
+- `PARTIAL EXTERNAL`: copying the anonymous CSS and translation files to an
+  ASCII-only temporary path made CSS selection succeed after the HTML reload.
+  The original source and fixture files were not modified.
+- `VERIFY / OPEN`: the translation chooser timed out after the CSS reload, so
+  its attachment state is unknown. No three-file same-hash proof is accepted.
+- `NEXT P0`: finish translation selection from a responsive chooser, then
+  capture the post-apply modern screenshot and run the independent legacy path.

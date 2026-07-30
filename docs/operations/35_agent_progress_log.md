@@ -9120,3 +9120,12 @@ same-hash modern/legacy comparison.
   `Not allowed`; translation selection was not attempted.
 - This is partial external handoff evidence only. No three-file same-hash
   binding or parity screenshot was accepted, and no existing room was changed.
+
+## 2026-07-30 - ASCII-path chooser retry
+
+- Copied only the anonymous CSS and translation payloads to an ASCII-only
+  temporary path. The CSS chooser then returned success after the HTML reload,
+  showing that the earlier CSS rejection was path/chooser sensitive.
+- The translation chooser timed out afterward, so its state is unknown. No
+  same-hash three-file activation or parity claim was made; protected source
+  files and existing rooms remained untouched.

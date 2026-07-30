@@ -621,3 +621,11 @@ not close the external Roll20 parity rows above.
   CSS selection returned `Not allowed` twice; translation was not selected.
 - `VERIFY / OPEN`: all-three-file same-hash binding, normalized screenshot
   parity, and independent legacy evidence remain unproven.
+
+## 2026-07-30 ASCII-path chooser retry
+
+- `PARTIAL EXTERNAL`: CSS selection succeeded from an ASCII-only temporary
+  path after the HTML reload.
+- `VERIFY / OPEN`: translation selection timed out; all-three-file binding,
+  same-hash identity, modern normalized parity, and legacy evidence remain
+  unproven.

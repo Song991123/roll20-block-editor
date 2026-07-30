@@ -380,3 +380,10 @@ closing only the viewer. The supported chooser accepted HTML and reloaded the
 Sandbox, but rejected CSS with `Not allowed` on two fresh attempts; translation
 was not selected. No three-file same-hash binding was established, so actual
 modern/legacy parity remains `VERIFY / BLOCKED EXTERNAL`.
+
+## ASCII-path chooser retry - 2026-07-30
+
+CSS selection succeeded when the anonymous file was provided from an ASCII-only
+temporary path, after the HTML reload. Translation selection then timed out, so
+the three-file same-hash state remains unproven and actual modern/legacy parity
+continues as `VERIFY / BLOCKED EXTERNAL`.
