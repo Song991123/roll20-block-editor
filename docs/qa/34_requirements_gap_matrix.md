@@ -2,6 +2,19 @@
 
 Date: 2026-06-12
 
+## Latest Local i18n Attribute Fidelity Reconciliation: 2026-07-30
+
+- `data-i18n-title` and `data-i18n-html` now preserve supported source tags
+  through import and emit using the shared i18n tag policy. Unsupported tags
+  avoid the specialized block so their generic/container path can preserve
+  the element structure.
+- VERIFIED LOCAL: import structure `41/41`, style/import `16/16`, emit
+  contract, high-priority mapping `22/22` and `25/25`, lint, production build,
+  full `ci:verify`, persistent preview, edit-flow, and strict imported-edit
+  synchronization pass.
+- BOUNDARY: This is targeted local mapping evidence only. Actual modern
+  Sandbox and dedicated legacy-room visual/runtime evidence remain open.
+
 ## Latest External Sandbox Recheck: 2026-07-30
 
 - The dedicated modern Sandbox remains isolated and visibly reports exactly

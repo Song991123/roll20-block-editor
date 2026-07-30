@@ -187,6 +187,28 @@ function testI18nAriaLabelTagEmit(): void {
   workspace.dispose();
 }
 
+function testI18nTitleAndHtmlTagEmit(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const title = workspace.newBlock('r20_i18n_title');
+  title.setFieldValue('panel.title', 'KEY');
+  title.setFieldValue('Panel title', 'DEFAULT');
+  title.setFieldValue('div', 'TAG');
+
+  const rich = workspace.newBlock('r20_i18n_html');
+  rich.setFieldValue('panel.rich', 'KEY');
+  rich.setFieldValue('<b>Panel</b>', 'DEFAULT');
+  rich.setFieldValue('div', 'TAG');
+
+  const result = emitAll({ html: workspace });
+  assert(result.html.includes('<div'), 'i18n title keeps the authored tag');
+  assert(result.html.includes('title="Panel title"'), 'i18n title value is emitted');
+  assert(result.html.includes('data-i18n-html="panel.rich"'), 'i18n html key is emitted');
+  assert(result.html.includes('<b>Panel</b>'), 'i18n html body is emitted');
+  assert(!result.html.includes('<span title="Panel title"'), 'i18n title is not forced to span');
+  workspace.dispose();
+}
+
 function testTypedPageScriptExportPreserved(): void {
   registerAllBlocks();
   const workspace = new Blockly.Workspace();
@@ -334,6 +356,7 @@ testTopLevelWhitespaceTextRoundTrip();
 testInlineFlowDoesNotGainWhitespace();
 testGenericCssTagEmit();
 testI18nAriaLabelTagEmit();
+testI18nTitleAndHtmlTagEmit();
 testTypedPageScriptExportPreserved();
 testUntypedPageScriptExportPreserved();
 testEditablePageScriptExportPreserved();

@@ -1,3 +1,16 @@
+## 2026-07-30 - i18n title/html tag preservation
+
+- IMPLEMENTED: Added source-tag preservation to the i18n title and rich-HTML
+  blocks and aligned their matcher with the shared display-tag policy.
+  Unsupported tags now stay on the generic/container path instead of being
+  rewritten to `<span>`.
+- VERIFIED: Import structure `41/41`, style/import `16/16`, emit contract,
+  high-priority mapping `22/22` and `25/25`, lint, production build, full
+  `ci:verify`, persistent preview in modern/legacy, edit-flow, and strict
+  imported-edit synchronization all pass.
+- OPEN: This is local structure fidelity, not actual Roll20 visual/runtime
+  parity. Sandbox activation and the separate legacy-room gate remain open.
+
 ## 2026-07-30 - Sandbox positive-render retry
 
 - VERIFIED EXTERNAL: The dedicated modern Sandbox showed exactly one visible

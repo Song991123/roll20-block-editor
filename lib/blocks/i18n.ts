@@ -93,8 +93,7 @@ function pickLanguage(raw: string, fallback = 'en'): string {
   return LANGUAGE_TAG_RE.test(value) ? value : fallback;
 }
 
-/** r20_i18n_text 의 TAG 필드 화이트리스트 — 매처 set 과 동기화.
- * 미허용 시 'span' fallback (backwards-compat). */
+/** i18n display blocks share one tag policy; unsupported tags fall back to span. */
 function pickI18nTextTag(raw: string): string {
   return pickI18nDisplayTag(raw);
 }
@@ -204,6 +203,9 @@ export const I18N_BLOCKS: BlockDef[] = [
         .appendField('기본 title')
         .appendField(new Blockly.FieldTextInput('Tooltip text'), 'DEFAULT');
       b.appendDummyInput()
+        .appendField('태그')
+        .appendField(new Blockly.FieldTextInput('span'), 'TAG');
+      b.appendDummyInput()
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendDummyInput()
@@ -216,10 +218,11 @@ export const I18N_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const key = sanitizeKey(String(b.getFieldValue('KEY') ?? ''));
       const def = String(b.getFieldValue('DEFAULT') ?? '');
+      const tag = pickI18nDisplayTag(String(b.getFieldValue('TAG') ?? 'span'));
       const cls = String(b.getFieldValue('CLASS') ?? '');
       return (
-        `<span${attr('title', def)}${attr('data-i18n-title', key)}` +
-        `${sheetClassAttr(cls)}${styleAttr(style)}></span>`
+        `<${tag}${attr('title', def)}${attr('data-i18n-title', key)}` +
+        `${sheetClassAttr(cls)}${styleAttr(style)}></${tag}>`
       );
     },
   },
@@ -412,6 +415,9 @@ export const I18N_BLOCKS: BlockDef[] = [
         .appendField('기본 HTML')
         .appendField(new Blockly.FieldTextInput('<b>Default</b>'), 'DEFAULT');
       b.appendDummyInput()
+        .appendField('태그')
+        .appendField(new Blockly.FieldTextInput('span'), 'TAG');
+      b.appendDummyInput()
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendDummyInput()
@@ -424,9 +430,10 @@ export const I18N_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const key = sanitizeKey(String(b.getFieldValue('KEY') ?? ''));
       const def = String(b.getFieldValue('DEFAULT') ?? '');
+      const tag = pickI18nDisplayTag(String(b.getFieldValue('TAG') ?? 'span'));
       const cls = String(b.getFieldValue('CLASS') ?? '');
       // DEFAULT 는 HTML 그대로 — escape 하지 않음 (data-i18n-html 의 의도).
-      return `<span${sheetClassAttr(cls)}${attr('data-i18n-html', key)}${styleAttr(style)}>${def}</span>`;
+      return `<${tag}${sheetClassAttr(cls)}${attr('data-i18n-html', key)}${styleAttr(style)}>${def}</${tag}>`;
     },
   },
 

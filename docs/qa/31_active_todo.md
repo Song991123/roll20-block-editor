@@ -1,3 +1,18 @@
+## 2026-07-30 i18n title/html tag preservation
+
+- DONE LOCAL: `data-i18n-title` and `data-i18n-html` now share the same
+  supported-tag policy as aria labels. Their imported source tag is carried in
+  an editable `TAG` field and emitted unchanged; unsupported tags continue to
+  generic/container matching.
+- VERIFIED LOCAL: import structure `41/41`, style/import `16/16`, emit
+  contract, high-priority mapping `22/22` and `25/25`, lint, build, full
+  `ci:verify`, persistent preview modern/legacy, edit-flow, and strict
+  imported-edit sync pass.
+- VERIFY OPEN: This closes two targeted i18n structure-loss cases. It does not
+  prove arbitrary HTML/CSS losslessness or actual Roll20 parity.
+- NEXT P0: Complete the user-visible three-file selection in the isolated
+  modern Sandbox, then capture positive root/state/worker/roll/chat evidence.
+
 ## 2026-07-30 Sandbox positive-render retry
 
 - VERIFIED EXTERNAL: The isolated modern Sandbox still shows exactly

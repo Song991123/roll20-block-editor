@@ -178,6 +178,18 @@ function testI18nAriaLabelClassPreserved(): void {
   });
   assert(divResult.html.includes('r20_i18n_aria_label'), 'div aria-label block matched');
   assert(fieldValue(divResult.html, 'TAG') === 'div', 'i18n aria-label TAG is preserved');
+
+  const titleResult = importSheet({
+    html: `<div data-i18n-title="panel.title" title="Panel title"></div>`,
+  });
+  assert(titleResult.html.includes('r20_i18n_title'), 'div i18n title block matched');
+  assert(fieldValue(titleResult.html, 'TAG') === 'div', 'i18n title TAG is preserved');
+
+  const htmlResult = importSheet({
+    html: `<div data-i18n-html="panel.rich"><b>Panel</b></div>`,
+  });
+  assert(htmlResult.html.includes('r20_i18n_html'), 'div i18n html block matched');
+  assert(fieldValue(htmlResult.html, 'TAG') === 'div', 'i18n html TAG is preserved');
 }
 
 // ---------- 빈 style → STYLE="" (no `style=""` emit) ----------

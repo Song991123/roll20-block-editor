@@ -470,25 +470,27 @@ function matchI18n(node: DomNode, _ctx: MatchContext): MatchedBlock | null {
       children: {},
     };
   }
-  if (a['data-i18n-html'] && (tag === 'span' || tag === 'div')) {
+  if (a['data-i18n-html'] && I18N_DISPLAY_TAG_SET.has(tag)) {
     const inner = innerHtmlSerialize(node);
     return {
       blockType: 'r20_i18n_html',
       fields: {
         KEY: a['data-i18n-html'],
         DEFAULT: inner,
+        TAG: tag,
         CLASS: stripSheetPrefix(a.class || ''),
         STYLE: a.style || '',
       },
       children: {},
     };
   }
-  if (a['data-i18n-title']) {
+  if (a['data-i18n-title'] && I18N_DISPLAY_TAG_SET.has(tag)) {
     return {
       blockType: 'r20_i18n_title',
       fields: {
         KEY: a['data-i18n-title'],
         DEFAULT: a.title || '',
+        TAG: tag,
         CLASS: stripSheetPrefix(a.class || ''),
         STYLE: a.style || '',
       },
