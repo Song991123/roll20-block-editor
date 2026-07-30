@@ -8016,3 +8016,22 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   path before source-derived visual checks resume.
 - `NEXT P0`: Use the isolated Sandbox handoff for positive modern activation;
   keep legacy verification in a separate dedicated legacy-enabled destination.
+
+## 2026-07-30 Import dialog copy and syntax repair
+
+- `DONE LOCAL`: Replaced the corrupted `ImportDialog` UI copy, file-input
+  aria labels, progress text, import report labels, asset preflight labels,
+  and action text with readable Korean. The import, worker, asset, and
+  workspace-update paths were kept behaviorally unchanged.
+- `DONE LOCAL`: Repaired malformed JSX attributes and template literals that
+  had left the source component syntactically broken even though it was not on
+  the current visible route.
+- `VERIFIED LOCAL`: UI-copy guard, lint, import structure tests (41/41),
+  translation comment tests (7/7), worker parser tests (28/28), production
+  build, and the full `ci:verify` gate pass. The first CI attempt had one
+  timing-sensitive sanitizer budget failure; the isolated rerun and second
+  full CI run passed.
+- `VERIFY / OPEN`: This repairs product copy and source integrity only. It does
+  not prove arbitrary-sheet visual parity or actual Roll20 Sandbox parity.
+- `NEXT P0`: Recover the supported modern Sandbox upload path, then continue
+  with positive render/runtime/roll/chat evidence before claiming parity.

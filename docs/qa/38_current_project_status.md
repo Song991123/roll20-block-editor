@@ -157,3 +157,17 @@ persistent iframe smoke reports zero reloads in both modes; and canonical
 imported-edit sync passes two neutral structures. The current worktree does
 not contain `test-fixtures/visual`, so historical source-derived fixture counts
 are not current evidence. No source-derived sheet was restored or committed.
+
+## Import UI Integrity - 2026-07-30
+
+`components/editor/ImportDialog.tsx` had corrupted visible Korean strings,
+malformed file-input attributes, and broken progress/report template literals.
+Those strings and attributes were replaced with readable Korean while retaining
+the existing import, worker, CSS, translation, and asset-preflight behavior.
+The UI-copy guard was also repaired so it can actually scan product source.
+
+Local evidence: UI-copy guard passed for 66 files; lint passed; import structure
+41/41, translation comment 7/7, worker parser 28/28, production build, and the
+full `ci:verify` gate passed. This is source/UI integrity evidence only. The
+modern Sandbox upload, legacy-room render, and universal Roll20 visual parity
+claims remain open.

@@ -8717,3 +8717,22 @@ visibility verification passed. No external room was opened or modified.
 - External Roll20 remains open: Sandbox tab discovery succeeded, but claiming
   the isolated tab timed out before DOM inspection. No upload or room mutation
   occurred.
+
+## 2026-07-30 - ImportDialog user-facing copy repair
+
+- Found a product-facing import component with mojibake Korean, malformed
+  `aria-label` attributes, and broken JSX/template-literal delimiters. This
+  was a real source defect even though the current route did not import the
+  component into the production bundle.
+- Replaced the component copy with readable Korean for HTML/CSS/translation/JS
+  import, worker/page selection, progress, conversion results, asset checks,
+  and actions. Import behavior and workspace hydration logic were preserved.
+- Repaired `scripts/ui_copy_guard.mjs`; it now has valid marker detection and
+  passes against 66 product-source files.
+- Verification: lint PASS; UI-copy guard PASS; import structure 41/41;
+  translation comments 7/7; worker parser 28/28; production build PASS;
+  full `ci:verify` PASS on the second run. The first full run had a transient
+  legacy sanitize performance-budget miss (`4.08x`); its isolated rerun passed
+  16/16 before the successful full rerun.
+- Scope note: no source-derived fixture was restored, no public sheet sample
+  was added, and actual modern/legacy Roll20 visual parity remains unverified.

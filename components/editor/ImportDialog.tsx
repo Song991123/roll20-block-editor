@@ -1,19 +1,5 @@
 'use client';
 
-/**
- * ImportDialog — HTML / CSS / translation / JS 텍스트를 워크스페이스에 import.
- *
- * Anchor:
- *   - docs/spec/02_functional_spec.md §3 (130 블록 카탈로그)
- *   - lib/import/index.ts (importSheet API)
- *
- * 사용자가 외부 Roll20 시트 (.html + .css + translation.json + 선택 JS) 을
- * 텍스트 또는 파일 업로드로 입력 → 130 블록 카탈로그 매칭 → 워크스페이스에 hydrate.
- *
- * 매칭 결과 요약 (coverage % / fallback 카운트 / warning 리스트) 을 표시.
- * 시스템 specific 토큰 0 — Roll20 시트면 무엇이든 입력 가능.
- */
-
 import { useMemo, useState, type ChangeEvent } from 'react';
 import { toast } from 'sonner';
 import {
@@ -98,8 +84,6 @@ function arrangeImportedWorkspace(key: WorkspaceKey) {
 function appendExternalScript(html: string, source: string, kind: ExternalJsKind): string {
   const body = String(source ?? '').trim();
   if (!body) return html;
-  // A literal closing tag inside a JS string would terminate the HTML script
-  // element before Roll20/import parsing sees the rest of the file.
   const safeBody = body.replace(/<\/script/gi, '<' + '\\/script');
   const type = kind === 'worker' ? 'text/worker' : 'text/javascript';
   return [String(html ?? '').trim(), `<script type="${type}">\n${safeBody}\n</script>`]
@@ -116,8 +100,8 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
   const [jsKind, setJsKind] = useState<ExternalJsKind>('page');
   const [compactWideRows, setCompactWideRows] = useState(false);
   const [busy, setBusy] = useState(false);
-  const assetReplacementMap = usePreviewStore((s) => s.assetReplacementMap);
-  const setAssetReplacementMap = usePreviewStore((s) => s.setAssetReplacementMap);
+  const assetReplacementMap = usePreviewStore((state) => state.assetReplacementMap);
+  const setAssetReplacementMap = usePreviewStore((state) => state.setAssetReplacementMap);
   const [report, setReport] = useState<null | {
     coverage: number;
     matched: number;
@@ -139,85 +123,76 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     [htmlText, cssText],
   );
 
-  function handleFile(setter: (v: string) => void) {
-    return (e: ChangeEvent<HTMLInputElement>) => {
-      const f = e.target.files?.[0];
-      if (!f) return;
-      const r = new FileReader();
-      r.onload = () => setter(typeof r.result === 'string' ? r.result : '');
-      r.readAsText(f);
+  function handleFile(setter: (value: string) => void) {
+    return (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => setter(typeof reader.result === 'string' ? reader.result : '');
+      reader.readAsText(file);
     };
   }
 
   async function handleImport() {
     setBusy(true);
     setProgress(null);
-    // Plan A — chunked inject + progress UI.
-    // 큰 sheet (top-level 블록 N > 1000) 만 progress 표시 → 작은 sheet 는 기존 UX.
-    const PROGRESS_THRESHOLD = 1000;
-    const PROGRESS_TOAST_ID = 'import-progress';
+    const progressThreshold = 1000;
+    const progressToastId = 'import-progress';
+
     try {
       const htmlWithExternalJs = appendExternalScript(htmlText, jsText, jsKind);
-      const result = importSheet({
-        html: htmlWithExternalJs,
-        css: cssText,
-        i18n: i18nText,
-      }, {
-        html: { compactWideRows },
-      });
+      const result = importSheet(
+        {
+          html: htmlWithExternalJs,
+          css: cssText,
+          i18n: i18nText,
+        },
+        { html: { compactWideRows } },
+      );
       const adapter = getBlocklyAdapter();
-      // Keep the import boundary safe when the dialog wins the race against
-      // BlocklyModelHost's registration effect.
       registerAllBlocks();
-      const ws = useWorkspaceStore.getState();
-      const ui = useUiStore.getState();
-      // Dispose visible SVG workspaces before hydrating a large import.
-      // Otherwise Blockly creates thousands of SVG blocks while the dialog is open.
+      const workspaceStore = useWorkspaceStore.getState();
+      const uiStore = useUiStore.getState();
+
       if (
         result.stats.htmlTotal >= MAX_SVG_BLOCKS &&
-        ui.mainMode !== 'preview' &&
-        ui.mainMode !== 'edit'
+        uiStore.mainMode !== 'preview' &&
+        uiStore.mainMode !== 'edit'
       ) {
-        ui.setMainMode('preview');
+        uiStore.setMainMode('preview');
         await new Promise<void>((resolve) =>
-          requestAnimationFrame(() =>
-            requestAnimationFrame(() => resolve()),
-          ),
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
         );
       }
-      // Imported sheets may declare their own intrinsic width. Keep the
-      // blank-sheet default fixed at 850px, but let imported content opt into
-      // the existing measurement path.
-      ui.setAutoSheetCanvasWidth(ui.sheetCanvasWidth);
-      ui.setAutoRolltemplateCanvasWidth(ui.rolltemplateCanvasWidth);
+
+      uiStore.setAutoSheetCanvasWidth(uiStore.sheetCanvasWidth);
+      uiStore.setAutoRolltemplateCanvasWidth(uiStore.rolltemplateCanvasWidth);
       const emptyXml = '<xml xmlns="https://developers.google.com/blockly/xml"></xml>';
-      // Reset before hydrate to avoid duplicate top blocks.
-      ws.resetWorkspace('html');
-      ws.resetWorkspace('css');
-      ws.resetWorkspace('i18n');
-      ws.resetWorkspace('js');
-      ws.resetWorkspace('worker');
+
+      workspaceStore.resetWorkspace('html');
+      workspaceStore.resetWorkspace('css');
+      workspaceStore.resetWorkspace('i18n');
+      workspaceStore.resetWorkspace('js');
+      workspaceStore.resetWorkspace('worker');
       adapter.hydrateFromXml('js', result.js);
       adapter.hydrateFromXml('worker', emptyXml);
 
-      // html 워크스페이스가 가장 큼 (6K 가능) → chunked. css/i18n 은 보통 작음.
-      // top-level 카운트는 chunked 가 자체 측정 → progress callback 으로 수신.
       let htmlTotal = result.stats.htmlTotal;
-      await (result.stats.htmlTotal >= PROGRESS_THRESHOLD
+      await (result.stats.htmlTotal >= progressThreshold
         ? adapter.hydrateFromXmlChunked('html', result.html, {
-        chunkSize: 500,
-        onProgress: (done, total) => {
-          htmlTotal = total;
-          if (total >= PROGRESS_THRESHOLD) {
-            const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-            setProgress({ done, total, pct });
-            toast.loading(`${done.toLocaleString()} / ${total.toLocaleString()}개 블록 불러오는 중… ${pct}%`, {
-              id: PROGRESS_TOAST_ID,
-            });
-          }
-        },
-        })
+            chunkSize: 500,
+            onProgress: (done, total) => {
+              htmlTotal = total;
+              if (total < progressThreshold) return;
+              const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+              setProgress({ done, total, pct });
+              toast.loading(`블록 ${done.toLocaleString()} / ${total.toLocaleString()}개를 불러오는 중 · ${pct}%`, {
+                id: progressToastId,
+              });
+            },
+          })
         : Promise.resolve(adapter.hydrateFromXml('html', result.html)));
+
       const workerMove = moveImportedWorkerBlocksToWorkspace();
       const workerSource = replaceWorkerWorkspaceFromSourceHtml(htmlWithExternalJs);
       adapter.hydrateFromXml('css', result.css);
@@ -227,26 +202,26 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       arrangeImportedWorkspace('i18n');
       arrangeImportedWorkspace('js');
       arrangeImportedWorkspace('worker');
-      // chunked 토스트 정리.
-      if (htmlTotal >= PROGRESS_THRESHOLD) {
-        toast.dismiss(PROGRESS_TOAST_ID);
-      }
+
+      if (htmlTotal >= progressThreshold) toast.dismiss(progressToastId);
       setProgress(null);
+
       const htmlBlocks = adapter.getWorkspace('html')?.getAllBlocks(false).length ?? 0;
       const cssBlocks = adapter.getWorkspace('css')?.getAllBlocks(false).length ?? 0;
       const i18nBlocks = adapter.getWorkspace('i18n')?.getAllBlocks(false).length ?? 0;
       const jsBlocks = adapter.getWorkspace('js')?.getAllBlocks(false).length ?? 0;
       const workerBlocks = adapter.getWorkspace('worker')?.getAllBlocks(false).length ?? 0;
-      ws.bumpStructure('html', htmlBlocks);
-      ws.bumpStructure('css', cssBlocks);
-      ws.bumpStructure('i18n', i18nBlocks);
-      ws.bumpStructure('js', jsBlocks);
-      ws.bumpStructure('worker', workerBlocks);
-      ws.markSaved('html');
-      ws.markSaved('css');
-      ws.markSaved('i18n');
-      ws.markSaved('js');
-      ws.markSaved('worker');
+      workspaceStore.bumpStructure('html', htmlBlocks);
+      workspaceStore.bumpStructure('css', cssBlocks);
+      workspaceStore.bumpStructure('i18n', i18nBlocks);
+      workspaceStore.bumpStructure('js', jsBlocks);
+      workspaceStore.bumpStructure('worker', workerBlocks);
+      workspaceStore.markSaved('html');
+      workspaceStore.markSaved('css');
+      workspaceStore.markSaved('i18n');
+      workspaceStore.markSaved('js');
+      workspaceStore.markSaved('worker');
+
       setReport({
         coverage: result.stats.coverage,
         matched: result.stats.htmlMatched,
@@ -262,9 +237,10 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         wideRowBundles: result.stats.wideRowBundles ?? 0,
         wideRowCollapsed: result.stats.wideRowCollapsed ?? 0,
       });
+
       if (result.stats.sanitizeDropped > 0) {
         toast.warning(
-          `보안을 위해 인라인 이벤트 핸들러 ${result.stats.sanitizeDropped}개를 제거했어요. (onclick 등)`,
+          `보안을 위해 인라인 이벤트 핸들러 ${result.stats.sanitizeDropped}개를 제거했습니다. (onclick 등)`,
           { duration: 4500 },
         );
       }
@@ -272,10 +248,10 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         `불러오기 완료: HTML 매칭 ${result.stats.htmlMatched}/${result.stats.htmlTotal} (${result.stats.coverage}%) · 원본 보존 ${result.stats.htmlRawFallback}개`,
         { duration: 3500 },
       );
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.dismiss('import-progress');
-      toast.error(`불러오기 실패: ${msg}`, { duration: 4000 });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.dismiss(progressToastId);
+      toast.error(`불러오기 실패: ${message}`, { duration: 4000 });
     } finally {
       setProgress(null);
       setBusy(false);
@@ -292,21 +268,18 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
   }
 
   function handleCreateAssetReplacementDraft() {
-    const draft = buildAssetReplacementDraft(assetPreflight, {
-      sourceLabel: 'import preflight',
-    });
+    const draft = buildAssetReplacementDraft(assetPreflight, { sourceLabel: 'import preflight' });
     if (!draft) {
       toast('교체할 외부 자산 URL이 없습니다.', { duration: 2200 });
       return;
     }
-    const next = [assetReplacementMap.trim(), draft].filter(Boolean).join('\n\n');
-    setAssetReplacementMap(next);
-    toast.success('자산 교체 목록 초안을 만들었습니다. 내보내기 창에서 새 URL을 채워 주세요.', {
+    setAssetReplacementMap([assetReplacementMap.trim(), draft].filter(Boolean).join('\n\n'));
+    toast.success('자산 교체 목록 초안을 만들었습니다. 내보내기 창에서 사용자 소유 URL을 입력해 주세요.', {
       duration: 3500,
     });
   }
 
-  const anyInput = !!(htmlText.trim() || cssText.trim() || i18nText.trim() || jsText.trim());
+  const anyInput = Boolean(htmlText.trim() || cssText.trim() || i18nText.trim() || jsText.trim());
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -314,12 +287,11 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         <DialogHeader>
           <DialogTitle>시트 파일 불러오기</DialogTitle>
           <DialogDescription>
-            가지고 있는 시트 파일(HTML·CSS·번역)을 넣으면 블록으로 자동 변환돼요.
-            아직 변환하지 못하는 부분은 원본 그대로 안전하게 보존해요.
+            HTML, CSS, 번역 파일과 선택한 JS를 넣으면 블록으로 자동 변환합니다. 변환하지 못한 부분은 원본을 유지해 안전하게 보존합니다.
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="w-full">
+        <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)} className="w-full">
           <TabsList className="w-full">
             <TabsTrigger value="html">HTML</TabsTrigger>
             <TabsTrigger value="css">CSS</TabsTrigger>
@@ -337,8 +309,8 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
             />
             <textarea
               value={htmlText}
-              onChange={(e) => setHtmlText(e.target.value)}
-              placeholder="<input type='text' name='attr_character_name'> ... 같은 HTML 붙여넣기."
+              onChange={(event) => setHtmlText(event.target.value)}
+              placeholder="<input type='text' name='attr_character_name'> 같은 HTML을 붙여 넣으세요."
               className={textareaClassName}
               spellCheck={false}
             />
@@ -354,8 +326,8 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
             />
             <textarea
               value={cssText}
-              onChange={(e) => setCssText(e.target.value)}
-              placeholder=".sheet-header { color: red; } ... CSS 붙여넣기."
+              onChange={(event) => setCssText(event.target.value)}
+              placeholder=".sheet-header { color: red; } 같은 CSS를 붙여 넣으세요."
               className={textareaClassName}
               spellCheck={false}
             />
@@ -371,8 +343,8 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
             />
             <textarea
               value={i18nText}
-              onChange={(e) => setI18nText(e.target.value)}
-              placeholder='{"hello":"안녕"} 또는 key=value 줄 형식.'
+              onChange={(event) => setI18nText(event.target.value)}
+              placeholder='{"hello":"안녕"} 또는 key=value 형식'
               className={textareaClassName}
               spellCheck={false}
             />
@@ -417,37 +389,35 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
             />
             <textarea
               value={jsText}
-              onChange={(e) => setJsText(e.target.value)}
-              placeholder={jsKind === 'worker'
-                ? 'on("sheet:opened", ...), getAttrs(...), setAttrs(...) 같은 Roll20 worker 코드'
-                : '일반 페이지 JS 또는 외부 script 파일 내용을 붙여넣기'}
+              onChange={(event) => setJsText(event.target.value)}
+              placeholder={
+                jsKind === 'worker'
+                  ? 'on("sheet:opened", ...), getAttrs(...), setAttrs(...) 같은 Roll20 worker 코드'
+                  : '일반 페이지 JS 또는 script 파일 내용을 붙여 넣으세요'
+              }
               className={textareaClassName}
               spellCheck={false}
               data-testid="import-js-textarea"
             />
             <p className="text-xs leading-relaxed text-muted-foreground">
-              코드는 미리보기 화면에 편집 UI로 노출하지 않고, 선택한 종류의 JS workspace와 Roll20 export에만 넣습니다.
+              JS는 미리보기 화면에 코드로 표시하지 않습니다. 선택한 종류에 따라 JS 작업 공간 또는 Roll20 내보내기에 포함됩니다.
             </p>
           </TabsContent>
         </Tabs>
 
-        <ImportAssetPreflight
-          result={assetPreflight}
-          onCreateDraft={handleCreateAssetReplacementDraft}
-        />
+        <ImportAssetPreflight result={assetPreflight} onCreateDraft={handleCreateAssetReplacementDraft} />
 
         <label className="flex gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3.5 text-sm leading-relaxed">
           <input
             type="checkbox"
             checked={compactWideRows}
-            onChange={(e) => setCompactWideRows(e.target.checked)}
+            onChange={(event) => setCompactWideRows(event.target.checked)}
             className="mt-0.5 h-[18px] w-[18px] accent-[var(--primary)]"
           />
           <span>
-            <span className="block font-semibold">큰 표를 빠르게 불러오기</span>
+            <span className="block font-semibold">큰 시트를 빠르게 불러오기</span>
             <span className="block text-muted-foreground">
-              반복되는 큰 표 줄을 묶음으로 보존해서 불러오는 시간을 줄여요. 내보내는 내용은 똑같지만,
-              묶인 줄 안쪽은 나중에 풀기 전까지 낱개로 고치기 어려워요.
+              반복되는 넓은 행을 묶음으로 보존해 불러오는 시간을 줄입니다. 내보내기 결과는 같지만, 묶인 행은 나중에 개별 블록으로 고치려면 다시 펼쳐야 합니다.
             </span>
           </span>
         </label>
@@ -459,45 +429,44 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
             aria-live="polite"
             data-testid="import-progress"
           >
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-medium">큰 시트를 불러오는 중…</span>
+            <div className="mb-2 flex items-center justify-between">
+              <span className="font-medium">시트를 불러오는 중</span>
               <span className="tabular-nums text-muted-foreground">
                 {progress.done.toLocaleString()} / {progress.total.toLocaleString()} 블록 · {progress.pct}%
               </span>
             </div>
-            <div className="h-2 w-full rounded-full bg-[var(--bg-elevated-2)] overflow-hidden">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--bg-elevated-2)]">
               <div
                 className="h-full rounded-full bg-[var(--primary)] transition-[width] duration-150"
                 style={{ width: `${progress.pct}%` }}
               />
             </div>
-            <div className="mt-1.5 text-muted-foreground text-xs">
-              큰 시트는 잠깐 느려질 수 있어요. 변환은 계속 진행되고 있어요.
+            <div className="mt-1.5 text-xs text-muted-foreground">
+              큰 시트는 시간이 걸릴 수 있어요. 변환을 중단하지 않고 계속 진행합니다.
             </div>
           </div>
         )}
 
         {report && (
           <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3.5 text-sm leading-relaxed">
-            <div className="font-semibold mb-1">변환 결과</div>
+            <div className="mb-1 font-semibold">변환 결과</div>
             <div>
-              HTML 매칭: <span className="tabular-nums">{report.matched}/{report.total}</span>
-              {' '}({report.coverage}%)
-              {' · '}원본 보존 <span className="tabular-nums">{report.rawHtml}</span>
+              HTML 매칭: <span className="tabular-nums">{report.matched}/{report.total}</span> ({report.coverage}%) · 원본 보존{' '}
+              <span className="tabular-nums">{report.rawHtml}</span>개
             </div>
             <div>
-              CSS 규칙: <span className="tabular-nums">{report.cssMatched}/{report.cssTotal}</span>
-              {' · '}번역 키 <span className="tabular-nums">{report.i18nKeys}</span>
+              CSS 규칙: <span className="tabular-nums">{report.cssMatched}/{report.cssTotal}</span> · 번역 키{' '}
+              <span className="tabular-nums">{report.i18nKeys}</span>
             </div>
             {(report.pageJsBlocks > 0 || report.workerBlocks > 0) && (
               <div>
-                JS 블록: 페이지 <span className="tabular-nums">{report.pageJsBlocks}</span>
-                {' · '}자동 동작 <span className="tabular-nums">{report.workerBlocks}</span>
+                JS 블록: 페이지 <span className="tabular-nums">{report.pageJsBlocks}</span> · 동작{' '}
+                <span className="tabular-nums">{report.workerBlocks}</span>
               </div>
             )}
             {report.wideRowBundles > 0 && (
               <div className="mt-1 text-sky-500">
-                큰 표 행 묶음 {report.wideRowBundles}개로 약 {report.wideRowCollapsed}개 블록을 줄였습니다.
+                반복 행 {report.wideRowBundles}묶음을 {report.wideRowCollapsed}개 블록으로 줄였습니다.
               </div>
             )}
             {report.sanitizeDropped > 0 && (
@@ -506,19 +475,17 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
               </div>
             )}
             {report.warnings > 0 && (
-              <div className="mt-1 text-amber-500">
-                경고 {report.warnings}건 — 일부 패턴은 원본 블록으로 보존했습니다.
-              </div>
+              <div className="mt-1 text-amber-500">경고 {report.warnings}건은 원본 블록으로 보존했습니다.</div>
             )}
           </div>
         )}
 
         <DialogFooter className="gap-2">
           <Button type="button" variant="ghost" onClick={handleReset} disabled={busy}>
-            지우기
+            초기화
           </Button>
           <Button type="button" onClick={handleImport} disabled={busy || !anyInput}>
-            {busy ? (progress ? `${progress.pct}% 불러오는 중…` : '변환 중…') : '블록으로 변환하기'}
+            {busy ? (progress ? `${progress.pct}% 불러오는 중...` : '변환 중...') : '블록으로 변환하기'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -533,9 +500,9 @@ function ImportAssetPreflight({
   result: AssetPreflight;
   onCreateDraft: () => void;
 }) {
-  const hasRisk =
-    result.externalRefs > 0 || result.relativeRefs > 0 || result.placeholderRiskRefs > 0;
+  const hasRisk = result.externalRefs > 0 || result.relativeRefs > 0 || result.placeholderRiskRefs > 0;
   const draftableRefs = result.refs.filter((ref) => ref.kind !== 'data-url').length;
+
   return (
     <section
       className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3.5 text-sm"
@@ -543,10 +510,9 @@ function ImportAssetPreflight({
     >
       <div className="mb-2 flex items-start justify-between gap-3">
         <div>
-          <div className="text-sm font-semibold">그림·글꼴 미리 점검</div>
+          <div className="text-sm font-semibold">이미지·글꼴 미리 확인</div>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            시트에 쓰인 그림·글꼴 주소는 Roll20에서 다시 불러와요. 지워진 Imgur
-            그림이나 Roll20 프록시 URL은 placeholder 그림으로 보일 수 있어요.
+            시트의 이미지·글꼴 주소를 확인합니다. Roll20에서 다시 불러올 때 표시되지 않을 수 있는 주소가 있으면 알려드립니다.
           </p>
         </div>
         <span
@@ -568,18 +534,15 @@ function ImportAssetPreflight({
         <ImportAssetMetric label="placeholder 위험" value={result.placeholderRiskRefs} />
         <ImportAssetMetric label="데이터 URL" value={result.dataRefs} />
         <ImportAssetMetric label="HTTP URL" value={result.insecureHttpRefs} />
-        <ImportAssetMetric label="직링크 후보" value={result.canonicalDirectRefs} />
-        <ImportAssetMetric label="Imgur 직링크" value={result.imgurDirectCandidateRefs} />
+        <ImportAssetMetric label="직접 HTTPS 후보" value={result.canonicalDirectRefs} />
+        <ImportAssetMetric label="Imgur 직접 후보" value={result.imgurDirectCandidateRefs} />
       </div>
       {hasRisk ? (
         <div className="mt-2 rounded-lg border border-[color-mix(in_srgb,var(--warning)_30%,transparent)] bg-[var(--warning-soft)] px-3 py-2.5 text-xs leading-relaxed text-foreground">
-          실제 Roll20 동일성을 확인하려면 이 자산들이 로드되는지 먼저 봐야 합니다.
-          삭제되었거나 막힌 URL은 export의 자산 URL 교체에서 사용자가 직접 다시 올린 URL로
-          바꿔 주세요.
+          실제 Roll20와 같은 화면을 확인하려면 자산이 로드되는지 먼저 봐야 합니다. 삭제됐거나 막힌 URL은 내보내기의 자산 교체 목록에서 사용자 소유 URL로 직접 바꿔 주세요.
           {result.canonicalDirectRefs > 0 ? (
             <span className="mt-1 block" data-testid="import-asset-canonical-candidates">
-              교체 초안에 {result.canonicalDirectRefs}개의 HTTPS/직링크 후보를 같이 적습니다.
-              후보 URL도 권한과 로딩 상태를 확인한 뒤 사용해야 합니다.
+              교체 초안에 HTTPS 직접 후보 {result.canonicalDirectRefs}개를 담았습니다. 후보 URL의 권한과 로딩 상태를 확인한 뒤 사용해야 합니다.
             </span>
           ) : null}
           {result.hosts.length > 0 ? (
