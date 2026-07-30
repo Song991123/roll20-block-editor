@@ -1,14 +1,14 @@
 'use client';
 
 /**
- * ImportDialog — HTML / CSS / translation 텍스트를 워크스페이스에 import.
+ * ImportDialog — HTML / CSS / translation / JS 텍스트를 워크스페이스에 import.
  *
  * Anchor:
  *   - docs/spec/02_functional_spec.md §3 (130 블록 카탈로그)
  *   - lib/import/index.ts (importSheet API)
  *
- * 사용자가 외부 Roll20 시트 (.html + .css + translation.json) 을 텍스트
- * 또는 파일 업로드로 입력 → 130 블록 카탈로그 매칭 → 3 워크스페이스에 hydrate.
+ * 사용자가 외부 Roll20 시트 (.html + .css + translation.json + 선택 JS) 을
+ * 텍스트 또는 파일 업로드로 입력 → 130 블록 카탈로그 매칭 → 워크스페이스에 hydrate.
  *
  * 매칭 결과 요약 (coverage % / fallback 카운트 / warning 리스트) 을 표시.
  * 시스템 specific 토큰 0 — Roll20 시트면 무엇이든 입력 가능.
@@ -48,7 +48,8 @@ export interface ImportDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type Tab = 'html' | 'css' | 'i18n';
+type Tab = 'html' | 'css' | 'i18n' | 'js';
+type ExternalJsKind = 'page' | 'worker';
 
 const inputClassName =
   'text-sm text-foreground file:mr-3 file:rounded-full file:border-0 file:bg-[var(--bg-elevated-2)] file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-foreground hover:file:bg-[var(--bg-hover)]';
@@ -94,11 +95,25 @@ function arrangeImportedWorkspace(key: WorkspaceKey) {
   workspace.resizeContents?.();
 }
 
+function appendExternalScript(html: string, source: string, kind: ExternalJsKind): string {
+  const body = String(source ?? '').trim();
+  if (!body) return html;
+  // A literal closing tag inside a JS string would terminate the HTML script
+  // element before Roll20/import parsing sees the rest of the file.
+  const safeBody = body.replace(/<\/script/gi, '<' + '\\/script');
+  const type = kind === 'worker' ? 'text/worker' : 'text/javascript';
+  return [String(html ?? '').trim(), `<script type="${type}">\n${safeBody}\n</script>`]
+    .filter(Boolean)
+    .join('\n');
+}
+
 export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
   const [tab, setTab] = useState<Tab>('html');
   const [htmlText, setHtmlText] = useState('');
   const [cssText, setCssText] = useState('');
   const [i18nText, setI18nText] = useState('');
+  const [jsText, setJsText] = useState('');
+  const [jsKind, setJsKind] = useState<ExternalJsKind>('page');
   const [compactWideRows, setCompactWideRows] = useState(false);
   const [busy, setBusy] = useState(false);
   const assetReplacementMap = usePreviewStore((s) => s.assetReplacementMap);
@@ -111,6 +126,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     cssMatched: number;
     cssTotal: number;
     i18nKeys: number;
+    pageJsBlocks: number;
     workerBlocks: number;
     warnings: number;
     sanitizeDropped: number;
@@ -141,8 +157,9 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     const PROGRESS_THRESHOLD = 1000;
     const PROGRESS_TOAST_ID = 'import-progress';
     try {
+      const htmlWithExternalJs = appendExternalScript(htmlText, jsText, jsKind);
       const result = importSheet({
-        html: htmlText,
+        html: htmlWithExternalJs,
         css: cssText,
         i18n: i18nText,
       }, {
@@ -202,7 +219,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         })
         : Promise.resolve(adapter.hydrateFromXml('html', result.html)));
       const workerMove = moveImportedWorkerBlocksToWorkspace();
-      const workerSource = replaceWorkerWorkspaceFromSourceHtml(htmlText);
+      const workerSource = replaceWorkerWorkspaceFromSourceHtml(htmlWithExternalJs);
       adapter.hydrateFromXml('css', result.css);
       adapter.hydrateFromXml('i18n', result.i18n);
       arrangeImportedWorkspace('html');
@@ -238,6 +255,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         cssMatched: result.stats.cssMatched,
         cssTotal: result.stats.cssTotal,
         i18nKeys: result.stats.i18nKeys,
+        pageJsBlocks: jsBlocks,
         workerBlocks: workerSource.replaced ? workerSource.targetCount : workerMove.targetCount,
         warnings: result.warnings.length,
         sanitizeDropped: result.stats.sanitizeDropped,
@@ -268,6 +286,8 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     setHtmlText('');
     setCssText('');
     setI18nText('');
+    setJsText('');
+    setJsKind('page');
     setReport(null);
   }
 
@@ -286,7 +306,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     });
   }
 
-  const anyInput = !!(htmlText.trim() || cssText.trim() || i18nText.trim());
+  const anyInput = !!(htmlText.trim() || cssText.trim() || i18nText.trim() || jsText.trim());
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -304,6 +324,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
             <TabsTrigger value="html">HTML</TabsTrigger>
             <TabsTrigger value="css">CSS</TabsTrigger>
             <TabsTrigger value="i18n">번역</TabsTrigger>
+            <TabsTrigger value="js">JS</TabsTrigger>
           </TabsList>
 
           <TabsContent value="html" className="mt-3 space-y-2">
@@ -355,6 +376,58 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
               className={textareaClassName}
               spellCheck={false}
             />
+          </TabsContent>
+
+          <TabsContent value="js" className="mt-3 space-y-2">
+            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="JS 종류">
+              <button
+                type="button"
+                onClick={() => setJsKind('page')}
+                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  jsKind === 'page'
+                    ? 'border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary-active)]'
+                    : 'border-border bg-[var(--bg-elevated)] text-muted-foreground hover:bg-[var(--bg-hover)]'
+                }`}
+                aria-pressed={jsKind === 'page'}
+                data-testid="import-js-kind-page"
+              >
+                페이지 JS
+              </button>
+              <button
+                type="button"
+                onClick={() => setJsKind('worker')}
+                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  jsKind === 'worker'
+                    ? 'border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary-active)]'
+                    : 'border-border bg-[var(--bg-elevated)] text-muted-foreground hover:bg-[var(--bg-hover)]'
+                }`}
+                aria-pressed={jsKind === 'worker'}
+                data-testid="import-js-kind-worker"
+              >
+                Roll20 worker
+              </button>
+            </div>
+            <input
+              type="file"
+              accept=".js,text/javascript,application/javascript"
+              onChange={handleFile(setJsText)}
+              className={inputClassName}
+              aria-label="JS 파일 업로드"
+              data-testid="import-js-file"
+            />
+            <textarea
+              value={jsText}
+              onChange={(e) => setJsText(e.target.value)}
+              placeholder={jsKind === 'worker'
+                ? 'on("sheet:opened", ...), getAttrs(...), setAttrs(...) 같은 Roll20 worker 코드'
+                : '일반 페이지 JS 또는 외부 script 파일 내용을 붙여넣기'}
+              className={textareaClassName}
+              spellCheck={false}
+              data-testid="import-js-textarea"
+            />
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              코드는 미리보기 화면에 편집 UI로 노출하지 않고, 선택한 종류의 JS workspace와 Roll20 export에만 넣습니다.
+            </p>
           </TabsContent>
         </Tabs>
 
@@ -416,6 +489,12 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
               CSS 규칙: <span className="tabular-nums">{report.cssMatched}/{report.cssTotal}</span>
               {' · '}번역 키 <span className="tabular-nums">{report.i18nKeys}</span>
             </div>
+            {(report.pageJsBlocks > 0 || report.workerBlocks > 0) && (
+              <div>
+                JS 블록: 페이지 <span className="tabular-nums">{report.pageJsBlocks}</span>
+                {' · '}자동 동작 <span className="tabular-nums">{report.workerBlocks}</span>
+              </div>
+            )}
             {report.wideRowBundles > 0 && (
               <div className="mt-1 text-sky-500">
                 큰 표 행 묶음 {report.wideRowBundles}개로 약 {report.wideRowCollapsed}개 블록을 줄였습니다.

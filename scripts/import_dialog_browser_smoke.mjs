@@ -78,7 +78,11 @@ async function main() {
 
     const html = '<div class="sheet-root"><label>name</label><input type="text" name="attr_character_name"></div>';
     await page.locator('[data-testid="import-dialog"] textarea').fill(html);
-    await page.getByRole('button', { name: '블록으로 변환하기' }).click();
+    const clickConvert = async () => {
+      const button = page.getByRole('button', { name: '블록으로 변환하기' });
+      await button.evaluate((node) => node.click());
+    };
+    await clickConvert();
 
     await page.waitForFunction(
       () => {
@@ -102,6 +106,68 @@ async function main() {
     assert(result.iframeCount === 1, `import remounted the preview surface: ${result.iframeCount}`);
     assert(consoleErrors.length === 0, `console errors: ${consoleErrors.join(' | ')}`);
     assert(pageErrors.length === 0, `page errors: ${pageErrors.join(' | ')}`);
+
+    // External page JS and Roll20 worker files use the same import dialog
+    // boundary as embedded scripts, but are routed to separate workspaces.
+    await page.getByRole('tab', { name: 'JS' }).click();
+    await page.locator('[data-testid="import-js-textarea"]').fill('window.r20ExternalPageProbe = true;');
+    await clickConvert();
+    await page.waitForFunction(
+      () => window.__perfHook.getEmitContent().js.includes('r20ExternalPageProbe'),
+      null,
+      { timeout: 20000 },
+    );
+    const pageJs = await page.evaluate(() => window.__perfHook.getEmitContent());
+    assert(pageJs.js.includes('r20ExternalPageProbe'), 'external page JS did not reach the page-JS workspace');
+
+    await page.getByTestId('import-js-kind-worker').click();
+    await page.locator('[data-testid="import-js-textarea"]').fill(
+      'on("sheet:opened", function () { setAttrs({ external_worker_probe: "1" }); });',
+    );
+    await clickConvert();
+    await page.waitForFunction(
+      () => window.__perfHook.getEmitContent().worker.includes('external_worker_probe'),
+      null,
+      { timeout: 20000 },
+    );
+    const workerJs = await page.evaluate(() => window.__perfHook.getEmitContent());
+    assert(workerJs.worker.includes('external_worker_probe'), 'external worker JS did not reach the worker workspace');
+
+    const previewFrame = page.frames().find((frame) => frame !== page.mainFrame());
+    assert(previewFrame, 'persistent preview iframe frame is missing after external JS import');
+    await previewFrame.waitForSelector('.charactersheet.charsheet', { state: 'attached', timeout: 20000 });
+    const previewRuntime = await previewFrame.evaluate(() => {
+      const runtimeNodes = Array.from(document.querySelectorAll('script, rolltemplate'));
+      const visibleRuntimeNodes = runtimeNodes.filter((node) => {
+        const style = getComputedStyle(node);
+        const rect = node.getBoundingClientRect();
+        return style.display !== 'none'
+          && style.visibility !== 'hidden'
+          && rect.width > 0
+          && rect.height > 0;
+      });
+      return {
+        workerScriptCount: document.querySelectorAll('script[type="text/worker"]').length,
+        visibleRuntimeNodeCount: visibleRuntimeNodes.length,
+      };
+    });
+    assert(
+      /<script\s+type=["']text\/worker/i.test(workerJs.html),
+      'worker JS was not retained in the Roll20 export HTML boundary',
+    );
+    assert(
+      previewRuntime.visibleRuntimeNodeCount === 0,
+      `runtime node became visible in preview: ${JSON.stringify(previewRuntime)}`,
+    );
+    assert(consoleErrors.length === 0, `console errors after external JS import: ${consoleErrors.join(' | ')}`);
+    assert(pageErrors.length === 0, `page errors after external JS import: ${pageErrors.join(' | ')}`);
+
+    result.externalJs = {
+      pageWorkspace: pageJs.js.includes('r20ExternalPageProbe'),
+      workerWorkspace: workerJs.worker.includes('external_worker_probe'),
+      workerExportedToHtml: /<script\s+type=["']text\/worker/i.test(workerJs.html),
+      previewRuntime,
+    };
     console.log(JSON.stringify({ pass: true, result, consoleErrors, pageErrors }, null, 2));
   } finally {
     await browser.close();

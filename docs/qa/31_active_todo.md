@@ -7667,3 +7667,25 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P1`: Repeat this disposable-output purge only in an environment that
   permits the approved recursive maintenance operation; do not report these
   targets as deleted meanwhile.
+
+## 2026-07-30 External JS import boundary
+
+- `DONE LOCAL`: The import dialog now accepts optional JS as text or a file and
+  routes it as either page JS or Roll20 worker code. Imported page code reaches
+  the dedicated JS workspace; worker code reaches the dedicated worker
+  workspace and the existing Roll20 export boundary.
+- `DONE LOCAL`: The preview contract keeps worker code in export HTML but does
+  not expose runtime nodes as visible sheet content. The smoke now checks the
+  iframe DOM rather than incorrectly rejecting the required export script.
+- `VERIFIED LOCAL`: `lint`, `build`, `ci:verify`, import-dialog smoke,
+  persistent-preview smoke, strict imported-edit sync, and edit-flow smoke all
+  pass. Import smoke reports page workspace `true`, worker workspace `true`,
+  one worker export boundary, zero visible runtime nodes, and zero browser
+  errors.
+- `VERIFY / OPEN`: This proves the local import/export/runtime boundary only;
+  it does not prove arbitrary Roll20 worker API parity or actual Sandbox
+  execution. Modern Sandbox activation and separate legacy-room evidence stay
+  external gates.
+- `NEXT P0`: Use the user-visible Sandbox file selection for the anonymous
+  payload, then capture worker execution, input state, roll control, and chat
+  evidence without retaining source-identifying material.

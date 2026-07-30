@@ -8419,3 +8419,19 @@ visibility verification passed. No external room was opened or modified.
   in tracked files.
 - OPEN: Roll20 Sandbox render activation, modern visual parity, and the
   separate legacy-room visual/chat check remain external verification gates.
+
+## 2026-07-30 - External JS import boundary
+
+- IMPLEMENTED LOCAL: ImportDialog accepts optional page JS or Roll20 worker
+  JS from text/file input and sends each kind to its own Blockly workspace.
+- PRESERVED: `emitAll` keeps the worker script in the Roll20 export HTML
+  boundary while the preview iframe exposes zero visible script/rolltemplate
+  runtime nodes.
+- VERIFIED LOCAL: lint, production build, full `ci:verify`, import-dialog
+  browser smoke, persistent preview surface, strict imported-edit sync, and
+  edit-flow smoke pass. The import smoke observed both JS workspaces populated,
+  the worker export boundary present, zero visible runtime nodes, and no
+  console/page errors.
+- OPEN EXTERNAL: Actual Roll20 worker API behavior, Sandbox activation, and
+  legacy-room execution remain unverified. The local smoke must not be used as
+  a claim of Roll20 parity.

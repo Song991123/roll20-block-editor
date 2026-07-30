@@ -49,6 +49,10 @@ local output and is deleted after the verification batch.
 - LOCAL PASS: Worker workspace, worker state, and emit-contract smokes were
   rechecked. Page JavaScript remains separate, visible worker nodes stay hidden,
   and the local output keeps one worker script without proving Roll20 runtime.
+- LOCAL PASS: The user-facing import dialog now accepts optional page JS or
+  worker JS and routes them to separate workspaces. Import-dialog browser smoke
+  confirms both workspace paths, the required worker export boundary, zero
+  visible runtime nodes in the iframe, and zero browser errors.
 - LOCAL FIX: Untyped worker detection ignores strings and comments before its
   API heuristic, with import/emit regression coverage. It is still not a full
   JavaScript parser.
