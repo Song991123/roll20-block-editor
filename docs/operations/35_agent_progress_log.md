@@ -33,6 +33,17 @@
 - BOUNDARY: No actual Roll20 worker execution or chat screenshot parity is
   claimed until Sandbox/legacy evidence is captured.
 
+## 2026-07-30 - Synthetic Roll20 pre-upload handoff
+
+- VERIFIED LOCAL: Anonymous synthetic `fixture-A` passed pre-upload baseline,
+  payload hygiene, Sandbox sanitize, cleaned roundtrip, state selector, asset,
+  and evidence guard checks.
+- GENERATED LOCAL: The ignored upload handoff lists the HTML/CSS/Translation/
+  ZIP artifacts and the matching modern Sandbox activation/root/chat capture
+  sequence.
+- BOUNDARY: Generated actual and chat evidence remain missing; pre-upload PASS
+  is not Roll20 visual parity.
+
 ## 2026-07-30 - Local render regression batch
 
 - VERIFIED LOCAL: Fresh-sheet, imported-edit-sync strict, persistent preview

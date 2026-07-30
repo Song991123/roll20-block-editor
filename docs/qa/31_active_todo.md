@@ -38,6 +38,17 @@
 - VERIFY OPEN: This proves the local runtime simulation only; actual Roll20
   worker execution and chat screenshot parity remain unverified.
 
+## 2026-07-30 Synthetic Roll20 pre-upload handoff
+
+- DONE LOCAL: Anonymous synthetic `fixture-A` passed the full pre-upload gate:
+  local baseline/payload hygiene, Sandbox sanitize audit, cleaned-payload
+  roundtrip, state-selector audit, asset audit, and evidence guard.
+- DONE LOCAL: Generated ignored handoff artifacts with HTML, CSS, Translation,
+  ZIP paths and the required modern Sandbox activation/root/chat capture steps.
+- VERIFY OPEN: The handoff correctly reports generated Sandbox and chat
+  evidence as missing. No actual Roll20 screenshot, DOM sidecar, or parity
+  result is implied by the pre-upload PASS.
+
 ## 2026-07-30 Local render regression batch
 
 - DONE LOCAL: Fresh-sheet smoke passed with zero HTML blocks/layers in the blank
