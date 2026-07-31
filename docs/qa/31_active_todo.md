@@ -1,3 +1,17 @@
+# 2026-07-31 Local imported edit-sync recheck
+
+- VERIFIED LOCAL: after rebuilding the deleted static `out` directory, the
+  strict imported-edit smoke passed all three anonymous fixture families:
+  `3/3` interaction, `3/3` resource checks, and `3/3` edit-to-preview sync.
+- VERIFIED LOCAL: the run completed without the startup document `404` seen in
+  the first post-cleanup attempt. That first failure was a missing generated
+  build output, not a renderer regression.
+- CLAIM BOUNDARY: this is local synthetic/imported evidence only. It does not
+  prove arbitrary-sheet coverage or actual Roll20 visual parity.
+- BLOCKED EXTERNAL P0: the supported modern Sandbox chooser still returns
+  `Not allowed` before upload; current actual evidence remains `0/4` root/chat
+  captures. Do not use a CDP or hidden-input upload bypass.
+
 # 2026-07-31 Legacy test-room observation
 
 - VERIFIED EXTERNAL READ-ONLY: the dedicated legacy verification tab showed a

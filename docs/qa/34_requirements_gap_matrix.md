@@ -1,5 +1,18 @@
 # 34. Requirements Gap Matrix
 
+## Local Imported Edit-Sync Recheck - 2026-07-31
+
+| Area | Current evidence | Status | Boundary |
+| --- | --- | --- | --- |
+| Imported pointer interaction | Three anonymous fixture families completed the canonical iframe pointer path | DONE LOCAL | Synthetic/local families only |
+| Preview/edit synchronization | Three of three fixtures kept the moved layer aligned through emit and preview update | DONE LOCAL | Does not prove arbitrary-sheet semantics |
+| Resource gate | Three of three fixtures had no final rendered resource failures | DONE LOCAL | Local static output only |
+| Actual Roll20 upload/render | Supported Sandbox file chooser still returns `Not allowed`; root/chat captures remain `0/4` | BLOCKED EXTERNAL | No parity claim |
+
+The first failed strict attempt after cleanup was a missing generated `out`
+document. Rebuilding before the rerun separated that harness issue from the
+product result.
+
 ## Legacy Test-Room Observation - 2026-07-31
 
 | Area | Current evidence | Status | Boundary |

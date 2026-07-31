@@ -1,3 +1,18 @@
+# 2026-07-31 - Local imported edit-sync recheck
+
+- Rebuilt the static output after the approved generated-output cleanup. The
+  first strict smoke attempt correctly exposed a missing `out` document (`404`)
+  rather than a product failure.
+- Re-ran `smoke:imported-edit-sync:strict` after the build. All three anonymous
+  imported fixture families passed interaction, resource, edit-to-preview
+  synchronization, and emitted-output checks (`3/3`).
+- Server hygiene, `ci:verify`, and lint also passed in this batch. No project
+  listener was running before verification.
+- External gate is unchanged: the supported Chrome file chooser still rejects
+  the modern Sandbox payload with `Not allowed`. No hidden-input, endpoint,
+  CDP, or ordinary-room workaround was used; actual Roll20 parity remains
+  unproven.
+
 # 2026-07-31 - Legacy test-room observation
 
 - Fresh preflight on the dedicated legacy verification tab showed exactly one
