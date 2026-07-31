@@ -1,5 +1,21 @@
 # 34. Requirements Gap Matrix
 
+## 2026-08-01 Imported layer subtree sync refresh
+
+- `VERIFIED LOCAL`: `build`, `smoke:edit-flow`, and
+  `scripts/imported_edit_sync_smoke.mjs` passed against five anonymous
+  synthetic structures with resource failures `0`, console/page errors `0/0`,
+  stable re-import, flow insertion, free placement, and persistent
+  preview/edit synchronization. The non-leaf frame case recorded a successful
+  sibling reorder with the child subtree preserved and local visual sync
+  within the configured budget.
+- `VERIFIED LOCAL`: focused layer-role, layer-operation, drop-indicator,
+  iframe-drop-target, design-position, iframe-bridge, and canvas-dimension
+  tests passed.
+- `CLAIM BOUNDARY`: this is synthetic/local evidence. It does not close the
+  imported real-fixture coverage gap or the actual modern/legacy Roll20
+  Sandbox/test-room parity gate, which remains `VERIFY/BLOCKED EXTERNAL`.
+
 ## Protected Local Input L2 And Chat Refresh - 2026-07-31
 
 - `VERIFIED LOCAL`: a direct local HTML/CSS/translation input passed the

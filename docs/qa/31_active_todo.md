@@ -1,3 +1,18 @@
+# 2026-08-01 Local imported-layer sync refresh
+
+- `VERIFIED LOCAL`: production build, `smoke:edit-flow`, and the imported
+  edit-sync smoke all passed after regenerating only anonymous synthetic
+  fixtures. The browser run covered five structures, including a non-leaf
+  frame moved before/after its sibling while retaining its child and keeping
+  the persistent preview/edit iframe visually synchronized within the local
+  budget; console/page errors were `0/0` and resource issues were `0`.
+- `VERIFIED LOCAL`: the focused layer-role, Blockly layer-operation,
+  drop-indicator, iframe-drop-target, design-position, iframe-bridge, and
+  canvas-dimension tests all passed.
+- `CLAIM BOUNDARY`: this strengthens local Figma-like layer editing only. It
+  does not prove arbitrary imported-sheet coverage or actual Roll20 parity.
+  The generated `.tmp` fixture is disposable and is not public source.
+
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
 # 2026-08-01 Roll20 Sandbox upload retry
