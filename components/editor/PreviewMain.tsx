@@ -140,11 +140,8 @@ export default function PreviewMain() {
   const setRenderMode = usePreviewStore((s) => s.setRenderMode);
   const zoom = useUiStore((s) => s.previewZoom);
   const sheetCanvasWidth = useUiStore((s) => s.sheetCanvasWidth);
-  const rolltemplateCanvasWidth = useUiStore((s) => s.rolltemplateCanvasWidth);
   const sheetCanvasWidthAuto = useUiStore((s) => s.sheetCanvasWidthAuto);
-  const rolltemplateCanvasWidthAuto = useUiStore((s) => s.rolltemplateCanvasWidthAuto);
   const setAutoSheetCanvasWidth = useUiStore((s) => s.setAutoSheetCanvasWidth);
-  const setAutoRolltemplateCanvasWidth = useUiStore((s) => s.setAutoRolltemplateCanvasWidth);
   const previewLayer = useUiStore((s) => s.previewLayer);
   const setHoveredWidgetId = useUiStore((s) => s.setHoveredWidgetId);
   const setSelectedWidgetId = useUiStore((s) => s.setSelectedWidgetId);
@@ -298,15 +295,12 @@ export default function PreviewMain() {
 
   const total = htmlCount + cssCount + i18nCount;
   const isEmpty = total === 0;
-  const canvasWidth = editSubmode === 'rolltemplate'
-    ? rolltemplateCanvasWidth
-    : sheetCanvasWidth;
-  const setAutoCanvasWidth = editSubmode === 'rolltemplate'
-    ? setAutoRolltemplateCanvasWidth
-    : setAutoSheetCanvasWidth;
-  const canvasWidthAuto = editSubmode === 'rolltemplate'
-    ? rolltemplateCanvasWidthAuto
-    : sheetCanvasWidthAuto;
+  // The persistent iframe always owns the character sheet. Rolltemplate edit
+  // mode has its own ChatPane-backed surface, so changing card width must not
+  // resize or reflow the hidden sheet iframe.
+  const canvasWidth = sheetCanvasWidth;
+  const setAutoCanvasWidth = setAutoSheetCanvasWidth;
+  const canvasWidthAuto = sheetCanvasWidthAuto;
   const compatibilityMode = legacyCssSanitize ? 'legacy' : 'modern';
   // Resolve iframe hit paths against one layer snapshot per structural change.
   // Rebuilding Blockly snapshots for every pointermove was a major source of
@@ -1346,10 +1340,8 @@ export default function PreviewMain() {
           && typeof data.width === 'number'
         ) {
           autoWidthSizedRef.current = true;
-          const nextWidth = clampCanvasWidth(editSubmode, data.width);
-          const currentWidth = editSubmode === 'rolltemplate'
-            ? useUiStore.getState().rolltemplateCanvasWidth
-            : useUiStore.getState().sheetCanvasWidth;
+          const nextWidth = clampCanvasWidth('sheet', data.width);
+          const currentWidth = useUiStore.getState().sheetCanvasWidth;
           if (Math.abs(nextWidth - currentWidth) > 8) {
             setAutoCanvasWidth(nextWidth);
           }

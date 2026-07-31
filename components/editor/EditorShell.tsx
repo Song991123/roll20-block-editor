@@ -8,6 +8,7 @@ import SidebarLeft from './SidebarLeft';
 import SidebarRight from './SidebarRight';
 import PreviewMain from './PreviewMain';
 import EditCanvas from './EditCanvas';
+import RolltemplateEditSurface from './RolltemplateEditSurface';
 import Statusbar from './Statusbar';
 import AutosaveBanner from './AutosaveBanner';
 import dynamic from 'next/dynamic';
@@ -129,6 +130,7 @@ export default function EditorShell() {
     return () => { alive = false; };
   }, []);
   const mainMode = useUiStore((s) => s.mainMode);
+  const editSubmode = useUiStore((s) => s.editSubmode);
   const setMainMode = useUiStore((s) => s.setMainMode);
   const mainSplit = useUiStore((s) => s.mainSplit);
   const setMainSplit = useUiStore((s) => s.setMainSplit);
@@ -158,6 +160,13 @@ export default function EditorShell() {
   }, [isMobile]);
 
   const splitContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (mainMode !== 'edit' || editSubmode !== 'rolltemplate') return;
+    const ui = useUiStore.getState();
+    if (ui.sidebarRightCollapsed) ui.toggleSidebarRight();
+    if (ui.sidebarRightTab !== 'attrs') ui.setSidebarRightTab('attrs');
+  }, [editSubmode, mainMode]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -224,6 +233,7 @@ export default function EditorShell() {
 
   // edit 모드는 캔버스 자체가 full pane.
   const editVisible = mainMode === 'edit';
+  const rolltemplateEditVisible = editVisible && editSubmode === 'rolltemplate';
   const hiddenPaneStyle: CSSProperties = {
     width: 0,
     flexShrink: 0,
@@ -234,6 +244,7 @@ export default function EditorShell() {
   let workspaceStyle: CSSProperties = {};
   let previewStyle: CSSProperties = {};
   let editStyle: CSSProperties = hiddenPaneStyle;
+  let rolltemplateEditStyle: CSSProperties = hiddenPaneStyle;
   if (mainMode === 'split') {
     workspaceStyle = { width: `${mainSplit.left}%`, flexShrink: 0 };
     previewStyle = { width: `${mainSplit.right}%`, flexShrink: 0 };
@@ -255,7 +266,21 @@ export default function EditorShell() {
       zIndex: 20,
       minWidth: 0,
       background: 'var(--bg-canvas)',
+      visibility: rolltemplateEditVisible ? 'hidden' : 'visible',
+      pointerEvents: rolltemplateEditVisible ? 'none' : 'auto',
     };
+    if (rolltemplateEditVisible) {
+      rolltemplateEditStyle = {
+        position: 'absolute',
+        left: EDIT_SURFACE_LAYER_PANEL_WIDTH_PX,
+        top: EDIT_SURFACE_TOOLBAR_HEIGHT_PX,
+        right: 0,
+        bottom: 0,
+        zIndex: 21,
+        minWidth: 0,
+        background: 'var(--bg-canvas)',
+      };
+    }
     editStyle = { flex: '1 1 auto' };
   }
 
@@ -324,12 +349,23 @@ export default function EditorShell() {
               className="relative flex flex-col min-h-0"
               style={previewStyle}
               data-testid="preview-pane"
-              data-visible={previewVisible ? 'true' : 'false'}
+              data-visible={previewVisible && !rolltemplateEditVisible ? 'true' : 'false'}
               data-persistent-render-surface="true"
               data-edit-render-surface={mainMode === 'edit' ? 'iframe' : undefined}
-              aria-hidden={previewVisible ? undefined : true}
+              aria-hidden={previewVisible && !rolltemplateEditVisible ? undefined : true}
             >
               <PreviewMain />
+            </div>
+
+            <div
+              className="relative flex min-h-0 flex-col"
+              style={rolltemplateEditStyle}
+              data-testid="rolltemplate-edit-pane"
+              data-visible={rolltemplateEditVisible ? 'true' : 'false'}
+              data-edit-render-surface="chat-renderer"
+              aria-hidden={rolltemplateEditVisible ? undefined : true}
+            >
+              {rolltemplateEditVisible && <RolltemplateEditSurface />}
             </div>
 
             <div

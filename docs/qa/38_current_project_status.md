@@ -882,3 +882,16 @@ visual evidence, which remains open without an attached Roll20 session.
   modern Sandbox and separate legacy test destination. Browser extension and
   local CDP were unavailable in the latest attempt, so no new external
   evidence was collected.
+
+## Rolltemplate visual editing - 2026-08-01
+
+The result-template submode is now a real visual editor instead of a sheet
+iframe width variant. It renders the selected template through the same local
+chat renderer used by roll history, scopes the layer panel to that template,
+supports direct selection and managed presentation controls, and accepts
+validated flow-only result pieces from the friendly gallery. Browser smoke
+confirms that a style edit and a dropped child reach both the edit card and the
+existing chat result while the character-sheet iframe keeps its own geometry.
+All focused checks and the full local CI gate pass. This is local synthetic
+evidence only; current-payload modern Sandbox and separate legacy-room visual
+parity remain open.

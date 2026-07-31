@@ -11543,3 +11543,22 @@ same-hash modern/legacy comparison.
 - Remaining editor P0: build a true rolltemplate-only visual surface. Current
   rolltemplate blocks and chat rendering work, but the submode is not yet a
   Figma-like template compositor.
+
+## 2026-08-01 - Rolltemplate visual editor
+
+- Replaced the width-only submode with `RolltemplateEditSurface`, sharing the
+  exact Roll20-like chat shell, user template CSS extraction, translations,
+  and rendered template body with `ChatPane`.
+- Added template ownership/scope helpers and visual layer roles. The layer pane
+  now shows only the active template tree; rendered card clicks select the same
+  block and open the direct inspector.
+- Added anonymous flow-only result row/title/label/value presets. Managed CSS
+  edits and dropped children update the editor card and existing chat result;
+  the hidden persistent sheet iframe remains independent.
+- Browser smoke proves template selection, a row fill edit, separate CSS
+  emission, no new inline presentation, flow drop, and edit-to-chat reuse.
+- Focused tests, lint, production build, full `ci:verify`, strict imported edit
+  sync, fresh-sheet smoke, and modern/legacy synthetic visual parity pass. The
+  synthetic Preview/Edit mismatch is `0%` for all four captures.
+- Actual current-payload modern/legacy Roll20 parity remains open. No private
+  sheet source, screenshot, fixture, or generated report was committed.

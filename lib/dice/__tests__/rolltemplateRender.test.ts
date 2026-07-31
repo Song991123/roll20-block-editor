@@ -4,6 +4,10 @@ import {
   extractRolltemplateBody,
   renderTemplateBody,
 } from '../rolltemplateRender';
+import {
+  buildRolltemplatePreviewResult,
+  collectRolltemplatePreviewFields,
+} from '../rolltemplatePreview';
 
 const source = `
 <rolltemplate class="sheet-rolltemplate-default">
@@ -92,5 +96,20 @@ assert.match(defaultBody, /<tr><td>Result<\/td><td>/);
 assert.match(defaultBody, /class="inlinerollresult showtip tipsy-n-right"/);
 assert.match(defaultBody, />12<\/span>/);
 assert.doesNotMatch(defaultBody, /<th>|\[12\]|<td>name<\/td>/i);
+
+const previewFields = collectRolltemplatePreviewFields(`
+  <div>{{name}}</div>
+  {{#rollWasCrit() result}}<div>{{result}}</div>{{/rollWasCrit() result}}
+  <div>{{computed::bonus}}</div>
+  <div>{{result}}</div>
+`);
+assert.deepEqual(
+  previewFields.map((field) => [field.key, field.text]),
+  [['name', '예시 이름'], ['result', '12'], ['computed::bonus', '예시 bonus']],
+  'visual editor derives stable anonymous preview values without duplicating fields',
+);
+const previewResult = buildRolltemplatePreviewResult('<div>{{name}} {{total}}</div>', 'card');
+assert.equal(previewResult.templateName, 'card', 'visual editor keeps the selected template name');
+assert.deepEqual(previewResult.fields.map((field) => field.text), ['예시 이름', '12']);
 
 console.log('rolltemplate render test PASS');

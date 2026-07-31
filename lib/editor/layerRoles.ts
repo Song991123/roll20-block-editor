@@ -117,6 +117,18 @@ const ROLE_KIND_OVERRIDES: Record<string, LayerRoleKind> = {
   r20_inline_break: 'flow',
   r20_icon: 'media',
   r20_radio: 'control',
+  // A rolltemplate is hidden on the sheet, but its authored body becomes a
+  // normal visual tree inside the dedicated chat-card editor. Keep the root
+  // and section blocks nestable there instead of classifying every type that
+  // contains the token "rolltemplate" as runtime code.
+  r20_rolltemplate_define: 'frame',
+  r20_rolltemplate_row: 'flow',
+  r20_rolltemplate_cond_if: 'flow',
+  r20_rolltemplate_cond_unless: 'flow',
+  r20_rolltemplate_each: 'flow',
+  r20_rolltemplate_field_ref: 'text',
+  r20_rolltemplate_helper: 'text',
+  r20_rolltemplate_computed: 'text',
   // Template invocation emits a chat command string, not a visible sheet
   // element. Keep it out of the selectable visual layer tree.
   r20_template_invoke: 'runtime',
@@ -147,6 +159,11 @@ const CAN_RECEIVE_CHILDREN_OVERRIDES: Record<string, boolean> = {
   r20_spacer: false,
   r20_inline_break: false,
   r20_icon: false,
+  r20_rolltemplate_define: true,
+  r20_rolltemplate_row: true,
+  r20_rolltemplate_cond_if: true,
+  r20_rolltemplate_cond_unless: true,
+  r20_rolltemplate_each: true,
 };
 
 const RUNTIME_BLOCK_TYPES = new Set([

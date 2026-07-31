@@ -8,6 +8,12 @@ import { toast } from 'sonner';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import type { BlockSnapshot } from '@/lib/blockly/adapter';
 import { canMoveLayerDrop, getLayerRole, type LayerDropMode } from '@/lib/editor/layerRoles';
+import {
+  listRolltemplateRoots,
+  listRolltemplateScope,
+  listSheetVisualScope,
+  resolveActiveRolltemplateId,
+} from '@/lib/editor/rolltemplateScope';
 import { EDIT_SURFACE_LAYER_PANEL_WIDTH_PX } from '@/lib/editor/editSurfaceLayout';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
@@ -102,6 +108,8 @@ export default function EditCanvas() {
   const toggleSnap = useUiStore((s) => s.toggleSnapEnabled);
   const editPlacementMode = useUiStore((s) => s.editPlacementMode);
   const setEditPlacementMode = useUiStore((s) => s.setEditPlacementMode);
+  const selectedBlockId = useWorkspaceStore((s) => s.selectedBlockId);
+  const setSelectedBlockId = useWorkspaceStore((s) => s.setSelectedBlockId);
   const [layerSearch, setLayerSearch] = useState('');
   const canvasWidth = editSubmode === 'rolltemplate' ? rolltemplateCanvasWidth : sheetCanvasWidth;
   const setCanvasWidth = editSubmode === 'rolltemplate'
@@ -138,6 +146,23 @@ export default function EditCanvas() {
   }, [canvasWidth, editSubmode, setCanvasWidth]);
   const structureVersion = useWorkspaceStore((s) => s.workspaces.html.structureVersion);
   const adapter = getBlocklyAdapter();
+  const htmlNodes = useMemo(() => {
+    void structureVersion;
+    return adapter.listAllBlocks('html');
+  }, [adapter, structureVersion]);
+  const rolltemplateRoots = useMemo(() => listRolltemplateRoots(htmlNodes), [htmlNodes]);
+  const activeRolltemplateId = useMemo(
+    () => resolveActiveRolltemplateId(htmlNodes, selectedBlockId),
+    [htmlNodes, selectedBlockId],
+  );
+
+  useEffect(() => {
+    if (editSubmode !== 'rolltemplate' || !activeRolltemplateId) return;
+    const selectedInsideActive = selectedBlockId
+      && listRolltemplateScope(htmlNodes, activeRolltemplateId)
+        .some((node) => node.id === selectedBlockId);
+    if (!selectedInsideActive) setSelectedBlockId(activeRolltemplateId, 'tree');
+  }, [activeRolltemplateId, editSubmode, htmlNodes, selectedBlockId, setSelectedBlockId]);
   const canUndo = useMemo(() => {
     void structureVersion;
     return adapter.canUndo('html');
@@ -186,7 +211,7 @@ export default function EditCanvas() {
       className="flex flex-1 min-h-0 flex-col bg-[var(--bg-canvas)]"
       data-testid="edit-canvas-root"
       data-edit-submode={editSubmode}
-      data-edit-render-owner="persistent-iframe"
+      data-edit-render-owner={editSubmode === 'rolltemplate' ? 'chat-renderer' : 'persistent-iframe'}
     >
       <div
         className="r20-strip flex h-9 shrink-0 items-center gap-3 border-b border-[var(--border-subtle)] px-3 text-xs"
@@ -195,6 +220,23 @@ export default function EditCanvas() {
         <span className="font-semibold text-foreground">
           {editSubmode === 'rolltemplate' ? '굴림 결과 편집' : '시트 편집'}
         </span>
+        {editSubmode === 'rolltemplate' && rolltemplateRoots.length > 0 && (
+          <label className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+            <span>결과 틀</span>
+            <select
+              value={activeRolltemplateId ?? ''}
+              onChange={(event) => setSelectedBlockId(event.target.value, 'tree')}
+              className="h-7 max-w-48 rounded-full border border-border bg-[var(--bg-elevated-2)] px-2.5 text-xs font-semibold text-foreground outline-none focus:border-[var(--primary)]"
+              data-testid="rolltemplate-picker"
+              aria-label="편집할 결과 틀"
+            >
+              {rolltemplateRoots.map((root, index) => {
+                const name = adapter.getBlockField('html', root.id, 'NAME')?.trim() || `결과 틀 ${index + 1}`;
+                return <option key={root.id} value={root.id}>{name}</option>;
+              })}
+            </select>
+          </label>
+        )}
         <div className="ml-auto flex items-center gap-1" role="group" aria-label="편집 기록">
           <button
             type="button"
@@ -219,55 +261,59 @@ export default function EditCanvas() {
             <Redo2 className="h-4 w-4" />
           </button>
         </div>
-        <button
-          type="button"
-          onClick={toggleSnap}
-          className={cn(
-            'rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors active:scale-95',
-            snapEnabled
-              ? 'border-[var(--primary-strong)] bg-[var(--primary-strong)] text-white'
-              : 'border-border bg-[var(--bg-elevated-2)] text-muted-foreground hover:bg-[var(--bg-hover)]',
-          )}
-          title="움직일 때 8px 격자 칸에 착 붙게 맞춰요"
-          data-testid="edit-canvas-snap-toggle"
-        >
-          격자 {snapEnabled ? '켬' : '끔'}
-        </button>
-        <div
-          className="flex items-center overflow-hidden rounded-full border border-border bg-[var(--bg-elevated-2)]"
-          data-testid="edit-placement-mode"
-        >
-          <button
-            type="button"
-            onClick={() => setEditPlacementMode('flow')}
-            className={cn(
-              'px-2.5 py-0.5 text-xs font-medium transition-colors',
-              editPlacementMode === 'flow'
-                ? 'bg-[var(--primary-strong)] text-white'
-                : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
-            )}
-            title="줄 맞춰 놓기 — 주변 요소와 나란히 정렬돼요."
-            data-testid="edit-placement-flow"
-          >
-            줄 맞춰
-          </button>
-          <button
-            type="button"
-            onClick={() => setEditPlacementMode('free')}
-            className={cn(
-              'px-2.5 py-0.5 text-xs font-medium transition-colors',
-              editPlacementMode === 'free'
-                ? 'bg-[var(--primary-strong)] text-white'
-                : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
-            )}
-            title="자유롭게 놓기 — 원하는 자리에 그대로 놓여요."
-            data-testid="edit-placement-free"
-          >
-            자유롭게
-          </button>
-        </div>
+        {editSubmode === 'sheet' && (
+          <>
+            <button
+              type="button"
+              onClick={toggleSnap}
+              className={cn(
+                'rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors active:scale-95',
+                snapEnabled
+                  ? 'border-[var(--primary-strong)] bg-[var(--primary-strong)] text-white'
+                  : 'border-border bg-[var(--bg-elevated-2)] text-muted-foreground hover:bg-[var(--bg-hover)]',
+              )}
+              title="움직일 때 8px 격자 칸에 착 붙게 맞춰요"
+              data-testid="edit-canvas-snap-toggle"
+            >
+              격자 {snapEnabled ? '켬' : '끔'}
+            </button>
+            <div
+              className="flex items-center overflow-hidden rounded-full border border-border bg-[var(--bg-elevated-2)]"
+              data-testid="edit-placement-mode"
+            >
+              <button
+                type="button"
+                onClick={() => setEditPlacementMode('flow')}
+                className={cn(
+                  'px-2.5 py-0.5 text-xs font-medium transition-colors',
+                  editPlacementMode === 'flow'
+                    ? 'bg-[var(--primary-strong)] text-white'
+                    : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
+                )}
+                title="줄 맞춰 놓기 — 주변 요소와 나란히 정렬돼요."
+                data-testid="edit-placement-flow"
+              >
+                줄 맞춰
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditPlacementMode('free')}
+                className={cn(
+                  'px-2.5 py-0.5 text-xs font-medium transition-colors',
+                  editPlacementMode === 'free'
+                    ? 'bg-[var(--primary-strong)] text-white'
+                    : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
+                )}
+                title="자유롭게 놓기 — 원하는 자리에 그대로 놓여요."
+                data-testid="edit-placement-free"
+              >
+                자유롭게
+              </button>
+            </div>
+          </>
+        )}
         <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          너비
+          {editSubmode === 'rolltemplate' ? '카드 너비' : '시트 너비'}
           <input
             ref={canvasWidthInputRef}
             type="number"
@@ -360,6 +406,7 @@ function EditLayerPanel({
   // mixing them into this tree made drop targets look like visual layers when
   // they could never appear on the sheet canvas.
   const tab: WorkspaceKey = 'html';
+  const editSubmode = useUiStore((s) => s.editSubmode);
   const selectedId = useWorkspaceStore((s) => s.selectedBlockId);
   const selectedIds = useWorkspaceStore((s) => s.selectedBlockIds);
   const setSelected = useWorkspaceStore((s) => s.setSelectedBlockId);
@@ -368,10 +415,18 @@ function EditLayerPanel({
   const structureVersion = useWorkspaceStore((s) => s.workspaces[tab].structureVersion);
   const [collapsedLayerIds, setCollapsedLayerIds] = useState<Set<string>>(() => new Set());
 
-  const nodes = useMemo(() => {
+  const allNodes = useMemo(() => {
     void structureVersion;
     return getBlocklyAdapter().listAllBlocks(tab);
   }, [tab, structureVersion]);
+  const nodes = useMemo(() => {
+    if (editSubmode === 'rolltemplate') {
+      const rootId = resolveActiveRolltemplateId(allNodes, selectedId);
+      return listRolltemplateScope(allNodes, rootId);
+    }
+    return listSheetVisualScope(allNodes)
+      .filter((node) => getLayerRole(node.type).kind !== 'runtime');
+  }, [allNodes, editSubmode, selectedId]);
 
   const filtered = useMemo(() => filterLayersWithAncestors(nodes, search), [nodes, search]);
   const selectedPath = useMemo(() => buildLayerPath(nodes, selectedId), [nodes, selectedId]);
@@ -519,7 +574,7 @@ function EditLayerPanel({
     >
       <div className="flex h-11 shrink-0 items-center gap-2 border-b border-border px-3 text-sm font-semibold text-foreground">
         <Layers className="h-[17px] w-[17px] text-[var(--primary)]" />
-        <span>레이어</span>
+        <span>{editSubmode === 'rolltemplate' ? '결과 카드 레이어' : '레이어'}</span>
         {selectedIds.length > 1 && (
           <button
             type="button"
@@ -549,7 +604,9 @@ function EditLayerPanel({
         className="flex items-center justify-between gap-1.5 border-b border-border px-3 py-1.5"
         data-testid="edit-layer-workspace"
       >
-        <span className="text-xs font-semibold text-muted-foreground">시트 짜임새</span>
+        <span className="text-xs font-semibold text-muted-foreground">
+          {editSubmode === 'rolltemplate' ? '결과 카드 짜임새' : '시트 짜임새'}
+        </span>
         <span className="rounded-full border border-[var(--primary-soft-border)] bg-[var(--primary-soft)] px-2 py-0.5 text-xs text-[var(--primary-active)]">
           화면에 보이는 것
         </span>
@@ -606,9 +663,9 @@ function EditLayerPanel({
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto" data-testid="edit-layer-scroll">
         {visibleNodes.length === 0 ? (
           <div className="px-3 py-8 text-center text-sm leading-relaxed text-muted-foreground">
-            아직 보여줄 레이어가 없어요.
+            {editSubmode === 'rolltemplate' ? '결과 카드에 아직 내용이 없어요.' : '아직 보여줄 레이어가 없어요.'}
             <br />
-            시트에 요소를 올리면 여기에 차곡차곡 쌓여요.
+            {editSubmode === 'rolltemplate' ? '왼쪽 조각을 추가해 주세요.' : '시트에 요소를 올리면 여기에 차곡차곡 쌓여요.'}
           </div>
         ) : (
           <div

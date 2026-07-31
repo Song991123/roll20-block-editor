@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -138,11 +138,11 @@ function currentChatPaintPolicy(): ChatPaintPolicy {
   return 'default';
 }
 
-function extractRolltemplateCss(css: string, fontPolicy: ChatFontPolicy = 'default'): string {
+export function extractRolltemplateCss(css: string, fontPolicy: ChatFontPolicy = 'default'): string {
   const prefixedCss = autoPrefixCssClasses(css);
   const rawFontFaces = prefixedCss.match(/@font-face\s*\{[^{}]*\}/gi) ?? [];
   const fontFaces = fontPolicy === 'roll20-chat-fallback' ? [] : rawFontFaces;
-  const matches = prefixedCss.match(/[^{}]*sheet-rolltemplate[^{}]*\{[^{}]*\}/g);
+  const matches = prefixedCss.match(/[^{}]*(?:sheet-rolltemplate|sheet-r20-node-)[^{}]*\{[^{}]*\}/g);
   const rolltemplateCss = rewriteRoll20AssetUrls([...fontFaces, ...(matches ?? [])].join('\n'), {
     proxyFontUrls: fontPolicy === 'roll20-sandbox-font-proxy',
   });
@@ -168,7 +168,7 @@ function rewriteRoll20AssetUrls(css: string, opts: { proxyFontUrls?: boolean } =
   });
 }
 
-function parseTranslations(raw: string): Record<string, string> {
+export function parseRolltemplateTranslations(raw: string): Record<string, string> {
   const text = normalizeTranslationForRoll20(String(raw ?? '')).trim();
   if (!text) return {};
   try {
@@ -448,6 +448,50 @@ const roll20ChatShellCss = `
 }
 `;
 
+export function RolltemplateRenderSurface({
+  emittedCss,
+  className = '',
+  testId,
+  children,
+}: {
+  emittedCss: string;
+  className?: string;
+  testId?: string;
+  children: ReactNode;
+}) {
+  const chatFontPolicy = currentChatFontPolicy();
+  const chatTextPolicy = currentChatTextPolicy();
+  const chatShadowPolicy = currentChatShadowPolicy();
+  const chatGeometryPolicy = currentChatGeometryPolicy();
+  const chatTypographyPolicy = currentChatTypographyPolicy();
+  const chatPaintPolicy = currentChatPaintPolicy();
+  const rolltemplateCss = useMemo(
+    () => extractRolltemplateCss(emittedCss, chatFontPolicy),
+    [emittedCss, chatFontPolicy],
+  );
+
+  return (
+    <div
+      className={`r20-chat-pane ${className}`.trim()}
+      data-testid={testId}
+      data-r20-chat-text-policy={chatTextPolicy}
+      data-r20-chat-shadow-policy={chatShadowPolicy}
+      data-r20-chat-geometry-policy={chatGeometryPolicy}
+      data-r20-chat-typography-policy={chatTypographyPolicy}
+      data-r20-chat-paint-policy={chatPaintPolicy}
+    >
+      <style data-r20-chat-shell-css dangerouslySetInnerHTML={{ __html: roll20ChatShellCss }} />
+      {rolltemplateCss.trim() && (
+        <style
+          data-r20-chat-user-css
+          dangerouslySetInnerHTML={{ __html: rolltemplateCss }}
+        />
+      )}
+      {children}
+    </div>
+  );
+}
+
 function DiceBreakdown({ detail }: { detail: RollDetail }) {
   if (!detail.dice.length) {
     return (
@@ -523,14 +567,16 @@ function CardExpr({ detail, expression }: { detail: RollDetail; expression: stri
   );
 }
 
-function CardRolltemplate({
+export function RolltemplateCardContent({
   result,
   emittedHtml,
   translations,
+  rootBlockId,
 }: {
   result: RolltemplateResult;
   emittedHtml: string;
   translations: Record<string, string>;
+  rootBlockId?: string | null;
 }) {
   const customBody = useMemo(
     () => extractRolltemplateBody(emittedHtml, result.templateName),
@@ -550,6 +596,7 @@ function CardRolltemplate({
     <div>
       <div
         className={rolltemplateClassName}
+        data-r20-block-id={rootBlockId || undefined}
         dangerouslySetInnerHTML={{ __html: innerHtml }}
       />
       {result.anyCrit && (
@@ -608,7 +655,7 @@ function RollCard({
           <span className="by">{card.sender || 'Sheet'}:</span>
         </div>
         <div className="message general you">
-          <CardRolltemplate result={r} emittedHtml={emittedHtml} translations={translations} />
+          <RolltemplateCardContent result={r} emittedHtml={emittedHtml} translations={translations} />
         </div>
       </div>
     );
@@ -651,34 +698,10 @@ export default function ChatPane() {
   const emittedHtml = useWorkspaceStore((s) => s.emitCache.html);
   const emittedCss = useWorkspaceStore((s) => s.emitCache.css);
   const emittedI18n = useWorkspaceStore((s) => s.emitCache.i18n);
-  const chatFontPolicy = currentChatFontPolicy();
-  const chatTextPolicy = currentChatTextPolicy();
-  const chatShadowPolicy = currentChatShadowPolicy();
-  const chatGeometryPolicy = currentChatGeometryPolicy();
-  const chatTypographyPolicy = currentChatTypographyPolicy();
-  const chatPaintPolicy = currentChatPaintPolicy();
-  const rolltemplateCss = useMemo(
-    () => extractRolltemplateCss(emittedCss, chatFontPolicy),
-    [emittedCss, chatFontPolicy],
-  );
-  const translations = useMemo(() => parseTranslations(emittedI18n), [emittedI18n]);
+  const translations = useMemo(() => parseRolltemplateTranslations(emittedI18n), [emittedI18n]);
 
   return (
-    <div
-      className="r20-chat-pane flex h-full flex-col min-h-0"
-      data-r20-chat-text-policy={chatTextPolicy}
-      data-r20-chat-shadow-policy={chatShadowPolicy}
-      data-r20-chat-geometry-policy={chatGeometryPolicy}
-      data-r20-chat-typography-policy={chatTypographyPolicy}
-      data-r20-chat-paint-policy={chatPaintPolicy}
-    >
-      <style data-r20-chat-shell-css dangerouslySetInnerHTML={{ __html: roll20ChatShellCss }} />
-      {rolltemplateCss.trim() && (
-        <style
-          data-r20-chat-user-css
-          dangerouslySetInnerHTML={{ __html: rolltemplateCss }}
-        />
-      )}
+    <RolltemplateRenderSurface emittedCss={emittedCss} className="flex h-full min-h-0 flex-col">
       <div className="h-11 shrink-0 border-b border-border px-3 flex items-center justify-between">
         <div className="text-sm font-semibold text-foreground">
           굴림 기록 <span className="font-normal text-muted-foreground">({rolls.length})</span>
@@ -723,6 +746,6 @@ export default function ChatPane() {
           </div>
         </div>
       </ScrollArea>
-    </div>
+    </RolltemplateRenderSurface>
   );
 }

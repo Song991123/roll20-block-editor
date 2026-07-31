@@ -25,6 +25,13 @@ import {
   type FriendlyWidgetGroup,
   type FriendlyWidgetPreset,
 } from '@/lib/widgets/presets';
+import { getBlocklyAdapter } from '@/lib/blockly/adapter';
+import {
+  findOwningRolltemplateId,
+  resolveActiveRolltemplateId,
+} from '@/lib/editor/rolltemplateScope';
+import { useUiStore } from '@/lib/stores/uiStore';
+import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
 import { cn } from '@/lib/utils/cn';
 import HelpTip from './HelpTip';
 import { WIDGET_DISPLAY, WIDGET_GROUP_DISPLAY } from './fieldLabels';
@@ -41,11 +48,17 @@ function displayDesc(preset: FriendlyWidgetPreset): string {
 
 export default function WidgetGallery() {
   const [search, setSearch] = useState('');
+  const editSubmode = useUiStore((state) => state.editSubmode);
+  const selectedBlockId = useWorkspaceStore((state) => state.selectedBlockId);
+  const structureVersion = useWorkspaceStore((state) => state.workspaces.html.structureVersion);
+  const target = editSubmode === 'rolltemplate' ? 'rolltemplate' : 'sheet';
 
   const grouped = useMemo(() => {
     const q = search.trim().toLowerCase();
     return GROUP_ORDER.map((group) => {
-      const items = FRIENDLY_WIDGET_PRESETS.filter((preset) => preset.group === group).filter((preset) => {
+      const items = FRIENDLY_WIDGET_PRESETS
+        .filter((preset) => preset.group === group && preset.targets.includes(target))
+        .filter((preset) => {
         if (!q) return true;
         return (
           displayName(preset).toLowerCase().includes(q) ||
@@ -57,14 +70,42 @@ export default function WidgetGallery() {
       });
       return { group, items };
     }).filter((entry) => entry.items.length > 0);
-  }, [search]);
+  }, [search, target]);
 
   const addPreset = (preset: FriendlyWidgetPreset) => {
-    const id = appendFriendlyWidgetPreset(preset);
+    let containerBlockId: string | null = null;
+    if (target === 'rolltemplate') {
+      void structureVersion;
+      const adapter = getBlocklyAdapter();
+      const nodes = adapter.listAllBlocks('html');
+      const rootId = resolveActiveRolltemplateId(nodes, selectedBlockId);
+      const byId = new Map(nodes.map((node) => [node.id, node]));
+      let candidateId = selectedBlockId
+        && findOwningRolltemplateId(nodes, selectedBlockId) === rootId
+        ? selectedBlockId
+        : rootId;
+      const seen = new Set<string>();
+      while (candidateId && !seen.has(candidateId)) {
+        seen.add(candidateId);
+        if (adapter.canNestTypeInContainer('html', preset.blockType, candidateId)) {
+          containerBlockId = candidateId;
+          break;
+        }
+        candidateId = byId.get(candidateId)?.layerParentId ?? null;
+      }
+    }
+    const id = appendFriendlyWidgetPreset(preset, undefined, {
+      target,
+      mode: target === 'rolltemplate' ? 'flow' : undefined,
+      containerBlockId,
+      placement: target === 'rolltemplate' ? 'inside' : undefined,
+    });
     if (id) {
-      toast(`'${displayName(preset)}'을(를) 시트에 올렸어요.`, { duration: 1400 });
+      toast(`'${displayName(preset)}'을(를) ${target === 'rolltemplate' ? '결과 카드' : '시트'}에 올렸어요.`, { duration: 1400 });
     } else {
-      toast.error('시트 작업 공간이 아직 준비되지 않았어요. 잠시 뒤 다시 시도해 주세요.');
+      toast.error(target === 'rolltemplate'
+        ? '먼저 편집할 결과 틀을 만들어 주세요.'
+        : '시트 작업 공간이 아직 준비되지 않았어요. 잠시 뒤 다시 시도해 주세요.');
     }
   };
 
@@ -73,11 +114,12 @@ export default function WidgetGallery() {
       <div className="flex h-full flex-col">
         <div className="r20-panel-head">
           <LayoutGrid className="h-[18px] w-[18px] text-[var(--primary)]" aria-hidden="true" />
-          <span>자주 쓰는 조각</span>
+          <span>{target === 'rolltemplate' ? '결과 카드 조각' : '자주 쓰는 조각'}</span>
           <span className="flex-1" />
           <HelpTip label="자주 쓰는 조각 도움말" side="right">
-            시트에 자주 올리는 조각들이에요. 눌러서 추가하거나,
-            시트 화면 위로 끌어다 놓으면 그 자리에 들어가요.
+            {target === 'rolltemplate'
+              ? '굴림 결과 카드에 넣을 조각들이에요.'
+              : '시트에 자주 올리는 조각들이에요.'}
           </HelpTip>
         </div>
 
@@ -88,7 +130,7 @@ export default function WidgetGallery() {
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="조각 찾기 — 예: 글자, 버튼"
+              placeholder={target === 'rolltemplate' ? '결과 조각 찾기' : '조각 찾기 — 예: 글자, 버튼'}
               aria-label="조각 검색"
               className="r20-input pl-9"
               data-testid="widget-gallery-search"

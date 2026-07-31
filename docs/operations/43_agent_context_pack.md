@@ -11,10 +11,13 @@ the entire history and generated evidence tree.
   editing.
 - Local preview/edit share one persistent iframe. Modern and legacy browser
   smoke currently pass, including delayed stale-revision rejection.
-- Direct edit now exposes managed CSS controls for visual layers and a generic
-  Roll button preset. The controls update the shared iframe immediately,
-  preserve unrelated imported attributes, and keep presentation out of inline
-  HTML. Dedicated visual editing of the rolltemplate body is still open.
+- Direct edit exposes managed CSS controls for visual sheet layers and a
+  generic Roll button preset. The rolltemplate submode now uses the same chat
+  renderer as the roll history: users can select a template root or child,
+  edit common presentation through managed CSS, and drop template-specific
+  rows/text into flow. The persistent sheet iframe remains mounted separately,
+  so card width cannot reflow the sheet. This is locally browser-verified, not
+  arbitrary-sheet actual Roll20 parity.
 - Actual Roll20's built-in default chat-template DOM and typography were
   measured in the dedicated one-member modern Sandbox. The local fallback now
   matches its caption/row/inline-roll structure and passes browser smoke.

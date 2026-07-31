@@ -9,18 +9,21 @@ import { flushEmitPipeline } from '@/lib/preview/useEmitPipeline';
 export const FRIENDLY_WIDGET_MIME = 'application/x-r20-friendly-widget';
 
 export type FriendlyWidgetGroup = 'layout' | 'text' | 'input' | 'action' | 'media';
+export type FriendlyWidgetTarget = 'sheet' | 'rolltemplate';
 
 export type FriendlyWidgetPreset = {
   id: string;
   group: FriendlyWidgetGroup;
   label: string;
   description: string;
+  targets: FriendlyWidgetTarget[];
   blockType: string;
   fields: Record<string, string>;
   preview: 'box' | 'heading' | 'label' | 'text' | 'number' | 'textarea' | 'checkbox' | 'image' | 'button';
 };
 
 export type AppendFriendlyWidgetOptions = {
+  target?: FriendlyWidgetTarget;
   mode?: 'absolute' | 'flow' | 'absolute-in-container';
   containerBlockId?: string | null;
   placement?: 'inside' | 'before' | 'after';
@@ -41,6 +44,7 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
     group: 'layout',
     label: '구역 박스',
     description: '여러 요소를 묶는 기본 영역',
+    targets: ['sheet'],
     blockType: 'r20_div',
     preview: 'box',
     fields: {
@@ -53,6 +57,7 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
     group: 'layout',
     label: '가로줄',
     description: '입력칸을 가로로 정렬하는 줄',
+    targets: ['sheet'],
     blockType: 'r20_row',
     preview: 'box',
     fields: {
@@ -64,6 +69,7 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
     group: 'text',
     label: '제목',
     description: '시트 구역 제목',
+    targets: ['sheet'],
     blockType: 'r20_heading',
     preview: 'heading',
     fields: {
@@ -78,6 +84,7 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
     group: 'text',
     label: '라벨',
     description: '입력칸 옆에 붙는 짧은 글자',
+    targets: ['sheet'],
     blockType: 'r20_static_text',
     preview: 'label',
     fields: {
@@ -91,6 +98,7 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
     group: 'input',
     label: '글자 입력',
     description: '이름, 직업 같은 짧은 값',
+    targets: ['sheet'],
     blockType: 'r20_text_input',
     preview: 'text',
     fields: {
@@ -105,6 +113,7 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
     group: 'input',
     label: '숫자 입력',
     description: 'HP, 능력치 같은 수치 값',
+    targets: ['sheet'],
     blockType: 'r20_number_input',
     preview: 'number',
     fields: {
@@ -119,6 +128,7 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
     group: 'input',
     label: '긴 글 입력',
     description: '메모, 설명, 배경 설정',
+    targets: ['sheet'],
     blockType: 'r20_textarea',
     preview: 'textarea',
     fields: {
@@ -134,6 +144,7 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
     group: 'input',
     label: '체크박스',
     description: '켜짐/꺼짐 상태',
+    targets: ['sheet'],
     blockType: 'r20_checkbox',
     preview: 'checkbox',
     fields: {
@@ -148,6 +159,7 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
     group: 'action',
     label: '주사위 버튼',
     description: '누르면 주사위를 굴려 결과를 대화창에 표시합니다',
+    targets: ['sheet'],
     blockType: 'r20_roll_button_easy',
     preview: 'button',
     fields: {
@@ -163,6 +175,7 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
     group: 'action',
     label: '채팅 버튼',
     description: '누르면 채팅에 문장이나 매크로를 보냅니다',
+    targets: ['sheet'],
     blockType: 'r20_chat_button',
     preview: 'button',
     fields: {
@@ -178,6 +191,7 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
     group: 'action',
     label: '액션 버튼',
     description: '시트 worker의 clicked 이벤트용 버튼',
+    targets: ['sheet'],
     blockType: 'r20_action_button',
     preview: 'button',
     fields: {
@@ -192,6 +206,7 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
     group: 'media',
     label: '이미지',
     description: '로고, 배경 조각, 장식 이미지',
+    targets: ['sheet', 'rolltemplate'],
     blockType: 'r20_image',
     preview: 'image',
     fields: {
@@ -201,6 +216,62 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
       WIDTH: '160',
       HEIGHT: '',
       STYLE: 'width: 160px; min-height: 90px; object-fit: cover',
+    },
+  },
+  {
+    id: 'rolltemplate-row',
+    group: 'layout',
+    label: '결과 한 줄',
+    description: '제목이나 값을 담는 결과 영역',
+    targets: ['rolltemplate'],
+    blockType: 'r20_rolltemplate_row',
+    preview: 'box',
+    fields: {
+      CLASS: 'result-row',
+      STYLE: 'display: flex; gap: 8px; padding: 8px 10px; align-items: center',
+    },
+  },
+  {
+    id: 'rolltemplate-title',
+    group: 'text',
+    label: '결과 제목',
+    description: '굴림 이름을 보여주는 큰 글자',
+    targets: ['rolltemplate'],
+    blockType: 'r20_heading',
+    preview: 'heading',
+    fields: {
+      LEVEL: '3',
+      TEXT: '{{name}}',
+      CLASS: 'result-title',
+      STYLE: 'font-size: 18px; font-weight: 700; padding: 8px 10px',
+    },
+  },
+  {
+    id: 'rolltemplate-label',
+    group: 'text',
+    label: '결과 이름표',
+    description: '결과 값 옆의 짧은 글자',
+    targets: ['rolltemplate'],
+    blockType: 'r20_static_text',
+    preview: 'label',
+    fields: {
+      TEXT: '결과',
+      CLASS: 'result-label',
+      STYLE: 'font-weight: 600',
+    },
+  },
+  {
+    id: 'rolltemplate-value',
+    group: 'text',
+    label: '굴림 값',
+    description: '주사위 버튼이 보낸 값을 보여줘요',
+    targets: ['rolltemplate'],
+    blockType: 'r20_static_text',
+    preview: 'number',
+    fields: {
+      TEXT: '{{result}}',
+      CLASS: 'result-value',
+      STYLE: 'font-size: 18px; font-weight: 700; text-align: right',
     },
   },
 ];
@@ -217,13 +288,24 @@ export function appendFriendlyWidgetPreset(
   const state = useWorkspaceStore.getState();
   if (Date.now() - state.lastClearedAt < 1200) return null;
 
-  const requestedFlow = options.mode === 'flow' && Boolean(options.containerBlockId || options.siblingBlockId);
+  const target = options.target ?? 'sheet';
+  if (!preset.targets.includes(target)) return null;
+  const adapter = getBlocklyAdapter();
+  if (
+    target === 'rolltemplate'
+    && (
+      !options.containerBlockId
+      || !adapter.canNestTypeInContainer('html', preset.blockType, options.containerBlockId)
+    )
+  ) return null;
+
+  const requestedFlow = (target === 'rolltemplate' || options.mode === 'flow')
+    && Boolean(options.containerBlockId || options.siblingBlockId);
   const requestedAbsoluteInContainer = options.mode === 'absolute-in-container' && Boolean(options.containerBlockId);
-  const targetPosition = requestedFlow ? position : findOpenWidgetPosition(position);
+  const targetPosition = requestedFlow || target === 'rolltemplate' ? position : findOpenWidgetPosition(position);
   const id = state.appendBlockToActive(preset.blockType, 'html');
   if (!id) return null;
 
-  const adapter = getBlocklyAdapter();
   for (const [field, value] of Object.entries(preset.fields)) {
     if (field === 'STYLE') continue;
     adapter.setBlockField('html', id, field, value);
@@ -256,6 +338,12 @@ export function appendFriendlyWidgetPreset(
       state.bumpStructure('html', adapter.countBlocks('html'));
       state.setSelectedBlockId(id, 'tree');
     }
+  }
+
+  if (target === 'rolltemplate' && !useFlowStyle) {
+    adapter.deleteBlock('html', id);
+    state.bumpStructure('html', adapter.countBlocks('html'));
+    return null;
   }
 
   const style = removeCssDeclarations(baseStyle, ['position', 'left', 'top']);

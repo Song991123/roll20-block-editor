@@ -77,6 +77,10 @@ export const WIDGET_DISPLAY: Record<string, { name: string; desc: string }> = {
   'chat-button': { name: '대화 버튼', desc: '누르면 대화창에 정해둔 말을 보내요' },
   'action-button': { name: '동작 버튼', desc: '누르면 정해둔 자동 동작이 실행돼요' },
   image: { name: '그림', desc: '로고나 장식 그림을 넣어요' },
+  'rolltemplate-row': { name: '결과 한 줄', desc: '제목과 값을 한 줄로 묶어요' },
+  'rolltemplate-title': { name: '결과 제목', desc: '굴림 이름을 큰 글자로 보여줘요' },
+  'rolltemplate-label': { name: '결과 이름표', desc: '결과 값 옆에 붙는 짧은 글자예요' },
+  'rolltemplate-value': { name: '굴림 값', desc: '주사위 버튼이 보낸 값을 보여줘요' },
 };
 
 /** 조각 그룹 표시 이름 (layout/text/input/action/media) */

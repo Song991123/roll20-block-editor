@@ -109,9 +109,28 @@ already-selected insertion position.
 - Friendly gallery defaults use the same managed CSS path. The gallery now
   includes an anonymous generic Roll button whose preview click produces the
   built-in default Roll20 template card.
-- This closes section/button styling and Roll-button creation locally. It does
-  not yet make `<rolltemplate>` itself a dedicated visual composition surface;
-  that remains the next editor task.
+- This closes section/button styling and Roll-button creation locally.
+
+## Rolltemplate Visual Surface
+
+- `굴림 결과` uses a dedicated card surface backed by the same
+  `RolltemplateRenderSurface` and emitted HTML/CSS/translation as the roll
+  history. It no longer resizes the persistent character-sheet iframe.
+- The layer panel is scoped to one active `<rolltemplate>` tree. The template
+  root, rows, conditions, and visible text/content blocks keep their source
+  block IDs, so card click, layer selection, and the direct inspector share one
+  selection state.
+- Template additions are flow-only. The friendly gallery exposes anonymous
+  row, title, label, value, and image pieces only where the selected template
+  container can receive them; it does not introduce absolute positioning into
+  chat cards.
+- Presentation changes use the same stable managed CSS class contract as sheet
+  layers. Browser smoke proves that a changed template-row fill and a dropped
+  label appear both in the editor card and in the existing chat result without
+  adding presentation inline HTML.
+- This is an implementation and local synthetic-browser result. It does not
+  prove that every third-party template helper or actual modern/legacy Roll20
+  chat renderer is visually identical.
 
 ## Verification Boundary
 

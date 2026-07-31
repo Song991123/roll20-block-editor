@@ -11039,3 +11039,29 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: replace the current rolltemplate submode placeholder with a real
   template-only render/edit surface backed by the same emitted HTML/CSS and
   ChatPane renderer.
+
+## 2026-08-01 Rolltemplate Visual Editor
+
+- `DONE LOCAL`: replaced the width-only rolltemplate placeholder with a
+  dedicated result-card surface backed by the same renderer, shell CSS, user
+  CSS extraction, translations, and emitted template body as `ChatPane`.
+- `DONE LOCAL`: the active template is selectable; its root and children map
+  to the template-only layer tree. Clicking a rendered row selects the matching
+  layer and opens the visual inspector.
+- `DONE LOCAL`: template rows, titles, labels, values, and images can be added
+  through the friendly gallery. Template drops are validated flow children and
+  never receive sheet-style absolute positioning.
+- `DONE LOCAL`: managed per-layer CSS now reaches both the edit card and chat
+  history. The character-sheet iframe remains persistent and keeps its own
+  width while result-card width changes independently.
+- `VERIFIED LOCAL`: focused scope/render/design/import tests, lint, production
+  build, full `ci:verify`, `smoke:edit-flow`, strict imported-edit sync,
+  fresh-sheet smoke, and modern/legacy synthetic visual smoke pass. The four
+  synthetic Preview/Edit comparisons remain `0%` mismatch.
+- `VERIFY / OPEN`: current-payload modern Sandbox upload remains blocked at the
+  supported visible chooser, and actual modern plus separate legacy-room
+  rolltemplate visual parity is not yet proven. Arbitrary helpers/conditions
+  still require broader fixture and actual Roll20 evidence.
+- `NEXT P0`: run the copyright-safe generated result-card payload through the
+  supported modern Sandbox path and a separate dedicated legacy-enabled test
+  room, then classify wrapper, font, control, and chat-paint differences.

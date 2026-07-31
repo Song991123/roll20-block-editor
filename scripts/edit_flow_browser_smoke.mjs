@@ -175,8 +175,22 @@ async function main() {
       '<div class="outside" style="width:180px; min-height:54px; padding:8px">Outside</div>',
       '<div class="group-one" style="padding:4px">Group A</div>',
       '<div class="group-two" style="padding:4px">Group B</div>',
+      '<rolltemplate class="sheet-rolltemplate-default">',
+      '  <div class="sheet-template-card">',
+      '    <div class="sheet-template-title">{{name}}</div>',
+      '    <div class="sheet-template-row"><span>Value</span><strong>{{result}}</strong></div>',
+      '  </div>',
+      '</rolltemplate>',
     ].join('\n');
-    await page.evaluate((html) => window.__perfHook.importSheet({ html, css: '', i18n: '{}' }), syntheticHtml);
+    const syntheticCss = [
+      '.sheet-rolltemplate-default .sheet-template-card { width: 100%; background: #fff; border: 1px solid #d7a5b6; }',
+      '.sheet-rolltemplate-default .sheet-template-title { padding: 8px 10px; font-weight: 700; }',
+      '.sheet-rolltemplate-default .sheet-template-row { display: flex; justify-content: space-between; padding: 8px 10px; }',
+    ].join('\n');
+    await page.evaluate(
+      ({ html, css }) => window.__perfHook.importSheet({ html, css, i18n: '{}' }),
+      { html: syntheticHtml, css: syntheticCss },
+    );
     await page.waitForTimeout(500);
     const { iframe, frame } = await waitForIframe();
     result.tests.editSurface.persistentIframe = true;
@@ -1432,13 +1446,148 @@ async function main() {
     await page.waitForTimeout(250);
     result.tests.rolltemplateCanvasWidth = await page.evaluate(() => ({
       submode: document.querySelector('[data-testid="edit-canvas-root"]')?.getAttribute('data-edit-submode') ?? null,
+      renderOwner: document.querySelector('[data-testid="edit-canvas-root"]')?.getAttribute('data-edit-render-owner') ?? null,
       value: document.querySelector('[data-testid="edit-canvas-width-input"]')?.value ?? null,
       iframeCssWidth: Math.round(Number.parseFloat(getComputedStyle(document.querySelector('[data-testid="preview-iframe"]')).width || '0')),
-      iframeOffsetWidth: document.querySelector('[data-testid="preview-iframe"]')?.offsetWidth ?? 0,
+      templateCardWidth: Math.round(document.querySelector('[data-testid="rolltemplate-edit-card"]')?.getBoundingClientRect().width ?? 0),
+      templateSurfaceVisible: document.querySelector('[data-testid="rolltemplate-edit-pane"]')?.getAttribute('data-visible') ?? null,
+      pickerValue: document.querySelector('[data-testid="rolltemplate-picker"]')?.value ?? null,
+      templateName: document.querySelector('[data-testid="rolltemplate-edit-surface"]')?.getAttribute('data-template-name') ?? null,
     }));
     assert(result.tests.rolltemplateCanvasWidth.submode === 'rolltemplate', 'rolltemplate edit submode did not activate');
+    assert(result.tests.rolltemplateCanvasWidth.renderOwner === 'chat-renderer', 'rolltemplate edit mode still claims the sheet iframe');
     assert(result.tests.rolltemplateCanvasWidth.value === '410', 'rolltemplate width input did not commit');
-    assert(result.tests.rolltemplateCanvasWidth.iframeCssWidth === 410, 'iframe CSS width did not follow rolltemplate width input');
+    assert(result.tests.rolltemplateCanvasWidth.templateCardWidth === 410, 'rolltemplate card width did not follow its width input');
+    assert(result.tests.rolltemplateCanvasWidth.iframeCssWidth === 930, 'rolltemplate width incorrectly resized the persistent sheet iframe');
+    assert(result.tests.rolltemplateCanvasWidth.templateSurfaceVisible === 'true', 'rolltemplate edit surface is not visible');
+    assert(result.tests.rolltemplateCanvasWidth.pickerValue, 'rolltemplate picker did not select a template root');
+    assert(result.tests.rolltemplateCanvasWidth.templateName === 'default', 'rolltemplate picker selected the wrong template');
+
+    const templateRow = page.locator('[data-testid="rolltemplate-edit-card"] .sheet-template-row').first();
+    await templateRow.waitFor({ state: 'visible', timeout: 10000 });
+    result.tests.rolltemplatePreviewValues = await page.evaluate(() => ({
+      text: document.querySelector('[data-testid="rolltemplate-edit-card"]')?.textContent ?? '',
+      rootBlockId: document.querySelector('[data-testid="rolltemplate-edit-card"] .sheet-rolltemplate-default')?.getAttribute('data-r20-block-id') ?? null,
+      rowBlockId: document.querySelector('[data-testid="rolltemplate-edit-card"] .sheet-template-row')?.getAttribute('data-r20-block-id') ?? null,
+    }));
+    assert(result.tests.rolltemplatePreviewValues.text.includes('예시 이름'), 'rolltemplate editor did not render stable preview values');
+    assert(result.tests.rolltemplatePreviewValues.text.includes('12'), 'rolltemplate editor did not render the result placeholder');
+    assert(result.tests.rolltemplatePreviewValues.rootBlockId, 'rolltemplate root is not mapped to its source block');
+    assert(result.tests.rolltemplatePreviewValues.rowBlockId, 'rolltemplate child is not mapped to its source block');
+
+    await templateRow.evaluate((row) => {
+      row.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    });
+    await page.waitForFunction((blockId) => (
+      document.querySelector('[data-testid="edit-inspector"]')
+      && document.querySelector(`[data-testid="rolltemplate-edit-card"] [data-r20-block-id="${CSS.escape(blockId)}"]`)?.getAttribute('data-r20-template-selected') === '1'
+    ), result.tests.rolltemplatePreviewValues.rowBlockId, { timeout: 10000 });
+    result.tests.rolltemplateLayerSelection = await page.evaluate((blockId) => {
+      const layer = document.querySelector(`[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(blockId)}"]`);
+      return {
+        exists: Boolean(layer),
+        selected: layer?.getAttribute('data-r20-layer-selected') ?? null,
+      };
+    }, result.tests.rolltemplatePreviewValues.rowBlockId);
+    assert(result.tests.rolltemplateLayerSelection.exists, 'selected rolltemplate child is missing from the layer panel');
+    assert(result.tests.rolltemplateLayerSelection.selected === '1', 'layer panel did not follow rolltemplate card selection');
+    const templateFill = page.locator('[data-testid="design-style-background-text"]');
+    await templateFill.fill('#fde7ef');
+    await page.waitForFunction((blockId) => {
+      const row = document.querySelector(`[data-testid="rolltemplate-edit-card"] [data-r20-block-id="${CSS.escape(blockId)}"]`);
+      return row && getComputedStyle(row).backgroundColor === 'rgb(253, 231, 239)';
+    }, result.tests.rolltemplatePreviewValues.rowBlockId, { timeout: 10000 });
+    result.tests.rolltemplateStyleSync = await page.evaluate((blockId) => {
+      const row = document.querySelector(`[data-testid="rolltemplate-edit-card"] [data-r20-block-id="${CSS.escape(blockId)}"]`);
+      const emit = window.__perfHook.getEmitContent();
+      return {
+        background: row ? getComputedStyle(row).backgroundColor : null,
+        inlineStyle: row?.getAttribute('style') ?? '',
+        emittedCssHasColor: emit.css.includes('background-color: #fde7ef'),
+        emittedHtmlHasInlineColor: /style="[^"]*background-color:\s*#fde7ef/i.test(emit.html),
+      };
+    }, result.tests.rolltemplatePreviewValues.rowBlockId);
+    assert(result.tests.rolltemplateStyleSync.background === 'rgb(253, 231, 239)', 'rolltemplate visual style did not reach the card renderer');
+    assert(!result.tests.rolltemplateStyleSync.inlineStyle, 'rolltemplate visual style leaked into inline HTML');
+    assert(result.tests.rolltemplateStyleSync.emittedCssHasColor, 'rolltemplate visual style did not reach emitted CSS');
+    assert(!result.tests.rolltemplateStyleSync.emittedHtmlHasInlineColor, 'rolltemplate visual style was emitted inline');
+
+    result.tests.rolltemplateDrop = await page.evaluate(() => {
+      const target = document.querySelector('[data-testid="rolltemplate-edit-card"] .sheet-template-row');
+      if (!target) return { dispatched: false };
+      const dataTransfer = new DataTransfer();
+      dataTransfer.setData('application/x-r20-friendly-widget', JSON.stringify({ id: 'rolltemplate-label' }));
+      const init = { bubbles: true, cancelable: true };
+      const dragover = new DragEvent('dragover', init);
+      Object.defineProperty(dragover, 'dataTransfer', { value: dataTransfer });
+      target.dispatchEvent(dragover);
+      const drop = new DragEvent('drop', init);
+      Object.defineProperty(drop, 'dataTransfer', { value: dataTransfer });
+      target.dispatchEvent(drop);
+      return { dispatched: true, dragoverPrevented: dragover.defaultPrevented, dropPrevented: drop.defaultPrevented };
+    });
+    assert(result.tests.rolltemplateDrop.dispatched, 'rolltemplate friendly widget drop did not dispatch');
+    await page.waitForFunction(
+      () => window.__perfHook.getEmitContent().html.includes('sheet-result-label'),
+      null,
+      { timeout: 10000 },
+    );
+    result.tests.rolltemplateDrop.rendered = await page.locator('[data-testid="rolltemplate-edit-card"] .sheet-result-label').count();
+    assert(result.tests.rolltemplateDrop.rendered === 1, 'dropped rolltemplate label did not render inside the card');
+    await page.screenshot({
+      path: path.join(REPORT_DIR, 'rolltemplate-visual-editor.png'),
+      fullPage: false,
+    });
+
+    await page.click('[data-testid="tab-chat"]');
+    await page.click('[data-testid="main-mode-preview"]');
+    await page.waitForSelector('[data-testid="chat-list"] [data-r20-chat-rolltemplate="1"] .sheet-template-row', { timeout: 10000 });
+    result.tests.rolltemplateChatSync = await page.evaluate(() => {
+      const row = document.querySelector('[data-testid="chat-list"] [data-r20-chat-rolltemplate="1"] .sheet-template-row');
+      return {
+        background: row ? getComputedStyle(row).backgroundColor : null,
+        addedLabel: document.querySelectorAll('[data-testid="chat-list"] .sheet-result-label').length,
+      };
+    });
+    assert(result.tests.rolltemplateChatSync.background === 'rgb(253, 231, 239)', 'chat card did not reuse the visual editor CSS');
+    assert(result.tests.rolltemplateChatSync.addedLabel === 1, 'chat card did not reuse the edited rolltemplate body');
+
+    const creationPage = await browser.newPage({ viewport: { width: 1480, height: 960 } });
+    creationPage.on('console', (message) => {
+      if (message.type() === 'error') consoleErrors.push(message.text());
+    });
+    creationPage.on('pageerror', (error) => pageErrors.push(String(error)));
+    await creationPage.addInitScript(() => {
+      try {
+        window.localStorage.setItem('__perfOn', '1');
+        window.localStorage.removeItem('r20be-autosave');
+        window.localStorage.removeItem('r20-ui');
+      } catch {}
+    });
+    await creationPage.goto(result.url, { waitUntil: 'load' });
+    await creationPage.waitForFunction(() => Boolean(window.__perfHook), null, { timeout: 30000 });
+    await creationPage.click('[data-testid="main-mode-edit"]');
+    await creationPage.click('[data-testid="edit-submode-rolltemplate"]');
+    const createTemplateButton = creationPage.locator('[data-testid="rolltemplate-create"]');
+    await createTemplateButton.waitFor({ state: 'visible', timeout: 10000 });
+    await createTemplateButton.click();
+    await creationPage.waitForSelector('[data-testid="rolltemplate-edit-card"] .sheet-result-row', { timeout: 10000 });
+    result.tests.rolltemplateCreate = await creationPage.evaluate(() => {
+      const emit = window.__perfHook.getEmitContent();
+      return {
+        name: document.querySelector('[data-testid="rolltemplate-edit-surface"]')?.getAttribute('data-template-name') ?? null,
+        title: document.querySelector('[data-testid="rolltemplate-edit-card"] .sheet-result-title')?.textContent ?? '',
+        rowCount: document.querySelectorAll('[data-testid="rolltemplate-edit-card"] .sheet-result-row').length,
+        emittedTemplate: /<rolltemplate\b[^>]*class="[^"]*sheet-rolltemplate-default[^"]*"/i.test(emit.html),
+        emittedManagedCss: emit.css.includes('.sheet-r20-node-'),
+      };
+    });
+    assert(result.tests.rolltemplateCreate.name === 'default', 'empty workspace created the wrong template name');
+    assert(result.tests.rolltemplateCreate.title.includes('예시 이름'), 'new template title did not render its preview value');
+    assert(result.tests.rolltemplateCreate.rowCount === 1, 'new template did not create its default result row');
+    assert(result.tests.rolltemplateCreate.emittedTemplate, 'new template did not reach emitted HTML');
+    assert(result.tests.rolltemplateCreate.emittedManagedCss, 'new template styles did not reach emitted CSS');
+    await creationPage.close();
 
     result.finishedAt = new Date().toISOString();
     result.pass = consoleErrors.length === 0 && pageErrors.length === 0;
@@ -1453,7 +1602,7 @@ async function main() {
         `- Status: ${result.pass ? 'PASS' : 'FAIL'}`,
         `- Console errors: ${consoleErrors.length}`,
         `- Page errors: ${pageErrors.length}`,
-        '- Coverage: flow/free placement, canvas widget and block gallery drops, layer collapse/expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, managed visual styles, preview Roll/chat, and sheet/rolltemplate canvas widths.',
+        '- Coverage: flow/free placement, canvas widget and block gallery drops, layer collapse/expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, managed visual styles, preview Roll/chat, sheet width, and the dedicated rolltemplate card editor with click/style/drop/chat synchronization plus empty-workspace template creation.',
         '',
       ].join('\n'),
       'utf8',

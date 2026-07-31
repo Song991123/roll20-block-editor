@@ -25,7 +25,7 @@
     "test:roll20-upload-files": "tsx lib/export/__tests__/roll20_upload_files.test.ts",
     "test:export-smoke": "tsx lib/export/__tests__/smoke.test.ts",
     "test:export-readme": "tsx lib/export/__tests__/readme.test.ts",
-    "test:layer-roles": "tsx lib/editor/__tests__/layerRoles.test.ts && tsx lib/editor/__tests__/layerRoleCatalog.test.ts",
+    "test:layer-roles": "tsx lib/editor/__tests__/layerRoles.test.ts && tsx lib/editor/__tests__/layerRoleCatalog.test.ts && tsx lib/editor/__tests__/rolltemplateScope.test.ts",
     "test:blockly-history": "tsx lib/blockly/__tests__/history.test.ts",
     "test:blockly-headless": "tsx lib/blockly/__tests__/headlessWorkspace.test.ts",
     "test:blockly-render-policy": "tsx lib/blockly/__tests__/renderPolicy.test.ts",
