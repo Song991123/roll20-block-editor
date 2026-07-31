@@ -1,5 +1,14 @@
 # 34. Requirements Gap Matrix
 
+# Sandbox upload retry - 2026-07-31
+
+- `BLOCKED EXTERNAL`: the supported chooser still returns `Not allowed` before
+  any file transmission; actual generated root/chat evidence remains `0/4`.
+- `PRESERVED`: no Roll20 state changed. The browser-controlled extension
+  settings page was unavailable through the supported browser surface.
+- `OPEN P0`: enable `Allow access to file URLs` in the ChatGPT Chrome
+  Extension details, then retry the anonymous modern upload.
+
 # Sandbox context and chat baseline - 2026-07-31
 
 - `DONE OBSERVATION`: the dedicated modern Sandbox showed a visible

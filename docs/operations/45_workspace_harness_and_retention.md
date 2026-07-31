@@ -1,5 +1,18 @@
 # 45. Workspace Harness and Retention Policy
 
+## 2026-07-31 latest explicit-approval retry
+
+- The exact remaining generated targets were re-resolved: active
+  `web-push-main/.next/`, `web-push-main/out/`, and `web-push-main/.tmp/`.
+- The old `web/` generated folders, root cache/metadata, stale report folder,
+  and build-info file were already absent. No project listener was active.
+- The boundary-checked native PowerShell recursive deletion was rejected by
+  the host before PowerShell execution again. No alternate shell, per-file
+  workaround, native API, or safety bypass was used.
+- **NOT DELETED:** the three active generated targets remain. Source roots,
+  Git worktrees, dependencies, fixtures, reports, and protected external
+  sheet folders were preserved.
+
 ## 2026-07-31 repeated explicit-approval retry
 
 - Rechecked the exact generated `.next/`, `out/`, and `.tmp/` targets under

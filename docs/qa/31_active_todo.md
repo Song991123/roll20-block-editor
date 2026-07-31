@@ -1,5 +1,17 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Sandbox upload retry after permission handoff
+
+- `BLOCKED EXTERNAL`: the same supported HTML file chooser still returns
+  `Not allowed` before transmission. The current actual-status remains
+  `0/4` generated root/chat captures.
+- `PRESERVED`: no Roll20 payload, save, chat, room setting, or existing sheet
+  content changed. The browser-controlled extension settings page could not
+  be opened through the supported browser surface.
+- `NEXT USER ACTION`: in Chrome, open `chrome://extensions`, open ChatGPT
+  Chrome Extension details, enable `Allow access to file URLs`, then keep the
+  dedicated Sandbox tab open for the next upload attempt.
+
 # 2026-07-31 Roll20 Sandbox read-only context and chat baseline
 
 - `VERIFIED EXTERNAL READ-ONLY`: the dedicated modern Sandbox exposed a

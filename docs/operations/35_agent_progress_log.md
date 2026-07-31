@@ -10491,6 +10491,18 @@ same-hash modern/legacy comparison.
   modern and independently participant-gated legacy evidence. Do not promote
   local editor or synthetic visual results to live parity.
 
+## 2026-07-31 - Sandbox upload retry after permission handoff
+
+- `VERIFY / BLOCKED EXTERNAL`: the official supported HTML chooser still
+  returns `Not allowed` before transmission, so actual root/chat evidence
+  remains `0/4`.
+- `SAFETY`: no payload, save, chat, room setting, or existing sheet content
+  changed. The browser-controlled extension settings page was not available
+  through the supported browser surface.
+- `NEXT`: the user must enable `Allow access to file URLs` in the ChatGPT
+  Chrome Extension details, then leave the dedicated Sandbox tab open for the
+  same-payload upload retry.
+
 ## 2026-07-31 - Roll20 Sandbox context and chat baseline
 
 - `VERIFIED EXTERNAL / READ-ONLY`: the dedicated modern Sandbox displayed a
