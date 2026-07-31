@@ -1,5 +1,21 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 User-authorized cleanup retry and strict visual rerun
+
+- `BLOCKED HOST`: the exact native PowerShell deletion request for the
+  canonical worktree's `.next/`, `out/`, `.tmp/`, and `next-env.d.ts` was
+  rejected before PowerShell execution. No alternate deletion path was used;
+  source, dependencies, worktrees, reports, and protected external sheets are
+  preserved.
+- `VERIFIED LOCAL`: the anonymous workspace input reran through the canonical
+  persistent iframe with strict resource and full sheet visual gates enabled.
+  Interaction, re-import stability, and visual comparison all passed;
+  Preview/Edit root mismatch was `0` pixels (`0%`) in the rerun.
+- `CLAIM BOUNDARY`: the earlier `4.89%` local report was a stale/timing-
+  sensitive capture and remains retained as evidence. This rerun does not
+  establish actual Roll20 parity or all-sheet support; external generated
+  root/chat evidence remains `0/4`.
+
 # 2026-07-31 UI copy cleanup
 
 - `DONE LOCAL`: replaced the user-visible HTML comment inspector placeholder

@@ -1,5 +1,20 @@
 # 45. Workspace Harness and Retention Policy
 
+## 2026-07-31 latest user-authorized complete-deletion retry (host blocked)
+
+- RECHECKED: the approved disposable targets were the canonical worktree's
+  generated `.next/`, `out/`, `.tmp/`, and `next-env.d.ts`. The active
+  dependency tree, source, worktrees, reports policy, and protected external
+  sheet roots were excluded. No project listener was active.
+- ATTEMPTED: one boundary-checked native PowerShell deletion request was
+  issued for those four exact paths after the user explicitly authorized the
+  retry.
+- BLOCKED HOST: the execution boundary rejected the destructive invocation
+  before PowerShell ran. No alternate shell, native API, per-file workaround,
+  or safety bypass was used.
+- NOT DELETED: all four targets remain. The current local reports remain
+  intentionally preserved because they contain active render-sync evidence.
+
 ## 2026-07-31 generated-output deletion completed after explicit approval
 
 - RECHECKED: only the canonical worktree's ignored generated targets were in

@@ -1,5 +1,19 @@
 # 2026-07-31 - Actual-status and renderer-action gate refresh
 
+# 2026-07-31 - User-authorized cleanup retry and strict visual rerun
+
+- The host rejected the exact boundary-checked native PowerShell deletion for
+  `.next/`, `out/`, `.tmp/`, and `next-env.d.ts` before execution. No alternate
+  shell, native API, or per-file workaround was used, and the active local
+  reports were intentionally retained for the open render investigation.
+- Re-ran the anonymous local input through the canonical persistent iframe with
+  strict resource and full sheet visual checks. Interaction and re-import
+  stability passed; the rerun produced `0` mismatched pixels (`0%`) between
+  edit and preview sheet-root captures.
+- The earlier `4.89%` mismatch remains a retained timing-sensitive report, not
+  a parity completion claim. Actual Roll20 generated root/chat evidence stays
+  `0/4` pending supported upload permission.
+
 # 2026-07-31 - UI copy cleanup
 
 - Replaced the user-facing HTML comment inspector TODO placeholder with a
