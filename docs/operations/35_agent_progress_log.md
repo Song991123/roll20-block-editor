@@ -10391,3 +10391,12 @@ same-hash modern/legacy comparison.
   preview smoke, including flow/free placement, parent-relative CSS,
   zero iframe reloads, imported edit-sync strict smoke, and the emit contract
   test. No verification claim is extended to actual Roll20 parity.
+
+## 2026-07-31 - Generated-output deletion retry
+
+- `VERIFY / BLOCKED CLEANUP`: after explicit user approval, the exact
+  boundary-checked native PowerShell request for active-worktree `.next/`,
+  `out/`, and `.tmp/` was rejected by the host before execution.
+- `PRESERVED`: no deletion occurred; protected sheet sources, Git worktrees,
+  dependencies, reports, and source files were not targeted. No alternate
+  shell, native API, or per-file bypass was attempted.

@@ -9789,3 +9789,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `VERIFY / BLOCKED EXTERNAL`: actual Roll20 screenshot/diff and chat evidence
   remain `0/4` and `0/2`; this local cache fix does not establish Roll20
   visual parity.
+
+## 2026-07-31 Generated Output Cleanup Retry
+
+- `BLOCKED / LOCAL MAINTENANCE`: the explicitly approved recursive deletion
+  of active-worktree `.next/`, `out/`, and `.tmp/` was rejected by the host
+  before PowerShell execution.
+- `NOT DONE`: all three generated targets remain. No alternate deletion path
+  was used, and protected sources/worktrees remain intact.
