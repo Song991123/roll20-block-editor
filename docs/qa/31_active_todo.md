@@ -1,3 +1,17 @@
+# 2026-07-31 Modern Sandbox chooser retry
+
+- `VERIFIED EXTERNAL READ-ONLY`: the dedicated modern Sandbox tab again showed
+  the fresh participant indicator `1 구성원`, the `Sheet Sandbox Tools` dialog,
+  and the HTML input with an empty value.
+- `BLOCKED HOST / USER ACTION`: the supported filechooser flow did not emit a
+  chooser from the visible HTML label, and the direct supported input click was
+  rejected because the input is hidden. No file was transmitted, saved, or
+  applied. Hidden-input mutation, endpoint calls, and CDP workarounds were not
+  used.
+- `TODO P0`: in Chrome, enable the ChatGPT Chrome Extension's **Allow access
+  to file URLs** permission, then retry the supported chooser flow with only
+  the anonymous synthetic fixture in the dedicated Sandbox.
+
 # 2026-07-31 Wide custom-sheet canvas policy
 
 - `FIXED LOCAL`: the sheet canvas width policy is now shared by the UI store,

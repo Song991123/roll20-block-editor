@@ -58,6 +58,15 @@ source sheet, room identifier, or public fixture.
 | Rolltemplate width | Separate `200px` to `600px` bounds remain unchanged | DONE LOCAL | Applies only to chat-template editing |
 | Width regression coverage | Unit test, build-doc test, edit-flow, fresh-sheet, lint/build, and CI pass | DONE LOCAL | Does not prove external Roll20 acceptance |
 
+## Modern Sandbox File Chooser Retry - 2026-07-31
+
+| Area | Current evidence | Status | Boundary |
+| --- | --- | --- | --- |
+| Participant safety | Dedicated modern Sandbox again showed `1 구성원` | DONE OBSERVATION | No ordinary room touched |
+| Supported chooser | Visible HTML label produced no chooser event; the actual hidden input click hit the supported selector deadline | BLOCKED HOST | No file transmission |
+| Payload state | HTML input remained empty after the attempt | VERIFIED NEGATIVE | No save, reload, or sheet application |
+| Next prerequisite | Chrome extension must allow local file URLs before retry | USER ACTION | Do not use hidden-input, endpoint, or CDP workarounds |
+
 ## Local Imported Edit-Sync Recheck - 2026-07-31
 
 | Area | Current evidence | Status | Boundary |
