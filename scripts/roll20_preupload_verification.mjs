@@ -25,19 +25,43 @@
  */
 
 import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { summarizeAssetReplacementReadiness } from './lib/assetReplacements.mjs';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const RUN_DIR = path.resolve(args[0] ?? 'reports/roll20-actual-compare/2026-06-18-pseudo-fix-v1');
+
+if (args.includes('--help') || args.includes('-h')) {
+  console.log(`Usage: node scripts/roll20_preupload_verification.mjs [run-dir] [options]
+
+When --fixtures is omitted, the gate uses the local synthetic fixture root
+(.tmp/visual-synthetic), generating it when needed. It never falls back to a
+public or copyrighted sheet source.
+
+Options: --fixtures <dir> --out-dir <dir> --base-path <path>
+  --compatibility-mode auto|modern|legacy
+  --state-map <file> --asset-map-file <file> --report-out-dir <dir>`);
+  process.exit(0);
+}
 
 function argOf(name, fallback) {
   const index = args.indexOf(name);
   return index >= 0 && args[index + 1] ? args[index + 1] : fallback;
 }
 
-const FIXTURES_DIR = path.resolve(argOf('--fixtures', 'test-fixtures/visual'));
+const DEFAULT_RUN_LABEL = new Date().toISOString().replace(/[:.]/g, '-');
+const positionalRunDir = args[0] && !args[0].startsWith('-') ? args[0] : null;
+const RUN_DIR = path.resolve(
+  positionalRunDir ?? `reports/roll20-actual-compare/${DEFAULT_RUN_LABEL}`,
+);
+const explicitFixtures = args.includes('--fixtures');
+const defaultSourceFixtureRoot = path.resolve('test-fixtures/visual');
+const syntheticFixtureRoot = path.resolve('.tmp/visual-synthetic');
+const defaultFixtureRoot = existsSync(defaultSourceFixtureRoot)
+  ? defaultSourceFixtureRoot
+  : syntheticFixtureRoot;
+const FIXTURES_DIR = path.resolve(argOf('--fixtures', defaultFixtureRoot));
 const OUT_DIR = path.resolve(argOf('--out-dir', './out'));
 const BASE_PATH = argOf('--base-path', '/roll20-block-editor');
 const COMPATIBILITY_MODE = argOf('--compatibility-mode', 'auto').toLowerCase();
@@ -151,6 +175,7 @@ async function main() {
   // A run directory is local ignored evidence, so a fresh verification should
   // be able to create it instead of depending on a stale report folder.
   await fs.mkdir(RUN_DIR, { recursive: true });
+  await ensureFixtureRoot();
   const startedAt = new Date().toISOString();
   const results = [];
   const assetMapGate = await runAssetMapReadinessGate();
@@ -203,6 +228,23 @@ async function main() {
 
   console.log(report.pass ? 'ROLL20 PREUPLOAD VERIFICATION PASS' : 'ROLL20 PREUPLOAD VERIFICATION FAIL');
   process.exitCode = report.pass ? 0 : 1;
+}
+
+async function ensureFixtureRoot() {
+  if (existsSync(FIXTURES_DIR)) return;
+  if (explicitFixtures || FIXTURES_DIR !== syntheticFixtureRoot) {
+    throw new Error(`Fixture directory does not exist: ${FIXTURES_DIR}`);
+  }
+  const generated = spawnSync(
+    NODE,
+    ['scripts/generate_visual_synthetic_fixture.mjs'],
+    { cwd: process.cwd(), encoding: 'utf8', maxBuffer: 1024 * 1024 * 4 },
+  );
+  if (generated.status !== 0 || !existsSync(FIXTURES_DIR)) {
+    const detail = String(generated.stderr || generated.stdout || '').trim();
+    throw new Error(`Synthetic fixture generation failed${detail ? `: ${detail}` : ''}`);
+  }
+  console.log(`GENERATED synthetic fixture root=${FIXTURES_DIR}`);
 }
 
 async function writeReport(report) {

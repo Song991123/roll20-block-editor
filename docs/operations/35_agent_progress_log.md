@@ -10658,6 +10658,18 @@ same-hash modern/legacy comparison.
   partial, not full parity. Full-height root stitching, normalized diff, and
   independent fixture-A smoke are still required.
 
+## 2026-07-31 - Pre-upload gate recovery
+
+- `VERIFIED LOCAL`: `scripts/roll20_preupload_verification.mjs` now selects a
+  current timestamped run by default and falls back only to the anonymous
+  synthetic fixture root when no explicit fixture directory exists. `--help`
+  exits without creating a report directory.
+- `VERIFIED LOCAL`: the default `verify:roll20-preupload` command passed all
+  seven local checks and wrote ignored evidence under the current run.
+- `NEXT P0`: use the supported Roll20 Sandbox chooser for the modern payload,
+  then separately capture a legacy-enabled test-room payload. This local pass
+  does not upgrade actual Roll20 parity evidence.
+
 ## 2026-07-31 - Page-JS preservation and cleanup retry
 
 - `VERIFIED LOCAL`: page-JS emit now keeps an authored script whose HTML slot

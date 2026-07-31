@@ -1,5 +1,16 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Pre-upload gate recovery
+
+- `VERIFIED LOCAL`: the default pre-upload command now creates a timestamped
+  ignored run and uses `.tmp/visual-synthetic` when the public fixture root is
+  absent. The help path no longer creates a bogus `--help` run directory.
+- `VERIFIED LOCAL`: the recovered gate passed all seven checks: local baseline,
+  payload hygiene, Sandbox sanitize audit, cleaned-payload roundtrip,
+  default-state selectors, asset/resource audit, and evidence guard.
+- `OPEN EXTERNAL`: this only proves an anonymous local payload is ready. Actual
+  modern Sandbox and dedicated legacy-room root/chat captures remain missing.
+
 # 2026-07-31 Page-JS preservation and cleanup retry
 
 - `VERIFIED LOCAL`: the emit contract now preserves an authored page-JS block

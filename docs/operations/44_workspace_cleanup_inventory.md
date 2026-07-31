@@ -1424,3 +1424,13 @@ directories that had been recreated by the local build.
   restriction; no alternate shell, native API, per-file workaround, or safety
   bypass was used.
 - NOT DELETED: all three generated directories remain unchanged.
+
+## 2026-07-31 stale pre-upload help output
+
+- `GENERATED STALE`: `web-push-main/--help/` contains only the two local
+  pre-upload report files created by the pre-fix CLI invocation. The repaired
+  `--help` path no longer creates this directory.
+- `EXCLUDED FROM COMMIT`: the directory is untracked local evidence and is not
+  part of the product or public report policy.
+- `DELETE STATUS`: removal remains pending because the same host recursive
+  deletion boundary rejects the operation before PowerShell execution.

@@ -1,5 +1,15 @@
 # 34. Requirements Gap Matrix
 
+# Pre-upload gate recovery - 2026-07-31
+
+- `DONE LOCAL`: the pre-upload orchestrator no longer depends on a removed
+  public fixture directory or a stale dated run. It generates only anonymous
+  synthetic fixtures when no explicit fixture directory is supplied.
+- `VERIFIED LOCAL`: the default command passed all seven local pre-upload
+  checks and produced a timestamped ignored report.
+- `OPEN EXTERNAL`: no actual Roll20 root or chat screenshot was produced by
+  this local gate.
+
 # Page-JS preservation and cleanup retry - 2026-07-31
 
 - `DONE LOCAL`: stale/missing page-JS HTML anchors no longer silently drop
