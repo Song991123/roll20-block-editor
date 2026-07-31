@@ -1,3 +1,15 @@
+# 2026-07-31 Modern Sandbox supported-upload reconnect
+
+- `VERIFIED EXTERNAL READ-ONLY`: the dedicated Sandbox again exposed a fresh
+  `1 구성원` indicator, the `Sheet Sandbox Tools` dialog, and four file inputs
+  including HTML/CSS/Translation.
+- `BLOCKED EXTERNAL`: the supported chooser flow timed out before a chooser
+  completed. No file was transmitted, saved, or applied; hidden-input,
+  endpoint, and DOM-injection workarounds were not used.
+- `TODO P0`: restore a responsive supported browser handoff and retry the
+  anonymous synthetic payload only after a fresh exactly-one participant
+  preflight.
+
 # 2026-07-31 Generic script MIME mapping fix
 
 - `FIXED LOCAL`: executable page scripts are the only non-worker scripts moved

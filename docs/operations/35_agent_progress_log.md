@@ -1,3 +1,11 @@
+# 2026-07-31 - Modern Sandbox supported-upload reconnect
+
+- Re-observed the dedicated Sandbox as a read-only surface with exactly one
+  visible participant and the expected HTML/CSS/Translation inputs.
+- The supported chooser flow timed out before transmission. No upload, save,
+  room mutation, hidden-input mutation, endpoint call, or DOM injection was
+  performed; actual parity remains open.
+
 # 2026-07-31 - Generic script MIME mapping
 
 - Updated the shared script classifier so only executable Page JS enters the

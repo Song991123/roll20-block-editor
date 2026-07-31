@@ -1,5 +1,15 @@
 # 34. Requirements Gap Matrix
 
+## Modern Sandbox Supported Upload Reconnect - 2026-07-31
+
+- `DONE OBSERVATION`: the dedicated Sandbox surface and exactly-one
+  participant state were readable again.
+- `BLOCKED EXTERNAL`: the supported chooser connection timed out before any
+  file transmission. No upload or save is counted.
+- `OPEN P0`: complete the same-payload modern Sandbox upload, then capture
+  payload identity, full-root render, crop-normalized screenshot diff, and
+  current roll/chat evidence.
+
 ## Generic Script MIME Mapping - 2026-07-31
 
 - `DONE LOCAL`: executable Page JS, Roll20 worker JS, and inert data/template
