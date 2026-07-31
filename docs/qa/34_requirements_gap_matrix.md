@@ -1097,3 +1097,15 @@ not close the external Roll20 parity rows above.
 - `SAFETY`: no ordinary room was edited; the dedicated Sandbox showed exactly
   one visible member. Local evidence remains ignored and public docs contain
   no sheet source or screenshot.
+
+## Import Dialog Viewport Recheck - 2026-07-31
+
+- `FIXED LOCAL`: the import dialog is height-bounded and internally
+  scrollable, preventing the conversion action from leaving the viewport on
+  long tab content.
+- `VERIFIED LOCAL`: the real pointer-click import smoke passed with three
+  HTML blocks, persistent iframe retention, page/worker separation, hidden
+  runtime nodes, and zero browser/page errors.
+- `VERIFY / BLOCKED EXTERNAL`: the dedicated Chrome tab list is readable, but
+  claiming the Sandbox times out and no new upload or live screenshot was
+  produced. This does not expand the prior live-evidence scope.

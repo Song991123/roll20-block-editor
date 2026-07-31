@@ -291,7 +291,10 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl text-foreground" data-testid="import-dialog">
+      <DialogContent
+        className="max-h-[calc(100dvh-2rem)] max-w-3xl overflow-y-auto overscroll-contain text-foreground"
+        data-testid="import-dialog"
+      >
         <DialogHeader>
           <DialogTitle>시트 파일 불러오기</DialogTitle>
           <DialogDescription>

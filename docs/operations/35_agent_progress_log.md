@@ -10277,3 +10277,19 @@ same-hash modern/legacy comparison.
   executed. No alternate shell, native API, or per-file workaround was used.
 - Result: zero targets deleted. The three generated directories remain local
   and ignored.
+
+## 2026-07-31 - Import dialog viewport and external reconnect recheck
+
+- FIXED LOCAL: the import dialog is now viewport-bounded and internally
+  scrollable, keeping the conversion action reachable after switching tabs.
+- FIXED TEST PATH: the browser smoke uses a real Playwright pointer click
+  instead of invoking the React button through a DOM method. It passed with
+  three HTML blocks, one persistent preview iframe, page/worker separation,
+  hidden runtime nodes, and zero console/page errors.
+- VERIFIED LOCAL: production build, synthetic modern/legacy visual smoke,
+  imported edit-sync, and synthetic Sandbox preview smoke passed after the
+  change.
+- VERIFY / BLOCKED EXTERNAL: Chrome tab listing still works, but claiming the
+  dedicated Sandbox times out and the supported file-input action did not
+  accept a local payload. No upload, save, chat, or ordinary-room mutation
+  occurred.

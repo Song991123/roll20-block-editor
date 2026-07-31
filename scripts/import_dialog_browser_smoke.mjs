@@ -84,7 +84,9 @@ async function main() {
     await page.locator('[data-testid="import-dialog"] textarea').fill(html);
     const importButton = page.getByTestId('import-submit');
     assert(await importButton.count() === 1, 'import submit button is not unique');
-    const clickConvert = () => importButton.evaluate((node) => node.click());
+    // Use Playwright's actionability checks and pointer path so this smoke
+    // exercises the same delegated React event route as a real user click.
+    const clickConvert = () => importButton.click();
     await clickConvert();
 
     await page.waitForFunction(

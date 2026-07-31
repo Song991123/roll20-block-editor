@@ -9679,3 +9679,17 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   occurred; no ordinary room was opened or modified.
 - NEXT P0: Use a supported user-mediated file-selection handoff for the
   anonymous payload, then capture modern and independent legacy root evidence.
+
+## 2026-07-31 Import dialog viewport recheck
+
+- `DONE LOCAL`: the import dialog is now viewport-bounded and internally
+  scrollable; the conversion action remains reachable on long tab content.
+- `VERIFIED LOCAL`: real pointer-click import smoke passed with HTML `3`
+  blocks, one persistent iframe, page/worker JS separation, hidden runtime
+  nodes, and zero console/page errors. Synthetic modern/legacy visual,
+  imported edit-sync, and Sandbox preview smokes also passed.
+- `VERIFY / BLOCKED EXTERNAL`: the dedicated Chrome Sandbox tab could be
+  listed, but tab claiming timed out and the supported file chooser did not
+  complete. No external state changed.
+- `NEXT P0`: restore a supported user-mediated Chrome tab handoff, then obtain
+  fresh modern and independent legacy crop/sidecar evidence.
