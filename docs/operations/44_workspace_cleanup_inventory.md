@@ -1435,3 +1435,21 @@ directories that had been recreated by the local build.
 - `DELETE STATUS`: `DONE`; after the directory's read-only attribute was
   cleared, both files and the empty directory tree were removed. The target
   now does not exist and no source sheet folder was touched.
+
+## 2026-07-31 explicit complete-deletion retry (host policy)
+
+- RECHECKED: the only remaining approved disposable build targets are
+  `web-push-main/.next/` and `web-push-main/out/`. The old `web/` generated
+  targets are already absent.
+- SAFETY CHECK: both targets resolve inside the active worktree, neither root
+  is a reparse point, no project listener is active on ports 3000, 4197, 4198,
+  or 4199, and the active dependency tree, source, Git worktrees, reports
+  policy, and protected external sheet roots were excluded.
+- ATTEMPTED: one boundary-checked native PowerShell `Remove-Item
+  -LiteralPath ... -Recurse -Force` request was issued after the user's
+  explicit authorization.
+- BLOCKED HOST: the execution boundary rejected the destructive invocation
+  before PowerShell executed. User approval cannot override this
+  session-level restriction. No alternate shell, native API, per-file
+  workaround, or safety bypass was used.
+- NOT DELETED: `.next/` and `out/` remain; no source or Git state changed.

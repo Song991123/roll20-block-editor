@@ -10723,6 +10723,17 @@ same-hash modern/legacy comparison.
 - `NEXT`: keep cleanup as an explicit host-boundary item; do not treat the
   generated directories as product source or commit them.
 
+## 2026-07-31 - Explicit generated-output deletion retry
+
+- `VERIFY / BLOCKED HOST`: the user-authorized, boundary-checked native
+  PowerShell deletion of the remaining generated `.next/` and `out/`
+  directories was rejected before execution.
+- `PRESERVED`: no alternate shell, native API, per-file workaround, source,
+  dependency tree, Git worktree, report policy, or protected sheet root was
+  touched. The old `web/` generated targets are already absent.
+- `NEXT`: keep the deletion item open until the host permits the exact
+  generated-target operation; do not bypass the execution boundary.
+
 ## 2026-07-31 - Latest dedicated Sandbox chooser retry
 
 - `VERIFIED EXTERNAL / READ-ONLY`: the dedicated modern Sandbox still showed a

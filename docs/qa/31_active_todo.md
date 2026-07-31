@@ -1,5 +1,16 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Generated-output deletion retry
+
+- `BLOCKED HOST`: the explicitly authorized deletion of the remaining
+  generated build directories `web-push-main/.next/` and `web-push-main/out/`
+  was rejected by the execution boundary before PowerShell ran.
+- `VERIFIED`: the old `web/` generated targets are already absent; source,
+  dependencies, Git worktrees, reports, and protected external sheet roots
+  were not changed.
+- `TODO P1`: retry only if the host deletion boundary changes. Do not use a
+  shell/API/per-file workaround.
+
 # 2026-07-31 Dedicated test-room creation
 
 - `VERIFIED EXTERNAL READ-ONLY`: a newly created dedicated Roll20 test room
