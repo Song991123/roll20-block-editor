@@ -204,6 +204,63 @@ assert.equal(resolveIframeLayerDropTarget({
   hitPath: [geometry('subject-child', 30, 10), geometry('subject', 20, 40)],
 }, lookup), null);
 
+const freeLayerFrame = new Map<string, BlockSnapshot>([
+  ['free-layer', {
+    id: 'free-layer', type: 'r20_text_input', depth: 1, childCount: 0,
+    layerParentId: 'free-frame', layerPreviousId: null, layerRelation: 'child',
+    label: 'Free layer', preview: '', category: 'input',
+  }],
+  ['free-frame', {
+    id: 'free-frame', type: 'r20_div', depth: 0, childCount: 1,
+    layerParentId: null, layerPreviousId: null, layerRelation: 'root',
+    label: 'Free frame', preview: '', category: 'container',
+  }],
+  ['free-child', {
+    id: 'free-child', type: 'r20_text', depth: 1, childCount: 0,
+    layerParentId: 'free-frame', layerPreviousId: 'free-layer', layerRelation: 'child',
+    label: 'Existing child', preview: '', category: 'text',
+  }],
+]);
+const freeLayerLookup = {
+  getBlock: (id: string) => freeLayerFrame.get(id) ?? null,
+  canNestInContainer: (id: string) => id === 'free-frame',
+  canNestBlockInContainer: (movingId: string, targetId: string) => {
+    return movingId === 'free-layer' && targetId === 'free-frame';
+  },
+};
+const freeLayerDrag: IframeLayerDragMessage = {
+  ...layerDrag,
+  blockId: 'free-layer',
+  pointer: { x: 120, y: 80 },
+  hitPath: [
+    geometry('free-child', 0, 24, {
+      rect: { left: 40, top: 40, width: 120, height: 24 },
+    }),
+    geometry('free-frame', 0, 160, {
+      rect: { left: 20, top: 20, width: 200, height: 160 },
+    }),
+  ],
+};
+assert.equal(
+  resolveIframeLayerDropTarget(freeLayerDrag, freeLayerLookup, 'free')?.containerBlockId,
+  'free-frame',
+  'free placement skips child before/after and resolves the containing frame',
+);
+assert.deepEqual(
+  resolveIframeLayerFreePlacement(
+    freeLayerDrag,
+    resolveIframeLayerDropTarget(freeLayerDrag, freeLayerLookup, 'free'),
+    freeLayerLookup,
+    1,
+  ),
+  {
+    left: 100,
+    top: 60,
+    containingBlockId: 'free-frame',
+    containingBlockNeedsRelative: true,
+  },
+);
+
 const calls: string[] = [];
 const commitAdapter = {
   moveBlockBefore: (_workspace: 'html', blockId: string, targetId: string) => {

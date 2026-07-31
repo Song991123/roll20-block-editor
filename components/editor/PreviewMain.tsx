@@ -992,6 +992,7 @@ export default function PreviewMain() {
         }
 
         const adapter = getBlocklyAdapter();
+        const placement = useUiStore.getState().editPlacementMode;
         const nextDropTarget = resolveIframeLayerDropTarget(editMessage, {
           getBlock: (blockId) => htmlLayerMap.get(blockId) ?? null,
           canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
@@ -1000,8 +1001,7 @@ export default function PreviewMain() {
             movingBlockId,
             targetBlockId,
           ),
-        });
-        const placement = useUiStore.getState().editPlacementMode;
+        }, placement);
         const visibleDropTarget = filterDropTargetForPlacement(nextDropTarget, placement);
         setIframeEditDropTarget(visibleDropTarget);
         if (editMessage.phase !== 'drop') return;

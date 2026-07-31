@@ -1,3 +1,18 @@
+# 2026-07-31 Layer-panel free-placement containment
+
+- DONE LOCAL: layer drags from the Figma-style panel now pass the active
+  placement mode into iframe drop resolution. In free mode, a child
+  before/after hit is skipped so the nearest eligible containing frame is
+  used instead of silently placing the layer at the sheet root.
+- VERIFIED LOCAL: `test:iframe-drop-target`, `ci:verify`, lint, and production
+  build pass. The new regression covers a child hit followed by its frame and
+  checks the resulting in-container coordinates.
+- CLAIM BOUNDARY: this proves the local drop-resolution contract only. It does
+  not prove actual Roll20 screenshot parity or live worker/chat behavior.
+- TODO P0: resume current-payload modern Sandbox capture after the browser
+  file-URL permission is enabled; keep legacy verification in its separate
+  dedicated destination.
+
 ## 2026-07-31 Mixed runtime-source preservation regression
 
 - DONE LOCAL: added an anonymous importer regression covering modern selector

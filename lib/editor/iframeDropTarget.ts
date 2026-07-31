@@ -193,6 +193,7 @@ export function resolveIframeWidgetDropTarget(
 export function resolveIframeLayerDropTarget(
   message: IframeLayerDragMessage,
   lookup: IframeDropTargetLookup,
+  placement: IframePlacementMode = 'flow',
 ): IframeEditDropTarget | null {
   if (message.phase !== 'dragover' && message.phase !== 'drop') return null;
   for (const geometry of message.hitPath) {
@@ -202,6 +203,10 @@ export function resolveIframeLayerDropTarget(
     const canDropInside = canPlaceInside(message.blockId, block.id, lookup);
     const mode = pickDropMode(geometry, message.pointer.y, canDropInside);
     if (mode !== 'inside' && !canPlaceAdjacent(message.blockId, block.id, lookup)) continue;
+    // In free placement, hovering an existing child should still resolve to
+    // the nearest eligible containing frame. A before/after target would
+    // silently turn a Figma-like drop into a root-level absolute layer.
+    if (placement === 'free' && mode !== 'inside') continue;
     return {
       blockId: block.id,
       label: block.label || block.type,
