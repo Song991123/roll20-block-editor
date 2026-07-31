@@ -129,21 +129,106 @@ export function sanitizeRoll20SandboxCss(
     });
   }
 
-  out = out.replace(/([^{]+){([^}]*)}/g, (full, selectorText: string, body: string) => {
-    const selectors = selectorText.trim();
-    if (!selectors) return full;
-    const transformed = selectors
-      .split(',')
-      .map((selector) => (
-        prefixSelectors
-          ? prefixRoll20Selector(selector.trim(), warnings)
-          : protectRoll20ChromeSelector(selector.trim(), warnings)
-      ))
-      .join(',');
-    return full.replace(selectorText, transformed).replace(body, body);
-  });
+  out = prefixNestedCssBlocks(out, prefixSelectors, warnings);
 
   return { css: out, warnings };
+}
+
+function prefixNestedCssBlocks(
+  css: string,
+  prefixSelectors: boolean,
+  warnings: Roll20SandboxWarning[],
+): string {
+  let out = '';
+  let cursor = 0;
+
+  while (cursor < css.length) {
+    const open = findNextCssOpenBrace(css, cursor);
+    if (open < 0) {
+      out += css.slice(cursor);
+      break;
+    }
+
+    const close = findMatchingCssBrace(css, open);
+    if (close < 0) {
+      out += css.slice(cursor);
+      break;
+    }
+
+    const prelude = css.slice(cursor, open);
+    const body = css.slice(open + 1, close);
+    const trimmed = prelude.trim();
+    const leading = prelude.slice(0, prelude.length - prelude.trimStart().length);
+    const trailing = prelude.slice(prelude.trimEnd().length);
+
+    if (!trimmed) {
+      out += prelude;
+    } else if (trimmed.startsWith('@')) {
+      const nestedBody = isKeyframesAtRule(trimmed)
+        ? body
+        : prefixNestedCssBlocks(body, prefixSelectors, warnings);
+      out += `${leading}${trimmed}${trailing}{${nestedBody}}`;
+    } else {
+      const transformed = trimmed
+        .split(',')
+        .map((selector) => (
+          prefixSelectors
+            ? prefixRoll20Selector(selector.trim(), warnings)
+            : protectRoll20ChromeSelector(selector.trim(), warnings)
+        ))
+        .join(',');
+      out += `${leading}${transformed}${trailing}{${body}}`;
+    }
+
+    cursor = close + 1;
+  }
+
+  return out;
+}
+
+function findNextCssOpenBrace(css: string, start: number): number {
+  let quote = '';
+  for (let i = start; i < css.length; i += 1) {
+    const char = css[i];
+    if (quote) {
+      if (char === '\\') i += 1;
+      else if (char === quote) quote = '';
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      continue;
+    }
+    if (char === '{') return i;
+  }
+  return -1;
+}
+
+function findMatchingCssBrace(css: string, open: number): number {
+  let depth = 0;
+  let quote = '';
+  for (let i = open; i < css.length; i += 1) {
+    const char = css[i];
+    if (quote) {
+      if (char === '\\') i += 1;
+      else if (char === quote) quote = '';
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      continue;
+    }
+    if (char === '{') depth += 1;
+    else if (char === '}') {
+      depth -= 1;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
+}
+
+function isKeyframesAtRule(prelude: string): boolean {
+  return /^@(?:-\w+-)?keyframes\b/i.test(prelude);
 }
 
 export function sanitizeRoll20SandboxHtml(

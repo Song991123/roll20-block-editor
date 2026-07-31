@@ -1,5 +1,16 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Nested at-rule sandbox sanitizer
+
+- `DONE LOCAL`: Sandbox CSS sanitization now walks nested at-rules instead of
+  treating `@container`/`@supports`/`@layer` as selectors. Only ordinary
+  nested selectors are prefixed; keyframe steps remain untouched.
+- `VERIFIED LOCAL`: nested sanitizer `8/8`, render-mode self-test, lint,
+  `ci:verify`, and production build pass.
+- `CLAIM BOUNDARY`: this fixes the local Roll20-sandbox approximation for a
+  nested CSS family; it is not actual Roll20 visual parity or complete CSS
+  grammar evidence.
+
 # 2026-07-31 Browser shared-surface recheck
 
 - `VERIFIED LOCAL`: persistent Preview/Edit surface passed in modern and

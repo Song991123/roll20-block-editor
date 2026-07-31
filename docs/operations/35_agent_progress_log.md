@@ -1,5 +1,17 @@
 # 2026-07-31 - Actual-status and renderer-action gate refresh
 
+# 2026-07-31 - Nested at-rule sandbox sanitizer
+
+- Replaced the flat CSS selector regex in the Sandbox sanitizer with a
+  balanced, recursive block walk.
+- Nested at-rules remain at-rules, inner selectors receive the selected
+  Roll20 scope, and keyframe steps are excluded from selector prefixing.
+- Added coverage for nested container/supports/layer rules and preserved
+  keyframe steps; nested sanitizer `8/8`, render-mode self-test, lint,
+  `ci:verify`, and build passed.
+- Actual Roll20 evidence remains unchanged at `0/4` generated root/chat
+  captures; chat parity and renderer readiness are still missing.
+
 # 2026-07-31 - Browser shared-surface recheck
 
 - Persistent Preview/Edit passed in modern and legacy modes with zero iframe

@@ -1,5 +1,15 @@
 # 34. Requirements Gap Matrix
 
+# Nested at-rule sandbox sanitizer - 2026-07-31
+
+- `DONE LOCAL`: nested `@container`, `@supports`, and `@layer` blocks now
+  remain valid at-rules in the Sandbox sanitizer; only their inner ordinary
+  selectors are scoped. Keyframe steps are preserved without scoping.
+- `VERIFIED LOCAL`: sanitizer `8/8`, render-mode self-test, lint, `ci:verify`,
+  and production build passed.
+- `OPEN EXTERNAL`: this is a local sanitizer contract fix, not actual Roll20
+  visual/chat parity. Generated actual evidence remains `0/4`.
+
 # Browser shared-surface recheck - 2026-07-31
 
 - `DONE LOCAL`: modern/legacy persistent Preview/Edit passed with zero iframe

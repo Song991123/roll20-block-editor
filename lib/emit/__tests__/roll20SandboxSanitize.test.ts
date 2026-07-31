@@ -62,6 +62,26 @@ function testCssCanPreserveActualIframeSelectors(): void {
   );
 }
 
+function testCssNestedAtRules(): void {
+  const r = sanitizeRoll20SandboxCss(`
+    @container sheet (min-width: 420px) {
+      .card, .card > input { display: grid; }
+    }
+    @supports (display: grid) {
+      @layer components { .panel { gap: 4px; } }
+    }
+    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  `);
+
+  expectContains(r.css, '@container sheet (min-width: 420px)', 'preserves container at-rule');
+  expectContains(r.css, '.charsheet .card,.charsheet .card > input', 'prefixes nested container selectors');
+  expectContains(r.css, '@supports (display: grid)', 'preserves supports at-rule');
+  expectContains(r.css, '@layer components', 'preserves nested layer at-rule');
+  expectContains(r.css, '.charsheet .panel', 'prefixes nested layer selector');
+  expectContains(r.css, 'from { opacity: 0; }', 'does not prefix keyframe steps');
+  expectNotContains(r.css, '.charsheet @container', 'does not prefix at-rule as selector');
+}
+
 function testCssUrlRewrite(): void {
   const r = sanitizeRoll20SandboxCss(`
     .a { background: url("https://example.com/a.png"); }
@@ -127,6 +147,7 @@ function testHtmlRuntimeAndUrlHandling(): void {
 const tests: Array<[string, () => void]> = [
   ['CSS selector prefixing', testCssPrefixesSelectors],
   ['CSS actual iframe selector preservation', testCssCanPreserveActualIframeSelectors],
+  ['CSS nested at-rules', testCssNestedAtRules],
   ['CSS URL rewrite', testCssUrlRewrite],
   ['CSS unsafe rejection', testCssRejectsUnsafeTokens],
   ['HTML allow-list/class prefix', testHtmlClassPrefixAndAllowList],
