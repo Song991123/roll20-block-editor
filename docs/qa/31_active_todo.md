@@ -1,3 +1,16 @@
+# 2026-07-31 Actual-status and renderer-action gate refresh
+
+- `VERIFIED LOCAL GATE`: actual-status is
+  `PREUPLOAD_READY_MISSING_GENERATED_ACTUAL`; preupload is `PASS`, but
+  generated Roll20 root/chat evidence is `0/4`, chat parity is `MISSING`, and
+  renderer-ready is `NO`.
+- `HOLD`: renderer-action gate returns
+  `HOLD_PRODUCTION_RENDERER_PATCH` because both anonymous fixtures lack
+  trustworthy generated root/chat evidence. Do not tune ChatPane or crop CSS
+  from local guesses before the external capture exists.
+- `TODO P0`: complete supported modern Sandbox upload and separate legacy-room
+  capture, then rerun status, crop/diff, and chat diagnostics.
+
 # 2026-07-31 Public boundary and latest local visual regression recheck
 
 - `VERIFIED LOCAL`: `EXAMPLES` is empty, no real-sheet/example fixture is

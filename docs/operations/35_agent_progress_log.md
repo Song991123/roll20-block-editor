@@ -1,3 +1,15 @@
+# 2026-07-31 - Actual-status and renderer-action gate refresh
+
+- Re-ran actual-status: `PREUPLOAD_READY_MISSING_GENERATED_ACTUAL`, with
+  preupload `PASS`, generated actual screenshots/diffs `0/4`, missing chat
+  parity, and renderer-ready `NO`.
+- Ran the renderer-action gate against the current ignored report. It returned
+  `HOLD_PRODUCTION_RENDERER_PATCH` because trustworthy generated root/chat
+  evidence is missing for both anonymous fixtures.
+- Kept ChatPane/crop CSS unchanged. The next renderer decision must use fresh
+  modern Sandbox and separately generated legacy-room captures, not local
+  synthetic screenshots alone.
+
 # 2026-07-31 - Public boundary and latest local visual regression recheck
 
 - Rechecked the public surface: `EXAMPLES` remains empty, no real or derived

@@ -1,5 +1,13 @@
 # 34. Requirements Gap Matrix
 
+# Actual-status and renderer-action gate refresh - 2026-07-31
+
+- `DONE GATE`: preupload is `PASS`, but actual generated Roll20 root/chat
+  evidence is `0/4`, chat parity is missing, and renderer readiness is `NO`.
+- `HOLD`: the renderer-action gate blocks production ChatPane/crop changes
+  until both anonymous fixtures have trustworthy root and chat evidence.
+- `OPEN P0`: supported modern Sandbox upload plus separate legacy-room capture.
+
 # Public boundary and latest local visual regression - 2026-07-31
 
 - `DONE LOCAL`: the public example registry is empty and tracked-file/privacy
