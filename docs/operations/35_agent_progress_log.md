@@ -11134,11 +11134,15 @@ same-hash modern/legacy comparison.
   blocks, one worker block, and 6,139 total workspace blocks. Resources,
   pointer edit, layer reorder, nested/free insertion, and re-import stability
   passed.
-- `VERIFY / OPEN LOCAL`: the post-mutation root screenshot had a localized
-  `4.89%` mismatch in a 96px strip. The separate modern/legacy visual smoke
-  for the same local input was exact at `0%` with translation coverage `93/93`.
-  This keeps the mutation-path visual gate open rather than claiming complete
-  parity.
+- `FIXED LOCAL`: the first post-mutation root screenshot reported a localized
+  `4.89%` mismatch in a 96px strip. DOM order, text, controls, and computed
+  paint matched; the cause was a short Playwright viewport stitching a
+  1,923px sheet. The smoke now expands the viewport to the sheet bound before
+  capturing the edit/preview roots.
+- `VERIFIED LOCAL`: the protected local input now has `0%` post-mutation
+  full-sheet visual mismatch. The separate modern/legacy visual smoke also
+  remains exact at `0%` with translation coverage `93/93`. This does not
+  replace actual Roll20 Sandbox or legacy-room evidence.
 - `BLOCKED HOST`: an explicitly approved deletion retry for only `.next/`,
   `out/`, and `.tmp/` was rejected before PowerShell execution. No workaround
   or protected-source operation was used; the generated paths remain.

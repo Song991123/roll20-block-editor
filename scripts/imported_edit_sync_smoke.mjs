@@ -538,6 +538,16 @@ async function screenshotEditBlock(page, blockId, screenshotPath) {
   });
 }
 
+async function ensureSheetFitsViewport(page, sheet) {
+  const before = page.viewportSize() || VIEWPORT;
+  const box = await sheet.boundingBox();
+  if (!box) return;
+  const requiredHeight = Math.min(20000, Math.max(before.height, Math.ceil(box.y + box.height + 200)));
+  if (requiredHeight <= before.height) return;
+  await page.setViewportSize({ width: before.width, height: requiredHeight });
+  await page.waitForTimeout(100);
+}
+
 async function screenshotEditSheetRoot(page, screenshotPath) {
   await page.evaluate(() => {
     window.__perfHook.setPreviewZoom(1);
@@ -547,6 +557,7 @@ async function screenshotEditSheetRoot(page, screenshotPath) {
   await clearIframeHighlight(page);
   const element = frame.locator('.charactersheet.charsheet').first();
   await element.waitFor({ state: 'visible', timeout: 30000 });
+  await ensureSheetFitsViewport(page, element);
   return withParentEditOverlaysHidden(page, async () => {
     const box = await element.boundingBox();
     await element.screenshot({ path: screenshotPath });
@@ -579,6 +590,7 @@ async function screenshotPreviewSheetRoot(page, screenshotPath) {
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
   const root = frame.locator('.charactersheet.charsheet').first();
   await root.waitFor({ state: 'visible', timeout: 30000 });
+  await ensureSheetFitsViewport(page, root);
   await clearIframeHighlight(page);
   const box = await root.boundingBox();
   await root.screenshot({ path: screenshotPath });

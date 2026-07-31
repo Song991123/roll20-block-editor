@@ -10575,12 +10575,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   translation blocks, zero page-JS blocks, one worker block, and 6,139 total
   workspace blocks. Resources, pointer edit flow, layer operations, nested
   flow/free insertion, and emit/re-import stability passed.
-- `VERIFY / OPEN LOCAL`: the post-mutation full-sheet capture reported a
-  localized `4.89%` mismatch across a 96px strip. The independent modern and
-  legacy preview/edit visual smoke for the same protected local input was
-  exact at `0%` with translation coverage `93/93`. This is therefore not
-  reported as full imported-mutation visual parity; the localized difference
-  remains an investigation item for dynamic state or capture timing.
+- `FIXED LOCAL`: the first post-mutation full-sheet capture reported a
+  localized `4.89%` mismatch across a 96px strip. DOM order, text, controls,
+  and computed paint were identical; the mismatch was caused by capturing a
+  1,923px sheet through a shorter Playwright viewport and its stitching
+  boundary. The imported-edit smoke now expands the viewport to the full
+  sheet bound before capture.
+- `VERIFIED LOCAL`: the protected local input now passes the post-mutation
+  full-sheet visual check at `0%`, alongside the independent modern and
+  legacy preview/edit visual smoke at `0%` and translation coverage `93/93`.
+  This remains local evidence, not actual Roll20 parity evidence.
 - `VERIFY / OPEN EXTERNAL`: no actual Roll20 Sandbox payload was transmitted.
   Modern/legacy same-payload screenshots, worker execution, and chat parity
   remain blocked at the supported visible chooser handoff.
