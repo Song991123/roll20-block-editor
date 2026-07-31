@@ -10460,3 +10460,16 @@ same-hash modern/legacy comparison.
   the default sheet canvas width as `850px`.
 - `CLAIM BOUNDARY`: this confirms the fresh-sheet/local canvas path only; it
   does not expand arbitrary imported-sheet or actual Roll20 parity evidence.
+
+## 2026-07-31 - Sandbox chooser timeout recheck
+
+- `VERIFY / BLOCKED EXTERNAL`: the dedicated modern Sandbox connection timed
+  out during the supported chooser attempt before returning positive file-hash,
+  reload, DOM, or screenshot evidence. The attempted upload is not counted as
+  applied or rejected.
+- `SAFETY`: the action was scoped to the dedicated verification tab; no ordinary
+  room was selected. A fresh participant preflight and state observation must
+  precede any further write.
+- `NEXT P0`: recover a responsive supported browser handoff, observe the current
+  Sandbox state, and only then capture positive anonymous `fixture-A` identity
+  and root/chat evidence.

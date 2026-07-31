@@ -26,6 +26,19 @@
 - `CLAIM BOUNDARY`: this covers the fresh-sheet/local canvas path only; it does
   not expand arbitrary imported-sheet or actual Roll20 parity evidence.
 
+# 2026-07-31 Sandbox chooser timeout recheck
+
+- `VERIFY / BLOCKED EXTERNAL`: after the participant preflight attempt, the
+  dedicated modern Sandbox browser connection timed out before returning a
+  positive file-hash, reload, DOM, or screenshot result. The attempted upload
+  is not counted as applied or rejected.
+- `SAFETY`: the action was scoped to the dedicated verification tab; no ordinary
+  room was selected. Do not perform another write until the tab is freshly
+  observed and its visible participant count is again exactly one.
+- `TODO P0`: recover a responsive supported browser handoff, observe the
+  current Sandbox state, then capture positive `fixture-A` HTML/CSS/translation
+  identity and root/chat evidence before updating parity metrics.
+
 # 2026-07-31 Local imported edit-sync recheck
 
 - VERIFIED LOCAL: after rebuilding the deleted static `out` directory, the
