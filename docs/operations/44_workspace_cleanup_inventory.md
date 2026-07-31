@@ -1409,3 +1409,18 @@ directories that had been recreated by the local build.
 - NOT DELETED: `.next/`, `out/`, and `.tmp/` remain. Product source,
   dependencies, worktrees, report policy, four-zone markers, and protected
   external sheet roots were unchanged.
+
+## 2026-07-31 current user-authorized retry
+
+- RECHECKED: the only deletion targets were the active worktree's generated
+  `.next/` (about 229.6 MB), `out/` (about 3.1 MB), and `.tmp/` (about 49.3
+  MB). `web/`, active `node_modules/`, source, reports policy, Git worktree
+  roots, and protected external sheet folders were excluded. No checked
+  project listener was active.
+- ATTEMPTED: one boundary-checked native PowerShell recursive deletion was
+  requested after the user explicitly approved the retry.
+- BLOCKED HOST: the execution boundary rejected the invocation before
+  PowerShell executed. User approval cannot override this session-level
+  restriction; no alternate shell, native API, per-file workaround, or safety
+  bypass was used.
+- NOT DELETED: all three generated directories remain unchanged.

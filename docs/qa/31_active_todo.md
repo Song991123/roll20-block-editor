@@ -1,5 +1,18 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Page-JS preservation and cleanup retry
+
+- `VERIFIED LOCAL`: the emit contract now preserves an authored page-JS block
+  when its internal HTML anchor is missing or stale; the script is appended
+  deterministically without exporting the internal marker. `test:emit-contract`,
+  `lint`, `build`, and `ci:verify` all pass.
+- `BLOCKED HOST`: explicit deletion of the three approved generated targets
+  (`web-push-main/.next`, `out`, `.tmp`) was rejected before PowerShell
+  execution. No alternate deletion path was used; the targets remain.
+- `OPEN CLEANUP`: retry only if the host execution boundary changes. Keep
+  source, worktrees, active dependencies, protected sheet roots, and report
+  policy untouched.
+
 - `VERIFIED LOCAL GATE`: actual-status is
   `PREUPLOAD_READY_MISSING_GENERATED_ACTUAL`; preupload is `PASS`, but
   generated Roll20 root/chat evidence is `0/4`, chat parity is `MISSING`, and

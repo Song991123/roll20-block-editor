@@ -10658,6 +10658,19 @@ same-hash modern/legacy comparison.
   partial, not full parity. Full-height root stitching, normalized diff, and
   independent fixture-A smoke are still required.
 
+## 2026-07-31 - Page-JS preservation and cleanup retry
+
+- `VERIFIED LOCAL`: page-JS emit now keeps an authored script whose HTML slot
+  marker was removed or became stale, appending it deterministically without
+  leaking the internal marker. The focused emit contract, lint, production
+  build, and full CI verification pass.
+- `BLOCKED HOST`: the user-authorized recursive removal of the three approved
+  generated targets (`web-push-main/.next`, `out`, `.tmp`) was rejected before
+  PowerShell execution. No alternate shell, API, or per-file workaround was
+  used, and all source/worktree/protected-root boundaries remain unchanged.
+- `NEXT`: keep cleanup as an explicit host-boundary item; do not treat the
+  generated directories as product source or commit them.
+
 ## 2026-07-31 - Latest dedicated Sandbox chooser retry
 
 - `VERIFIED EXTERNAL / READ-ONLY`: the dedicated modern Sandbox still showed a

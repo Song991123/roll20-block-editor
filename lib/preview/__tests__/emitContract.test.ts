@@ -323,6 +323,27 @@ function testImportedPageScriptReturnsToItsHtmlSlot(): void {
   jsWorkspace.dispose();
 }
 
+function testOrphanedPageScriptDoesNotDisappear(): void {
+  registerAllBlocks();
+  const htmlWorkspace = new Blockly.Workspace();
+  const jsWorkspace = new Blockly.Workspace();
+  const html = htmlWorkspace.newBlock('r20_raw_html');
+  html.setFieldValue('<div id="without-anchor">Sheet</div>', 'HTML');
+  const script = jsWorkspace.newBlock('r20_raw_page_js');
+  script.setFieldValue('page-stale', 'SLOT');
+  script.setFieldValue('data-role="page"', 'ATTRS');
+  script.setFieldValue('window.staleSlotWasPreserved = true;', 'JS');
+
+  const result = emitAll({ html: htmlWorkspace, js: jsWorkspace });
+  assert(
+    result.html.includes('window.staleSlotWasPreserved = true;'),
+    'a page script survives when its HTML source anchor is missing',
+  );
+  assert(!result.html.includes('r20-page-js-slot:'), 'stale internal slot marker is not exported');
+  htmlWorkspace.dispose();
+  jsWorkspace.dispose();
+}
+
 function testPageScriptOrderAndWorkerUniqueness(): void {
   registerAllBlocks();
   const workspace = new Blockly.Workspace();
@@ -443,6 +464,7 @@ testUntypedPageScriptExportPreserved();
 testEditablePageScriptExportPreserved();
 testDedicatedPageScriptWorkspaceAppendsExportOnly();
 testImportedPageScriptReturnsToItsHtmlSlot();
+testOrphanedPageScriptDoesNotDisappear();
 testPageScriptOrderAndWorkerUniqueness();
 testWorkerIfDoesNotDuplicateReporterGrouping();
 testWorkerDeclarationKindIsEmitted();

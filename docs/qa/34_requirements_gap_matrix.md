@@ -1,5 +1,14 @@
 # 34. Requirements Gap Matrix
 
+# Page-JS preservation and cleanup retry - 2026-07-31
+
+- `DONE LOCAL`: stale/missing page-JS HTML anchors no longer silently drop
+  authored script source during emit; the focused contract and full CI gate
+  pass.
+- `BLOCKED CLEANUP`: the host rejected the user-authorized recursive deletion
+  before execution for the active worktree's generated `.next`, `out`, and
+  `.tmp` directories. They remain local-only and uncommitted.
+
 # Actual-status and renderer-action gate refresh - 2026-07-31
 
 - `DONE GATE`: preupload is `PASS`, but actual generated Roll20 root/chat

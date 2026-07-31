@@ -61,14 +61,28 @@ export function mergePageJsSlots(html: string, pageJs: string): string {
       return '';
     },
   );
+  const resolvedSlots = new Set<string>();
   const merged = String(html ?? '').replace(
     /<!--[ \t]*r20-page-js-slot:([A-Za-z0-9_-]+)[ \t]*-->/gi,
-    (_full, slot: string) => anchored.get(slot) ?? '',
+    (_full, slot: string) => {
+      const script = anchored.get(slot);
+      if (script === undefined) return '';
+      resolvedSlots.add(slot);
+      return script;
+    },
   );
+  // A user can remove an internal HTML anchor while keeping the JS block, or
+  // an older saved workspace can contain a stale slot. Never drop authored
+  // executable source just because its visual anchor is missing; append it in
+  // a deterministic order and keep the export loss-aware.
+  const orphaned = [...anchored.entries()]
+    .filter(([slot]) => !resolvedSlots.has(slot))
+    .map(([, script]) => script)
+    .join('\n');
   const appended = remaining
     .replace(/<!--[ \t]*r20-page-js-slot:[A-Za-z0-9_-]+[ \t]*-->/gi, '')
     .trim();
-  return [merged, appended].filter(Boolean).join('\n');
+  return [merged, orphaned, appended].filter(Boolean).join('\n');
 }
 
 function readScriptType(attrs: string): string {
