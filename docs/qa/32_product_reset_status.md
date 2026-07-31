@@ -1,6 +1,6 @@
 # Product Reset Status
 
-Updated: 2026-07-19
+Updated: 2026-07-31
 
 This is the current evidence ledger for the active product-reset goal. A green
 local gate is not evidence of visual equality in a live Roll20 room.
@@ -8,6 +8,25 @@ local gate is not evidence of visual equality in a live Roll20 room.
 Latest local UI slice: edit-mode layer selection now opens the selected-block
 inspector, not the legacy widget-instance inspector. This remains local editor
 evidence and does not promote Figma-level usability or live Roll20 parity.
+
+## Latest Evidence Override - 2026-07-31
+
+This section is the current state. Older sections below are retained as audit
+history and must not be read as newer evidence than this block.
+
+| Area | Latest evidence | State | Boundary |
+| --- | --- | --- | --- |
+| Local preview/edit render surface | Protected local input L2 roundtrip and local rolltemplate smoke both pass at `100%` import match with zero browser errors | VERIFIED LOCAL | Does not prove live Roll20 parity |
+| Roll20 test destination safety | Dedicated test destination visibly showed exactly one member; no ordinary room was edited | VERIFIED EXTERNAL READ-ONLY | Observation safety only |
+| Roll20 live sheet surface | Existing anonymous test sheet iframe and root were readable; root measured `852.8 x 340px` and a real roll control produced a visible rolltemplate result | VERIFIED EXTERNAL DIAGNOSTIC | The payload identity is not proven equal to the current local fixture |
+| Current generated-sheet actual gate | `status:roll20-actual` reports `generatedActualScreenshots=0/4`, `generatedDiffed=0/4`, `rendererReady=NO` | VERIFY / BLOCKED EXTERNAL | Supported file chooser stops with `Not allowed` before upload |
+| Legacy-room visual parity | No fresh dedicated legacy-room capture | VERIFY | Modern Sandbox evidence cannot satisfy the legacy contract |
+| Public copyright boundary | No tracked real sheet, fixture, screenshot, report, or public example | VERIFIED LOCAL | Recheck before every public release |
+| CI/CD | Feature branch commit `c5333d3`; GitHub Actions run `30635027004` passed | VERIFIED REMOTE | This branch has not been promoted to production |
+
+Local-only live observation files remain under ignored
+`reports/roll20-actual-compare/.../live-sandbox-observation/`. They are runtime
+observations, not current-payload parity evidence.
 
 ## Evidence Snapshot
 
