@@ -1,5 +1,14 @@
 # 34. Requirements Gap Matrix
 
+# Local fresh-sheet and worker-state regression recheck - 2026-07-31
+
+- `DONE LOCAL`: a blank workspace has no HTML/CSS/i18n/JS/worker blocks, no
+  layer IDs, empty HTML output, and no ghost `sheet-section`.
+- `DONE LOCAL`: the worker-state path imports at `100%` match, emits one
+  worker block, and reports zero console/page errors.
+- `OPEN EXTERNAL`: this does not close current-payload Sandbox upload or
+  legacy-room visual parity.
+
 # Roll20 Participant Visibility Retry - 2026-07-31
 
 - `DONE OBSERVATION`: both dedicated tabs showed the Sandbox tools and current

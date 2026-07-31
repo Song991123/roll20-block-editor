@@ -1,3 +1,14 @@
+# 2026-07-31 - Local fresh-sheet and worker-state regression recheck
+
+- Re-ran `smoke:fresh-sheet`: the blank workspace started with zero
+  HTML/CSS/i18n/JS/worker blocks and zero layer IDs, emitted empty HTML, and
+  contained no ghost `sheet-section`.
+- Re-ran `smoke:worker-state`: import match was `100%`, one worker block was
+  mapped, import total was `46.3ms`, and console/page errors were zero.
+- These are local regression results only. The supported Roll20 upload gate
+  remains blocked until the participant count is visibly and freshly exactly
+  one.
+
 # 2026-07-31 - Roll20 participant visibility retry
 
 - Read both dedicated Roll20 tabs in observation-only mode. The Sandbox tools

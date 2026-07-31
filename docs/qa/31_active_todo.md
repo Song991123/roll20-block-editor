@@ -1,3 +1,13 @@
+# 2026-07-31 Local fresh-sheet and worker-state regression recheck
+
+- `VERIFIED LOCAL`: fresh-sheet smoke passed with an empty HTML/CSS/i18n/JS/
+  worker workspace, zero layer IDs, empty HTML output, and no ghost
+  `sheet-section` node.
+- `VERIFIED LOCAL`: worker-state smoke passed with `matchPct=100`, one worker
+  block, zero console errors, zero page errors, and a `46.3ms` import total.
+- `CLAIM BOUNDARY`: these checks cover local initialization and worker-state
+  mapping only; they do not prove arbitrary-sheet Roll20 parity.
+
 # 2026-07-31 Roll20 participant visibility retry
 
 - `VERIFIED EXTERNAL READ-ONLY`: both retained dedicated tabs showed the
