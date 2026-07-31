@@ -263,6 +263,23 @@ function testWorkerBinaryExpressions(): void {
   assert(subtraction.valueInputs?.LHS.blockType === 'r20_worker_arith', 'left-associative subtraction');
 }
 
+function testWorkerMathFunctions(): void {
+  const r = parseSheetWorkerScript(
+    `if (Math.floor(v.hp) > Math.max(v.minimum, v.maximum)) { setAttrs({ active: 1 }); }`,
+  );
+  const condition = r.blocks[0].valueInputs?.CONDITION;
+  if (!condition) throw new Error('Assertion failed: missing math condition');
+  assert(condition.blockType === 'r20_worker_cmp', 'math comparison');
+  assert(condition.valueInputs?.LHS.blockType === 'r20_worker_math_unary', 'unary Math block');
+  assert(condition.valueInputs?.LHS.fields.OP === 'floor', 'unary Math operator');
+  assert(condition.valueInputs?.RHS.blockType === 'r20_worker_math_binary', 'binary Math block');
+  assert(condition.valueInputs?.RHS.fields.OP === 'max', 'binary Math operator');
+  assert(
+    condition.valueInputs?.RHS.valueInputs?.LHS.blockType === 'r20_worker_v_ref',
+    'binary Math left operand',
+  );
+}
+
 function testWorkerUnaryNot(): void {
   const r = parseSheetWorkerScript(
     `if (!v.disabled) { setAttrs({ active: 1 }); }`,
@@ -351,6 +368,7 @@ const tests = [
   ['console.log', testConsoleLog],
   ['nested complex', testNestedComplex],
   ['worker binary expressions', testWorkerBinaryExpressions],
+  ['worker Math helpers', testWorkerMathFunctions],
   ['worker unary not', testWorkerUnaryNot],
   ['raw fallback (switch)', testRawFallback],
   ['comments & strings', testCommentsAndStrings],

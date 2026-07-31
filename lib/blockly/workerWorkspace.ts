@@ -35,6 +35,8 @@ const WORKER_BLOCK_TYPES = new Set([
   'r20_worker_cmp',
   'r20_worker_logic',
   'r20_worker_not',
+  'r20_worker_math_unary',
+  'r20_worker_math_binary',
   'r20_get_translation',
   'r20_get_compendium',
 ]);

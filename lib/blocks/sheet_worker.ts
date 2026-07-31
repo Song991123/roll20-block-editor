@@ -46,6 +46,18 @@ const ARITH_OPS: Array<[string, string]> = [
   ['%', '%'],
 ];
 
+const MATH_UNARY_OPS: Array<[string, string]> = [
+  ['Math.floor', 'floor'],
+  ['Math.ceil', 'ceil'],
+  ['Math.round', 'round'],
+  ['Math.abs', 'abs'],
+];
+
+const MATH_BINARY_OPS: Array<[string, string]> = [
+  ['Math.min', 'min'],
+  ['Math.max', 'max'],
+];
+
 const CMP_OPS: Array<[string, string]> = [
   ['=', '==='],
   ['≠', '!=='],
@@ -748,6 +760,46 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
   //   - LANG 비면 (`''`) `getTranslationByKey('KEY')` emit (현재 언어).
   //   - LANG 채우면 `getTranslationByLang('LANG', 'KEY')` emit.
   // roll20-sheet-builder 1부 등 LANG 비어 있는 케이스는 기존 출력 유지.
+  {
+    type: 'r20_worker_math_unary',
+    shape: 'reporter',
+    category: SHEET_WORKER,
+    label: 'Math function',
+    tooltip: 'Math.floor / ceil / round / abs with one worker expression.',
+    init: mkInit((b) => {
+      b.appendDummyInput().appendField(new Blockly.FieldDropdown(MATH_UNARY_OPS), 'OP');
+      b.appendValueInput('VALUE').setCheck(null);
+      b.setOutput(true, T_NUM);
+      b.setInputsInline(true);
+    }),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const op = pickOp(String(b.getFieldValue('OP') ?? ''), MATH_UNARY_OPS, 'floor');
+      const value = ctx.valueToCode(block, 'VALUE', ORDER.NONE) || '0';
+      return [`Math.${op}(${value})`, ORDER.ATOMIC];
+    },
+  },
+  {
+    type: 'r20_worker_math_binary',
+    shape: 'reporter',
+    category: SHEET_WORKER,
+    label: 'Math pair function',
+    tooltip: 'Math.min / max with two worker expressions.',
+    init: mkInit((b) => {
+      b.appendDummyInput().appendField(new Blockly.FieldDropdown(MATH_BINARY_OPS), 'OP');
+      b.appendValueInput('LHS').setCheck(null);
+      b.appendValueInput('RHS').setCheck(null);
+      b.setOutput(true, T_NUM);
+      b.setInputsInline(true);
+    }),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const op = pickOp(String(b.getFieldValue('OP') ?? ''), MATH_BINARY_OPS, 'min');
+      const lhs = ctx.valueToCode(block, 'LHS', ORDER.NONE) || '0';
+      const rhs = ctx.valueToCode(block, 'RHS', ORDER.NONE) || '0';
+      return [`Math.${op}(${lhs}, ${rhs})`, ORDER.ATOMIC];
+    },
+  },
   {
     type: 'r20_get_translation',
     shape: 'reporter',

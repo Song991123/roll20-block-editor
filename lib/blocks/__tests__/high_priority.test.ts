@@ -246,6 +246,24 @@ function testWorkerUnaryNotEmit(): void {
   expectEq(code, '!(v.disabled)', 'unary not emit');
 }
 
+function testWorkerMathUnaryEmit(): void {
+  const def = findBlock(SHEET_WORKER_BLOCKS as Array<{ type: string }>, 'r20_worker_math_unary');
+  assert(def.generator, 'r20_worker_math_unary has generator');
+  const b = new FakeBlock({ type: 'r20_worker_math_unary', fields: { OP: 'floor' } });
+  const out = def.generator!(b, makeCtx({ VALUE: 'v.hp' }));
+  const code = Array.isArray(out) ? out[0] : out;
+  expectEq(code, 'Math.floor(v.hp)', 'Math unary emit');
+}
+
+function testWorkerMathBinaryEmit(): void {
+  const def = findBlock(SHEET_WORKER_BLOCKS as Array<{ type: string }>, 'r20_worker_math_binary');
+  assert(def.generator, 'r20_worker_math_binary has generator');
+  const b = new FakeBlock({ type: 'r20_worker_math_binary', fields: { OP: 'max' } });
+  const out = def.generator!(b, makeCtx({ LHS: 'v.hp', RHS: 'v.hp_max' }));
+  const code = Array.isArray(out) ? out[0] : out;
+  expectEq(code, 'Math.max(v.hp, v.hp_max)', 'Math binary emit');
+}
+
 // ---------- 1b) r20_get_compendium ----------------------------------------
 
 function testCompendiumBasicPath(): void {
@@ -590,6 +608,8 @@ function testAttrRefBogusScopeFallback(): void {
 const tests: Array<[string, () => void]> = [
   ['worker if/else emit', testWorkerIfElseEmit],
   ['worker unary not emit', testWorkerUnaryNotEmit],
+  ['worker Math unary emit', testWorkerMathUnaryEmit],
+  ['worker Math binary emit', testWorkerMathBinaryEmit],
   ['compendium basic path', testCompendiumBasicPath],
   ['compendium with subpath', testCompendiumWithSubpath],
   ['compendium empty path', testCompendiumEmptyPath],

@@ -10474,3 +10474,15 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `OPEN EXTERNAL`: no payload has been transmitted or saved in Roll20. The
   next proof remains user-visible selection in the dedicated Sandbox, then a
   fresh modern capture and an independent legacy capture with matching hashes.
+
+## 2026-07-31 Worker Math Helper Mapping
+
+- `DONE LOCAL`: common worker calls `Math.floor`, `Math.ceil`, `Math.round`,
+  `Math.abs`, `Math.min`, and `Math.max` now become editable worker reporter
+  blocks for the supported one-argument and two-argument shapes.
+- `VERIFIED LOCAL`: parser `31/31`, generator/high-priority `26/26`, headless
+  workspace, worker workspace smoke, full `ci:verify`, lint, and production
+  build pass.
+- `VERIFY / OPEN`: unsupported call shapes remain raw-preserved. Arbitrary
+  worker syntax, live Roll20 execution order, and modern/legacy screenshot or
+  chat parity remain separate open gates.

@@ -568,6 +568,17 @@ function workerBinaryBlock(rawExpr: string): ParsedBlock | null {
   return null;
 }
 
+function parseWorkerCall(
+  expression: string,
+  matcher: RegExp,
+): { name: string; args: string[] } | null {
+  const match = matcher.exec(expression);
+  if (!match) return null;
+  const open = expression.indexOf('(', Math.max(0, match[0].length - 1));
+  if (open < 0 || findMatchingClose(expression, open) !== expression.length) return null;
+  return { name: match[1], args: splitArgs(expression.slice(open + 1, -1)) };
+}
+
 function valueBlock(rawExpr: string): ParsedBlock {
   const e = rawExpr.trim().replace(/;$/, '').trim();
   const binary = workerBinaryBlock(e);
@@ -586,6 +597,27 @@ function valueBlock(rawExpr: string): ParsedBlock {
     }
   }
   // v.NAME / v.NAME_max — Stage worker-1 reporter.
+  const unaryMath = parseWorkerCall(e, /^Math\.(floor|ceil|round|abs)\s*\(/);
+  if (unaryMath && unaryMath.args.length === 1 && unaryMath.args[0]) {
+    return {
+      blockType: 'r20_worker_math_unary',
+      fields: { OP: unaryMath.name },
+      children: {},
+      valueInputs: { VALUE: valueBlock(unaryMath.args[0]) },
+    };
+  }
+  const binaryMath = parseWorkerCall(e, /^Math\.(min|max)\s*\(/);
+  if (binaryMath && binaryMath.args.length === 2 && binaryMath.args.every(Boolean)) {
+    return {
+      blockType: 'r20_worker_math_binary',
+      fields: { OP: binaryMath.name },
+      children: {},
+      valueInputs: {
+        LHS: valueBlock(binaryMath.args[0]),
+        RHS: valueBlock(binaryMath.args[1]),
+      },
+    };
+  }
   let m = /^v\.([A-Za-z_$][\w$]*)_max$/.exec(e);
   if (m) {
     return {

@@ -11050,3 +11050,16 @@ same-hash modern/legacy comparison.
 - `CLAIM BOUNDARY`: nothing was transmitted to or saved in Roll20. The
   supported user-visible chooser and independent legacy capture are still the
   next external gate.
+
+## 2026-07-31 - Worker Math helper mapping
+
+- `IMPLEMENTED`: common worker `Math.floor`, `Math.ceil`, `Math.round`,
+  `Math.abs`, `Math.min`, and `Math.max` calls now have generic editable
+  reporter blocks. The parser only structures the supported arity and keeps
+  other shapes raw-preserved.
+- `VERIFIED LOCAL`: worker parser `31/31`, generator/high-priority `26/26`,
+  headless workspace, worker workspace smoke, `ci:verify`, lint, and
+  production build passed.
+- `CLAIM BOUNDARY`: this improves local JS block mapping only. It is not live
+  Roll20 worker execution proof, and it does not change the open actual
+  modern/legacy screenshot or chat evidence gate.
