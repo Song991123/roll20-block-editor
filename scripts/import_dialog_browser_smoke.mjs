@@ -36,13 +36,15 @@ function startServer() {
         response.writeHead(403).end();
         return;
       }
+      const body = await fs.readFile(file);
       response.writeHead(200, {
         'content-type': MIME[path.extname(file)] ?? 'application/octet-stream',
         'cache-control': 'no-store',
       });
-      response.end(await fs.readFile(file));
+      response.end(body);
     } catch {
-      response.writeHead(404).end('not found');
+      if (!response.headersSent) response.writeHead(404);
+      if (!response.writableEnded) response.end('not found');
     }
   });
   return new Promise((resolve) => server.listen(PORT, '127.0.0.1', () => resolve(server)));
@@ -53,6 +55,11 @@ function assert(value, message) {
 }
 
 async function main() {
+  try {
+    await fs.access(path.join(OUT_DIR, 'index.html'));
+  } catch {
+    throw new Error(`Static output is missing at ${OUT_DIR}. Run \"pnpm build\" before this smoke.`);
+  }
   const server = await startServer();
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1480, height: 960 } });

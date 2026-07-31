@@ -1,5 +1,25 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Import truthfulness and smoke-harness gate
+
+- `DONE LOCAL`: Import 결과 패널의 수치를 `HTML 구조화`, `CSS 구조화`,
+  `HTML + CSS 전체 구조화 일치율`로 분리해 표시한다. HTML 수치 하나를
+  전체 시트 일치율로 오해하지 않도록 범위를 명시했다.
+- `DONE LOCAL`: import 경고를 개수만 보여주지 않고 펼쳐서 실제 확인 항목을
+  읽을 수 있게 했다. 원문 보존/fallback 경고는 구조화 편집 제한과 함께
+  표시된다.
+- `FIXED LOCAL`: import dialog browser smoke의 정적 서버가 파일 읽기 전에
+  200 헤더를 보내던 문제를 수정하고, 빌드 산출물이 없을 때 명확한 사전
+  조건 오류를 내도록 했다.
+- `VERIFIED LOCAL`: lint, production build, `ci:verify`, import structure
+  `45/45 + 7/7 + 16/16 + 8/8`, import dialog smoke가 통과했다. smoke는
+  HTML/CSS/page JS/worker JS workspace 분리, iframe 1개, runtime 비표시,
+  console/page error 0개를 확인했다.
+- `VERIFY EXTERNAL`: 실제 Roll20 Sandbox 업로드와 root/chat evidence는
+  아직 `0/4`다. 전용 1인 방의 visible chooser는 확인했지만 파일 전송은
+  Chrome의 `Not allowed`에서 멈춰 있으며, 실제 시트/채팅 parity 주장은
+  하지 않는다.
+
 # 2026-07-31 Parent render-readiness surface gate
 
 - `DONE LOCAL`: the product PreviewMain now consumes the shared iframe's

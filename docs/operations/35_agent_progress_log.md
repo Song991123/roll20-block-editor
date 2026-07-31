@@ -1,5 +1,21 @@
 # 2026-07-31 - Actual-status and renderer-action gate refresh
 
+## 2026-07-31 - Import truthfulness and smoke-harness gate
+
+- `ImportDialog` now labels the HTML, CSS, and combined structured coverage
+  scopes separately, so an HTML-only `100%` cannot be read as whole-sheet
+  fidelity. Import warnings can be expanded to show the actual messages.
+- Fixed `scripts/import_dialog_browser_smoke.mjs` so its static server reads
+  the file before sending response headers and reports a missing build output
+  immediately instead of timing out through `window.__perfHook`.
+- Verified lint, production build, `ci:verify`, the import-structure suite,
+  and the browser import smoke. The smoke kept one iframe, routed page/worker
+  JS to their intended workspaces, hid runtime nodes, and recorded zero
+  console/page errors.
+- External boundary unchanged: the dedicated one-member Roll20 Sandbox still
+  has no transmitted payload or actual root/chat evidence (`0/4`) because the
+  visible chooser path remains `Not allowed`.
+
 ## 2026-07-31 - Parent render-readiness surface gate
 
 - `IMPLEMENTED`: `PreviewMain` now treats the persistent iframe as the only

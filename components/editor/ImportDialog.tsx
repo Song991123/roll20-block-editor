@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { importSheet } from '@/lib/import';
+import { importSheet, type ImportWarning } from '@/lib/import';
 import {
   analyzeAssetRefs,
   buildAssetReplacementDraft,
@@ -120,6 +120,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     sanitizeDropped: number;
     wideRowBundles: number;
     wideRowCollapsed: number;
+    warningDetails: Array<Pick<ImportWarning, 'severity' | 'message' | 'workspace'>>;
   }>(null);
   const [progress, setProgress] = useState<null | { done: number; total: number; pct: number }>(null);
   const assetPreflight = useMemo(
@@ -244,6 +245,11 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         sanitizeDropped: result.stats.sanitizeDropped,
         wideRowBundles: result.stats.wideRowBundles ?? 0,
         wideRowCollapsed: result.stats.wideRowCollapsed ?? 0,
+        warningDetails: result.warnings.slice(0, 12).map(({ severity, message, workspace }) => ({
+          severity,
+          message,
+          workspace,
+        })),
       });
 
       if (result.stats.sanitizeDropped > 0) {
@@ -462,16 +468,16 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
           <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3.5 text-sm leading-relaxed">
             <div className="mb-1 font-semibold">변환 결과</div>
             <div>
-              HTML 매칭: <span className="tabular-nums">{report.matched}/{report.total}</span> ({report.coverage}%) · 원본 보존{' '}
+              HTML 구조화: <span className="tabular-nums">{report.matched}/{report.total}</span> ({report.coverage}%) · 원본 보존{' '}
               <span className="tabular-nums">{report.rawHtml}</span>개
             </div>
             <div>
-              CSS 규칙: <span className="tabular-nums">{report.cssMatched}/{report.cssTotal}</span> ({report.cssCoverage}%) · 원본 보존{' '}
+              CSS 구조화: <span className="tabular-nums">{report.cssMatched}/{report.cssTotal}</span> ({report.cssCoverage}%) · 원본 보존{' '}
               <span className="tabular-nums">{report.rawCss}</span>개 · 번역 키{' '}
               <span className="tabular-nums">{report.i18nKeys}</span>
             </div>
             <div>
-              전체 구조화: <span className="tabular-nums">{report.structuredCoverage}%</span>
+              HTML + CSS 전체 구조화 일치율: <span className="tabular-nums">{report.structuredCoverage}%</span>
             </div>
             {report.rawCss > 0 && (
               <div className="mt-1 text-amber-500" data-testid="import-css-fallback-warning">
@@ -500,7 +506,19 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
               </div>
             )}
             {report.warnings > 0 && (
-              <div className="mt-1 text-amber-500">경고 {report.warnings}건이 있습니다. 가져온 결과와 원본 파일을 확인하세요.</div>
+              <details className="mt-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-2.5 py-2 text-amber-500" data-testid="import-warning-details">
+                <summary className="cursor-pointer font-medium">확인할 항목 {report.warnings}건</summary>
+                <ul className="mt-2 space-y-1 pl-4 text-xs leading-relaxed">
+                  {report.warningDetails.map((warning, index) => (
+                    <li key={`${warning.workspace ?? 'general'}-${warning.severity}-${index}`}>
+                      {warning.message}
+                    </li>
+                  ))}
+                </ul>
+                {report.warnings > report.warningDetails.length && (
+                  <div className="mt-1 text-xs">나머지 항목은 내보내기 전에 원본과 결과를 함께 확인하세요.</div>
+                )}
+              </details>
             )}
           </div>
         )}
