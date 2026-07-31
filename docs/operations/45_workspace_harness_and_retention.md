@@ -2,6 +2,26 @@
 
 ## 2026-08-01 explicit complete-deletion retry completed
 
+- DELETED: the exact ignored local-only targets `docs/qa/archive/`,
+  `docs/validation/27_source_corpus_manifest.md`,
+  `docs/validation/verify/`, and all seven generated report directories under
+  `reports/` (`edit-flow-smoke`, `export-dialog-ux-check`,
+  `imported-edit-sync-render-ready-rerun`, `imported-edit-sync-synthetic-all`,
+  `imported-edit-sync-synthetic`, `legacy-export-audit`, and
+  `roll20-actual-compare`).
+- PRESERVED: tracked `reports/README.md`, active `node_modules/`, product
+  source, both Git worktrees, four-zone markers, fixed compatibility roots,
+  and all protected external sheet source folders.
+- VERIFIED: every target was ignored, untracked, inside the canonical
+  worktree, and absent after the read-only directory attributes were cleared
+  only inside those exact targets. No project or CDP listener was active and
+  the canonical worktree remained clean.
+- FOLLOW-UP: any future local evidence must be regenerated into ignored
+  reports/ paths; deleted screenshots and payloads are not current parity
+  evidence and must not be referenced as if they still exist.
+
+## 2026-08-01 explicit complete-deletion retry completed
+
 - DELETED: the stale parent-worktree build metadata and zero-byte `_tmp_*`
   files, plus the canonical ignored `.tmp/` root and its generated children.
 - PRESERVED: active dependencies, current comparison reports, tracked source,

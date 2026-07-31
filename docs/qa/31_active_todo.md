@@ -1,3 +1,13 @@
+# 2026-08-01 Complete local-only cleanup
+
+- `DONE LOCAL`: removed the explicitly approved ignored archive/source-index
+  remnants and generated report directories. Tracked policy documentation,
+  active dependencies, source, worktrees, compatibility roots, and protected
+  external sources were preserved.
+- `VERIFY NEXT RUN`: any screenshot, fixture, payload, or report needed for
+  Roll20 verification must be regenerated. Deleted local evidence is not a
+  parity result.
+
 # 2026-08-01 Fresh external upload retry
 
 - `VERIFIED EXTERNAL READ-ONLY`: regenerated anonymous payload was ready and

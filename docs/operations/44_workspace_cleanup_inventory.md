@@ -1,5 +1,21 @@
 # 44. Workspace Cleanup Inventory
 
+## 2026-08-01 complete local-only purge completed
+
+- DELETED: the exact ignored `docs/qa/archive/`,
+  `docs/validation/27_source_corpus_manifest.md`,
+  `docs/validation/verify/`, and seven generated report directories under
+  `reports/`.
+- PRESERVED: `reports/README.md`, active dependencies, product source, both
+  Git worktrees, four-zone markers, fixed compatibility roots, and protected
+  external sheet folders.
+- VERIFIED: the targets are absent, `node_modules/` remains available for the
+  next verification run, no project/CDP listener is active, and the canonical
+  worktree is clean.
+- NOTE: historical progress logs can mention the deleted local paths, but
+  those paths no longer contain evidence. Regenerate anonymous fixtures and
+  reports before relying on a future verification claim.
+
 ## 2026-08-01 explicit complete-deletion retry completed
 
 - DELETED: the exact generated targets `web/tsconfig.tsbuildinfo`, the seven

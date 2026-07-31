@@ -1,3 +1,14 @@
+# 2026-08-01 - Complete local-only cleanup
+
+## 2026-08-01 - Explicit generated-data purge
+
+- Removed only the approved ignored archive/source-index remnants and local
+  generated report directories after a dry-run and boundary check.
+- Kept `reports/README.md`, active dependencies, source, worktrees, the
+  four-zone markers, compatibility roots, and protected external sources.
+- No project or CDP listener was active. Future Roll20 evidence must be
+  regenerated; the purge does not change the unresolved external parity gate.
+
 # 2026-07-31 - Actual-status and renderer-action gate refresh
 
 ## 2026-08-01 - Fresh Sandbox payload retry
