@@ -15,6 +15,7 @@ import {
   type VisualStylePresetScope,
 } from '@/lib/editor/stylePresets';
 import { cn } from '@/lib/utils/cn';
+import BackgroundImageControls from './BackgroundImageControls';
 
 type VisualStyleInspectorProps = {
   valuesByState: Record<ManagedDesignState, Record<string, string>>;
@@ -167,6 +168,10 @@ export default function VisualStyleInspector({
           />
         </div>
       </StyleSection>
+
+      {(role.kind === 'frame' || role.kind === 'flow') && activeState === 'base' && (
+        <BackgroundImageControls values={values} onPatch={applyPatch} />
+      )}
 
       <StyleSection title="테두리">
         <div className="grid grid-cols-2 gap-2">

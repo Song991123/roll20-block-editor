@@ -122,6 +122,19 @@ already-selected insertion position.
 - Table roots, row groups/rows, and cells receive separate preset groups. The
   editor styles the selected semantic table node directly and does not wrap it
   in a layout-changing helper element.
+- Frame and flow layers expose a visual background-image editor in their base
+  state. It accepts remote HTTP(S) URLs, provides image fit, repeat, and a 3x3
+  position control, and writes `background-image`, `background-size`,
+  `background-position`, and `background-repeat` through the same managed CSS
+  rule as the rest of the inspector.
+- New background URLs reject relative, `data:`, executable, credential-bearing,
+  and multiline values. HTTP remains editable for imported compatibility but
+  shows a visible Roll20 warning. A newly added URL starts at cover, centered,
+  and no-repeat; an existing authored size/position/repeat is preserved.
+- Imported gradients, multiple backgrounds, and other complex declarations are
+  not flattened into the URL control. They remain in CSS until the user
+  explicitly replaces or clears the background. External assets remain subject
+  to the export asset preflight and are never embedded or published by this UI.
 - Managed rules repeat the stable node class to outrank Roll20's baseline
   control selectors without `!important`. The editor selection overlay uses an
   outline only and must not change the selected element's corner radius.

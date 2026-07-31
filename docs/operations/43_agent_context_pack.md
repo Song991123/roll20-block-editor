@@ -14,7 +14,11 @@ the entire history and generated evidence tree.
 - Direct edit exposes managed CSS controls plus 35 generic starting styles
   for sections, Roll buttons, text, inputs, table surfaces/rows/cells, result
   cards, and result rows. Buttons and ordinary inputs can edit separate base,
-  hover, active, and focus states. Managed selectors beat the Roll20 base
+  hover, active, and focus states. Frame/flow sections can also author a remote
+  background image with fit, repeat, and 3x3 position controls. The authoring
+  path accepts only HTTP(S), warns on HTTP, preserves imported complex
+  backgrounds until explicit replacement, and emits managed CSS that remains
+  visible in the shared Edit/Preview iframe. Managed selectors beat the Roll20 base
   without inline presentation or `!important`; template-child rules are scoped
   through their owning `.sheet-rolltemplate-NAME`. Result-card root rules use
   that same Roll20 class directly and migrate with template-name changes. The
@@ -23,7 +27,8 @@ the entire history and generated evidence tree.
   edit the outer card and common child presentation through managed CSS, and drop template-specific
   rows/text into flow. The persistent sheet iframe remains mounted separately,
   so card width cannot reflow the sheet. Blockly template-name changes migrate
-  root and descendant managed CSS to the new chat scope. This is locally browser-verified, not
+  root and descendant managed CSS to the new chat scope. Section background
+  paint and its modern/legacy sanitizer preservation are locally browser-verified. This is not
   arbitrary-sheet actual Roll20 parity.
 - Actual Roll20's built-in default chat-template DOM and typography were
   measured in the dedicated one-member modern Sandbox. The local fallback now

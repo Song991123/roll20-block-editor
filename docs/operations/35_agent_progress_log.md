@@ -11676,3 +11676,25 @@ same-hash modern/legacy comparison.
   pass.
 - Current-payload modern Sandbox upload is still blocked before transmission
   by Chrome local-file access. No actual Roll20 parity claim is made.
+
+## 2026-08-01 - Section background image editing
+
+- Added a dedicated background-image inspector for frame and flow layers. It
+  provides remote URL entry, fit, repeat, clear, and a visual 3x3 position
+  picker while keeping the existing selected element in the shared persistent
+  iframe.
+- Added `backgroundImageStyle.ts` as the authoring boundary. It normalizes only
+  HTTP(S) URLs, rejects local/executable/credential-bearing values, warns on
+  HTTP, preserves imported complex background CSS, and writes safe managed CSS
+  declarations instead of inline HTML.
+- Kept the component separate from `VisualStyleInspector.tsx` so later section
+  decoration controls do not turn the general inspector into one large file.
+- Extended the canonical edit-flow smoke with a generated local-only raster
+  endpoint. It verifies emitted CSS, rendered image/size/position/repeat, HTTP
+  warning, no inline leakage, and exact Edit/Preview computed-style equality.
+- Verified focused design tests, modern sanitizer `8/8`, legacy sanitizer
+  `18/18`, asset tests, export-dialog browser smoke, lint, production build,
+  full `ci:verify`, and edit-flow browser smoke. Anonymous modern/legacy
+  Preview/Edit comparison stayed at exact `0%` mismatch for four captures.
+- Actual modern Sandbox paint and dedicated legacy-room paint remain open. The
+  browser evidence above proves local rendering/export contracts only.

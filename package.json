@@ -30,7 +30,7 @@
     "test:blockly-headless": "tsx lib/blockly/__tests__/headlessWorkspace.test.ts",
     "test:blockly-render-policy": "tsx lib/blockly/__tests__/renderPolicy.test.ts",
     "test:blockly-layer-operations": "tsx lib/blockly/__tests__/layerOperations.test.ts",
-    "test:design-position": "tsx lib/editor/__tests__/designPosition.test.ts && tsx lib/editor/__tests__/stylePresets.test.ts",
+    "test:design-position": "tsx lib/editor/__tests__/designPosition.test.ts && tsx lib/editor/__tests__/stylePresets.test.ts && tsx lib/editor/__tests__/backgroundImageStyle.test.ts",
     "test:iframe-drop-target": "tsx lib/editor/__tests__/iframeDropTarget.test.ts",
     "test:drop-indicator": "tsx lib/editor/__tests__/dropIndicator.test.ts",
     "test:blockly-sound-policy": "tsx lib/editor/__tests__/blocklySoundPolicy.test.ts",

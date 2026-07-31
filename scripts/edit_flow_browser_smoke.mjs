@@ -24,6 +24,10 @@ const OUT_DIR = path.resolve(argOf('--out-dir', './out'));
 const BASE_PATH = argOf('--base-path', '/roll20-block-editor');
 const REPORT_DIR = path.resolve(argOf('--report-dir', 'reports/edit-flow-smoke'));
 const PORT = Number(argOf('--port', '4173'));
+const SYNTHETIC_BACKGROUND_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Z4TQAAAAASUVORK5CYII=',
+  'base64',
+);
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -41,6 +45,14 @@ function startServer() {
     try {
       let url = decodeURIComponent((request.url ?? '/').split('?')[0]);
       if (url.startsWith(BASE_PATH)) url = url.slice(BASE_PATH.length) || '/';
+      if (url === '/synthetic-background.png') {
+        response.writeHead(200, {
+          'content-type': 'image/png',
+          'cache-control': 'no-store',
+        });
+        response.end(SYNTHETIC_BACKGROUND_PNG);
+        return;
+      }
       if (url.endsWith('/')) url += 'index.html';
       const file = path.join(OUT_DIR, path.normalize(url).replace(/^([/\\])+/, ''));
       if (!file.startsWith(OUT_DIR)) {
@@ -1402,6 +1414,51 @@ async function main() {
     assert(result.tests.sectionStylePreset?.paddingTop === '16px', `section preset padding did not reach the shared iframe: ${sectionPresetDebug}`);
     assert(!/background|border|padding/i.test(result.tests.sectionStylePreset?.inlineStyle ?? ''), 'section preset leaked presentation into inline HTML');
 
+    const syntheticBackgroundUrl = `http://127.0.0.1:${PORT}${BASE_PATH}/synthetic-background.png`;
+    const backgroundUrlInput = page.locator('[data-testid="design-background-url"]');
+    await backgroundUrlInput.waitFor({ state: 'visible', timeout: 10000 });
+    await backgroundUrlInput.fill(syntheticBackgroundUrl);
+    await backgroundUrlInput.press('Enter');
+    await page.locator('[data-testid="design-background-size"]').selectOption('contain');
+    await page.locator('[data-testid="design-background-repeat"]').selectOption('repeat-x');
+    await page.locator('[data-testid="design-background-position-right-bottom"]').click();
+    await page.waitForFunction(
+      (assetUrl) => {
+        const css = window.__perfHook.getEmitContent().css;
+        return css.includes(`background-image: url("${assetUrl}")`)
+          && css.includes('background-size: contain')
+          && css.includes('background-position: right bottom')
+          && css.includes('background-repeat: repeat-x');
+      },
+      syntheticBackgroundUrl,
+      { timeout: 10000 },
+    );
+    await page.waitForTimeout(300);
+    result.tests.sectionBackgroundImage = await frame.evaluate((blockId) => {
+      const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+      if (!(element instanceof HTMLElement)) return null;
+      const style = getComputedStyle(element);
+      return {
+        inlineStyle: element.getAttribute('style') ?? '',
+        backgroundImage: style.backgroundImage,
+        backgroundSize: style.backgroundSize,
+        backgroundPosition: style.backgroundPosition,
+        backgroundRepeat: style.backgroundRepeat,
+      };
+    }, ids.rowBId);
+    const backgroundDebug = JSON.stringify(result.tests.sectionBackgroundImage);
+    assert(result.tests.sectionBackgroundImage?.backgroundImage.includes('/synthetic-background.png'), `section background image did not render: ${backgroundDebug}`);
+    assert(result.tests.sectionBackgroundImage?.backgroundSize === 'contain', `section background sizing did not render: ${backgroundDebug}`);
+    assert(result.tests.sectionBackgroundImage?.backgroundPosition === '100% 100%', `section background position did not render: ${backgroundDebug}`);
+    assert(result.tests.sectionBackgroundImage?.backgroundRepeat === 'repeat-x', `section background repeat did not render: ${backgroundDebug}`);
+    assert(!/background/i.test(result.tests.sectionBackgroundImage?.inlineStyle ?? ''), 'section background image leaked into inline HTML');
+    assert((await page.locator('[data-testid="design-background-http-warning"]').count()) === 1, 'HTTP background warning is missing');
+    await page.locator('[data-testid="design-background-preview"]').scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: path.join(REPORT_DIR, 'section-background-editor.png'),
+      fullPage: false,
+    });
+
     await page.locator(
       `[data-testid="edit-layer-row"][data-r20-block-id="${ids.tableId}"]`,
     ).click();
@@ -1633,6 +1690,26 @@ async function main() {
     });
 
     await page.click('[data-testid="main-mode-preview"]');
+    result.tests.sectionBackgroundPreview = await frame.evaluate((blockId) => {
+      const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+      if (!(element instanceof HTMLElement)) return null;
+      const style = getComputedStyle(element);
+      return {
+        backgroundImage: style.backgroundImage,
+        backgroundSize: style.backgroundSize,
+        backgroundPosition: style.backgroundPosition,
+        backgroundRepeat: style.backgroundRepeat,
+      };
+    }, ids.rowBId);
+    assert(
+      JSON.stringify(result.tests.sectionBackgroundPreview) === JSON.stringify({
+        backgroundImage: result.tests.sectionBackgroundImage.backgroundImage,
+        backgroundSize: 'contain',
+        backgroundPosition: '100% 100%',
+        backgroundRepeat: 'repeat-x',
+      }),
+      `section background changed between edit and preview: ${JSON.stringify(result.tests.sectionBackgroundPreview)}`,
+    );
     result.tests.rollButtonPreviewStyle = await rollButton.evaluate((button) => {
       const style = getComputedStyle(button);
       return {

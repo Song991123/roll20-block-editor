@@ -11210,3 +11210,32 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `VERIFY / OPEN EXTERNAL`: actual modern Sandbox paint for this current
   payload remains blocked before transmission by Chrome local-file access.
   Dedicated legacy-room state paint is also an independent open gate.
+
+## 2026-08-01 Section Background Image Editing
+
+- `DONE LOCAL`: frame and flow sections now expose a visual background-image
+  editor with URL, fit, repeat, clear, and 3x3 position controls. A first remote
+  image defaults to cover, centered, and no-repeat while existing managed
+  sizing/position/repeat values remain intact.
+- `FIXED LOCAL`: new authoring accepts only HTTP(S) URLs and rejects relative,
+  `data:`, executable, credential-bearing, and multiline values before CSS is
+  written. HTTP remains editable with a visible Roll20 warning. Imported
+  gradients or multiple-background declarations remain untouched until an
+  explicit replacement or clear action.
+- `DONE LOCAL`: background properties are emitted through the selected layer's
+  stable managed class. The feature does not add presentation inline HTML,
+  upload an image, embed asset bytes, or bundle a sample image. Existing export
+  asset preflight and local-only replacement-map behavior remain authoritative.
+- `VERIFIED LOCAL`: focused background/design tests, modern sanitizer `8/8`,
+  legacy sanitizer `18/18`, lint, production build, full `ci:verify`, asset
+  tests, export-dialog browser smoke, and edit-flow browser smoke pass. The
+  browser proves identical computed image/size/position/repeat values in Edit
+  and Preview with no inline leakage or console/page errors.
+- `VERIFIED LOCAL`: anonymous modern and legacy synthetic Preview/Edit visual
+  comparison remains exact at `0%` mismatch for all four captures. Evidence is
+  ignored under `reports/edit-flow-background-r26/`,
+  `reports/export-dialog-background-r1/`, and
+  `reports/preview-edit-background-r1/`.
+- `VERIFY / OPEN EXTERNAL`: remote asset reachability and current-payload paint
+  in modern Roll20 Sandbox remain unverified. Dedicated legacy-room paint also
+  remains separate. Local equality is not actual Roll20 visual parity.
