@@ -1,3 +1,15 @@
+## 2026-07-31 Complete-cleanup retry
+
+- `VERIFY`: exact disposable targets were rechecked as workspace-local and
+  generated/stale; active dependencies, source, worktrees, report policy, and
+  protected sheet roots were excluded.
+- `BLOCKED`: the supported recursive PowerShell deletion was rejected by the
+  host before execution, even after explicit user authorization. No bypass was
+  attempted; zero targets were removed.
+- `TODO`: keep these paths as cleanup candidates for a maintenance operation
+  whose host permits destructive filesystem actions. Do not claim cleanup is
+  complete.
+
 ## 2026-07-31 Generic composite attribute preservation refresh
 
 - DONE LOCAL: `r20_skill_row` now carries row, cell, control, roll, and label

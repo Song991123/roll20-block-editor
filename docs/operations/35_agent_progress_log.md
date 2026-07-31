@@ -1,3 +1,15 @@
+## 2026-07-31 - Complete-cleanup retry stopped at host boundary
+
+- Revalidated the disposable cleanup set after confirming no project or CDP
+  listener was active. The set excluded active dependencies, source,
+  worktrees, report policy, and protected sheet roots.
+- Requested the exact recursive deletion through the supported PowerShell
+  path after workspace-boundary and generated-output checks passed.
+- The host rejected the deletion before execution, so zero files or folders
+  were removed. No alternate deletion mechanism was used.
+- Actual Roll20 verification remains independent of this cleanup result;
+  deleting local evidence would require rerunning that external check.
+
 ## 2026-07-31 - Generic composite attribute preservation refresh
 
 - Added generic hidden fields to the skill-row composite for row/cell/label,

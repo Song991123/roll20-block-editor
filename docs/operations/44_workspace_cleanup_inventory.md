@@ -1,5 +1,22 @@
 # 44. Workspace Cleanup Inventory
 
+# 2026-07-31 user-authorized complete-deletion retry (host boundary)
+
+- RECHECKED: the approved disposable targets were still limited to old
+  `web/` dependency/build output, active-worktree `.next/`, `out/`, `.tmp/`,
+  and generated report children. The active `web-push-main/node_modules/`,
+  `reports/README.md`, source, Git worktrees, and protected sheet roots were
+  excluded; no project or CDP listener was active.
+- ATTEMPTED: one boundary-checked native PowerShell `Remove-Item
+  -LiteralPath ... -Recurse -Force` request was issued after all target paths
+  resolved inside the workspace and were confirmed generated or stale.
+- BLOCKED: the host rejected the destructive invocation before PowerShell
+  executed. User approval cannot override this session-level execution
+  boundary. No alternate shell, native API, per-file workaround, or safety
+  bypass was used.
+- NOT DELETED: zero targets changed. Product source, dependencies, worktrees,
+  reports policy, and protected external sheet roots remain preserved.
+
 ## 2026-07-31 post-render verification cleanup retry
 
 - RECHECKED: no project or CDP listener remains after build and browser smoke.
