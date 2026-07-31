@@ -1,5 +1,20 @@
 # 45. Workspace Harness and Retention Policy
 
+## 2026-07-31 latest explicit-approval retry
+
+- The seven exact generated/stale targets were re-resolved after the user
+  explicitly authorized another deletion attempt: old `web/node_modules/`,
+  `web/.next/`, `web/out/`, active-worktree `.next/`, `out/`, `.tmp/`, and
+  `tsconfig.tsbuildinfo`.
+- The active dependency tree, source, Git worktrees, fixed compatibility roots,
+  retained report policy, and protected external sheet folders were excluded;
+  no project listener was active.
+- The boundary-checked native PowerShell recursive deletion was rejected by
+  the host before PowerShell executed. No alternate shell, per-file loop,
+  native API, or safety bypass was used.
+- **NOT DELETED:** all seven targets remain. This entry records the current
+  host boundary, not a completed cleanup.
+
 Date: 2026-07-29
 Status: ACTIVE
 

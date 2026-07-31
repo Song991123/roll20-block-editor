@@ -1,5 +1,25 @@
 # 44. Workspace Cleanup Inventory
 
+# 2026-07-31 latest explicit-approval retry
+
+- RECHECKED: the seven exact generated/stale targets were old
+  `web/node_modules/`, `web/.next/`, `web/out/`, active-worktree
+  `web-push-main/.next/`, `web-push-main/out/`, `web-push-main/.tmp/`, and
+  `web-push-main/tsconfig.tsbuildinfo`.
+- EXCLUDED: active `web-push-main/node_modules/`, product source, Git
+  worktree roots, fixed compatibility roots, retained report policy, and all
+  protected external sheet folders.
+- SAFETY CHECK: all seven targets resolved inside the workspace, no target was
+  a top-level reparse point, and no project listener was active on ports 3000,
+  4197, 4198, or 4199.
+- ATTEMPTED: one boundary-checked native PowerShell recursive deletion was
+  issued after the user explicitly authorized this retry.
+- BLOCKED HOST: the execution boundary rejected the destructive invocation
+  before PowerShell ran. User approval cannot override this session-level
+  restriction.
+- NOT DELETED: all seven targets remain present. No alternate shell, native
+  API, per-file workaround, or safety bypass was used.
+
 # 2026-07-31 latest user-authorized complete-deletion retry
 
 - RECHECKED: the seven approved generated/stale targets were old
