@@ -1,5 +1,19 @@
 # 2026-07-31 - Actual-status and renderer-action gate refresh
 
+## 2026-08-01 - Official Roll20 contract cross-check
+
+- Cross-checked the local Sandbox/legacy/worker contract against the official
+  Roll20 Wiki pages for Custom Sheet Sandbox, Building Character Sheets, HTML,
+  Sheet Editor, and Sheet.json. The documentation confirms file-based
+  HTML/CSS/translation upload, worker-only sheet JavaScript, the legacy/CSE
+  switch, and the need to keep Sandbox and dedicated legacy-room evidence
+  separate.
+- Updated `docs/spec/30_roll20_actual_sandbox_contract.md` with the source links
+  and the boundary that endpoint/hidden-input workarounds are not upload or
+  parity evidence.
+- No product renderer claim changed; actual Roll20 evidence remains blocked
+  before transmission by the supported browser chooser.
+
 ## 2026-08-01 - Roll20 Sandbox upload retry
 
 - Rechecked the dedicated Sandbox immediately before transmission: the visible

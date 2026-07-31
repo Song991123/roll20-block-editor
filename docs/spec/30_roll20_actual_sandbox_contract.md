@@ -2,6 +2,35 @@
 
 Date: 2026-06-19
 
+## 2026-08-01 Official Contract Cross-Check
+
+The current implementation boundary was cross-checked against the official
+Roll20 documentation:
+
+- [Custom Sheet Sandbox](https://wiki.roll20.net/Sheet_Sandbox) requires local
+  HTML, CSS, and optional `translation.json` files, applies the upload to the
+  sandbox immediately, and is intentionally a single-author test environment.
+- [Building Character Sheets](https://wiki.roll20.net/Building_Character_Sheets)
+  confirms that a sheet is normally HTML/CSS with optional translation and
+  sheetworker behavior, and that the HTML is inserted into Roll20's own form
+  and iframe context rather than being a complete standalone document.
+- [Character Sheet Development/HTML](https://wiki.roll20.net/Character_Sheet_Development/HTML)
+  confirms that JavaScript outside `<script type="text/worker">` is not a
+  supported sheet runtime. Page JavaScript and worker JavaScript therefore
+  remain separate product inputs and separate preview/export boundaries.
+- [Sheet Editor](https://wiki.roll20.net/Sheet_Editor) documents the Legacy
+  Sanitization switch for older sheets and the CSE path when it is disabled.
+  This supports keeping modern and legacy verification as separate contracts.
+- [Sheet.json](https://wiki.roll20.net/Sheet.json) documents `legacy: true` or
+  `legacy: false` for Sandbox testing. This selects the intended sheet
+  generation contract; it is not evidence that a Sandbox reproduces the old
+  legacy runtime, so a dedicated legacy test room remains required.
+
+These sources also explain why the supported browser upload path must use real
+file inputs. A local generated payload may be recreated for a retry, but an
+endpoint shortcut or hidden-input injection must not be treated as equivalent
+to a Roll20 upload or promoted to parity evidence.
+
 This note records direct Roll20 Custom Sheet Sandbox observations from the
 logged-in Chrome session. It is implementation evidence for preview/export
 behavior, not visual parity proof.
