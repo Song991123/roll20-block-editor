@@ -1427,10 +1427,11 @@ directories that had been recreated by the local build.
 
 ## 2026-07-31 stale pre-upload help output
 
-- `GENERATED STALE`: `web-push-main/--help/` contains only the two local
+- `GENERATED STALE`: `web-push-main/--help/` contained only the two local
   pre-upload report files created by the pre-fix CLI invocation. The repaired
   `--help` path no longer creates this directory.
-- `EXCLUDED FROM COMMIT`: the directory is untracked local evidence and is not
-  part of the product or public report policy.
-- `DELETE STATUS`: removal remains pending because the same host recursive
-  deletion boundary rejects the operation before PowerShell execution.
+- `EXCLUDED FROM COMMIT`: the directory was untracked local evidence and was
+  never part of the product or public report policy.
+- `DELETE STATUS`: `DONE`; after the directory's read-only attribute was
+  cleared, both files and the empty directory tree were removed. The target
+  now does not exist and no source sheet folder was touched.
