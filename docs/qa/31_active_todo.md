@@ -52,15 +52,15 @@
   setting, or chat action was performed; actual-screen evidence remains
   missing and `status:roll20-actual` stays `OPEN`.
 
-# 2026-08-01 Complete local-only cleanup
+# 2026-08-01 Cleanup retry status
 
-- `DONE LOCAL`: removed the explicitly approved ignored archive/source-index
-  remnants and generated report directories. Tracked policy documentation,
-  active dependencies, source, worktrees, compatibility roots, and protected
-  external sources were preserved.
-- `VERIFY NEXT RUN`: any screenshot, fixture, payload, or report needed for
-  Roll20 verification must be regenerated. Deleted local evidence is not a
-  parity result.
+- `BLOCKED HOST`: the user-authorized deletion of the explicitly listed
+  generated build, temp, report, and empty-help targets was rejected by the
+  host before PowerShell executed. No alternate deletion route was used.
+- `PRESERVED`: tracked policy documentation, active dependencies, source,
+  worktrees, compatibility roots, and protected external sources were not
+  touched. The generated targets remain local-only and are not a completion
+  claim.
 
 # 2026-08-01 Fresh external upload retry
 

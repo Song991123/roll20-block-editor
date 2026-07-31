@@ -53,12 +53,15 @@
   no external payload or chat/save action was made. `status:roll20-actual`
   remains `OPEN` because the actual report directory is intentionally empty.
 
-# 2026-08-01 - Complete local-only cleanup
+# 2026-08-01 - Cleanup retry status
 
-## 2026-08-01 - Explicit generated-data purge
-
-- Removed only the approved ignored archive/source-index remnants and local
-  generated report directories after a dry-run and boundary check.
+- The user-authorized removal of the explicitly verified generated build,
+  temp, report, empty-help, and generated declaration targets was rejected by
+  the host before PowerShell executed. No alternate shell, native API, or
+  per-file workaround was used.
+- The canonical worktree, active dependencies, source, compatibility roots,
+  report policy, and protected external sheet roots were preserved. The
+  generated targets remain local-only and cleanup is still host-blocked.
 - Kept `reports/README.md`, active dependencies, source, worktrees, the
   four-zone markers, compatibility roots, and protected external sources.
 - No project or CDP listener was active. Future Roll20 evidence must be
