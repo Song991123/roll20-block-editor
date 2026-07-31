@@ -30,9 +30,12 @@ async function main() {
       '        <tbody><tr><td><input type="number" name="attr_score" value="0"></td><td data-i18n="ready">Ready</td></tr></tbody>',
       '      </table>',
       '      <button type="roll" name="roll_layout" value="&amp;{template:default} {{name=Layout proof}} {{result=[[1d20]]}}">Roll</button>',
+      '      <label data-i18n="worker">Worker</label>',
+      '      <input type="text" name="attr_layout_clicked" value="0" readonly>',
+      '      <button type="action" name="act_layout_mark">Mark</button>',
       '    </div>',
       '  </div>',
-      '  <script type="text/worker">on(\'clicked:roll_layout\', function () { setAttrs({ layout_clicked: \'1\' }); });</script>',
+      '  <script type="text/worker">on(\'clicked:layout_mark\', function () { setAttrs({ layout_clicked: \'1\' }); });</script>',
       '</div>',
     ] : [
       '<div class="sheet-sandbox-proof" style="width:420px;min-height:180px;padding:16px">',
@@ -51,6 +54,7 @@ async function main() {
       '.sheet-layout-proof table { width: 100%; margin-top: 14px; border-collapse: collapse; }',
       '.sheet-layout-proof th, .sheet-layout-proof td { border: 1px solid #e7b5c6; padding: 4px; }',
       '.sheet-layout-proof button[type="roll"] { display: block; margin-top: 12px; }',
+      '.sheet-layout-proof button[type="action"] { margin-left: 8px; }',
     ] : [
       '.sheet-sandbox-proof { background: #fff0f5; border: 2px solid #d96b91; box-sizing: border-box; color: #3b2730; }',
       '.sheet-sandbox-proof label { display: block; font-weight: 700; }',
@@ -62,6 +66,7 @@ async function main() {
       score: 'Score',
       state: 'State',
       ready: 'Ready',
+      worker: 'Worker',
     } : { name: 'Name' }),
     warnings: [],
   }, { legacy });

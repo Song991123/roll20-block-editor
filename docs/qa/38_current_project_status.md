@@ -1,11 +1,38 @@
 # 38. Current Project Status
 
-Date: 2026-07-31
+Date: 2026-08-01
 
 This is an anonymous handoff snapshot. It contains no real sheet names,
 creator names, source URLs, screenshots, private room identifiers, or
 source-derived measurements. Private evidence, when needed, stays in ignored
 local output and is deleted after the verification batch.
+
+## Current Legacy Destination Gate - 2026-08-01
+
+- `VERIFIED EXTERNAL SAFETY`: one newly created dedicated legacy destination
+  passed a fresh visible exactly-one-member check before every persistent or
+  interactive action. Existing rooms were not used.
+- `VERIFIED SOURCE BINDING`: one anonymous synthetic payload passed app import
+  at `100%` match (`32` blocks, `1` worker block, zero warnings). Roll20 editor
+  readback matched emitted HTML and CSS bytes exactly; its reformatted
+  Translation JSON parsed to the same six-key map.
+- `VERIFIED EXTERNAL RUNTIME`: with legacy sanitization enabled, actual Roll20
+  rendered the authored `760 x 320` root and translated controls, executed an
+  action worker mutation from `0` to `1`, and produced the expected default
+  rolltemplate/result in chat.
+- `VERIFIED LOCAL NORMALIZED`: the same emitted files passed DPR-`1.25`
+  preview/edit, worker-state, and chat smokes with zero console/page errors.
+  Authored-relative row, control, and chat geometry matches actual Roll20 for
+  this fixture.
+- `VERIFIED REGRESSION`: lint, production build, full `ci:verify`, persistent
+  preview smoke, and two-fixture modern/legacy Preview/Edit visual smoke pass;
+  local Preview/Edit mismatch remains `0%` for all four captures.
+- `MEASURED NOT PARITY`: best-aligned root pixel mismatch is `1.6638%` above
+  RGB-sum threshold `90`, concentrated around glyph and control/border raster.
+  This does not prove arbitrary-sheet or reference-image parity.
+- `BLOCKED MODERN`: the modern Sandbox still rejects the supported visible
+  file selection before transmission; modern generated same-payload root/chat
+  evidence remains `0/4`.
 
 ## Current Gate Override - 2026-07-31
 

@@ -1,3 +1,28 @@
+# 2026-08-01 - Dedicated legacy same-payload runtime proof
+
+- Created only a new isolated legacy destination, enabled Roll20's legacy
+  sanitization option, and confirmed exactly one visible member before each
+  write or interaction. No existing room was touched.
+- Generated an anonymous worker-bearing layout fixture, imported it through
+  the app at `100%` match (`32` blocks, zero warnings), and applied the app's
+  emitted HTML/CSS/Translation through Roll20's supported settings editors.
+- Reload readback was byte-identical for HTML (`1,259` bytes) and CSS (`807`
+  bytes). Translation was formatting-normalized by Roll20 but parsed to the
+  same six-key map.
+- Actual Roll20 rendered the `760 x 320` authored root and the same row,
+  control, and table geometry as the DPR-`1.25` local baseline. The action
+  worker changed `0 -> 1`; the roll button produced a default-template card
+  with the same `Result 20` value used by the local smoke.
+- Lint, production build, full `ci:verify`, persistent-preview browser smoke,
+  and modern/legacy synthetic Preview/Edit visual smoke all pass. The two
+  synthetic visual fixtures remain exact at `0%` Preview/Edit mismatch in both
+  modes.
+- The normalized root pixel comparison remains `MEASURED_NOT_PARITY`: best
+  alignment leaves `1.6638%` mismatch above RGB-sum threshold `90`, mainly at
+  text and control/border edges. Arbitrary-sheet parity remains open.
+- Modern fresh-payload upload is still blocked before transmission by the
+  visible file chooser permission boundary.
+
 # 2026-08-01 - Actual default-rolltemplate parity fix
 
 - Rechecked the dedicated modern Sandbox with exactly one visible member and

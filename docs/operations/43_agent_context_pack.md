@@ -16,8 +16,13 @@ the entire history and generated evidence tree.
   matches its caption/row/inline-roll structure and passes browser smoke.
   DPR-normalized smoke reproduces exact table/caption geometry; text/edge
   pixel raster remains open and must not be called visual parity.
-- Actual same-payload Roll20 evidence remains `0/4`. Modern Sandbox upload and
-  separate legacy-enabled test-room proof are still open. The visible upload
+- One anonymous generated legacy fixture now has actual same-payload editor
+  readback, render, worker, and roll proof in a new dedicated one-member test
+  room. HTML/CSS readback is byte-identical; Translation is semantically
+  identical after Roll20 formatting. Authored-relative geometry matches the
+  DPR-`1.25` local baseline, but the best root pixel residual is `1.6638%`
+  above threshold `90`, so arbitrary-sheet visual parity remains open.
+- Modern generated same-payload evidence remains `0/4`. Its visible upload
   route is blocked before transmission until Chrome extension file-URL access
   is enabled; do not use hidden-input or endpoint workarounds.
 - Generated `.next/`, `out/`, `.tmp/`, and report outputs are disposable. Real

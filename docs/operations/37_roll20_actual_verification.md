@@ -2,6 +2,32 @@
 
 Date: 2026-06-18
 
+## 2026-08-01 dedicated legacy same-payload result
+
+- `VERIFIED EXTERNAL SAFETY`: a newly created dedicated legacy destination
+  showed exactly one visible member before every write or interaction. No
+  existing room was opened or modified.
+- `VERIFIED SOURCE BINDING`: one anonymous synthetic layout payload imported
+  through the app at `100%` match (`32` blocks, one worker block, zero
+  warnings). Roll20 settings readback matched emitted HTML (`1,259` bytes) and
+  CSS (`807` bytes) byte-for-byte. Roll20 normalized Translation formatting,
+  while preserving the same parsed six-key map. This does not claim server
+  attachment-byte readback.
+- `VERIFIED EXTERNAL RUNTIME`: with legacy sanitization enabled, actual Roll20
+  rendered the authored `760 x 320` root and translated controls. Its action
+  worker changed the bound attribute from `0` to `1`; its roll button produced
+  the default template with `Layout proof` and `Result 20`.
+- `VERIFIED LOCAL NORMALIZED`: the exact emitted files passed the local
+  DPR-`1.25` preview/edit baseline, worker-state replay, and rolltemplate smoke
+  with zero console/page errors. Authored-relative row, form-control, table,
+  and default-chat geometry matches actual Roll20 for this fixture.
+- `MEASURED NOT PARITY`: normalized root pixels retain `1.6638%` mismatch above
+  RGB-sum threshold `90` at best alignment (`dx=1`, `dy=0`), concentrated near
+  text and control/border edges. Do not generalize this fixture to all sheets.
+- `BLOCKED MODERN`: fresh modern Sandbox upload remains blocked before
+  transmission by the supported visible file chooser. Modern generated
+  same-payload root/chat evidence remains `0/4`.
+
 ## 2026-08-01 fresh payload retry result
 
 - `VERIFIED EXTERNAL READ-ONLY`: a freshly regenerated anonymous modern

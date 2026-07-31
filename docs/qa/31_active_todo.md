@@ -1,3 +1,38 @@
+# 2026-08-01 Dedicated legacy same-payload runtime proof
+
+- `VERIFIED EXTERNAL SAFETY`: created a new dedicated legacy test room and
+  rechecked a visible exactly-one-member state before every sheet, worker, and
+  roll interaction. Existing rooms were not opened or modified.
+- `VERIFIED SOURCE BINDING`: the app imported and emitted one anonymous
+  synthetic layout payload at `100%` match (`32` blocks, `1` worker block,
+  zero warnings). After saving in Roll20 with legacy sanitization enabled,
+  the settings editors read back byte-identical HTML (`1,259` bytes) and CSS
+  (`807` bytes); Roll20 reformatted Translation JSON, but its six-key parsed
+  map remained semantically identical. This is editor readback, not attachment
+  byte/hash proof.
+- `VERIFIED EXTERNAL`: the actual legacy sheet rendered the authored
+  `760 x 320` root, translated controls, table, roll button, and action button.
+  The worker action changed its attribute from `0` to `1`, and the roll button
+  produced Roll20's default template with `Layout proof` / `Result 20`.
+- `VERIFIED LOCAL`: the same emitted files passed DPR-`1.25` preview/edit
+  baseline, worker-state replay, and rolltemplate browser smoke with zero
+  console or page errors. Local and actual authored-relative row/control/chat
+  geometry match for this fixture.
+- `VERIFIED REGRESSION`: lint, production build, full `ci:verify`, persistent
+  preview smoke, and modern/legacy synthetic Preview/Edit visual smoke pass.
+  Both synthetic fixtures report exact `0%` Preview/Edit mismatch in both
+  compatibility modes.
+- `MEASURED NOT PARITY`: normalized root comparison still has `1.6638%`
+  mismatch above RGB-sum threshold `90` at best alignment (`dx=1`, `dy=0`).
+  Residuals cluster around text glyphs and control/border edges. This one
+  synthetic fixture is not universal visual parity.
+- `BLOCKED MODERN`: fresh modern Sandbox file selection remains blocked before
+  transmission by the visible chooser permission boundary. Modern generated
+  same-payload proof remains open.
+- `TODO P0`: isolate the remaining root text/control raster difference without
+  adding fixture-specific CSS, then retry the modern destination through the
+  supported visible file flow. Keep broad arbitrary-sheet coverage open.
+
 # 2026-08-01 Actual default-rolltemplate parity fix
 
 - `VERIFIED EXTERNAL`: the dedicated modern Sandbox showed a fresh visible

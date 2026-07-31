@@ -16,6 +16,7 @@
  *     --fixtures test-fixtures/visual --report-dir reports/roll20-actual-compare \
  *     --run-label 2026-06-18-local-baseline [--only fixture-id] \
  *     [--compatibility-mode auto|modern|legacy] \
+ *     [--device-scale-factor 1.25] \
  *     [--state-map reports/visual-state-candidates/visual-state-candidates-state-map.json]
  */
 
@@ -50,10 +51,14 @@ const OFFICIAL_SHEETS_ROOT = path.resolve(
   argOf('--official-sheets-root', process.env.ROLL20_OFFICIAL_SHEETS_ROOT || path.join(process.cwd(), '..', '..', 'roll20-character-sheets-master')),
 );
 const PORT = Number(argOf('--port', '4192'));
+const DEVICE_SCALE_FACTOR = Number(argOf('--device-scale-factor', '1'));
 const VIEWPORT = { width: 2200, height: 1200 };
 
 if (!['auto', 'modern', 'legacy'].includes(COMPATIBILITY_MODE)) {
   throw new Error(`Unsupported --compatibility-mode: ${COMPATIBILITY_MODE}. Use auto, modern, or legacy.`);
+}
+if (!Number.isFinite(DEVICE_SCALE_FACTOR) || DEVICE_SCALE_FACTOR <= 0) {
+  throw new Error(`Unsupported --device-scale-factor: ${DEVICE_SCALE_FACTOR}. Use a positive number.`);
 }
 
 const MIME = {
@@ -383,7 +388,7 @@ async function capturePreview(page, outFile, stateCandidate) {
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
   await waitForVisualStability(page, sheet);
   const stateCandidateResult = await applyPreviewStateCandidate(page, frame, sheet, stateCandidate);
-  await sheet.screenshot({ path: outFile });
+  await sheet.screenshot({ path: outFile, scale: 'css' });
   const summary = await sheet.evaluate(summarizeSheetElement);
   summary.stateCandidate = stateCandidateResult;
   return summary;
@@ -402,7 +407,7 @@ async function captureEdit(page, outFile) {
   const sheet = frame.locator('.charactersheet.charsheet').first();
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
   await waitForVisualStability(page, sheet);
-  await sheet.screenshot({ path: outFile });
+  await sheet.screenshot({ path: outFile, scale: 'css' });
   return sheet.evaluate(summarizeSheetElement);
 }
 
@@ -697,8 +702,16 @@ async function main() {
   const assetReplacementMap = await loadAssetReplacementMap();
 
   const server = await startServer();
-  const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage({ viewport: VIEWPORT });
+  const browser = await chromium.launch({
+    headless: true,
+    args: DEVICE_SCALE_FACTOR === 1
+      ? []
+      : [`--force-device-scale-factor=${DEVICE_SCALE_FACTOR}`],
+  });
+  const page = await browser.newPage({
+    viewport: VIEWPORT,
+    deviceScaleFactor: DEVICE_SCALE_FACTOR,
+  });
   const consoleErrors = [];
   const pageErrors = [];
   page.on('console', (msg) => {
@@ -710,6 +723,8 @@ async function main() {
     createdAt: new Date().toISOString(),
     runLabel: RUN_LABEL,
     compatibilityMode: COMPATIBILITY_MODE,
+    deviceScaleFactor: DEVICE_SCALE_FACTOR,
+    screenshotScale: 'css',
     baseUrl: `http://127.0.0.1:${PORT}${BASE_PATH}/`,
     reportDir: runDir,
     stateMapPath: stateMap.path,
