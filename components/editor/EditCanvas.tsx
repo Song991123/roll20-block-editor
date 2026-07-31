@@ -102,6 +102,29 @@ export default function EditCanvas() {
     : setSheetCanvasWidth;
   const minWidth = editSubmode === 'rolltemplate' ? 200 : 320;
   const maxWidth = editSubmode === 'rolltemplate' ? 600 : 2000;
+  const [canvasWidthDraft, setCanvasWidthDraft] = useState(() => String(canvasWidth));
+  const canvasWidthInputRef = useRef<HTMLInputElement>(null);
+  const canvasWidthDraftDirtyRef = useRef(false);
+  useEffect(() => {
+    // Keep an untouched field in sync with auto-measured sheet width, while
+    // preserving a value the user is actively typing.
+    if (!canvasWidthDraftDirtyRef.current || document.activeElement !== canvasWidthInputRef.current) {
+      canvasWidthDraftDirtyRef.current = false;
+      setCanvasWidthDraft(String(canvasWidth));
+    }
+  }, [canvasWidth, editSubmode]);
+  const commitCanvasWidth = useCallback((rawValue: string) => {
+    const next = Number(rawValue);
+    if (!Number.isFinite(next)) {
+      canvasWidthDraftDirtyRef.current = false;
+      setCanvasWidthDraft(String(canvasWidth));
+      return;
+    }
+    const clamped = Math.max(minWidth, Math.min(maxWidth, Math.round(next)));
+    canvasWidthDraftDirtyRef.current = false;
+    setCanvasWidth(clamped);
+    setCanvasWidthDraft(String(clamped));
+  }, [canvasWidth, maxWidth, minWidth, setCanvasWidth]);
   const structureVersion = useWorkspaceStore((s) => s.workspaces.html.structureVersion);
   const adapter = getBlocklyAdapter();
   const canUndo = useMemo(() => {
@@ -235,19 +258,27 @@ export default function EditCanvas() {
         <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
           너비
           <input
-            key={`${editSubmode}-${canvasWidth}`}
+            ref={canvasWidthInputRef}
             type="number"
             min={minWidth}
             max={maxWidth}
             step={10}
-            defaultValue={canvasWidth}
-            onBlur={(event) => {
-              const next = Number(event.currentTarget.value);
-              if (Number.isFinite(next)) setCanvasWidth(next);
-              else event.currentTarget.value = String(canvasWidth);
+            value={canvasWidthDraft}
+            onChange={(event) => {
+              canvasWidthDraftDirtyRef.current = true;
+              setCanvasWidthDraft(event.currentTarget.value);
             }}
+            onBlur={(event) => commitCanvasWidth(event.currentTarget.value)}
             onKeyDown={(event) => {
-              if (event.key === 'Enter') event.currentTarget.blur();
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                event.currentTarget.blur();
+              } else if (event.key === 'Escape') {
+                event.preventDefault();
+                canvasWidthDraftDirtyRef.current = false;
+                setCanvasWidthDraft(String(canvasWidth));
+                event.currentTarget.blur();
+              }
             }}
             className="h-7 w-[84px] rounded-full border border-border bg-[var(--bg-elevated-2)] px-2.5 text-right text-xs text-foreground outline-none tabular-nums focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
             aria-label={editSubmode === 'rolltemplate' ? '굴림 결과 캔버스 폭' : '시트 캔버스 폭'}

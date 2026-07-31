@@ -9750,3 +9750,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `VERIFY / BLOCKED EXTERNAL`: actual Roll20 screenshot/diff remains at
   `0/4` because supported Chrome tab control is still unavailable. No external
   upload, save, chat, or room mutation occurred.
+
+## 2026-07-31 Stable Canvas-Width Input
+
+- `DONE LOCAL`: canvas width editing now keeps a draft while the user types,
+  commits on blur/Enter, restores on Escape, and clamps to the correct sheet or
+  rolltemplate range without key-based input remounts.
+- `VERIFIED LOCAL`: the real persistent-preview smoke changed the width to
+  `1600px` and back to the default `850px`; modern and legacy passed. Full
+  `ci:verify`, lint, and production build also passed.
+- `VERIFY / BLOCKED EXTERNAL`: current Roll20 status is still
+  `generatedActualScreenshots=0/4`, `generatedDiffed=0/4`,
+  `rendererReady=NO`, and `chatCurrentMetrics=0/2`; the supported browser
+  handoff remains required before visual parity can be claimed.

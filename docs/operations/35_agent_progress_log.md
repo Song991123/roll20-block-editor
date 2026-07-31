@@ -10350,3 +10350,16 @@ same-hash modern/legacy comparison.
   reloads, zero browser errors, and no temporary drag style left behind.
 - CLAIM BOUNDARY: this proves the local shared-surface interaction contract,
   not actual Roll20 pixel parity or live worker execution.
+
+## 2026-07-31 - Stable canvas-width input
+
+- FIXED LOCAL: the Figma-style canvas width field now uses a controlled draft
+  value instead of remounting from `defaultValue` on every measured-width
+  update. Auto-measurement no longer erases a value while the user is typing;
+  Enter commits, Escape restores the current width, and commit values are
+  clamped to the sheet/rolltemplate range.
+- VERIFIED LOCAL: persistent preview smoke exercised `1600px` then `850px`
+  through the real width input and observed the iframe style update in both
+  modern and legacy modes. `ci:verify`, lint, and production build pass.
+- CLAIM BOUNDARY: this proves local width-input and shared-surface behavior;
+  it does not prove arbitrary-sheet or actual Roll20 pixel parity.
