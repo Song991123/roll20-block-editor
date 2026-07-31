@@ -7,6 +7,26 @@ creator names, source URLs, screenshots, private room identifiers, or
 source-derived measurements. Private evidence, when needed, stays in ignored
 local output and is deleted after the verification batch.
 
+## Direct Visual Styling - 2026-08-01
+
+- `DONE LOCAL`: selecting a visual layer now exposes controls for dimensions,
+  spacing, fill, text, border, child layout, and typography. Changes are
+  emitted through a stable block class and the separate CSS workspace.
+- `DONE LOCAL`: friendly gallery defaults no longer put presentation CSS into
+  new HTML nodes. A generic Roll button can be dropped into a flow container,
+  styled with the same controls, and activated from Preview to produce a
+  default Roll20 chat-template card.
+- `FIXED LOCAL`: imported style declarations duplicated in the preserved-
+  attribute backup no longer override a visual-editor change. Only the
+  properties the user changes are removed; unrelated source attributes remain.
+- `VERIFIED LOCAL`: focused style/preservation tests, full `ci:verify`, lint,
+  build, fresh-sheet smoke, strict imported-edit sync, and edit-flow browser
+  smoke pass. Synthetic Preview/Edit captures remain exact in both modern and
+  legacy modes (`0%`, four captures).
+- `OPEN`: the Roll button and its chat execution are working, but the
+  `<rolltemplate>` body is not yet a dedicated Figma-like visual editing
+  surface. Actual arbitrary-sheet Roll20 parity remains a separate open gate.
+
 ## Current Legacy Destination Gate - 2026-08-01
 
 - `VERIFIED EXTERNAL SAFETY`: one newly created dedicated legacy destination

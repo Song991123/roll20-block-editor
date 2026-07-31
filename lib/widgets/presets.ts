@@ -1,5 +1,8 @@
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
-import { commitManagedDesignPosition } from '@/lib/editor/designPosition';
+import {
+  commitManagedDesignPosition,
+  commitManagedDesignStyle,
+} from '@/lib/editor/designPosition';
 import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
 import { flushEmitPipeline } from '@/lib/preview/useEmitPipeline';
 
@@ -141,6 +144,21 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
     },
   },
   {
+    id: 'roll-button',
+    group: 'action',
+    label: '주사위 버튼',
+    description: '누르면 주사위를 굴려 결과를 대화창에 표시합니다',
+    blockType: 'r20_roll_button_easy',
+    preview: 'button',
+    fields: {
+      NAME: 'check',
+      LABEL: '주사위 굴리기',
+      FORMULA: '&{template:default} {{name=Check}} {{result=[[1d20]]}}',
+      CLASS: 'roll-button',
+      STYLE: 'min-width: 112px; padding: 6px 12px; border-radius: 6px',
+    },
+  },
+  {
     id: 'chat-button',
     group: 'action',
     label: '채팅 버튼',
@@ -241,9 +259,7 @@ export function appendFriendlyWidgetPreset(
   }
 
   const style = removeCssDeclarations(baseStyle, ['position', 'left', 'top']);
-  if (style || adapter.hasBlockField('html', id, 'STYLE')) {
-    adapter.setBlockField('html', id, 'STYLE', style);
-  }
+  let managedCssChanged = false;
   if (!useFlowStyle) {
     const containingBlockId = useContainerAbsoluteStyle ? options.containerBlockId ?? null : null;
     const parentStyle = containingBlockId
@@ -259,6 +275,24 @@ export function appendFriendlyWidgetPreset(
     });
     if (committed.reason === 'managed-css') {
       state.bumpStructure('css', adapter.countBlocks('css'));
+      managedCssChanged = true;
+    }
+  }
+  if (style) {
+    const styled = commitManagedDesignStyle(adapter, {
+      workspace: 'html',
+      blockId: id,
+      declarations: parseCssDeclarationRecord(style),
+    });
+    if (!styled.changed && adapter.hasBlockField('html', id, 'STYLE')) {
+      // The managed path is expected for friendly visual blocks. Keep a
+      // lossless fallback for a future block that has STYLE but no class hook.
+      adapter.setBlockField('html', id, 'STYLE', style);
+    } else {
+      if (styled.htmlChanged) state.bumpStructure('html', adapter.countBlocks('html'));
+      if ((styled.cssChanged || styled.cssBlockCreated) && !managedCssChanged) {
+        state.bumpStructure('css', adapter.countBlocks('css'));
+      }
     }
   }
   flushEmitPipeline();
@@ -339,6 +373,18 @@ function removeCssDeclarations(style: string, props: string[]): string {
   return Array.from(map.entries())
     .map(([key, value]) => `${key}: ${value}`)
     .join('; ');
+}
+
+function parseCssDeclarationRecord(style: string): Record<string, string> {
+  const declarations: Record<string, string> = {};
+  for (const chunk of style.split(';')) {
+    const index = chunk.indexOf(':');
+    if (index <= 0) continue;
+    const property = chunk.slice(0, index).trim().toLowerCase();
+    const value = chunk.slice(index + 1).trim();
+    if (property && value) declarations[property] = value;
+  }
+  return declarations;
 }
 
 function hasPositionDeclaration(style: string): boolean {

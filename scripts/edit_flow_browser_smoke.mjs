@@ -1284,6 +1284,132 @@ async function main() {
     assert(result.tests.editInspector.role, 'edit inspector did not show the selected layer role');
     assert(result.tests.editInspector.context, 'edit inspector did not show layer context');
 
+    const backgroundInput = page.locator('[data-testid="design-style-background-text"]');
+    const paddingInput = page.locator('[data-testid="design-style-padding"]');
+    assert((await backgroundInput.count()) === 1, 'visual background control is missing');
+    assert((await paddingInput.count()) === 1, 'visual padding control is missing');
+    await backgroundInput.fill('#f1a7bf');
+    await paddingInput.fill('18');
+    await page.locator('[data-testid="design-style-layout-row"]').click();
+    await page.waitForFunction(
+      () => {
+        const css = window.__perfHook.getEmitContent().css;
+        return css.includes('background-color: #f1a7bf')
+          && css.includes('padding: 18px')
+          && css.includes('display: flex')
+          && css.includes('flex-direction: row');
+      },
+      null,
+      { timeout: 10000 },
+    );
+    await page.waitForTimeout(600);
+    const styledLayer = await frame.evaluate((blockId) => {
+      const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+      if (!(element instanceof HTMLElement)) return null;
+      const style = getComputedStyle(element);
+      return {
+        className: element.className,
+        inlineStyle: element.getAttribute('style') ?? '',
+        backgroundColor: style.backgroundColor,
+        paddingTop: style.paddingTop,
+        display: style.display,
+        flexDirection: style.flexDirection,
+      };
+    }, ids.rowBId);
+    const styledEmit = await page.evaluate(() => window.__perfHook.getEmitContent());
+    const styledModel = await page.evaluate((blockId) => (
+      window.__perfHook.getBlockFields('html', blockId)
+    ), ids.rowBId);
+    result.tests.visualStyle = { styledLayer, styledEmit, styledModel };
+    const styledDebug = JSON.stringify({
+      styledLayer,
+      fields: styledModel,
+      html: styledEmit.html.match(/<div[^>]*sheet-row-b[^>]*>/)?.[0] ?? null,
+      css: styledEmit.css.match(/\.sheet-r20-node-[^{]+\{[^}]+\}/g)?.slice(-2) ?? [],
+    });
+    assert(styledLayer, 'styled layer disappeared from the persistent iframe');
+    assert(styledLayer.backgroundColor === 'rgb(241, 167, 191)', `background control did not update the rendered sheet: ${JSON.stringify(styledLayer)}`);
+    assert(styledLayer.paddingTop === '18px', `padding control did not update the rendered sheet: ${styledDebug}`);
+    assert(styledLayer.display === 'flex' && styledLayer.flexDirection === 'row', `layout control did not update the rendered sheet: ${styledDebug}`);
+    assert(!/padding\s*:|background(?:-color)?\s*:/i.test(styledLayer.inlineStyle), 'visual style leaked back into inline HTML');
+    assert(styledEmit.css.includes('background-color: #f1a7bf'), 'visual background was not emitted to CSS');
+    assert(styledEmit.css.includes('padding: 18px'), 'visual padding was not emitted to CSS');
+
+    const rollButtonCard = page.locator('[data-testid="widget-card-roll-button"]');
+    assert((await rollButtonCard.count()) === 1, 'friendly Roll button preset is missing');
+    await page.click('[data-testid="edit-placement-flow"]');
+    result.tests.rollButtonDrop = await frame.evaluate(() => {
+      const target = document.querySelector('.sheet-row-b');
+      if (!target) return { dispatched: false, reason: 'missing styled row target' };
+      const rect = target.getBoundingClientRect();
+      const dataTransfer = new DataTransfer();
+      dataTransfer.setData('application/x-r20-friendly-widget', JSON.stringify({ id: 'roll-button' }));
+      const init = {
+        bubbles: true,
+        cancelable: true,
+        clientX: rect.left + rect.width - 8,
+        clientY: rect.top + rect.height / 2,
+      };
+      const dragover = new DragEvent('dragover', init);
+      Object.defineProperty(dragover, 'dataTransfer', { value: dataTransfer });
+      target.dispatchEvent(dragover);
+      const drop = new DragEvent('drop', init);
+      Object.defineProperty(drop, 'dataTransfer', { value: dataTransfer });
+      target.dispatchEvent(drop);
+      return {
+        dispatched: true,
+        dragoverPrevented: dragover.defaultPrevented,
+        dropPrevented: drop.defaultPrevented,
+      };
+    });
+    assert(result.tests.rollButtonDrop.dispatched, 'friendly Roll button drop did not dispatch');
+    await page.waitForFunction(
+      () => window.__perfHook.getEmitContent().html.includes('roll_check'),
+      null,
+      { timeout: 10000 },
+    );
+    const rollButton = frame.locator('button[name="roll_check"]');
+    await rollButton.waitFor({ state: 'visible', timeout: 10000 });
+    result.tests.rollButtonPreset = await rollButton.evaluate((button) => ({
+      value: button.getAttribute('value'),
+      inlineStyle: button.getAttribute('style') ?? '',
+      className: button.className,
+      parentClassName: button.parentElement?.className ?? '',
+    }));
+    assert(
+      result.tests.rollButtonPreset.value?.includes('&{template:default}')
+        && result.tests.rollButtonPreset.value?.includes('[[1d20]]'),
+      'friendly Roll button did not emit the default Roll20 template command',
+    );
+    assert(!result.tests.rollButtonPreset.inlineStyle, 'friendly Roll button emitted inline presentation CSS');
+    assert(result.tests.rollButtonPreset.parentClassName.includes('sheet-row-b'), 'friendly Roll button did not enter the selected flow section');
+    await page.waitForFunction(
+      () => document.querySelector('[data-r20-render-ready]')?.getAttribute('data-r20-render-ready') === '1',
+      null,
+      { timeout: 10000 },
+    );
+    await page.screenshot({
+      path: path.join(REPORT_DIR, 'visual-style-editor.png'),
+      fullPage: false,
+    });
+
+    await page.click('[data-testid="main-mode-preview"]');
+    await rollButton.click();
+    await page.waitForSelector('[data-r20-chat-rolltemplate="1"]', { timeout: 10000 });
+    await page.screenshot({
+      path: path.join(REPORT_DIR, 'rolltemplate-chat-preview.png'),
+      fullPage: false,
+    });
+    result.tests.rollButtonPreview = await page.evaluate(() => ({
+      cards: document.querySelectorAll('[data-r20-chat-rolltemplate="1"]').length,
+      debugLabels: [...document.querySelectorAll('[data-r20-chat-rolltemplate="1"]')]
+        .filter((node) => /debug|mock/i.test(node.textContent ?? '')).length,
+    }));
+    assert(result.tests.rollButtonPreview.cards === 1, 'preview Roll click did not create one chat template card');
+    assert(result.tests.rollButtonPreview.debugLabels === 0, 'preview Roll card exposed a debug label');
+    await page.click('[data-testid="preview-exit-edit"]');
+    await page.waitForSelector('[data-testid="edit-canvas-root"]');
+
     const widthInput = page.locator('[data-testid="edit-canvas-width-input"]');
     await widthInput.fill('930');
     await widthInput.press('Enter');
@@ -1327,7 +1453,7 @@ async function main() {
         `- Status: ${result.pass ? 'PASS' : 'FAIL'}`,
         `- Console errors: ${consoleErrors.length}`,
         `- Page errors: ${pageErrors.length}`,
-        '- Coverage: flow/free placement, canvas widget and block gallery drops, layer collapse/expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, sheet/rolltemplate canvas widths.',
+        '- Coverage: flow/free placement, canvas widget and block gallery drops, layer collapse/expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, managed visual styles, preview Roll/chat, and sheet/rolltemplate canvas widths.',
         '',
       ].join('\n'),
       'utf8',

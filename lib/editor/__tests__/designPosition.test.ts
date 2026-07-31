@@ -1,13 +1,22 @@
 import { strict as assert } from 'node:assert';
 import type { BlockSnapshot, BlocklyAdapter } from '@/lib/blockly/adapter';
-import { commitManagedDesignPosition, designClassForBlock } from '../designPosition.ts';
+import {
+  commitManagedDesignPosition,
+  commitManagedDesignStyle,
+  designClassForBlock,
+  readManagedDesignStyle,
+} from '../designPosition.ts';
 
 type TestBlock = BlockSnapshot & { fields: Record<string, string> };
 
 const blocks = new Map<string, Map<string, TestBlock>>([
   ['html', new Map([
     ['frame', block('frame', 'r20_div', { CLASS: 'sheet-frame', STYLE: 'padding: 8px' })],
-    ['subject', block('subject', 'r20_text_input', { CLASS: 'sheet-input', STYLE: 'left: 1px; color: red' })],
+    ['subject', block('subject', 'r20_text_input', {
+      CLASS: 'sheet-input',
+      STYLE: 'left: 1px; color: red',
+      __R20_PRESERVED_ATTRS: '[["data-hook","subject"],["style","left:1px;color:red"]]',
+    })],
     ['positioned', block('positioned', 'r20_positioned', { LEFT_PX: '2', TOP_PX: '3' })],
     ['unsupported', block('unsupported', 'r20_raw_html', { HTML: '<hr>' })],
     ['dual', block('dual', 'r20_dual_roll_button', { ROW_CLASS: 'dual-row' })],
@@ -55,12 +64,68 @@ assert.equal(managed.cssBlockCreated, true);
 assert.equal(managed.designClass, designClassForBlock('subject'));
 assert.equal(managed.containingClass, designClassForBlock('frame'));
 assert.equal(adapter.getBlockField('html', 'subject', 'STYLE'), 'color: red');
+assert.equal(
+  adapter.getBlockField('html', 'subject', '__R20_PRESERVED_ATTRS'),
+  '[["data-hook","subject"],["style","color:red"]]',
+);
 assert.equal(adapter.getBlockField('html', 'frame', 'STYLE'), 'padding: 8px');
 assert.match(adapter.getBlockField('html', 'subject', 'CLASS') ?? '', /sheet-r20-node-subject/);
 assert.match(adapter.getBlockField('html', 'frame', 'CLASS') ?? '', /sheet-r20-node-frame/);
 const css = adapter.getBlockField('css', 'managed-css', 'CSS') ?? '';
 assert.match(css, /\.sheet-r20-node-frame \{ position: relative; \}/);
 assert.match(css, /\.sheet-r20-node-subject \{ position: absolute; left: 48px; top: 64px; \}/);
+
+const styled = commitManagedDesignStyle(adapter, {
+  workspace: 'html',
+  blockId: 'subject',
+  declarations: {
+    'background-color': '#f7c6d9',
+    color: '#432033',
+    padding: '10px',
+  },
+});
+assert.equal(styled.changed, true);
+assert.equal(styled.reason, 'managed-css');
+assert.equal(adapter.getBlockField('html', 'subject', 'STYLE'), '');
+assert.equal(
+  adapter.getBlockField('html', 'subject', '__R20_PRESERVED_ATTRS'),
+  '[["data-hook","subject"]]',
+);
+const styledCss = adapter.getBlockField('css', 'managed-css', 'CSS') ?? '';
+assert.match(styledCss, /\.sheet-r20-node-subject \{[^}]*position: absolute;/);
+assert.match(styledCss, /\.sheet-r20-node-subject \{[^}]*background-color: #f7c6d9;/);
+assert.match(styledCss, /\.sheet-r20-node-subject \{[^}]*color: #432033;/);
+assert.deepEqual(readManagedDesignStyle(adapter, 'html', 'subject'), {
+  position: 'absolute',
+  left: '48px',
+  top: '64px',
+  'background-color': '#f7c6d9',
+  color: '#432033',
+  padding: '10px',
+});
+
+const movedAfterStyle = commitManagedDesignPosition(adapter, {
+  workspace: 'html',
+  blockId: 'subject',
+  left: 96,
+  top: 112,
+  containingBlockId: 'frame',
+  containingBlockNeedsRelative: false,
+});
+assert.equal(movedAfterStyle.moved, true);
+const movedStyledCss = adapter.getBlockField('css', 'managed-css', 'CSS') ?? '';
+assert.match(movedStyledCss, /\.sheet-r20-node-subject \{[^}]*left: 96px;[^}]*top: 112px;/);
+assert.match(movedStyledCss, /\.sheet-r20-node-subject \{[^}]*background-color: #f7c6d9;/);
+
+const clearedStyle = commitManagedDesignStyle(adapter, {
+  workspace: 'html',
+  blockId: 'subject',
+  declarations: { 'background-color': null },
+});
+assert.equal(clearedStyle.changed, true);
+const clearedCss = adapter.getBlockField('css', 'managed-css', 'CSS') ?? '';
+assert.doesNotMatch(clearedCss, /background-color: #f7c6d9/);
+assert.match(clearedCss, /color: #432033/);
 
 const positioned = commitManagedDesignPosition(adapter, {
   workspace: 'html',

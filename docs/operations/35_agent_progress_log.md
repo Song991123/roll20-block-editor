@@ -11521,3 +11521,25 @@ same-hash modern/legacy comparison.
 - Current-payload modern evidence and the independent legacy-room evidence
   remain open; no hidden input, endpoint, CDP upload, or ordinary room was
   used.
+
+## 2026-08-01 - Direct visual styling and Roll button
+
+- Added `VisualStyleInspector` and connected it to the selected HTML layer in
+  the canonical direct-edit inspector. The user can change common layout and
+  paint properties without editing a CSS string.
+- Added a managed style commit path beside managed positioning. Both paths
+  share the stable `sheet-r20-node-*` class rule, so a later move retains
+  presentation and a later style edit retains position.
+- Fixed imported inline-style precedence by removing only touched properties
+  from both the dedicated style field and preserved source-attribute backup.
+- Routed friendly gallery defaults through managed CSS and added a generic
+  default-template Roll button. The edit-flow browser smoke verifies flow
+  insertion, separate CSS output, shared-iframe computed style, Preview click,
+  and one chat-template result.
+- Verification passed: focused design/preservation tests, full `ci:verify`,
+  lint, production build, fresh-sheet smoke, strict imported-edit sync,
+  edit-flow browser smoke, and modern/legacy synthetic Preview/Edit visual
+  smoke at `0%` mismatch for all four captures.
+- Remaining editor P0: build a true rolltemplate-only visual surface. Current
+  rolltemplate blocks and chat rendering work, but the submode is not yet a
+  Figma-like template compositor.

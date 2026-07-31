@@ -1,5 +1,5 @@
 /**
- * Dice 카테고리 — 12 블록 (Stage A-5).
+ * Dice 카테고리 — 13 블록 (Stage A-5).
  *
  * Anchor:
  *   - docs/spec/02_functional_spec.md §3.1 ID 4 (굴림 / Dice, hue 40).
@@ -123,7 +123,7 @@ function flattenInline(content: string): string {
     .join(' ');
 }
 
-// ---------- 12 블록 정의 ----------
+// ---------- 13 블록 정의 ----------
 
 export const DICE_BLOCKS: BlockDef[] = [
   // 1) roll button ----------------------------------------------------------
@@ -163,6 +163,50 @@ export const DICE_BLOCKS: BlockDef[] = [
       return (
         `<button type="roll"${attr('name', name ? `roll_${name}` : '')}` +
         `${attr('value', expr)}${sheetClassAttr(cls)}${styleAttr(style)}>${escapeText(label)}</button>`
+      );
+    },
+  },
+
+  // 1.5) friendly roll button ---------------------------------------------
+  //
+  // The canonical roll button above keeps its expression socket for block
+  // authors. Direct visual editing needs one text field that can hold a full
+  // Roll20 command without forcing the user into the expression workspace.
+  {
+    type: 'r20_roll_button_easy',
+    shape: 'stack',
+    category: DICE,
+    label: '주사위 버튼',
+    tooltip: '쉬운 주사위 버튼 — 굴림 명령을 한 칸에 입력합니다.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('주사위 버튼')
+        .appendField('이름')
+        .appendField(new Blockly.FieldTextInput('check'), 'NAME');
+      b.appendDummyInput()
+        .appendField('표시 글자')
+        .appendField(new Blockly.FieldTextInput('주사위 굴리기'), 'LABEL');
+      b.appendDummyInput()
+        .appendField('굴림 명령')
+        .appendField(new Blockly.FieldTextInput('1d20'), 'FORMULA');
+      b.appendDummyInput()
+        .appendField('클래스')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
+      setStatementHooks(b);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
+      const name = String(b.getFieldValue('NAME') ?? '').trim();
+      const label = String(b.getFieldValue('LABEL') ?? '');
+      const formula = String(b.getFieldValue('FORMULA') ?? '').trim();
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      return (
+        `<button type="roll"${attr('name', name ? `roll_${name}` : '')}`
+        + `${attr('value', formula)}${sheetClassAttr(cls)}${styleAttr(style)}>${escapeText(label)}</button>`
       );
     },
   },
@@ -497,7 +541,7 @@ export const DICE_BLOCKS: BlockDef[] = [
 ];
 
 /**
- * Stage A-5 — Dice 12 블록 등록.
+ * Stage A-5 — Dice 13 블록 등록.
  *
  * 1) BlockDef 메타를 target 배열에 push (UI 카탈로그 표시용).
  * 2) Blockly.Blocks[type] = { init } 등록 (워크스페이스 instantiate 가능).

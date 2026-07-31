@@ -17,6 +17,10 @@ const ROOT_STYLE_FIELDS: Record<string, string> = {
   r20_repeating_section_wrapper: 'FIELDSET_STYLE',
 };
 
+const ROOT_PRESERVED_ATTR_FIELDS: Record<string, string> = {
+  r20_skill_row: 'TR_ATTRS',
+};
+
 export function designClassFieldForBlockType(type: string): string {
   const normalized = String(type ?? '').trim().toLowerCase();
   return ROOT_CLASS_FIELDS[normalized] ?? 'CLASS';
@@ -25,4 +29,9 @@ export function designClassFieldForBlockType(type: string): string {
 export function designStyleFieldForBlockType(type: string): string {
   const normalized = String(type ?? '').trim().toLowerCase();
   return ROOT_STYLE_FIELDS[normalized] ?? 'STYLE';
+}
+
+export function designPreservedAttrsFieldForBlockType(type: string): string {
+  const normalized = String(type ?? '').trim().toLowerCase();
+  return ROOT_PRESERVED_ATTR_FIELDS[normalized] ?? '__R20_PRESERVED_ATTRS';
 }

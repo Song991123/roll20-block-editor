@@ -1,6 +1,6 @@
 # DOM Layer Editing Plan
 
-Updated: 2026-07-19
+Updated: 2026-08-01
 
 This document defines how imported Roll20 DOM structures are represented in
 the editor. It is a product contract for the layer panel and the shared iframe
@@ -91,6 +91,27 @@ paint a thin teal edge line at the target's corresponding boundary, while
 label and distinction are used by the parent-owned iframe overlay and the
 layer-panel row. A candidate container is therefore not presented as an
 already-selected insertion position.
+
+## Visual Style Editing Contract
+
+- A visual HTML layer with a root class field exposes plain controls for size,
+  padding, fill, text color, border, corner radius, child layout, gap, and
+  typography. Runtime-only layers remain outside this inspector.
+- User changes are written to the CSS workspace under the block's stable
+  `sheet-r20-node-*` class. New visual edits must not add presentation
+  declarations to the emitted HTML `style` attribute.
+- A touched property is removed from both the block's ordinary style field and
+  its preserved imported `style` backup. Unrelated inline declarations,
+  `data-*`, ARIA, and other preserved attributes remain intact.
+- Managed presentation declarations merge with managed position declarations.
+  Moving a styled object must not erase its fill, spacing, border, or type
+  rules; styling a moved object must not erase `position`, `left`, or `top`.
+- Friendly gallery defaults use the same managed CSS path. The gallery now
+  includes an anonymous generic Roll button whose preview click produces the
+  built-in default Roll20 template card.
+- This closes section/button styling and Roll-button creation locally. It does
+  not yet make `<rolltemplate>` itself a dedicated visual composition surface;
+  that remains the next editor task.
 
 ## Verification Boundary
 

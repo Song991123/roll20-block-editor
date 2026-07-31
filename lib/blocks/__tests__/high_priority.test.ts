@@ -206,6 +206,7 @@ import { EXPRESSION_BLOCKS } from '../expression.ts';
 import { SHEET_WORKER_BLOCKS } from '../sheet_worker.ts';
 import { CSS_BLOCKS } from '../css.ts';
 import { COMPOSITE_BLOCKS } from '../composite.ts';
+import { DICE_BLOCKS } from '../dice.ts';
 
 function findBlock(arr: Array<{ type: string }>, type: string): {
   type: string;
@@ -244,6 +245,28 @@ function testWorkerUnaryNotEmit(): void {
   const out = def.generator!(b, makeCtx({ VALUE: 'v.disabled' }));
   const code = Array.isArray(out) ? out[0] : out;
   expectEq(code, '!(v.disabled)', 'unary not emit');
+}
+
+function testFriendlyRollButtonEmit(): void {
+  const def = findBlock(DICE_BLOCKS as Array<{ type: string }>, 'r20_roll_button_easy');
+  assert(def.generator, 'r20_roll_button_easy has generator');
+  const b = new FakeBlock({
+    type: 'r20_roll_button_easy',
+    fields: {
+      NAME: 'check',
+      LABEL: 'Roll',
+      FORMULA: '&{template:default} {{result=[[1d20]]}}',
+      CLASS: 'roll-button',
+      STYLE: '',
+    },
+  });
+  const out = def.generator!(b, makeCtx());
+  const code = Array.isArray(out) ? out[0] : out;
+  expectContains(code, 'type="roll"', 'friendly Roll button keeps Roll20 button type');
+  expectContains(code, 'name="roll_check"', 'friendly Roll button prefixes the Roll20 name');
+  expectContains(code, 'value="&amp;{template:default} {{result=[[1d20]]}}"', 'friendly Roll command is attribute-safe');
+  expectContains(code, 'class="sheet-roll-button"', 'friendly Roll button restores the sheet class prefix');
+  expectContains(code, '>Roll</button>', 'friendly Roll label is visible');
 }
 
 function testWorkerMathUnaryEmit(): void {
@@ -616,6 +639,7 @@ function testAttrRefBogusScopeFallback(): void {
 
 const tests: Array<[string, () => void]> = [
   ['worker if/else emit', testWorkerIfElseEmit],
+  ['friendly Roll button emit', testFriendlyRollButtonEmit],
   ['worker unary not emit', testWorkerUnaryNotEmit],
   ['worker Math unary emit', testWorkerMathUnaryEmit],
   ['worker Math binary emit', testWorkerMathBinaryEmit],

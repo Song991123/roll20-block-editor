@@ -11013,3 +11013,29 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `PRESERVED`: no HTML/CSS/translation file was accepted, no character or
   room setting changed, and no chat was sent. Current-payload modern parity
   and the separate legacy-room gate remain open.
+
+## 2026-08-01 Visual Style Controls And Roll Button
+
+- `DONE LOCAL`: the direct-edit inspector now provides user-facing controls
+  for size, padding, fill, text color, border, radius, child layout, gap, and
+  typography on class-capable visual HTML layers.
+- `DONE LOCAL`: visual edits and friendly-widget defaults are stored in a
+  managed CSS block under stable per-layer classes. Position and presentation
+  declarations merge instead of overwriting each other; newly edited HTML
+  does not receive presentation inline styles.
+- `FIXED LOCAL`: when an imported element has the same original style in both
+  `STYLE` and preserved attributes, the edited property is removed from both
+  sources. Unrelated preserved attributes and CSS declarations survive.
+- `DONE LOCAL`: the friendly gallery includes a generic Roll button. A flow
+  drop into a section emits the default Roll20 template command; a real click
+  in Preview creates one template chat card with no debug label.
+- `VERIFIED LOCAL`: `test:design-position`, `test:import-structure`, full
+  `ci:verify`, lint, build, `smoke:fresh-sheet`, `smoke:edit-flow`, strict
+  imported-edit sync, and the two-fixture modern/legacy visual smoke pass.
+  Preview/Edit mismatch is `0%` across all four synthetic captures.
+- `VERIFY / OPEN`: this does not yet provide a dedicated visual editor for the
+  `<rolltemplate>` body and does not promote arbitrary-sheet actual Roll20
+  parity. Those remain separate P0 gates.
+- `NEXT P0`: replace the current rolltemplate submode placeholder with a real
+  template-only render/edit surface backed by the same emitted HTML/CSS and
+  ChatPane renderer.

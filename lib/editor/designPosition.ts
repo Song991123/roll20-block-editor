@@ -1,7 +1,9 @@
 import type { BlocklyAdapter } from '@/lib/blockly/adapter';
+import { removePreservedStyleDeclarations } from '@/lib/blocks/preservedAttributes';
 import type { WorkspaceKey } from '@/lib/stores/workspaceStore';
 import {
   designClassFieldForBlockType,
+  designPreservedAttrsFieldForBlockType,
   designStyleFieldForBlockType,
 } from './designClassField';
 
@@ -22,6 +24,23 @@ export type DesignPositionResult = {
   designClass: string | null;
   containingClass: string | null;
   cssBlockCreated: boolean;
+};
+
+export type ManagedDesignDeclarations = Record<string, string | null>;
+
+export type DesignStyleRequest = {
+  workspace: WorkspaceKey;
+  blockId: string;
+  declarations: ManagedDesignDeclarations;
+};
+
+export type DesignStyleResult = {
+  changed: boolean;
+  reason: 'managed-css' | 'missing-block' | 'missing-style-or-class' | 'css-workspace-unavailable';
+  designClass: string | null;
+  cssBlockCreated: boolean;
+  htmlChanged: boolean;
+  cssChanged: boolean;
 };
 
 type DesignPositionAdapter = Pick<
@@ -78,32 +97,24 @@ export function commitManagedDesignPosition(
   if (request.containingBlockId && request.containingBlockNeedsRelative) {
     containingClass = ensureDesignClass(adapter, workspace, request.containingBlockId);
     if (!containingClass) return failure('missing-style-or-class');
-    const parentStyleField = resolveDesignStyleField(adapter, workspace, request.containingBlockId);
-    if (parentStyleField) {
-      const parentStyle = adapter.getBlockField(workspace, request.containingBlockId, parentStyleField) ?? '';
-      adapter.setBlockField(
-        workspace,
-        request.containingBlockId,
-        parentStyleField,
-        removeCssDeclarations(parentStyle, ['position']),
-      );
-    }
-    css = upsertCssRule(css, containingClass, { position: 'relative' });
+    stripInlineDesignDeclarations(
+      adapter,
+      workspace,
+      request.containingBlockId,
+      ['position'],
+    );
+    css = patchCssRule(css, containingClass, { position: 'relative' });
   }
 
   const designClass = ensureDesignClass(adapter, workspace, blockId);
   if (!designClass) return failure('missing-style-or-class');
-  const styleField = resolveDesignStyleField(adapter, workspace, blockId);
-  if (styleField) {
-    const style = adapter.getBlockField(workspace, blockId, styleField) ?? '';
-    adapter.setBlockField(
-      workspace,
-      blockId,
-      styleField,
-      removeCssDeclarations(style, ['position', 'left', 'top']),
-    );
-  }
-  css = upsertCssRule(css, designClass, {
+  stripInlineDesignDeclarations(
+    adapter,
+    workspace,
+    blockId,
+    ['position', 'left', 'top'],
+  );
+  css = patchCssRule(css, designClass, {
     position: 'absolute',
     left: `${request.left}px`,
     top: `${request.top}px`,
@@ -132,6 +143,108 @@ export function upsertManagedCssRule(
   return upsertCssRule(css, className, declarations);
 }
 
+/**
+ * Read the declarations currently controlled by the visual editor.
+ *
+ * Inline declarations are included as the starting value so imported sheets
+ * do not show an empty inspector. Managed CSS wins because it is the value the
+ * editor most recently wrote for the element.
+ */
+export function readManagedDesignStyle(
+  adapter: DesignPositionAdapter,
+  workspace: WorkspaceKey,
+  blockId: string,
+): Record<string, string> {
+  const block = adapter.getBlock(workspace, blockId);
+  if (!block) return {};
+
+  const styleField = resolveDesignStyleField(adapter, workspace, blockId);
+  const inline = styleField
+    ? parseCssDeclarations(adapter.getBlockField(workspace, blockId, styleField) ?? '')
+    : {};
+  const managedCss = findDesignCssBlock(adapter);
+  if (!managedCss) return inline;
+  const css = adapter.getBlockField('css', managedCss.id, 'CSS') ?? '';
+  return {
+    ...inline,
+    ...readCssRule(css, designClassForBlock(blockId)),
+  };
+}
+
+export function canManageDesignStyle(
+  adapter: DesignPositionAdapter,
+  workspace: WorkspaceKey,
+  blockId: string,
+): boolean {
+  return Boolean(adapter.getBlock(workspace, blockId))
+    && Boolean(resolveDesignClassField(adapter, workspace, blockId));
+}
+
+/**
+ * Persist visual-editor declarations in the CSS workspace while keeping the
+ * emitted HTML limited to a stable class hook. Properties touched by the
+ * visual editor are removed from the source block's inline style so they
+ * cannot outrank the generated class rule.
+ */
+export function commitManagedDesignStyle(
+  adapter: DesignPositionAdapter,
+  request: DesignStyleRequest,
+): DesignStyleResult {
+  const { workspace, blockId } = request;
+  if (!adapter.getBlock(workspace, blockId)) return styleFailure('missing-block');
+  if (!resolveDesignClassField(adapter, workspace, blockId)) {
+    return styleFailure('missing-style-or-class');
+  }
+
+  const normalized = normalizeDesignDeclarations(request.declarations);
+  if (Object.keys(normalized).length === 0) {
+    return {
+      changed: false,
+      reason: 'managed-css',
+      designClass: designClassForBlock(blockId),
+      cssBlockCreated: false,
+      htmlChanged: false,
+      cssChanged: false,
+    };
+  }
+
+  const managedCss = findOrCreateDesignCssBlock(adapter);
+  if (!managedCss) return styleFailure('css-workspace-unavailable');
+
+  const classFieldBefore = resolveDesignClassField(adapter, workspace, blockId);
+  const classValueBefore = classFieldBefore
+    ? adapter.getBlockField(workspace, blockId, classFieldBefore) ?? ''
+    : '';
+  const designClass = ensureDesignClass(adapter, workspace, blockId);
+  if (!designClass) return styleFailure('missing-style-or-class');
+
+  let htmlChanged = stripInlineDesignDeclarations(
+    adapter,
+    workspace,
+    blockId,
+    Object.keys(normalized),
+  );
+
+  const beforeCss = adapter.getBlockField('css', managedCss.id, 'CSS')
+    ?? `/* ${DESIGN_CSS_MARKER} */`;
+  const afterCss = patchCssRule(beforeCss, designClass, normalized);
+  const cssChanged = beforeCss !== afterCss;
+  if (cssChanged) adapter.setBlockField('css', managedCss.id, 'CSS', afterCss);
+
+  // ensureDesignClass may have attached the class even when no inline style
+  // needed migration.
+  htmlChanged = htmlChanged || !classValueBefore.split(/\s+/).includes(designClass);
+
+  return {
+    changed: htmlChanged || cssChanged || managedCss.created,
+    reason: 'managed-css',
+    designClass,
+    cssBlockCreated: managedCss.created,
+    htmlChanged,
+    cssChanged,
+  };
+}
+
 function failure(reason: DesignPositionResult['reason']): DesignPositionResult {
   return {
     moved: false,
@@ -139,6 +252,17 @@ function failure(reason: DesignPositionResult['reason']): DesignPositionResult {
     designClass: null,
     containingClass: null,
     cssBlockCreated: false,
+  };
+}
+
+function styleFailure(reason: DesignStyleResult['reason']): DesignStyleResult {
+  return {
+    changed: false,
+    reason,
+    designClass: null,
+    cssBlockCreated: false,
+    htmlChanged: false,
+    cssChanged: false,
   };
 }
 
@@ -186,6 +310,37 @@ function resolveDesignStyleField(
   return adapter.hasBlockField(workspace, blockId, preferred) ? preferred : null;
 }
 
+function stripInlineDesignDeclarations(
+  adapter: DesignPositionAdapter,
+  workspace: WorkspaceKey,
+  blockId: string,
+  properties: string[],
+): boolean {
+  let changed = false;
+  const styleField = resolveDesignStyleField(adapter, workspace, blockId);
+  if (styleField) {
+    const before = adapter.getBlockField(workspace, blockId, styleField) ?? '';
+    const after = removeCssDeclarations(before, properties);
+    if (after !== before && adapter.setBlockField(workspace, blockId, styleField, after)) {
+      changed = true;
+    }
+  }
+
+  const block = adapter.getBlock(workspace, blockId);
+  if (!block) return changed;
+  const preservedField = designPreservedAttrsFieldForBlockType(block.type);
+  if (!adapter.hasBlockField(workspace, blockId, preservedField)) return changed;
+  const beforePreserved = adapter.getBlockField(workspace, blockId, preservedField) ?? '';
+  const afterPreserved = removePreservedStyleDeclarations(beforePreserved, properties);
+  if (
+    afterPreserved !== beforePreserved
+    && adapter.setBlockField(workspace, blockId, preservedField, afterPreserved)
+  ) {
+    changed = true;
+  }
+  return changed;
+}
+
 function findOrCreateDesignCssBlock(
   adapter: DesignPositionAdapter,
 ): { id: string; created: boolean } | null {
@@ -198,6 +353,16 @@ function findOrCreateDesignCssBlock(
   if (!id) return null;
   adapter.setBlockField('css', id, 'CSS', `/* ${DESIGN_CSS_MARKER} */`);
   return { id, created: true };
+}
+
+function findDesignCssBlock(
+  adapter: Pick<DesignPositionAdapter, 'listAllBlocks' | 'getBlockField'>,
+): { id: string } | null {
+  const existing = adapter.listAllBlocks('css').find(
+    (block) => block.type === 'r20_raw_css'
+      && (adapter.getBlockField('css', block.id, 'CSS') ?? '').includes(DESIGN_CSS_MARKER),
+  );
+  return existing ? { id: existing.id } : null;
 }
 
 function upsertCssRule(
@@ -218,6 +383,52 @@ function formatCssDeclarations(declarations: Record<string, string>): string {
   return Object.entries(declarations)
     .map(([property, value]) => `${property}: ${value};`)
     .join(' ');
+}
+
+function patchCssRule(
+  css: string,
+  className: string,
+  patch: ManagedDesignDeclarations,
+): string {
+  const current = readCssRule(css, className);
+  for (const [property, value] of Object.entries(patch)) {
+    if (value == null || value === '') delete current[property];
+    else current[property] = value;
+  }
+  return upsertCssRule(css, className, current);
+}
+
+function readCssRule(css: string, className: string): Record<string, string> {
+  const selector = `.${className}`;
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = css.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`, 'm'));
+  return match ? parseCssDeclarations(match[1]) : {};
+}
+
+function normalizeDesignDeclarations(
+  declarations: ManagedDesignDeclarations,
+): ManagedDesignDeclarations {
+  const out: ManagedDesignDeclarations = {};
+  for (const [rawProperty, rawValue] of Object.entries(declarations)) {
+    const property = rawProperty.trim().toLowerCase();
+    if (!/^--[a-z0-9_-]+$/.test(property) && !/^[a-z][a-z0-9-]*$/.test(property)) continue;
+    const value = rawValue == null ? null : rawValue.trim();
+    if (value != null && /[{}]/.test(value)) continue;
+    out[property] = value || null;
+  }
+  return out;
+}
+
+function parseCssDeclarations(style: string): Record<string, string> {
+  const declarations: Record<string, string> = {};
+  for (const chunk of style.split(';')) {
+    const separator = chunk.indexOf(':');
+    if (separator <= 0) continue;
+    const property = chunk.slice(0, separator).trim().toLowerCase();
+    const value = chunk.slice(separator + 1).trim();
+    if (property && value) declarations[property] = value;
+  }
+  return declarations;
 }
 
 function removeCssDeclarations(style: string, properties: string[]): string {

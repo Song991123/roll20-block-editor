@@ -52,6 +52,29 @@ function parsePreservedAttributes(raw: string): Array<[string, string]> {
   }
 }
 
+/** Remove selected CSS properties from a preserved `style` attribute. */
+export function removePreservedStyleDeclarations(
+  raw: string,
+  properties: readonly string[],
+): string {
+  const removed = new Set(properties.map((property) => property.toLowerCase()));
+  const entries = parsePreservedAttributes(raw).flatMap(([name, value]): Array<[string, string]> => {
+    if (name.toLowerCase() !== 'style') return [[name, value]];
+    const declarations: string[] = [];
+    for (const chunk of value.split(';')) {
+      const separator = chunk.indexOf(':');
+      if (separator <= 0) continue;
+      const property = chunk.slice(0, separator).trim().toLowerCase();
+      const declarationValue = chunk.slice(separator + 1).trim();
+      if (property && declarationValue && !removed.has(property)) {
+        declarations.push(`${property}:${declarationValue}`);
+      }
+    }
+    return declarations.length ? [[name, declarations.join(';')]] : [];
+  });
+  return entries.length ? JSON.stringify(entries) : '';
+}
+
 /**
  * Return true when a generated block cannot represent one of the imported
  * attributes. Composite blocks use this as a fail-safe: if packing would

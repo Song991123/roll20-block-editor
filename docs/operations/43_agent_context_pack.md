@@ -11,6 +11,10 @@ the entire history and generated evidence tree.
   editing.
 - Local preview/edit share one persistent iframe. Modern and legacy browser
   smoke currently pass, including delayed stale-revision rejection.
+- Direct edit now exposes managed CSS controls for visual layers and a generic
+  Roll button preset. The controls update the shared iframe immediately,
+  preserve unrelated imported attributes, and keep presentation out of inline
+  HTML. Dedicated visual editing of the rolltemplate body is still open.
 - Actual Roll20's built-in default chat-template DOM and typography were
   measured in the dedicated one-member modern Sandbox. The local fallback now
   matches its caption/row/inline-roll structure and passes browser smoke.

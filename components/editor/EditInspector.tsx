@@ -8,9 +8,18 @@ import {
   type BlockFieldInfo,
   type BlockSnapshot,
 } from '@/lib/blockly/adapter';
+import {
+  canManageDesignStyle,
+  commitManagedDesignStyle,
+  readManagedDesignStyle,
+  type ManagedDesignDeclarations,
+} from '@/lib/editor/designPosition';
+import { designStyleFieldForBlockType } from '@/lib/editor/designClassField';
 import { getLayerRole } from '@/lib/editor/layerRoles';
+import { flushEmitPipeline } from '@/lib/preview/useEmitPipeline';
 import { useWorkspaceStore, WORKSPACE_KEYS, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { fieldDisplayLabel } from './fieldLabels';
+import VisualStyleInspector from './VisualStyleInspector';
 
 const GEOMETRY_FIELDS = new Set(['LEFT_PX', 'TOP_PX', 'WIDTH_PX', 'HEIGHT_PX']);
 
@@ -67,6 +76,38 @@ export default function EditInspector() {
     useWorkspaceStore.getState().bumpStructure(workspace, adapter.countBlocks(workspace));
   }, [selectedId, workspace]);
 
+  const role = snapshot ? getLayerRole(snapshot.type) : null;
+  const visualStyleEnabled = Boolean(
+    selectedId
+    && workspace === 'html'
+    && role
+    && role.kind !== 'runtime'
+    && canManageDesignStyle(getBlocklyAdapter(), workspace, selectedId),
+  );
+  const visualStyle = useMemo(() => {
+    if (!visualStyleEnabled || !selectedId || workspace !== 'html') return {};
+    return readManagedDesignStyle(getBlocklyAdapter(), workspace, selectedId);
+  // structureVersion invalidates the external Blockly and CSS models.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, workspace, structureVersion, visualStyleEnabled]);
+
+  const commitVisualStyle = useCallback((declarations: ManagedDesignDeclarations) => {
+    if (!selectedId || workspace !== 'html') return;
+    const adapter = getBlocklyAdapter();
+    const result = commitManagedDesignStyle(adapter, {
+      workspace,
+      blockId: selectedId,
+      declarations,
+    });
+    if (!result.changed) return;
+    const store = useWorkspaceStore.getState();
+    if (result.htmlChanged) store.bumpStructure('html', adapter.countBlocks('html'));
+    if (result.cssChanged || result.cssBlockCreated) {
+      store.bumpStructure('css', adapter.countBlocks('css'));
+    }
+    queueMicrotask(() => flushEmitPipeline());
+  }, [selectedId, workspace]);
+
   const deleteSelected = useCallback(() => {
     if (!selectedId || !workspace) return;
     const adapter = getBlocklyAdapter();
@@ -98,15 +139,19 @@ export default function EditInspector() {
     );
   }
 
-  const role = getLayerRole(snapshot.type);
+  const resolvedRole = role ?? getLayerRole(snapshot.type);
   const parent = snapshot.layerParentId
     ? getBlocklyAdapter().listAllBlocks(workspace).find((item) => item.id === snapshot.layerParentId)
     : null;
   const geometry = fields.filter((field) => GEOMETRY_FIELDS.has(field.name));
-  const editable = fields.filter((field) => !GEOMETRY_FIELDS.has(field.name));
+  const sourceStyleField = designStyleFieldForBlockType(snapshot.type);
+  const editable = fields.filter((field) => (
+    !GEOMETRY_FIELDS.has(field.name)
+    && (!visualStyleEnabled || field.name !== sourceStyleField)
+  ));
 
   return (
-    <ScrollArea className="h-full">
+    <ScrollArea key={selectedId} className="h-full">
       <div className="space-y-4 p-3.5" data-testid="edit-inspector">
         <header className="r20-form-card flex items-start gap-2">
           <div className="min-w-0 flex-1">
@@ -121,8 +166,8 @@ export default function EditInspector() {
               </div>
             </details>
           </div>
-          <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium ${role.className}`} data-testid="edit-inspector-role">
-            {role.label}
+          <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium ${resolvedRole.className}`} data-testid="edit-inspector-role">
+            {resolvedRole.label}
           </span>
         </header>
 
@@ -141,6 +186,14 @@ export default function EditInspector() {
               ))}
             </div>
           </Section>
+        )}
+
+        {visualStyleEnabled && (
+          <VisualStyleInspector
+            values={visualStyle}
+            role={resolvedRole}
+            onPatch={commitVisualStyle}
+          />
         )}
 
         {editable.length > 0 && (
