@@ -10493,6 +10493,16 @@ same-hash modern/legacy comparison.
 
 ## 2026-07-31 - Sandbox upload retry after permission handoff
 
+## 2026-07-31 - Visible Sandbox gate and chooser retry
+
+- `VERIFY / BLOCKED EXTERNAL`: the modern Sandbox had a fresh visible
+  exactly-one participant panel and the supported HTML chooser was invoked.
+  `fileChooser.setFiles` still returned `Not allowed` before transmission.
+- `SAFETY`: no payload, save, chat, room setting, or existing sheet content
+  changed. Actual generated evidence remains `0/4` and chat parity is missing.
+- `NEXT`: enable `Allow access to file URLs` in the ChatGPT Chrome Extension
+  details, then retry the same anonymous fixture-A payload.
+
 - `VERIFY / BLOCKED EXTERNAL`: the official supported HTML chooser still
   returns `Not allowed` before transmission, so actual root/chat evidence
   remains `0/4`.

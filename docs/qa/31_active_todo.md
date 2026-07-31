@@ -1,5 +1,18 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Visible Sandbox gate and chooser retry
+
+- `VERIFIED EXTERNAL READ-ONLY`: the modern Sandbox surface showed a visible
+  party panel with exactly one participant (`마렌`) and the `Sheet Sandbox
+  Tools` dialog. The gate was rechecked immediately before the attempt.
+- `BLOCKED EXTERNAL`: the supported HTML chooser still returned `Not allowed`
+  from `fileChooser.setFiles` before transmission. No HTML, CSS, translation,
+  save, chat, or room-setting write occurred.
+- `CURRENT STATUS`: `status:roll20-actual` remains `0/4` generated root/chat
+  captures, `chatParity=MISSING`, and `rendererReady=NO`.
+- `NEXT USER ACTION`: enable `Allow access to file URLs` in the ChatGPT Chrome
+  Extension details, then retry the same anonymous fixture-A upload.
+
 # 2026-07-31 Sandbox upload retry after permission handoff
 
 - `BLOCKED EXTERNAL`: the same supported HTML file chooser still returns

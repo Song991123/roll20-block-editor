@@ -1,5 +1,17 @@
 # 34. Requirements Gap Matrix
 
+# Visible Sandbox gate and chooser retry - 2026-07-31
+
+- `DONE OBSERVATION`: the modern Sandbox showed a visible exactly-one
+  participant state and the `Sheet Sandbox Tools` surface at the retry point.
+- `BLOCKED EXTERNAL`: the supported chooser returned `Not allowed` before
+  transmission, so no current payload was applied and no Roll20 write is
+  counted.
+- `CURRENT STATUS`: actual generated evidence remains `0/4`; chat parity and
+  renderer readiness remain missing.
+- `OPEN P0`: enable Chrome extension file-URL access, then retry fixture-A
+  and capture the root/chat evidence before changing renderer CSS.
+
 # Sandbox upload retry - 2026-07-31
 
 - `BLOCKED EXTERNAL`: the supported chooser still returns `Not allowed` before
