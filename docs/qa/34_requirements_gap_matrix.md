@@ -4,7 +4,7 @@
 
 | Area | Current evidence | Status | Boundary |
 | --- | --- | --- | --- |
-| Free-placement layer drop | Active placement mode reaches iframe layer target resolution; child hits fall through to the eligible containing frame; anonymous unit regression passes | DONE LOCAL | Does not prove browser drag smoke or Roll20 parity |
+| Free-placement layer drop | Active placement mode reaches iframe layer target resolution; child hits fall through to the eligible containing frame; anonymous unit regression and `smoke:edit-flow` pass | DONE LOCAL | Does not prove arbitrary-sheet coverage or Roll20 parity |
 | Preview/edit render identity | Existing local imported-edit smoke remains the current evidence | PARTIAL | Broad arbitrary-sheet and actual Roll20 comparison remain open |
 | Roll20 actual upload/render | Current payload generation is ready but browser file-URL permission still blocks upload | BLOCKED EXTERNAL | No parity claim |
 

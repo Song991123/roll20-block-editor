@@ -6,9 +6,10 @@
   selected for in-frame absolute placement.
 - Wired `PreviewMain` to pass the current mode and added an anonymous
   regression for child-over-frame hit resolution and coordinate calculation.
-- Local evidence: focused iframe-drop test, `ci:verify`, lint, and production
-  build all pass. Actual Roll20 evidence remains separate and is still
-  unavailable until the browser file-URL permission is enabled.
+- Local evidence: focused iframe-drop test, `smoke:edit-flow`, `ci:verify`,
+  lint, and production build all pass. Actual Roll20 evidence remains
+  separate and is still unavailable until the browser file-URL permission is
+  enabled.
 
 ## 2026-07-31 - Mixed runtime-source preservation regression
 
