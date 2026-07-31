@@ -1336,3 +1336,20 @@ directories that had been recreated by the local build.
   execution. User approval cannot override this execution boundary.
 - NOT DELETED: all three targets remain. No alternate shell, native API,
   per-file workaround, or safety bypass was used.
+
+## 2026-07-31 latest complete-cleanup retry after explicit approval
+
+- RECHECKED: the active-worktree `.next/`, `out/`, and `.tmp/` directories,
+  plus the 59 untracked child directories under `reports/`, were resolved
+  inside `web-push-main/`. The tracked `reports/README.md`, active
+  `node_modules/`, source, worktrees, and protected external sheet roots were
+  excluded. The temporary 3100 development server was stopped and the port
+  is clear.
+- ATTEMPTED: a single boundary-checked native PowerShell operation cleared
+  read-only attributes only inside those exact generated targets and then
+  requested their recursive deletion.
+- BLOCKED: the host rejected the destructive invocation before PowerShell
+  execution. User approval cannot override this session execution boundary.
+- NOT DELETED: zero targets changed; `.next`, `out`, `.tmp`, and the generated
+  report directories remain. No alternate shell, native API, per-file
+  workaround, or safety bypass was used.

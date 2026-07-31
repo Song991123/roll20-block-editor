@@ -10327,3 +10327,14 @@ same-hash modern/legacy comparison.
   deletion was rejected by the host before PowerShell execution. No source,
   worktree, dependency, report-policy, or protected sheet path was touched,
   and no bypass was attempted.
+
+## 2026-07-31 - Latest complete-cleanup retry
+
+- RECHECKED LOCAL: the temporary browser tab was finalized, the 3100 local
+  server was stopped, and the project port is clear. Generated targets were
+  re-resolved inside the active worktree; tracked policy files and protected
+  sources were excluded.
+- `VERIFY / BLOCKED CLEANUP`: the user explicitly approved deletion, but the
+  host rejected the exact native recursive PowerShell request before it ran.
+  Nothing was deleted and no alternate shell, native API, or per-file bypass
+  was used.

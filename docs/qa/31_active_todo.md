@@ -9726,3 +9726,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `VERIFY / BLOCKED CLEANUP`: the user-authorized recursive deletion was
   rejected by the host before PowerShell execution. No alternate deletion
   path was used; protected sources and worktrees remain unchanged.
+
+## 2026-07-31 Latest Complete-Cleanup Retry
+
+- `DONE LOCAL`: the temporary local browser tab was finalized and the 3100
+  development server was stopped; the project port is clear.
+- `VERIFY / BLOCKED CLEANUP`: explicit approval was present and the generated
+  targets were boundary-checked, but the host rejected the native recursive
+  deletion before PowerShell executed it. `.next`, `out`, `.tmp`, and generated
+  report directories remain. No alternate deletion path was used.
+- `PRESERVED`: tracked report policy, source, dependencies, Git worktrees,
+  protected sheet roots, and the uncommitted `buildDoc.ts` fix remain intact.

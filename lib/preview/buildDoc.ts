@@ -925,9 +925,10 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     // Keep the pointer transform in place while the authoritative HTML and
     // styles are being applied. Clearing it before the patch paints the old
     // position for one frame, which looks like a rollback during a drag. A
-    // style-only patch must leave it alone so an active pointer move remains
-    // fully optimistic until its structural commit arrives.
-    if (htmlChanged) clearOptimisticEditMove();
+    // style-only patch must leave it alone while the pointer is still down,
+    // but it must be cleared after pointer-up so the committed CSS left/top
+    // becomes the only source of geometry.
+    if (htmlChanged || !activeEditPointer) clearOptimisticEditMove();
     document.body.setAttribute(
       'data-r20-last-apply-mode',
       htmlChanged ? (usedOptimisticFlowPatch || usedStructuralPatch ? 'patch' : 'replace') : 'styles'
@@ -1483,6 +1484,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (!editBridgeEnabled) return;
     if (!activeEditPointer || activeEditPointer.pointerId !== e.pointerId) return;
     var subjectNode = activeEditPointer.subjectNode;
+    activeEditPointer.ending = true;
     syncActiveEditSelection();
     if (editMoveFrame) window.cancelAnimationFrame(editMoveFrame);
     editMoveFrame = 0;
@@ -1513,6 +1515,25 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     activeEditPointer = null;
     try { e.preventDefault(); } catch (_) {}
     try { e.stopImmediatePropagation(); } catch (_) {}
+  }, true);
+  document.addEventListener('lostpointercapture', function (e) {
+    if (!editBridgeEnabled || !activeEditPointer) return;
+    if (activeEditPointer.ending || e.target !== activeEditPointer.subjectNode) return;
+    var interrupted = activeEditPointer;
+    if (editMoveFrame) window.cancelAnimationFrame(editMoveFrame);
+    editMoveFrame = 0;
+    pendingEditMove = null;
+    rollbackOptimisticFlowMove();
+    clearOptimisticEditMove();
+    clearValidatedFlowTarget();
+    postEditHit('pointercancel', interrupted.subjectNode, interrupted.subjectNode, {
+      x: Number.isFinite(interrupted.lastX) ? interrupted.lastX : interrupted.originX,
+      y: Number.isFinite(interrupted.lastY) ? interrupted.lastY : interrupted.originY,
+      pointerId: interrupted.pointerId,
+      button: 0,
+      buttons: 0,
+    });
+    activeEditPointer = null;
   }, true);
   document.addEventListener('pointercancel', function (e) {
     if (!editBridgeEnabled) return;
