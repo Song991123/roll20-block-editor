@@ -1,5 +1,18 @@
 # 34. Requirements Gap Matrix
 
+# Sandbox context and chat baseline - 2026-07-31
+
+- `DONE OBSERVATION`: the dedicated modern Sandbox showed a visible
+  exactly-one participant state and its Sheet Sandbox Tools dialog.
+- `MEASURED`: generic Roll20 chat context is approximately `340px` outer /
+  `328px` content, `13px / 18.5714px`, `#404040`, with the measured message
+  padding and rolltemplate table/caption baseline recorded in the active TODO.
+- `DONE LOCAL`: the local ChatPane default typography now uses that baseline.
+- `BLOCKED EXTERNAL`: the supported chooser rejected file assignment with
+  `Not allowed`; no payload was transmitted and no Roll20 state was changed.
+- `OPEN P0`: enable Chrome file-URL access, then capture modern Sandbox root
+  and chat evidence before starting the separate legacy-room pass.
+
 # Dedicated test-room creation - 2026-07-31
 
 - `DONE OBSERVATION`: a new dedicated Roll20 test room was created for future

@@ -1,5 +1,25 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Roll20 Sandbox read-only context and chat baseline
+
+- `VERIFIED EXTERNAL READ-ONLY`: the dedicated modern Sandbox exposed a
+  visible party panel with exactly one participant. No sheet payload, save,
+  room setting, or chat write was performed.
+- `MEASURED EXTERNAL`: the visible Roll20 chat shell measured approximately
+  `340px` outer width and `328px` content width, with `13px / 18.5714px`
+  shell typography, `#404040` text, `10px 16px 7px 45px` message padding, and
+  the standard rolltemplate table/caption spacing and purple border treatment.
+  These are generic runtime measurements; no room or sheet identity is kept.
+- `BLOCKED EXTERNAL`: the supported file chooser returned `Not allowed` when
+  assigning the anonymous fixture. Chrome file-URL access must be enabled
+  before the same payload can be transmitted.
+- `DONE LOCAL`: ChatPane now uses the measured Roll20 shell font stack,
+  baseline color, font size, line-height, and transparent chat background by
+  default instead of requiring a diagnostic typography toggle.
+- `TODO P0`: after file-upload permission is enabled, upload the anonymous
+  modern fixture, capture root/chat evidence, then repeat separately for the
+  legacy dedicated-room path.
+
 # 2026-07-31 Generated-output deletion retry
 
 - `BLOCKED HOST`: the explicitly authorized deletion of the remaining

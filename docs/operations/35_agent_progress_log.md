@@ -10491,6 +10491,24 @@ same-hash modern/legacy comparison.
   modern and independently participant-gated legacy evidence. Do not promote
   local editor or synthetic visual results to live parity.
 
+## 2026-07-31 - Roll20 Sandbox context and chat baseline
+
+- `VERIFIED EXTERNAL / READ-ONLY`: the dedicated modern Sandbox displayed a
+  visible party panel with exactly one participant. No payload or persistent
+  Roll20 state was written.
+- `MEASURED EXTERNAL`: generic chat shell measurements were approximately
+  `340px` outer / `328px` content, `13px / 18.5714px`, `#404040`, and
+  `10px 16px 7px 45px` message padding; rolltemplate table/caption defaults
+  matched the local baseline contract.
+- `BLOCKED EXTERNAL`: the supported chooser returned `Not allowed` while
+  assigning the anonymous fixture. The required browser file-URL permission
+  is the next external prerequisite; no workaround was attempted.
+- `DONE LOCAL`: ChatPane now applies the measured shell typography by default.
+  Lint, build, focused dice/render tests, persistent preview, edit-flow, and
+  server hygiene all pass.
+- `NEXT P0`: enable file upload access, upload the anonymous modern fixture,
+  capture root/chat evidence, and then run the separate legacy-room pass.
+
 ## 2026-07-31 - Explicit generated-output deletion retry
 
 - The active worktree was rechecked with no project listener. Only the

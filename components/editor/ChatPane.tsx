@@ -185,12 +185,18 @@ function parseTranslations(raw: string): Record<string, string> {
 }
 
 const roll20ChatShellCss = `
-.r20-chat-pane {
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+.r20-chat-pane,
+.r20-chat-pane .textchatcontainer {
+  /* Match the Roll20 chat shell's measured default typography. */
+  color: rgb(64, 64, 64);
+  font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-size: 13px;
+  line-height: 18.5714px;
 }
 .r20-chat-pane .textchatcontainer {
   font-synthesis: style;
   text-rendering: optimizeSpeed;
+  background: transparent;
   padding: 0;
   gap: 0;
 }
@@ -340,7 +346,7 @@ const roll20ChatShellCss = `
   background: #f1f1f1;
   color: #333;
   font-size: 13px;
-  line-height: 18px;
+  line-height: 18.5714px;
 }
 .r20-chat-pane .textchatcontainer.withoutavatars .message {
   padding-left: 15px;
