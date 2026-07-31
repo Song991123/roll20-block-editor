@@ -1,5 +1,16 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Media-condition editor surface
+
+- `DONE LOCAL`: the `r20_media_query` editor now shows the full condition
+  without fixed outer parentheses. Simple shorthand still receives generated
+  parentheses, while imported composite conditions remain visually editable
+  without duplicate-looking syntax.
+- `VERIFIED LOCAL`: lint, `ci:verify`, and production build pass after the
+  editor-surface adjustment.
+- `CLAIM BOUNDARY`: this improves the CSS block editor surface only; it does
+  not prove actual Roll20 visual parity or complete CSS grammar support.
+
 # 2026-07-31 Generic block at-rule mapping
 
 - `DONE LOCAL`: safe block at-rules such as `@container`, `@supports`, and

@@ -1,5 +1,13 @@
 # 2026-07-31 - Actual-status and renderer-action gate refresh
 
+# 2026-07-31 - Media-condition editor surface
+
+- Removed the fixed visual parentheses from the `r20_media_query` Blockly
+  field so imported composite conditions are shown and edited as authored.
+- The generator still normalizes shorthand conditions with parentheses.
+- Verified lint, `ci:verify`, and production build.
+- External Roll20 generated evidence remains `0/4`; this is not a parity claim.
+
 # 2026-07-31 - Generic block at-rule mapping
 
 - Added the generic editable `r20_css_at_rule` container for safe block

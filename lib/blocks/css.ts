@@ -748,9 +748,8 @@ export const CSS_BLOCKS: BlockDef[] = [
     tooltip: '@media CONDITION { ... } — 반응형 묶음. 단순 조건은 괄호를 자동으로 붙입니다.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('@media (')
+        .appendField('@media ')
         .appendField(new Blockly.FieldTextInput('max-width: 640px'), 'CONDITION')
-        .appendField(')');
       b.appendStatementInput('CHILDREN').setCheck(null);
       setStatementHooks(b);
     }),

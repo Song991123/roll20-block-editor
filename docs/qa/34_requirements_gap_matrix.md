@@ -1,5 +1,14 @@
 # 34. Requirements Gap Matrix
 
+# Media-condition editor surface - 2026-07-31
+
+- `DONE LOCAL`: composite media conditions no longer display duplicate-looking
+  fixed parentheses in the editor; shorthand parentheses remain generator
+  behavior.
+- `VERIFIED LOCAL`: lint, `ci:verify`, and production build passed.
+- `OPEN EXTERNAL`: this is an editor-surface fix and does not establish actual
+  Roll20 visual or chat parity.
+
 # Generic block at-rule mapping - 2026-07-31
 
 - `DONE LOCAL`: safe block at-rules such as `@container`, `@supports`, and
