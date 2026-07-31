@@ -13,6 +13,15 @@
   CDP, or ordinary-room workaround was used; actual Roll20 parity remains
   unproven.
 
+# 2026-07-31 - Imported smoke preflight guard
+
+- Added a static-output preflight to `scripts/imported_edit_sync_smoke.mjs`.
+  The script now stops before opening a port when `out/index.html` is absent,
+  and tells the operator to run the production build.
+- Verified the guard with an intentionally missing output directory, then ran
+  the normal strict imported smoke sequentially after rebuilding: all three
+  anonymous fixture families passed. Lint passed as well.
+
 # 2026-07-31 - Legacy test-room observation
 
 - Fresh preflight on the dedicated legacy verification tab showed exactly one

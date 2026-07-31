@@ -12,6 +12,15 @@
   `Not allowed` before upload; current actual evidence remains `0/4` root/chat
   captures. Do not use a CDP or hidden-input upload bypass.
 
+# 2026-07-31 Imported smoke preflight guard
+
+- DONE LOCAL: `imported_edit_sync_smoke.mjs` now checks for the requested
+  static `out/index.html` before starting its server. A missing build output
+  produces an actionable build instruction instead of a misleading document
+  `404` followed by interaction failures.
+- VERIFIED LOCAL: the missing-output check reports the actionable error; the
+  normal strict run remains `3/3 PASS` after a production build.
+
 # 2026-07-31 Legacy test-room observation
 
 - VERIFIED EXTERNAL READ-ONLY: the dedicated legacy verification tab showed a

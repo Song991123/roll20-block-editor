@@ -13,6 +13,15 @@ The first failed strict attempt after cleanup was a missing generated `out`
 document. Rebuilding before the rerun separated that harness issue from the
 product result.
 
+## Imported Smoke Preflight Guard - 2026-07-31
+
+- `IMPLEMENTED / VERIFIED LOCAL`: the imported edit-sync smoke now validates
+  `out/index.html` before binding port `4196`. Missing static output is an
+  explicit build prerequisite, not a rendered-page `404` misreported as an
+  interaction failure.
+- The guard's missing-output check and the normal strict run both pass at the
+  expected boundary: the normal run remains `3/3` anonymous local fixtures.
+
 ## Legacy Test-Room Observation - 2026-07-31
 
 | Area | Current evidence | Status | Boundary |

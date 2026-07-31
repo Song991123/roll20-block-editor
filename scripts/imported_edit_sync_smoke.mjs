@@ -175,6 +175,19 @@ async function loadLocalInputFixture() {
   };
 }
 
+async function assertStaticOutput() {
+  const entry = path.join(OUT_DIR, 'index.html');
+  try {
+    const stat = await fs.stat(entry);
+    if (!stat.isFile()) throw new Error('index.html is not a file');
+  } catch {
+    throw new Error(
+      `static app output is missing at ${entry}; run `
+      + '`corepack pnpm run build` before imported edit-sync smoke',
+    );
+  }
+}
+
 async function listFixtures() {
   const out = [];
   const localInput = await loadLocalInputFixture();
@@ -3080,6 +3093,7 @@ function fmtResourceIssues(items) {
 }
 
 async function main() {
+  await assertStaticOutput();
   await fs.mkdir(path.join(REPORT_DIR, 'screenshots'), { recursive: true });
   const fixtures = await listFixtures();
   if (fixtures.length === 0) {
