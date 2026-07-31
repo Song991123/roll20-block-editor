@@ -1,5 +1,16 @@
 # 34. Requirements Gap Matrix
 
+# Roll20 Legacy Preflight Refresh - 2026-07-31
+
+- `DONE OBSERVATION`: the dedicated Sandbox tools surface loaded after a
+  supported refresh.
+- `BLOCKED EXTERNAL`: the participant count was not visibly readable; the only
+  matching member text was inside a hidden, zero-sized parent. The room is not
+  eligible for upload or parity evidence.
+- `OPEN P0`: obtain a fresh visible exactly-one participant state, then run the
+  supported anonymous legacy payload upload and capture actual render/chat
+  evidence.
+
 # Autosave Render Contract Persistence - 2026-07-31
 
 - `DONE LOCAL`: autosave version 3 persists the per-sheet modern/legacy

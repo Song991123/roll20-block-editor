@@ -1,3 +1,15 @@
+# 2026-07-31 Roll20 legacy verification preflight refresh
+
+- `VERIFIED EXTERNAL READ-ONLY`: after a supported page refresh, the dedicated
+  Sandbox tools surface was visible again.
+- `BLOCKED EXTERNAL`: the participant label was present only under a hidden
+  parent (`display:none` with a zero-sized box), so a fresh visible participant
+  count could not be proven. The room was excluded from verification.
+- `PRESERVED`: no upload, save, chat message, room setting, or existing sheet
+  content was changed.
+- `TODO P0`: retry only after the visible participant indicator reads exactly
+  one, then use the supported chooser with the anonymous legacy payload.
+
 # 2026-07-31 Autosave Roll20 mode persistence
 
 - `FIXED LOCAL`: autosave XML version 3 now stores the selected modern/legacy

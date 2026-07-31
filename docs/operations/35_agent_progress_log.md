@@ -1,3 +1,14 @@
+# 2026-07-31 - Roll20 legacy verification preflight refresh
+
+- Refreshed the dedicated verification tab in read-only mode. The Sandbox
+  tools surface loaded, but the participant label was hidden by its parent and
+  had a zero-sized visible box, so the required fresh visible count was not
+  available.
+- Excluded the room from all generated-sheet actions. No upload, save, chat,
+  room setting, or existing sheet content changed.
+- Next P0 remains a supported upload only after the visible participant count
+  is exactly one.
+
 # 2026-07-31 - Autosave Roll20 mode persistence
 
 - Added version-3 autosave metadata for the selected modern/legacy
