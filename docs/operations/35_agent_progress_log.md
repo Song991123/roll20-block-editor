@@ -10658,6 +10658,16 @@ same-hash modern/legacy comparison.
   partial, not full parity. Full-height root stitching, normalized diff, and
   independent fixture-A smoke are still required.
 
+# 2026-07-31 - Roll20 participant preflight retry
+
+- `READ-ONLY`: inspected both retained verification tabs and did not navigate,
+  upload, save, send chat, or change room settings.
+- `BLOCKED EXTERNAL`: the participant indicator was either inside a hidden
+  `0x0` parent or positioned outside the viewport. The exact-one visibility
+  gate therefore remains unsatisfied.
+- `STATUS`: actual generated evidence remains `0/4`, chat parity is missing,
+  and renderer readiness is `NO`. No external parity claim is promoted.
+
 ## 2026-07-31 - Upload handoff CLI recovery
 
 - `VERIFIED LOCAL`: `roll20_upload_snippet.mjs` now skips values belonging to

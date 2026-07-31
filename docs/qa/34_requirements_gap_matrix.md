@@ -1,5 +1,17 @@
 # 34. Requirements Gap Matrix
 
+# Roll20 participant preflight retry - 2026-07-31
+
+- `VERIFIED EXTERNAL READ-ONLY`: both retained verification tabs were checked
+  without transmitting a payload or changing any Roll20 state.
+- `BLOCKED EXTERNAL`: one participant indicator remained under a hidden,
+  zero-sized parent; the other was above the viewport. This is not reliable
+  visible exactly-one evidence, so no upload or parity result is counted.
+- `CURRENT STATUS`: latest actual-status remains `0/4` generated screenshots,
+  missing chat parity, and `rendererReady=NO`.
+- `OPEN P0`: obtain a fresh visible exactly-one participant state before any
+  modern Sandbox or dedicated legacy-room generated-sheet write.
+
 # Upload handoff CLI recovery - 2026-07-31
 
 - `DONE LOCAL`: separated upload-snippet option values no longer become a

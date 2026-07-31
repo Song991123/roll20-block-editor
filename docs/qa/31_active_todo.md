@@ -1,5 +1,20 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Roll20 participant preflight retry
+
+- `VERIFIED EXTERNAL READ-ONLY`: the two retained Roll20 verification tabs
+  were inspected without navigating, uploading, saving, sending chat, or
+  changing room settings.
+- `BLOCKED EXTERNAL`: one participant label had a hidden parent and a `0x0`
+  box; the other label was outside the viewport at `y=-305`. Neither is a
+  fresh visible exactly-one participant state, so both destinations remain
+  ineligible for generated-sheet writes.
+- `CURRENT STATUS`: the latest local status remains `0/4` generated actual
+  screenshots, `chatParity=MISSING`, and `rendererReady=NO`.
+- `TODO P0`: retry only after the supported browser visibly exposes exactly
+  one participant, then run the modern Sandbox and separate legacy-room
+  upload/capture gates independently.
+
 # 2026-07-31 Upload handoff CLI recovery
 
 - `VERIFIED LOCAL`: upload snippet option parsing now keeps separated option
