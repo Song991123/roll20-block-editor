@@ -1,5 +1,15 @@
 # 34. Requirements Gap Matrix
 
+# Roll20 Participant Visibility Retry - 2026-07-31
+
+- `DONE OBSERVATION`: both dedicated tabs showed the Sandbox tools and current
+  sheet/chat surface.
+- `BLOCKED EXTERNAL`: neither tab provided a fresh visible exactly-one
+  participant indicator; one was hidden/zero-sized and one was above the
+  viewport. No upload or parity evidence is counted.
+- `OPEN P0`: resume only when the supported browser exposes a visible count of
+  exactly one, then upload and compare the anonymous modern/legacy payloads.
+
 # Roll20 Legacy Preflight Refresh - 2026-07-31
 
 - `DONE OBSERVATION`: the dedicated Sandbox tools surface loaded after a

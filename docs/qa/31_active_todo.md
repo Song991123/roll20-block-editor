@@ -1,3 +1,16 @@
+# 2026-07-31 Roll20 participant visibility retry
+
+- `VERIFIED EXTERNAL READ-ONLY`: both retained dedicated tabs showed the
+  Sandbox tools surface and the current sheet/chat UI without requiring an
+  ordinary room.
+- `BLOCKED EXTERNAL`: one tab's `1 구성원` text was inside a hidden,
+  zero-sized parent; the other tab's same text was above the viewport. Neither
+  is a fresh visible participant count, so neither tab is eligible for upload.
+- `PRESERVED`: no file transmission, save, chat message, room setting, or
+  existing sheet content was changed.
+- `TODO P0`: continue only after a visible exactly-one participant indicator
+  appears in the supported browser surface.
+
 # 2026-07-31 Roll20 legacy verification preflight refresh
 
 - `VERIFIED EXTERNAL READ-ONLY`: after a supported page refresh, the dedicated

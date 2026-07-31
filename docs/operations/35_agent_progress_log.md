@@ -1,3 +1,13 @@
+# 2026-07-31 - Roll20 participant visibility retry
+
+- Read both dedicated Roll20 tabs in observation-only mode. The Sandbox tools
+  and current sheet/chat surfaces were visible, but the participant label was
+  either hidden in a zero-sized parent or positioned above the viewport.
+- This is not sufficient for the required fresh visible exactly-one preflight,
+  so both tabs remain excluded from upload and parity evidence.
+- No file transmission, save, chat, room setting, or existing sheet content
+  changed.
+
 # 2026-07-31 - Roll20 legacy verification preflight refresh
 
 - Refreshed the dedicated verification tab in read-only mode. The Sandbox
