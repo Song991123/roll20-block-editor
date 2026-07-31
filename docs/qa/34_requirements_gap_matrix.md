@@ -1,5 +1,15 @@
 # 34. Requirements Gap Matrix
 
+# Public boundary and latest local visual regression - 2026-07-31
+
+- `DONE LOCAL`: the public example registry is empty and tracked-file/privacy
+  guards find no real or derived sheet sample.
+- `DONE LOCAL`: synthetic preview/edit parity is `4/4` exact in both modern
+  and legacy modes; strict imported edit-sync is `3/3` with no resource
+  failures.
+- `OPEN DEPLOY`: Pages responds `200`, but its deployed SHA is the older
+  `main` revision rather than the current working branch.
+
 # Local fresh-sheet and worker-state regression recheck - 2026-07-31
 
 - `DONE LOCAL`: a blank workspace has no HTML/CSS/i18n/JS/worker blocks, no

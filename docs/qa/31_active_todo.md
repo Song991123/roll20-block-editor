@@ -1,3 +1,14 @@
+# 2026-07-31 Public boundary and latest local visual regression recheck
+
+- `VERIFIED LOCAL`: `EXAMPLES` is empty, no real-sheet/example fixture is
+  tracked, and `ci:verify` privacy/evidence guards pass.
+- `VERIFIED LOCAL`: modern and legacy synthetic preview/edit visual smoke is
+  exact for both anonymous fixtures (`4/4`, mismatch `0%`), and strict
+  imported edit-sync passes `3/3` with no final resource failures.
+- `VERIFY DEPLOY`: GitHub Pages is healthy (`200`) but still serves the older
+  `main` SHA, not this branch's latest commit. Do not call the public page the
+  current product until the intended integration branch is deployed.
+
 # 2026-07-31 Local fresh-sheet and worker-state regression recheck
 
 - `VERIFIED LOCAL`: fresh-sheet smoke passed with an empty HTML/CSS/i18n/JS/

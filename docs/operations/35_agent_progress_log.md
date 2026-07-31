@@ -1,3 +1,15 @@
+# 2026-07-31 - Public boundary and latest local visual regression recheck
+
+- Rechecked the public surface: `EXAMPLES` remains empty, no real or derived
+  sheet sample is tracked, and the evidence/privacy guard passed.
+- Ran the paired synthetic visual smoke: fixture-A and fixture-B were exact
+  in both modern and legacy modes (`4/4`, mismatch `0%`, i18n `6/6`).
+- Ran strict imported edit-sync: all three anonymous synthetic families passed
+  interaction and final resource checks.
+- `VERIFY DEPLOY`: the Pages endpoint is healthy, but it still serves the
+  older `main` SHA. The current `claude/design-reset` branch is not presented
+  as the public product until deliberately integrated and deployed.
+
 # 2026-07-31 - Local fresh-sheet and worker-state regression recheck
 
 - Re-ran `smoke:fresh-sheet`: the blank workspace started with zero
