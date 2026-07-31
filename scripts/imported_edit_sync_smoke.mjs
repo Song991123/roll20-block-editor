@@ -298,6 +298,15 @@ async function waitForFrameMode(frame, expected) {
   throw new Error(`iframe edit mode did not reach ${expected}`);
 }
 
+async function waitForSheetRenderReady(frame) {
+  const deadline = Date.now() + 15000;
+  while (Date.now() < deadline) {
+    if (await frame.locator('body').getAttribute('data-r20-render-ready') === '1') return;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error('iframe sheet render did not become ready');
+}
+
 async function runCanonicalIframeEditSync(page) {
   await page.waitForTimeout(1300);
   const iframe = page.locator('[data-testid="preview-iframe"]');
@@ -309,6 +318,7 @@ async function runCanonicalIframeEditSync(page) {
   await iframe.waitFor({ state: 'visible', timeout: 30000 });
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
   await frame.locator('.charactersheet.charsheet').waitFor({ state: 'visible', timeout: 30000 });
+  await waitForSheetRenderReady(frame);
   await page.waitForFunction(
     () => Number(document.querySelector('[data-r20-apply-acked]')?.getAttribute('data-r20-apply-acked') || 0) > 0,
     null,
@@ -558,6 +568,7 @@ async function screenshotEditSheetRoot(page, screenshotPath) {
   const element = frame.locator('.charactersheet.charsheet').first();
   await element.waitFor({ state: 'visible', timeout: 30000 });
   await ensureSheetFitsViewport(page, element);
+  await waitForSheetRenderReady(frame);
   return withParentEditOverlaysHidden(page, async () => {
     const box = await element.boundingBox();
     await element.screenshot({ path: screenshotPath });
@@ -573,6 +584,7 @@ async function screenshotPreviewBlock(page, blockId, screenshotPath) {
   });
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
   await frame.locator('.charactersheet.charsheet').waitFor({ state: 'visible', timeout: 30000 });
+  await waitForSheetRenderReady(frame);
   await clearIframeHighlight(page);
   const locator = frame.locator(`[data-r20-block-id="${cssString(blockId)}"]`).first();
   await locator.waitFor({ state: 'visible', timeout: 30000 });
@@ -591,6 +603,7 @@ async function screenshotPreviewSheetRoot(page, screenshotPath) {
   const root = frame.locator('.charactersheet.charsheet').first();
   await root.waitFor({ state: 'visible', timeout: 30000 });
   await ensureSheetFitsViewport(page, root);
+  await waitForSheetRenderReady(frame);
   await clearIframeHighlight(page);
   const box = await root.boundingBox();
   await root.screenshot({ path: screenshotPath });

@@ -1,5 +1,23 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Render-readiness gate
+
+- `DONE LOCAL`: the shared iframe render bridge now waits for authored `<img>`
+  assets, CSS background/mask/list images, and document fonts to settle across
+  two animation frames before exposing `data-r20-render-ready="1"`. Live HTML/
+  CSS patches reset the marker and publish `r20:render-ready` again.
+- `DONE LOCAL`: imported edit-sync capture now waits for that same iframe
+  readiness marker before selecting, dragging, or comparing the sheet root.
+  This removes the false blank-region capture caused by a late background
+  image paint without creating a second edit renderer.
+- `VERIFIED LOCAL`: the protected workspace input passed strict imported
+  edit-sync with full sheet visual gate at `0` mismatched pixels / `0%`;
+  persistent Preview/Edit passed with `loads=0`; synthetic visual smoke passed
+  `4/4` exact in modern and legacy; `ci:verify`, lint, and build passed.
+- `VERIFY EXTERNAL`: this is a local render-stability contract, not actual
+  Roll20 visual parity. Generated Roll20 root/chat evidence remains `0/4`,
+  and the supported upload permission is still required.
+
 # 2026-07-31 User-authorized cleanup retry and strict visual rerun
 
 - `BLOCKED HOST`: the exact native PowerShell deletion request for the

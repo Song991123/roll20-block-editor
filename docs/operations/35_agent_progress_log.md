@@ -1,5 +1,22 @@
 # 2026-07-31 - Actual-status and renderer-action gate refresh
 
+# 2026-07-31 - Render-readiness gate
+
+- Added a shared iframe readiness marker. The bridge now waits for authored
+  images, discovered CSS background/mask/list images, document fonts, and two
+  animation frames before setting `data-r20-render-ready="1"`; live patches
+  reset the marker and emit `r20:render-ready` after the new surface settles.
+- Updated the imported edit-sync smoke to wait for that marker before edit
+  interaction and root screenshot comparison. This addresses the retained
+  `4.89%` blank-region report as a capture-time asset paint race, while keeping
+  one persistent iframe as the only render owner.
+- Verified protected local input: strict full-sheet edit/preview diff `0px`
+  (`0%`), persistent surface modern/legacy `loads=0`, synthetic visual smoke
+  `4/4` exact in both modes, build/lint, and `ci:verify` all pass.
+- This does not add an actual Roll20 parity claim. Sandbox upload, modern
+  root/chat evidence, and the separate legacy-room evidence remain open at
+  `0/4` because the supported browser file-chooser permission is blocked.
+
 # 2026-07-31 - User-authorized cleanup retry and strict visual rerun
 
 - The host rejected the exact boundary-checked native PowerShell deletion for

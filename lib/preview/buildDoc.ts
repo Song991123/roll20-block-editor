@@ -145,6 +145,8 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   var optimisticEditMove = null;
   var selectedEditBlockIds = [];
   var pendingLivePatchChunks = null;
+  var renderReadyGeneration = 0;
+  var renderReadyTimer = 0;
   function blockNodeOf(node) {
     while (node && node !== document.body) {
       if (node.dataset && node.dataset.r20BlockId) return node;
@@ -841,6 +843,8 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       totalCss += css.length;
     }
     if (totalCss > 15000000 || typeof data.i18n !== 'string' || data.i18n.length > 5000000) return;
+    renderReadyGeneration += 1;
+    document.body.setAttribute('data-r20-render-ready', '0');
     var root = document.querySelector('form.sheetform > .charactersheet.charsheet');
     if (!root) return;
     var htmlChanged = data.htmlKey !== lastAppliedHtmlKey;
@@ -959,6 +963,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       String(window.performance.timeOrigin + window.performance.now())
     );
     scheduleResize();
+    scheduleRenderReady();
     try {
       parent.postMessage({
         type: 'r20:edit-applied',
@@ -1111,6 +1116,92 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       resizeTimer = 0;
       postResize();
     });
+  }
+  function renderAssetUrls(sheet) {
+    var urls = [];
+    var seen = {};
+    if (!sheet) return urls;
+    var nodes = [sheet].concat(Array.prototype.slice.call(sheet.querySelectorAll('[data-r20-block-id]')));
+    var cssImagePattern = /url\(\s*(['"]?)(.*?)\1\s*\)/g;
+    for (var i = 0; i < nodes.length; i += 1) {
+      var style;
+      try { style = window.getComputedStyle(nodes[i]); } catch (e) { style = null; }
+      if (!style) continue;
+      var values = [style.backgroundImage, style.maskImage, style.listStyleImage];
+      for (var valueIndex = 0; valueIndex < values.length; valueIndex += 1) {
+        var value = values[valueIndex];
+        if (!value || value === 'none') continue;
+        cssImagePattern.lastIndex = 0;
+        var match;
+        while ((match = cssImagePattern.exec(value))) {
+          var source = String(match[2] || '').trim();
+          if (!source || source.indexOf('data:') === 0 || source.indexOf('gradient(') >= 0) continue;
+          var absolute;
+          try { absolute = new URL(source, document.baseURI).href; } catch (e) { absolute = source; }
+          if (!seen[absolute]) {
+            seen[absolute] = true;
+            urls.push(absolute);
+          }
+        }
+      }
+    }
+    return urls;
+  }
+  function renderAssetPromise(source) {
+    return new Promise(function (resolve) {
+      var image = new Image();
+      var settled = false;
+      var timer = window.setTimeout(finish, 6000);
+      function finish() {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timer);
+        resolve();
+      }
+      image.onload = finish;
+      image.onerror = finish;
+      image.src = source;
+      if (image.complete) finish();
+    });
+  }
+  function scheduleRenderReady() {
+    var generation = renderReadyGeneration;
+    if (renderReadyTimer) window.clearTimeout(renderReadyTimer);
+    renderReadyTimer = window.setTimeout(function () {
+      renderReadyTimer = 0;
+      var sheet = document.querySelector('form.sheetform > .charactersheet.charsheet');
+      if (!sheet || generation !== renderReadyGeneration) return;
+      var imagePromises = Array.prototype.map.call(sheet.querySelectorAll('img'), function (image) {
+        if (image.complete) {
+          return image.decode ? image.decode().catch(function () {}) : Promise.resolve();
+        }
+        return new Promise(function (resolve) {
+          image.addEventListener('load', resolve, { once: true });
+          image.addEventListener('error', resolve, { once: true });
+        });
+      });
+      var cssPromises = renderAssetUrls(sheet).map(renderAssetPromise);
+      var fontPromise = document.fonts && document.fonts.ready
+        ? document.fonts.ready.catch(function () {})
+        : Promise.resolve();
+      Promise.all([fontPromise].concat(imagePromises, cssPromises)).then(function () {
+        if (generation !== renderReadyGeneration) return;
+        window.requestAnimationFrame(function () {
+          window.requestAnimationFrame(function () {
+            if (generation !== renderReadyGeneration) return;
+            document.body.setAttribute('data-r20-render-ready', '1');
+            try {
+              parent.postMessage({
+                type: 'r20:render-ready',
+                protocol: 1,
+                bridgeId: editBridgeId,
+                htmlKey: document.body.getAttribute('data-r20-html-key') || '',
+              }, '*');
+            } catch (e) {}
+          });
+        });
+      });
+    }, 0);
   }
   var sheetWorkerHandlers = {};
   var sheetWorkerEventQueue = [];
@@ -1868,6 +1959,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   document.body.setAttribute('data-r20-worker-queue-overflows', String(sheetWorkerQueueOverflowCount));
   installSheetWorkers();
   scheduleResize();
+  scheduleRenderReady();
   try {
     parent.postMessage({ type: 'r20:edit-ready', protocol: 1, bridgeId: editBridgeId }, '*');
   } catch (e) {}
@@ -2168,7 +2260,7 @@ ${legacyCssSanitize ? `<style id="roll20-legacy-input-state">${ROLL20_LEGACY_INP
 <style id="r20-user">${previewCss}</style>
 <style id="r20-preview-hidden">${ROLL20_PREVIEW_HIDDEN_CSS}</style>
 </head>
-<body${darkMode ? ' data-theme="dark"' : ''} data-layer="${layer}" data-roll20-sandbox-sanitize="${roll20SandboxSanitize ? '1' : '0'}" data-roll20-renderer-model="${roll20RendererModel}" data-r20-html-key="${htmlKey}">
+<body${darkMode ? ' data-theme="dark"' : ''} data-layer="${layer}" data-roll20-sandbox-sanitize="${roll20SandboxSanitize ? '1' : '0'}" data-roll20-renderer-model="${roll20RendererModel}" data-r20-html-key="${htmlKey}" data-r20-render-ready="0">
 <div class="ui-dialog ui-widget ui-widget-content ui-corner-all r20-preview-dialog" id="dialog-window" style="position:relative;display:block;width:100%;height:auto;overflow:visible;padding:0;">
 <div class="dialog largedialog characterviewer" style="display:block;visibility:visible;">
 <div class="tab-content${darkMode ? ' sheet-darkmode' : ''}" id="tab-content" style="display:block;visibility:visible;">

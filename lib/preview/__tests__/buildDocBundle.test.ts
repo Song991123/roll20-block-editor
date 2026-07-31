@@ -158,6 +158,21 @@ assert.match(
 );
 assert.match(
   bundle.doc,
+  /data-r20-render-ready="0"/,
+  'preview starts with an explicit render-readiness gate',
+);
+assert.match(
+  bundle.doc,
+  /function scheduleRenderReady\(\)[\s\S]*?data-r20-render-ready/,
+  'the iframe marks the same render surface ready only after its visual assets settle',
+);
+assert.match(
+  bundle.doc,
+  /type: 'r20:render-ready'/,
+  'render readiness is exposed through the iframe bridge for verification and UI gating',
+);
+assert.match(
+  bundle.doc,
   /#dialog-window\.r20-preview-dialog > \.dialog > \.tab-content > \.sheetform[\s\S]*?width: 100% !important/,
   'Roll20 form keeps the iframe/dialog width',
 );
