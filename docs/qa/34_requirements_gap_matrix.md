@@ -1109,3 +1109,13 @@ not close the external Roll20 parity rows above.
 - `VERIFY / BLOCKED EXTERNAL`: the dedicated Chrome tab list is readable, but
   claiming the Sandbox times out and no new upload or live screenshot was
   produced. This does not expand the prior live-evidence scope.
+
+## Actual Roll20 Gate Status Refresh - 2026-07-31
+
+- `MEASURED`: the authoritative local status command currently reports
+  generated screenshots `0/4`, generated diffs `0/4`, `rendererReady=NO`,
+  `chatParity=MISSING`, and current chat metrics `0/2`.
+- `VERIFIED`: Chrome, its selected-profile extension, and the native host
+  manifest are healthy according to the packaged checks.
+- `VERIFY / BLOCKED EXTERNAL`: the dedicated tab control path still times out;
+  no new upload, screenshot, or external mutation was produced.

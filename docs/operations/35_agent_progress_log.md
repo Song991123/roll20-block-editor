@@ -10293,3 +10293,15 @@ same-hash modern/legacy comparison.
   dedicated Sandbox times out and the supported file-input action did not
   accept a local payload. No upload, save, chat, or ordinary-room mutation
   occurred.
+
+## 2026-07-31 - Roll20 actual gate status refresh
+
+- `VERIFIED STATUS`: the current actual-evidence gate reports generated
+  screenshots `0/4`, generated diffs `0/4`, `rendererReady=NO`,
+  `chatParity=MISSING`, and current chat metrics `0/2`.
+- `VERIFIED BROWSER HEALTH`: Chrome is running, the extension is installed and
+  enabled in the selected profile, and the native host manifest is correct.
+- `VERIFY / BLOCKED EXTERNAL`: the dedicated tab listing is readable but tab
+  control times out. No new upload, screenshot, settings save, chat action, or
+  ordinary-room mutation occurred. Historical partial observations do not
+  promote this current gate to PASS.

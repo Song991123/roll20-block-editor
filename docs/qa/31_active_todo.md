@@ -9693,3 +9693,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   complete. No external state changed.
 - `NEXT P0`: restore a supported user-mediated Chrome tab handoff, then obtain
   fresh modern and independent legacy crop/sidecar evidence.
+
+## 2026-07-31 Actual Roll20 Gate Status Refresh
+
+- `MEASURED`: current status is `generatedActualScreenshots=0/4`,
+  `generatedDiffed=0/4`, `rendererReady=NO`, `chatParity=MISSING`, and
+  `chatCurrentMetrics=0/2`.
+- `VERIFIED`: Chrome process, extension enablement, and native host manifest
+  checks pass.
+- `VERIFY / BLOCKED EXTERNAL`: dedicated tab control still times out. No new
+  upload or external state change occurred; actual screenshot parity and
+  independent legacy evidence remain open.
