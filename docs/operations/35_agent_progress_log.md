@@ -1,5 +1,16 @@
 # 2026-07-31 - Actual-status and renderer-action gate refresh
 
+# 2026-07-31 - Visible participant gate passed; upload permission blocked
+
+- Opened the dedicated test-room page menu through its visible control; the
+  participant indicator became visible as exactly `1 구성원`.
+- Started the supported visible HTML chooser for the anonymous payload. Chrome
+  rejected `chooser.setFiles(...)` with `Not allowed` before any transmission.
+- Did not attempt CSS/translation, save, chat, room-setting, hidden-input,
+  endpoint, or direct-DOM workarounds.
+- The next external action is now narrowly defined: enable Chrome extension
+  file-URL access, then retry the same payload.
+
 # 2026-07-31 - Roll20 participant gate recheck
 
 - Re-read two dedicated Roll20 verification tabs in observation-only mode.

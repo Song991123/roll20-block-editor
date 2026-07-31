@@ -1,5 +1,21 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Visible participant gate passed; upload permission blocked
+
+- `VERIFIED EXTERNAL READ-ONLY`: the dedicated test-room page menu was opened
+  through its visible page control. The participant indicator then rendered
+  on-screen as exactly `1 구성원` at `41.575px x 14px` with `visibility=visible`
+  and `opacity=1`.
+- `BLOCKED EXTERNAL`: the supported HTML file chooser was opened from the
+  visible `HTML` upload control, but `chooser.setFiles(...)` returned `Not
+  allowed` before transmission. CSS and translation were not attempted after
+  the HTML gate failed.
+- `PRESERVED`: no payload was transmitted, no sheet was saved, no chat was
+  sent, and no room setting or existing sheet content changed.
+- `TODO P0`: enable Chrome's ChatGPT extension **Allow access to file URLs**,
+  then retry the same anonymous HTML/CSS/translation payload. Do not use a
+  hidden-input, endpoint, or direct-DOM upload workaround.
+
 # 2026-07-31 Roll20 participant gate recheck
 
 - `VERIFIED EXTERNAL READ-ONLY`: two retained dedicated verification tabs were

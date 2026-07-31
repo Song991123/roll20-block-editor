@@ -1,5 +1,14 @@
 # 34. Requirements Gap Matrix
 
+## Visible participant gate passed; upload permission blocked - 2026-07-31
+
+- `VERIFIED OBSERVATION`: the dedicated test room now showed exactly `1
+  구성원` on-screen after opening the visible page-menu control.
+- `BLOCKED EXTERNAL`: the supported visible HTML chooser still returned `Not
+  allowed` from `setFiles` before transmission. CSS/translation upload and all
+  generated Roll20 evidence remain unstarted; actual evidence stays `0/4`.
+- `PRESERVED`: no Roll20 payload or room state changed.
+
 ## Roll20 participant gate recheck - 2026-07-31
 
 - `VERIFIED OBSERVATION`: two dedicated verification tabs were read without
