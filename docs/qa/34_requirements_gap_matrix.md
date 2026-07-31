@@ -1505,3 +1505,13 @@ not close the external Roll20 parity rows above.
 - `OPEN`: the three-file same-payload modern capture and independent legacy
   capture remain unproven; do not promote any screenshot or chat metric until
   the generated markers are confirmed after reload.
+
+## Tolerant Translation Boundary - 2026-07-31
+
+- `FIXED LOCAL`: the export boundary now recovers generic malformed flat maps
+  with unescaped quotes in values, while preserving valid flat JSON and the
+  editor comment format.
+- `VERIFIED LOCAL`: translation payload tests, upload-file tests, full
+  `ci:verify`, lint, and production build pass.
+- `OPEN EXTERNAL`: no Roll20 upload was accepted after this change, so live
+  translation parity and same-payload modern/legacy evidence remain VERIFY.

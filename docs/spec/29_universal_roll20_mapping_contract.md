@@ -204,3 +204,18 @@ Therefore every technical block should have:
 - Hiding raw unsupported content without representing it as a block.
 - Treating visual preview as verified without Roll20 sandbox or screenshot evidence.
 - Writing into source corpus folders.
+
+## Translation Normalization
+
+Translation input is normalized through one generic path for preview, edit,
+and Roll20 export:
+
+1. A valid flat JSON string map is preserved with scalar values normalized to
+   strings.
+2. The editor comment format remains supported as a fallback.
+3. Legacy flat maps with unescaped quotes inside values may use the tolerant
+   key/value boundary recovery path. Recovered output is emitted as valid flat
+   JSON, without sheet-specific keys.
+4. Nested locale objects and arrays are not silently treated as Roll20 flat
+   maps; they remain an explicit unsupported/empty normalization result until
+   a locale-selection contract is provided.

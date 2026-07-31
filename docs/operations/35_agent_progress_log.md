@@ -10987,3 +10987,16 @@ same-hash modern/legacy comparison.
 - `NEXT`: after the user-visible three-file selection completes, verify the
   fixture markers and capture modern root/chat evidence, then repeat in the
   dedicated legacy destination.
+
+## 2026-07-31 - Tolerant translation normalization
+
+- `IMPLEMENTED`: added a generic fallback for malformed flat translation maps
+  with unescaped value quotes. Valid JSON and comment-form translations keep
+  their existing precedence; recovered entries are emitted as valid flat JSON.
+- `VERIFIED LOCAL`: translation payload tests, upload-file tests, full
+  `ci:verify`, lint, and production build pass. Build and report outputs were
+  purged afterward, while the temporary user handoff copy stayed outside the
+  repository.
+- `CLAIM BOUNDARY`: this improves import/export resilience only. Roll20
+  translation application and modern/legacy visual parity still require the
+  supported external upload and fresh matching-runtime evidence.

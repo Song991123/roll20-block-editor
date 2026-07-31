@@ -1494,3 +1494,14 @@ directories that had been recreated by the local build.
   check. No source, dependency, worktree, or protected reference was included.
 - VERIFIED: all generated roots are absent again and `reports/README.md` is
   retained.
+
+## 2026-07-31 latest user-authorized retry
+
+- RECHECKED: the previously approved generated/stale targets were all absent:
+  old `web/node_modules/`, `web/.next/`, `web/out/`, active-worktree
+  `.next/`, `out/`, `.tmp/`, and `tsconfig.tsbuildinfo`.
+- PRESERVED: `web-push-main/node_modules/`, `reports/README.md`, both Git
+  worktrees, source/reference roots, four-zone markers, and all protected
+  external sheet folders.
+- VERIFIED: no project listener was active on the checked development ports;
+  no deletion was necessary and no file was changed by this retry.

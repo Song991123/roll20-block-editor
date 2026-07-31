@@ -10409,3 +10409,17 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: complete the three-file user-visible selection, confirm the
   generated markers after reload, and capture same-payload modern evidence
   before starting the independent legacy run.
+
+## 2026-07-31 Tolerant Translation Boundary
+
+- `DONE LOCAL`: translation export now keeps valid flat JSON and comment-form
+  entries unchanged, while recovering legacy flat maps whose values contain
+  unescaped quotes. The recovery is generic and does not name or special-case
+  any sheet.
+- `VERIFIED LOCAL`: translation payload tests, upload-file tests, full
+  `ci:verify`, lint, and production build pass. Generated build output was
+  removed after verification; the user-mediated Sandbox files remain outside
+  the repository.
+- `VERIFY / OPEN EXTERNAL`: the recovered output has not yet been applied to
+  Roll20 through the supported chooser, so translation parity and same-payload
+  modern/legacy screenshots remain open.

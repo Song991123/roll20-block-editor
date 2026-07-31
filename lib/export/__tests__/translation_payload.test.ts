@@ -26,6 +26,16 @@ assert.deepEqual(JSON.parse(normalizeTranslationForRoll20(comments)), {
   quote: '그가 "안녕"이라고 말했다',
 });
 
+const looseFlatJson = '{"label":"A "quoted" label","name":"Name"}';
+assert.deepEqual(parseTranslationMap(looseFlatJson), {
+  label: 'A "quoted" label',
+  name: 'Name',
+});
+assert.deepEqual(JSON.parse(normalizeTranslationForRoll20(looseFlatJson)), {
+  label: 'A "quoted" label',
+  name: 'Name',
+});
+
 assert.deepEqual(parseTranslationMap('not valid translation data'), {});
 assert.equal(normalizeTranslationForRoll20('not valid translation data'), '{}');
 

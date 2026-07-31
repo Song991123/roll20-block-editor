@@ -110,8 +110,125 @@ export function normalizeTranslationForRoll20(translation: string): string {
     }
   }
 
-  if (Object.keys(entries).length === 0) return '{}';
-  return `${JSON.stringify(entries, null, 2)}\n`;
+  if (Object.keys(entries).length > 0) return `${JSON.stringify(entries, null, 2)}\n`;
+
+  // Some older translation files contain unescaped quotes inside values.
+  // Recover the flat key/value boundary without guessing sheet-specific keys,
+  // then emit valid JSON for Roll20.
+  const looseEntries = parseLooseFlatJsonTranslation(text);
+  if (Object.keys(looseEntries).length === 0) return '{}';
+  return `${JSON.stringify(looseEntries, null, 2)}\n`;
+}
+
+function parseLooseFlatJsonTranslation(text: string): Record<string, string> {
+  const entries: Record<string, string> = {};
+  let cursor = 0;
+
+  while (cursor < text.length) {
+    while (cursor < text.length && /[\s,{]/.test(text[cursor])) cursor++;
+    if (text[cursor] !== '"') {
+      cursor++;
+      continue;
+    }
+
+    const key = readQuotedToken(text, cursor);
+    if (!key) {
+      cursor++;
+      continue;
+    }
+    cursor = skipTranslationWhitespace(text, key.end);
+    if (text[cursor] !== ':') {
+      cursor++;
+      continue;
+    }
+    cursor = skipTranslationWhitespace(text, cursor + 1);
+    if (text[cursor] !== '"') {
+      cursor++;
+      continue;
+    }
+
+    const value = readLooseQuotedValue(text, cursor);
+    if (!value) break;
+    entries[key.value] = value.value;
+    cursor = value.end;
+  }
+
+  return entries;
+}
+
+function skipTranslationWhitespace(text: string, start: number): number {
+  let cursor = start;
+  while (cursor < text.length && /\s/.test(text[cursor])) cursor++;
+  return cursor;
+}
+
+function readQuotedToken(
+  text: string,
+  start: number,
+): { value: string; end: number } | null {
+  let cursor = start + 1;
+  while (cursor < text.length) {
+    if (text[cursor] === '\\') {
+      cursor += 2;
+      continue;
+    }
+    if (text[cursor] === '"') {
+      try {
+        return { value: JSON.parse(text.slice(start, cursor + 1)), end: cursor + 1 };
+      } catch {
+        return null;
+      }
+    }
+    cursor++;
+  }
+  return null;
+}
+
+function readLooseQuotedValue(
+  text: string,
+  start: number,
+): { value: string; end: number } | null {
+  let cursor = start + 1;
+  while (cursor < text.length) {
+    if (text[cursor] === '\\') {
+      cursor += 2;
+      continue;
+    }
+    if (text[cursor] === '"') {
+      const after = skipTranslationWhitespace(text, cursor + 1);
+      if (after >= text.length || text[after] === ',' || text[after] === '}') {
+        const raw = text.slice(start, cursor + 1);
+        try {
+          return { value: JSON.parse(raw), end: cursor + 1 };
+        } catch {
+          return { value: decodeLooseQuotedValue(raw), end: cursor + 1 };
+        }
+      }
+    }
+    cursor++;
+  }
+  return null;
+}
+
+function decodeLooseQuotedValue(raw: string): string {
+  const inner = raw.slice(1, -1);
+  let escaped = '';
+  for (let index = 0; index < inner.length; index++) {
+    const char = inner[index];
+    if (char === '"') {
+      let slashCount = 0;
+      for (let previous = index - 1; previous >= 0 && inner[previous] === '\\'; previous--) {
+        slashCount++;
+      }
+      if (slashCount % 2 === 0) escaped += '\\';
+    }
+    escaped += char;
+  }
+  try {
+    return JSON.parse(`"${escaped}"`);
+  } catch {
+    return inner.replace(/\\"/g, '"');
+  }
 }
 
 /**
