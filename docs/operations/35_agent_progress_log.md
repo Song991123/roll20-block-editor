@@ -11039,3 +11039,14 @@ same-hash modern/legacy comparison.
 - `CLAIM BOUNDARY`: this is local interaction coverage. The actual Roll20
   Sandbox upload, modern/legacy same-payload screenshot parity, worker
   mutation parity, and chat parity remain open external gates.
+## 2026-07-31 - Anonymous Roll20 pre-upload handoff
+
+- `VERIFIED LOCAL`: the default anonymous pre-upload run passed local
+  baseline, payload audit, Sandbox sanitization, payload roundtrip, state
+  selectors, assets, and the evidence guard (`7/7`).
+- `PREPARED LOCAL`: the ignored handoff contains fixture-A and fixture-B
+  HTML/CSS/Translation payloads plus ZIP files. Both entries are marked as
+  needing generated Roll20 root and chat evidence, as expected before upload.
+- `CLAIM BOUNDARY`: nothing was transmitted to or saved in Roll20. The
+  supported user-visible chooser and independent legacy capture are still the
+  next external gate.

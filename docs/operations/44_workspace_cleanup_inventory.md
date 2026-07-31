@@ -1519,3 +1519,13 @@ directories that had been recreated by the local build.
   external sheet folders.
 - VERIFIED: no project listener was active on the checked development ports;
   no deletion was necessary and no file was changed by this retry.
+## 2026-07-31 current generated-output snapshot
+
+- `RECREATED LOCAL`: the production build, imported-edit smoke, and anonymous
+  Roll20 pre-upload handoff recreated ignored `.next/`, `out/`, `.tmp/`, and
+  local report folders under `reports/`.
+- `PRESERVED`: `reports/README.md`, source, dependencies, Git worktrees,
+  fixed reference roots, and protected external sheet folders were excluded.
+- `DELETE STATUS`: these generated targets remain because the host rejected
+  the user-authorized recursive deletion before PowerShell execution. No
+  alternate shell, per-file workaround, or safety bypass was used.

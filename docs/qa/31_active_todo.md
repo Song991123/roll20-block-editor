@@ -10463,3 +10463,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `OPEN EXTERNAL`: this strengthens local Figma-style layer evidence only. It
   does not prove same-payload Roll20 modern/legacy screenshot parity, worker
   mutation parity, or chat parity.
+## 2026-07-31 Anonymous Roll20 Pre-upload Handoff
+
+- `VERIFIED LOCAL`: the anonymous synthetic pre-upload gate passed all seven
+  checks: local baseline, payload audit, Sandbox sanitization, payload
+  roundtrip, state selectors, assets, and evidence guard.
+- `PREPARED LOCAL`: the ignored run created fixture-A and fixture-B HTML/CSS/
+  Translation payloads and ZIP handoffs. Both entries still correctly report
+  missing generated Roll20 root evidence and chat evidence.
+- `OPEN EXTERNAL`: no payload has been transmitted or saved in Roll20. The
+  next proof remains user-visible selection in the dedicated Sandbox, then a
+  fresh modern capture and an independent legacy capture with matching hashes.
