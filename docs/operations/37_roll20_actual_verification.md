@@ -2,6 +2,21 @@
 
 Date: 2026-06-18
 
+## 2026-08-01 fresh payload retry result
+
+- `VERIFIED EXTERNAL READ-ONLY`: a freshly regenerated anonymous modern
+  payload was ready locally, and the dedicated Sandbox still showed exactly
+  `1 구성원` with visible HTML/CSS/Translation controls immediately before
+  the attempt.
+- `BLOCKED EXTERNAL`: the supported visible HTML chooser returned `Not
+  allowed` before any bytes were transmitted. CSS, Translation, save, room
+  settings, and chat were not touched. The handoff tab was left open for the
+  user-visible permission fix; no hidden-input or endpoint workaround was used.
+- `CURRENT EVIDENCE`: `status:roll20-actual` remains
+  `PREUPLOAD_READY_MISSING_GENERATED_ACTUAL`, with generated root/chat evidence
+  `0/4` and chat parity `MISSING`. The local payload is disposable and must be
+  regenerated after cleanup before a future supported retry.
+
 ## 2026-08-01 upload retry result
 
 - `VERIFIED EXTERNAL READ-ONLY`: the dedicated modern Sandbox showed exactly

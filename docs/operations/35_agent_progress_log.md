@@ -1,5 +1,14 @@
 # 2026-07-31 - Actual-status and renderer-action gate refresh
 
+## 2026-08-01 - Fresh Sandbox payload retry
+
+- Regenerated only the anonymous ignored Sandbox payload and confirmed the
+  dedicated room showed a fresh visible `1 구성원` gate.
+- The visible HTML chooser returned `Not allowed` before transmission again;
+  no CSS/Translation selection, save, room setting, or chat action followed.
+- `status:roll20-actual` remains `PREUPLOAD_READY_MISSING_GENERATED_ACTUAL`
+  with root/chat evidence `0/4`; no parity claim was promoted.
+
 ## 2026-08-01 - User-facing shell and export UX review
 
 - Rebuilt the anonymous local app and reviewed fresh shell/export screenshots;

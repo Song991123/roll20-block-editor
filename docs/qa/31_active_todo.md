@@ -1,3 +1,13 @@
+# 2026-08-01 Fresh external upload retry
+
+- `VERIFIED EXTERNAL READ-ONLY`: regenerated anonymous payload was ready and
+  the dedicated Sandbox showed a fresh visible `1 구성원` gate plus the three
+  visible file controls.
+- `BLOCKED EXTERNAL`: supported HTML chooser returned `Not allowed` before
+  transmission. No CSS/translation upload or room/chat write was attempted.
+- `CURRENT EVIDENCE`: actual Roll20 root/chat evidence remains `0/4`; the
+  external parity gate stays open and must not be reported as complete.
+
 # 2026-08-01 User-facing shell and export UX review
 
 - `VERIFIED LOCAL`: anonymous shell capture and export-dialog browser smoke
