@@ -217,6 +217,7 @@ function testManagedSelectorPreserved(): void {
   const css = `
     .sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a, .sheet-r20-node-a { padding: 7px 14px; color: #fff; }
     .sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a:hover, .sheet-r20-node-a:hover { background-color: #f2fbf7; }
+    .sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a::before, .sheet-r20-node-a::before { font-size: 1.3em; margin-right: 6px; }
   `;
   const r = sanitizeForRoll20Legacy(css);
   expectContains(
@@ -229,6 +230,12 @@ function testManagedSelectorPreserved(): void {
     '.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a:hover, .sheet-r20-node-a:hover',
     'managed hover selector preserved',
   );
+  expectContains(
+    r.sanitized,
+    '.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a::before, .sheet-r20-node-a::before',
+    'managed pseudo-element selector preserved',
+  );
+  expectContains(r.sanitized, 'font-size: 1.3em', 'managed pseudo-element declarations preserved');
   expectContains(r.sanitized, 'padding: 7px 14px', 'managed padding preserved');
   assert(r.warnings.length === 0, `managed selector should not warn, got ${r.warnings.length}`);
 }

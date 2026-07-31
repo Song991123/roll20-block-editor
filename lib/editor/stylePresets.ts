@@ -24,6 +24,12 @@ export type VisualStylePresetGroup = {
   presets: VisualStylePreset[];
 };
 
+const DIRECT_ROLL_BUTTON_ICON_TYPES = new Set([
+  'r20_roll_button',
+  'r20_roll_button_easy',
+  'r20_chat_button',
+]);
+
 const SECTION_PRESETS: VisualStylePreset[] = [
   preset('paper', '종이', '밝은 종이 위에 어울리는 얇은 선과 그림자', {
     'background-color': '#fffdfd',
@@ -551,8 +557,12 @@ function preset(
   return { id, label, description, declarations };
 }
 
-function isRollButtonType(blockType: string): boolean {
+export function isRollButtonType(blockType: string): boolean {
   return /(?:^|_)roll(?:_|$)/.test(blockType.toLowerCase());
+}
+
+export function hasDirectRollButtonIcon(blockType: string): boolean {
+  return DIRECT_ROLL_BUTTON_ICON_TYPES.has(blockType.toLowerCase());
 }
 
 function isNumberControlType(blockType: string): boolean {

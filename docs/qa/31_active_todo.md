@@ -11239,3 +11239,29 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `VERIFY / OPEN EXTERNAL`: remote asset reachability and current-payload paint
   in modern Roll20 Sandbox remain unverified. Dedicated legacy-room paint also
   remains separate. Local equality is not actual Roll20 visual parity.
+
+## 2026-08-01 Roll Button Icon Styling
+
+- `DONE LOCAL`: direct Roll buttons now expose four visual d20 icon starting
+  styles plus visibility, size, text gap, opacity, and color controls. Wrapper
+  blocks that do not own Roll20's `::before` icon are excluded.
+- `DONE LOCAL`: managed CSS now supports element, `::before`, and `::after`
+  parts. Icon changes preserve the source button's inline declarations and do
+  not replace Roll20's icon content or `dicefontd20` font family.
+- `VERIFIED LOCAL`: focused design tests, modern sanitizer `8/8`, legacy
+  sanitizer `18/18`, lint, production build, and rebuilt edit-flow browser
+  smoke pass. Edit and Preview report identical icon content, font, size, gap,
+  opacity, color, and shadow with no inline presentation leakage or browser
+  errors.
+- `VERIFIED LOCAL`: anonymous modern and legacy synthetic Preview/Edit visual
+  comparison remains exact at `0%` mismatch for all four captures. Evidence is
+  ignored under `reports/edit-flow-dice-icon-r33/` and
+  `reports/preview-edit-dice-icon-r1/`.
+- `VERIFY / TEST STABILITY`: one earlier browser run stopped in the unrelated
+  canvas multi-selection setup before reaching icon checks. Clean retries
+  passed; keep this timing-sensitive setup under observation.
+- `VERIFY / OPEN EXTERNAL`: actual current-payload paint in modern Roll20
+  Sandbox and the dedicated legacy room remains unverified. Local equality is
+  not actual Roll20 visual parity.
+- `NEXT P1`: add section decoration controls that expose borders, shadows,
+  separators, and spacing as visual choices without bundling a sample sheet.

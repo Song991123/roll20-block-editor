@@ -9,6 +9,7 @@ import type {
 } from '@/lib/editor/designPosition';
 import {
   getVisualStylePresetGroup,
+  hasDirectRollButtonIcon,
   presetMatches,
   type VisualStylePreset,
   type VisualStylePresetFamily,
@@ -16,6 +17,7 @@ import {
 } from '@/lib/editor/stylePresets';
 import { cn } from '@/lib/utils/cn';
 import BackgroundImageControls from './BackgroundImageControls';
+import RollButtonIconControls from './RollButtonIconControls';
 
 type VisualStyleInspectorProps = {
   valuesByState: Record<ManagedDesignState, Record<string, string>>;
@@ -23,6 +25,8 @@ type VisualStyleInspectorProps = {
   blockType: string;
   scope: VisualStylePresetScope;
   onPatch: (declarations: ManagedDesignDeclarations, state?: ManagedDesignState) => void;
+  beforeValues?: Record<string, string>;
+  onBeforePatch?: (declarations: ManagedDesignDeclarations) => void;
 };
 
 type LayoutMode = 'auto' | 'row' | 'column' | 'grid';
@@ -33,6 +37,8 @@ export default function VisualStyleInspector({
   blockType,
   scope,
   onPatch,
+  beforeValues = {},
+  onBeforePatch,
 }: VisualStyleInspectorProps) {
   const [activeState, setActiveState] = useState<ManagedDesignState>('base');
   const values = valuesByState[activeState] ?? {};
@@ -171,6 +177,10 @@ export default function VisualStyleInspector({
 
       {(role.kind === 'frame' || role.kind === 'flow') && activeState === 'base' && (
         <BackgroundImageControls values={values} onPatch={applyPatch} />
+      )}
+
+      {activeState === 'base' && hasDirectRollButtonIcon(blockType) && onBeforePatch && (
+        <RollButtonIconControls values={beforeValues} onPatch={onBeforePatch} />
       )}
 
       <StyleSection title="테두리">

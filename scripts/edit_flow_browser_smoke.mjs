@@ -1644,6 +1644,73 @@ async function main() {
     assert(result.tests.rollButtonStylePreset.paddingTop === '7px', `Roll button preset padding did not render: ${rollPresetDebug}`);
     assert(!result.tests.rollButtonStylePreset.inlineStyle, 'Roll button preset leaked presentation into inline HTML');
 
+    const rollIconHiddenPreset = page.locator('[data-testid="design-roll-icon-preset-hidden"]');
+    const rollIconLargePreset = page.locator('[data-testid="design-roll-icon-preset-large"]');
+    await rollIconHiddenPreset.waitFor({ state: 'visible', timeout: 10000 });
+    await rollIconHiddenPreset.click();
+    await page.waitForFunction(
+      () => window.__perfHook.getEmitContent().css.includes('::before')
+        && window.__perfHook.getEmitContent().css.includes('display: none'),
+      null,
+      { timeout: 10000 },
+    );
+    result.tests.rollButtonIconHidden = await rollButton.evaluate((button) => (
+      getComputedStyle(button, '::before').display
+    ));
+    assert(result.tests.rollButtonIconHidden === 'none', 'Roll button icon hide preset did not render');
+
+    await rollIconLargePreset.click();
+    await page.waitForFunction(
+      () => {
+        const css = window.__perfHook.getEmitContent().css;
+        return css.includes('::before')
+          && css.includes('font-size: 1.3em')
+          && css.includes('margin-right: 6px')
+          && css.includes('display: inline-block');
+      },
+      null,
+      { timeout: 10000 },
+    );
+    await page.waitForTimeout(200);
+    result.tests.rollButtonIconStyle = await rollButton.evaluate((button) => {
+      const style = getComputedStyle(button, '::before');
+      return {
+        content: style.content,
+        display: style.display,
+        fontFamily: style.fontFamily,
+        fontSize: style.fontSize,
+        marginRight: style.marginRight,
+        opacity: style.opacity,
+        color: style.color,
+        textShadow: style.textShadow,
+        inlineStyle: button.getAttribute('style') ?? '',
+      };
+    });
+    const rollIconDebug = JSON.stringify(result.tests.rollButtonIconStyle);
+    assert(result.tests.rollButtonIconStyle.display === 'inline-block', `Roll button icon display did not render: ${rollIconDebug}`);
+    assert(Number.parseFloat(result.tests.rollButtonIconStyle.fontSize) > 18, `Roll button icon size did not render: ${rollIconDebug}`);
+    assert(result.tests.rollButtonIconStyle.marginRight === '6px', `Roll button icon gap did not render: ${rollIconDebug}`);
+    assert(result.tests.rollButtonIconStyle.opacity === '1', `Roll button icon opacity did not render: ${rollIconDebug}`);
+    assert(result.tests.rollButtonIconStyle.color === 'rgb(255, 255, 255)', `Roll button icon color did not inherit the button: ${rollIconDebug}`);
+    assert(/dicefontd20/i.test(result.tests.rollButtonIconStyle.fontFamily), `Roll20 d20 icon font was replaced: ${rollIconDebug}`);
+    assert(result.tests.rollButtonIconStyle.content !== 'none', `Roll20 d20 icon content disappeared: ${rollIconDebug}`);
+    assert(!result.tests.rollButtonIconStyle.inlineStyle, 'Roll button icon style leaked into inline HTML');
+    const rollIconColorText = page.locator('[data-testid="design-roll-icon-color-text"]');
+    result.tests.rollButtonIconColorField = {
+      value: await rollIconColorText.inputValue(),
+      placeholder: await rollIconColorText.getAttribute('placeholder'),
+    };
+    assert(
+      result.tests.rollButtonIconColorField.value === ''
+        && result.tests.rollButtonIconColorField.placeholder === '버튼 글자색 사용 중',
+      `Roll button inherited color was exposed as raw CSS: ${JSON.stringify(result.tests.rollButtonIconColorField)}`,
+    );
+    await page.locator('[data-testid="design-roll-icon-presets"]').scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: path.join(REPORT_DIR, 'roll-button-icon-editor.png'),
+      fullPage: false,
+    });
+
     await page.locator('[data-testid="design-style-state-hover"]').click();
     const rollHoverMintPreset = page.locator('[data-testid="design-preset-button-mint"]');
     await rollHoverMintPreset.click();
@@ -1709,6 +1776,25 @@ async function main() {
         backgroundRepeat: 'repeat-x',
       }),
       `section background changed between edit and preview: ${JSON.stringify(result.tests.sectionBackgroundPreview)}`,
+    );
+    result.tests.rollButtonPreviewIconStyle = await rollButton.evaluate((button) => {
+      const style = getComputedStyle(button, '::before');
+      return {
+        content: style.content,
+        display: style.display,
+        fontFamily: style.fontFamily,
+        fontSize: style.fontSize,
+        marginRight: style.marginRight,
+        opacity: style.opacity,
+        color: style.color,
+        textShadow: style.textShadow,
+        inlineStyle: button.getAttribute('style') ?? '',
+      };
+    });
+    assert(
+      JSON.stringify(result.tests.rollButtonPreviewIconStyle)
+        === JSON.stringify(result.tests.rollButtonIconStyle),
+      `Roll button icon changed between edit and preview: ${JSON.stringify(result.tests.rollButtonPreviewIconStyle)}`,
     );
     result.tests.rollButtonPreviewStyle = await rollButton.evaluate((button) => {
       const style = getComputedStyle(button);

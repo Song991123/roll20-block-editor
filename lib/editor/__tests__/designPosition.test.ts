@@ -24,6 +24,11 @@ const blocks = new Map<string, Map<string, TestBlock>>([
       STYLE: 'background-color: #334455; color: #ffffff',
       __R20_PRESERVED_ATTRS: '[["style","background-color:#334455;color:#ffffff"]]',
     })],
+    ['icon', block('icon', 'r20_roll_button', {
+      CLASS: 'sheet-icon',
+      STYLE: 'color: #223344',
+      __R20_PRESERVED_ATTRS: '[["style","color:#223344"]]',
+    })],
     ['positioned', block('positioned', 'r20_positioned', { LEFT_PX: '2', TOP_PX: '3' })],
     ['unsupported', block('unsupported', 'r20_raw_html', { HTML: '<hr>' })],
     ['dual', block('dual', 'r20_dual_roll_button', { ROW_CLASS: 'dual-row' })],
@@ -205,6 +210,48 @@ assert.equal(hoverCleared.changed, true);
 const hoverClearedCss = adapter.getBlockField('css', 'managed-css', 'CSS') ?? '';
 assert.doesNotMatch(hoverClearedCss, /\.sheet-r20-node-stateful:hover/);
 assert.match(hoverClearedCss, /\.sheet-r20-node-stateful \{[^}]*background-color: #334455;/);
+
+const iconStyled = commitManagedDesignStyle(adapter, {
+  workspace: 'html',
+  blockId: 'icon',
+  part: 'before',
+  declarations: {
+    display: 'inline-block',
+    'font-size': '1.25em',
+    'margin-right': '6px',
+    opacity: '0.8',
+  },
+});
+assert.equal(iconStyled.changed, true);
+assert.equal(adapter.getBlockField('html', 'icon', 'STYLE'), 'color: #223344');
+assert.equal(
+  adapter.getBlockField('html', 'icon', '__R20_PRESERVED_ATTRS'),
+  '[["style","color:#223344"]]',
+);
+const iconCss = adapter.getBlockField('css', 'managed-css', 'CSS') ?? '';
+assert.match(
+  iconCss,
+  /\.sheet-r20-node-icon\.sheet-r20-node-icon\.sheet-r20-node-icon\.sheet-r20-node-icon::before, \.sheet-r20-node-icon::before \{[^}]*font-size: 1\.25em;/,
+);
+assert.deepEqual(readManagedDesignStyle(adapter, 'html', 'icon', 'base', 'before'), {
+  display: 'inline-block',
+  'font-size': '1.25em',
+  'margin-right': '6px',
+  opacity: '0.8',
+});
+
+commitManagedDesignStyle(adapter, {
+  workspace: 'html',
+  blockId: 'icon',
+  state: 'hover',
+  part: 'before',
+  declarations: { opacity: '1' },
+});
+const iconHoverCss = adapter.getBlockField('css', 'managed-css', 'CSS') ?? '';
+assert.match(iconHoverCss, /\.sheet-r20-node-icon:hover::before \{[^}]*opacity: 1;/);
+assert.deepEqual(readManagedDesignStyle(adapter, 'html', 'icon', 'hover', 'before'), {
+  opacity: '1',
+});
 
 const positioned = commitManagedDesignPosition(adapter, {
   workspace: 'html',

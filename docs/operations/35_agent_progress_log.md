@@ -11698,3 +11698,22 @@ same-hash modern/legacy comparison.
   Preview/Edit comparison stayed at exact `0%` mismatch for four captures.
 - Actual modern Sandbox paint and dedicated legacy-room paint remain open. The
   browser evidence above proves local rendering/export contracts only.
+
+## 2026-08-01 - Roll button icon styling
+
+- Extended managed presentation CSS to target `::before` and `::after` while
+  keeping ordinary inline-style cleanup limited to the selected element.
+- Added a Roll-button icon panel with four visual starts and controls for
+  visibility, size, text gap, opacity, and color. It preserves Roll20's default
+  icon content and `dicefontd20` family rather than shipping a replacement.
+- Scoped the panel to direct Roll-button block types so wrapper/action groups
+  do not receive controls for pseudo-elements they do not own.
+- Rebuilt the static app and verified the resulting panel visually. The icon's
+  computed content, font, size, gap, opacity, color, and shadow match exactly in
+  Edit and Preview, with no inline leakage or console/page errors.
+- Focused design tests, modern sanitizer `8/8`, legacy sanitizer `18/18`, lint,
+  build, edit-flow browser smoke, and four modern/legacy synthetic comparisons
+  pass. One earlier smoke attempt stopped in unrelated multi-selection setup;
+  clean reruns passed and the timing point remains observable.
+- Actual modern Sandbox and dedicated legacy-room icon paint remain external
+  evidence gates. No actual Roll20 parity claim is made.

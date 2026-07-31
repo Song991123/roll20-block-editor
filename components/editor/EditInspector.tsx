@@ -114,6 +114,18 @@ export default function EditInspector() {
   // structureVersion invalidates template ownership in the external Blockly model.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId, workspace, structureVersion]);
+  const beforeVisualStyles = useMemo(() => {
+    if (!visualStyleEnabled || !selectedId || workspace !== 'html') return {};
+    return readManagedDesignStyle(
+      getBlocklyAdapter(),
+      workspace,
+      selectedId,
+      'base',
+      'before',
+    );
+  // structureVersion invalidates the external Blockly and CSS models.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, workspace, structureVersion, visualStyleEnabled]);
 
   const commitVisualStyle = useCallback((
     declarations: ManagedDesignDeclarations,
@@ -126,6 +138,24 @@ export default function EditInspector() {
       blockId: selectedId,
       declarations,
       state,
+    });
+    if (!result.changed) return;
+    const store = useWorkspaceStore.getState();
+    if (result.htmlChanged) store.bumpStructure('html', adapter.countBlocks('html'));
+    if (result.cssChanged || result.cssBlockCreated) {
+      store.bumpStructure('css', adapter.countBlocks('css'));
+    }
+    queueMicrotask(() => flushEmitPipeline());
+  }, [selectedId, workspace]);
+
+  const commitBeforeVisualStyle = useCallback((declarations: ManagedDesignDeclarations) => {
+    if (!selectedId || workspace !== 'html') return;
+    const adapter = getBlocklyAdapter();
+    const result = commitManagedDesignStyle(adapter, {
+      workspace,
+      blockId: selectedId,
+      declarations,
+      part: 'before',
     });
     if (!result.changed) return;
     const store = useWorkspaceStore.getState();
@@ -223,6 +253,8 @@ export default function EditInspector() {
             blockType={snapshot.type}
             scope={visualStyleScope}
             onPatch={commitVisualStyle}
+            beforeValues={beforeVisualStyles}
+            onBeforePatch={commitBeforeVisualStyle}
           />
         )}
 

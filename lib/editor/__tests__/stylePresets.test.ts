@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { getLayerRole } from '../layerRoles';
-import { getVisualStylePresetGroup, presetMatches } from '../stylePresets';
+import {
+  getVisualStylePresetGroup,
+  hasDirectRollButtonIcon,
+  presetMatches,
+} from '../stylePresets';
 
 const section = getVisualStylePresetGroup(getLayerRole('r20_div'), 'r20_div');
 assert.equal(section?.family, 'section');
@@ -15,6 +19,11 @@ assert.equal(rollButton?.family, 'button');
 assert.equal(rollButton?.title, '주사위 버튼 모양');
 assert.equal(rollButton?.presets.length, 4);
 assert.equal(rollButton?.presets[0].declarations['background-image'], 'none');
+assert.equal(hasDirectRollButtonIcon('r20_roll_button'), true);
+assert.equal(hasDirectRollButtonIcon('r20_roll_button_easy'), true);
+assert.equal(hasDirectRollButtonIcon('r20_chat_button'), true);
+assert.equal(hasDirectRollButtonIcon('r20_dual_roll_button'), false);
+assert.equal(hasDirectRollButtonIcon('r20_action_button'), false);
 
 const actionButton = getVisualStylePresetGroup(
   getLayerRole('r20_action_button'),

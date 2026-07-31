@@ -135,6 +135,15 @@ already-selected insertion position.
   not flattened into the URL control. They remain in CSS until the user
   explicitly replaces or clears the background. External assets remain subject
   to the export asset preflight and are never embedded or published by this UI.
+- Direct Roll buttons expose a visual editor for Roll20's built-in d20 icon.
+  Users can choose a clear, large, soft, or hidden starting style and adjust
+  size, text gap, opacity, and color. The editor changes only the button's
+  `::before` presentation; Roll20 remains the source of the icon content and
+  `dicefontd20` font family.
+- Managed presentation rules can target the selected element, `::before`, or
+  `::after`. Pseudo-element edits never strip the selected element's inline
+  declarations. State selectors keep CSS order as pseudo-class then
+  pseudo-element so future state-specific icon styling remains valid.
 - Managed rules repeat the stable node class to outrank Roll20's baseline
   control selectors without `!important`. The editor selection overlay uses an
   outline only and must not change the selected element's corner radius.
