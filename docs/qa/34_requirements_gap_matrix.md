@@ -1,5 +1,13 @@
 # 34. Requirements Gap Matrix
 
+## UI copy cleanup - 2026-07-31
+
+- `DONE LOCAL`: removed a user-visible English TODO placeholder from the HTML
+  comment inspector and replaced it with a Korean example prompt.
+- `VERIFIED LOCAL`: `ci:verify`, lint, and production build passed.
+- `OPEN EXTERNAL`: this copy-only correction does not change the outstanding
+  actual Roll20 evidence boundary.
+
 ## Fresh local browser rerun - 2026-07-31
 
 - `DONE LOCAL`: the production build and canonical persistent Preview/Edit

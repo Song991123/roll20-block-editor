@@ -1,5 +1,11 @@
 # 2026-07-31 - Actual-status and renderer-action gate refresh
 
+# 2026-07-31 - UI copy cleanup
+
+- Replaced the user-facing HTML comment inspector TODO placeholder with a
+  Korean example prompt; behavior and emitted HTML are unchanged.
+- `ci:verify`, lint, and production build passed.
+
 # 2026-07-31 - Fresh local browser rerun
 
 - Built the production static app successfully and reran the canonical browser

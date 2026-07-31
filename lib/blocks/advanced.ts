@@ -262,7 +262,7 @@ export const ADVANCED_BLOCKS: BlockDef[] = [
         name: 'TEXT',
         label: '주석 내용',
         kind: 'textarea',
-        placeholder: 'TODO: refactor this section',
+        placeholder: '예: 주사위 굴림 안내',
         description: 'HTML 주석. `-->` 닫힘 시퀀스는 자동 escape.',
       },
     ],

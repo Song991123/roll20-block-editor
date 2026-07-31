@@ -1,5 +1,12 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 UI copy cleanup
+
+- `DONE LOCAL`: replaced the user-visible HTML comment inspector placeholder
+  `TODO: refactor this section` with a Korean example prompt.
+- `VERIFIED LOCAL`: `ci:verify`, lint, and production build pass; no renderer,
+  import, export, or Roll20 evidence claim changed.
+
 # 2026-07-31 Fresh local browser rerun
 
 - `VERIFIED LOCAL`: production build completed successfully, then the fresh
