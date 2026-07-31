@@ -9763,3 +9763,15 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   `generatedActualScreenshots=0/4`, `generatedDiffed=0/4`,
   `rendererReady=NO`, and `chatCurrentMetrics=0/2`; the supported browser
   handoff remains required before visual parity can be claimed.
+
+## 2026-07-31 Preview Focus Boundary
+
+- `DONE LOCAL`: preview focus now removes editor-only mode, Roll20 runtime,
+  upload-rule, document-language, and both sidebar controls. It leaves the
+  canonical sheet surface and one clear `편집하기` action.
+- `VERIFIED LOCAL`: `smoke:export-dialog`, `smoke:import-dialog`, and both
+  modern/legacy persistent-preview runs pass with zero console/page errors;
+  exiting preview returns to edit on the same persistent iframe surface.
+- `CLAIM BOUNDARY`: this proves the local preview/edit UI boundary only. It
+  does not change the current actual Roll20 evidence gate (`0/4` screenshots,
+  `0/2` chat metrics) or establish arbitrary-sheet pixel parity.

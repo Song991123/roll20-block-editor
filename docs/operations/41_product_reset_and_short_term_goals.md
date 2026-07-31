@@ -164,11 +164,12 @@ Acceptance:
 - moving an object produces the same geometry in preview after commit;
 - scripts, worker source, and rolltemplate source are never visible sheet nodes.
 
-Latest local evidence (2026-07-18): `smoke:fresh-sheet`,
-`smoke:edit-flow`, and modern/legacy `smoke:persistent-preview-surface` pass.
-The blank-sheet 850px baseline and ghost-section guard are now automated. The
-actual modern Sandbox and dedicated legacy-room visual comparison is still a
-separate `VERIFY` gate.
+Latest local evidence (2026-07-31): `smoke:fresh-sheet`,
+`smoke:edit-flow`, `smoke:export-dialog`, `smoke:import-dialog`, and
+modern/legacy `smoke:persistent-preview-surface` pass. The blank-sheet 850px
+baseline, ghost-section guard, and preview-focus chrome boundary are now
+automated. The actual modern Sandbox and dedicated legacy-room visual
+comparison is still a separate `VERIFY` gate.
 
 ### P0-3: Import truth and mode separation
 

@@ -637,6 +637,24 @@ async function main() {
     }).catch(() => {});
 
     await page.waitForSelector('[data-testid="roll20-mode-control"]', { timeout: 5000 });
+    await page.click('[data-testid="main-mode-preview"]');
+    await page.waitForSelector('[data-testid="preview-focus-toolbar"]', { timeout: 5000 });
+    result.checks.previewFocus = await page.evaluate(() => ({
+      selected: document.querySelector('[data-testid="main-split-container"]')?.getAttribute('data-main-mode') === 'preview'
+        && document.querySelector('[data-preview-focus="true"]')?.getAttribute('data-preview-focus') === 'true',
+      hasPreviewToolbar: Boolean(document.querySelector('[data-testid="preview-focus-toolbar"]')),
+      hasExitEdit: Boolean(document.querySelector('[data-testid="preview-exit-edit"]')),
+      hasLayoutToolbar: Boolean(document.querySelector('[data-testid="main-mode-assemble"]')),
+      hasRoll20ModeControl: Boolean(document.querySelector('[data-testid="roll20-mode-control"]')),
+      hasUploadRules: Boolean(document.querySelector('[data-testid="roll20-sandbox-sanitize-toggle"]')),
+      hasDocumentLanguage: Boolean(document.querySelector('[data-testid="roll20-document-language"]')),
+      leftOpen: document.querySelector('[data-testid="sidebar-left"]')?.getAttribute('data-open'),
+      rightOpen: document.querySelector('[data-testid="sidebar-right"]')?.getAttribute('data-open'),
+    }));
+    await page.click('[data-testid="preview-exit-edit"]');
+    await page.waitForFunction(() =>
+      document.querySelector('[data-testid="main-mode-edit"]')?.getAttribute('aria-selected') === 'true',
+    );
     Object.assign(result.checks.roll20ModeSync, await page.evaluate(() => {
       const toggle = document.querySelector('[data-testid="roll20-mode-legacy"]');
       return {
@@ -720,6 +738,13 @@ async function main() {
     if (result.checks.shell.hasActualRoll20PreviewClaim) failures.push('misleading actual Roll20 preview claim visible');
     if (result.checks.shell.hasSampleCta || result.checks.shell.hasSampleMenu) failures.push('sample UI visible with empty public catalog');
     if (result.checks.shell.hasMojibake) failures.push('mojibake detected in initial shell text');
+    if (!result.checks.previewFocus || result.checks.previewFocus.selected !== true) failures.push('preview focus mode did not select');
+    if (!result.checks.previewFocus?.hasPreviewToolbar || !result.checks.previewFocus?.hasExitEdit) failures.push('preview focus controls missing');
+    if (result.checks.previewFocus.hasLayoutToolbar) failures.push('preview focus still exposes layout mode controls');
+    if (result.checks.previewFocus.hasRoll20ModeControl) failures.push('preview focus still exposes Roll20 mode controls');
+    if (result.checks.previewFocus.hasUploadRules) failures.push('preview focus still exposes upload rules');
+    if (result.checks.previewFocus.hasDocumentLanguage) failures.push('preview focus still exposes document language control');
+    if (result.checks.previewFocus.leftOpen !== 'false' || result.checks.previewFocus.rightOpen !== 'false') failures.push('preview focus sidebars remain open');
     if (!result.checks.codeTabs.hasCodeTab) failures.push('code tab missing');
     if (!result.checks.codeTabs.workerSelected) failures.push('worker code tab did not become active');
     if (

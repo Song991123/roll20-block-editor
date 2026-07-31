@@ -1,6 +1,6 @@
 'use client';
 
-import { Blocks, Eye, Languages, PanelsLeftRight, PencilRuler, ShieldAlert, ShieldCheck, SlidersHorizontal, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Blocks, Eye, Languages, PanelsLeftRight, PencilRuler, ShieldAlert, ShieldCheck, SlidersHorizontal, type LucideIcon } from 'lucide-react';
 import { useUiStore, type EditSubmode, type MainMode } from '@/lib/stores/uiStore';
 import { usePreviewStore, type Roll20CompatibilityMode } from '@/lib/stores/previewStore';
 import {
@@ -45,6 +45,39 @@ export default function MainAreaToolbar() {
   const documentLanguage = usePreviewStore((s) => s.documentLanguage);
   const setDocumentLanguage = usePreviewStore((s) => s.setDocumentLanguage);
   const roll20Mode: Roll20CompatibilityMode = legacyCssSanitize ? 'legacy' : 'modern';
+
+  if (mainMode === 'preview') {
+    return (
+      <TooltipProvider delayDuration={300}>
+        <div
+          className="r20-strip flex min-h-14 shrink-0 items-center justify-between gap-3 border-b border-[var(--border-subtle)] px-3 py-1.5"
+          data-testid="preview-focus-toolbar"
+        >
+          <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-foreground">
+            <Eye className="h-[18px] w-[18px] text-[var(--primary-strong)]" aria-hidden="true" />
+            <span>미리보기</span>
+            <span className="truncate text-xs font-normal text-muted-foreground">
+              시트만 확인하는 화면
+            </span>
+          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="r20-seg-btn shrink-0"
+                data-testid="preview-exit-edit"
+                onClick={() => setMainMode('edit')}
+              >
+                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                편집하기
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>같은 시트 화면 위에서 요소를 편집해요.</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+    );
+  }
 
   return (
     <TooltipProvider delayDuration={300}>

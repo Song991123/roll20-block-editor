@@ -10363,3 +10363,16 @@ same-hash modern/legacy comparison.
   modern and legacy modes. `ci:verify`, lint, and production build pass.
 - CLAIM BOUNDARY: this proves local width-input and shared-surface behavior;
   it does not prove arbitrary-sheet or actual Roll20 pixel parity.
+
+## 2026-07-31 - Preview focus boundary
+
+- FIXED LOCAL: `MainAreaToolbar` now renders a minimal preview-focus bar. The
+  preview view no longer exposes layout-mode tabs, Roll20 modern/legacy
+  controls, upload rules, document language, or editor sidebars; the same
+  persistent iframe remains mounted underneath.
+- VERIFIED LOCAL: the browser export smoke asserts the hidden editor chrome,
+  preview selection, closed sidebars, and the `편집하기` return action. Import
+  smoke, modern/legacy persistent-surface smoke, lint, and production build
+  also pass with zero browser errors.
+- CLAIM BOUNDARY: this is a local UI/render-surface result. Actual Roll20
+  screenshot parity remains unproven and stays at the current external gate.
