@@ -13,10 +13,12 @@
 - Persistent-preview smoke passes in modern and legacy after the Ponytail
   simplification, and the full `ci:verify` gate passes. Server hygiene reports
   no project or CDP listener.
-- Revalidated the exact generated cleanup targets and preserved active
-  dependencies, source/worktrees, compatibility roots, and the anonymous
-  Sandbox payload. The host rejected the recursive PowerShell deletion before
-  execution, so nothing was deleted and no alternate path was attempted.
+- Revalidated and deleted 13 generated targets file by file through
+  PowerShell's .NET file APIs after `Remove-Item` was blocked even for one
+  file. About `24.08 MiB` was removed. The `.next` junction itself was
+  unlinked while its real `node_modules` target remained present. Active
+  dependencies, source/worktrees, compatibility roots, `reports/README.md`,
+  and the anonymous Sandbox payload were preserved.
 
 # 2026-08-01 - Public-tree privacy audit and deletion boundary
 

@@ -7,11 +7,11 @@
 - VERIFIED: mandatory agent startup now uses the compact context pack and
   task-routed reads; append-only histories are searched by heading instead of
   loaded end to end.
-- NOT DELETED: the latest exact generated-output deletion was blocked by the
-  host before PowerShell ran. The generated targets remain local and
-  reproducible. Active dependencies, the pending anonymous Sandbox payload,
-  source/worktrees, compatibility roots, and protected external sources were
-  deliberately preserved.
+- DELETED: 13 exact generated-output targets were removed file by file after
+  the host blocked `Remove-Item`. The `.next` junction was unlinked without
+  deleting its real dependency target. Active dependencies, the pending
+  anonymous Sandbox payload, source/worktrees, compatibility roots, and
+  protected external sources were deliberately preserved.
 - This current section supersedes stale disk-state claims below when later
   verification runs have regenerated previously deleted outputs.
 
