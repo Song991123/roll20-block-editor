@@ -1,5 +1,25 @@
 # 45. Workspace Harness and Retention Policy
 
+## 2026-07-31 explicit user-authorized retry (host blocked before execution)
+
+- RECHECKED: the only currently present inactive generated targets eligible for
+  this retry were `web-push-main/.next/`, `web-push-main/out/`, and the
+  generated `web-push-main/next-env.d.ts`. The active `.tmp/` verification
+  payload and reports were intentionally excluded because the Roll20 Sandbox
+  verification is still in progress.
+- SAFETY CHECK: all three targets resolved inside the canonical worktree, were
+  not Git-tracked, had no top-level reparse point, and no project listener was
+  active.
+- ATTEMPTED: a boundary-checked native PowerShell deletion request used only
+  those three literal paths after the user explicitly approved the retry.
+- BLOCKED HOST: the execution boundary rejected the destructive invocation
+  before PowerShell ran. User approval cannot override this session-level
+  restriction; no alternate shell, native API, per-file workaround, or safety
+  bypass was used.
+- NOT DELETED: the three generated targets remain. Source, dependencies,
+  active `.tmp/` evidence, reports policy, worktrees, and protected external
+  sheet folders were preserved.
+
 ## 2026-07-31 latest user-authorized complete-deletion retry (host blocked)
 
 - RECHECKED: the approved disposable targets were the canonical worktree's
