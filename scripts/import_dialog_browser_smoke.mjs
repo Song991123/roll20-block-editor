@@ -116,6 +116,12 @@ async function main() {
     }));
     assert(result.workspace.blockCount.html >= 3, 'dialog import created fewer than three HTML blocks');
     assert(result.iframeCount === 1, `import remounted the preview surface: ${result.iframeCount}`);
+    const importResult = page.getByTestId('import-result');
+    assert(await importResult.count() === 1, 'import result panel is not unique');
+    const importResultText = await importResult.innerText();
+    assert(importResultText.includes('HTML 구조화'), 'import result hides the HTML coverage scope');
+    assert(importResultText.includes('CSS 구조화'), 'import result hides the CSS coverage scope');
+    assert(importResultText.includes('HTML + CSS 전체 구조화 일치율'), 'import result hides combined coverage');
 
     await page.getByRole('tab', { name: 'CSS' }).click();
     const cssTextarea = page.locator('[data-testid="import-dialog"] [data-state="active"] textarea');
@@ -126,6 +132,12 @@ async function main() {
       state: 'visible',
       timeout: 20000,
     });
+    const warningDetails = page.getByTestId('import-warning-details');
+    assert(await warningDetails.count() === 1, 'import warning details are missing');
+    const warningSummary = warningDetails.locator('summary');
+    assert(await warningSummary.count() === 1, 'import warning summary is not unique');
+    await warningSummary.click();
+    assert((await warningDetails.innerText()).includes('확인할 항목'), 'warning details did not open');
     await page.waitForFunction(
       () => window.__perfHook.getEmitContent().css.includes('.sheet-root'),
       null,

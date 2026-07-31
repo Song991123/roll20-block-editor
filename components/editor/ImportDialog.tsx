@@ -465,7 +465,10 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         )}
 
         {report && (
-          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3.5 text-sm leading-relaxed">
+          <div
+            className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3.5 text-sm leading-relaxed"
+            data-testid="import-result"
+          >
             <div className="mb-1 font-semibold">변환 결과</div>
             <div>
               HTML 구조화: <span className="tabular-nums">{report.matched}/{report.total}</span> ({report.coverage}%) · 원본 보존{' '}
