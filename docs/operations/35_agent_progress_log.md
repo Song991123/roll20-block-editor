@@ -1,5 +1,17 @@
 # 2026-07-31 - Actual-status and renderer-action gate refresh
 
+## 2026-07-31 - Import result smoke coverage
+
+- Extended the import dialog smoke to assert the HTML, CSS, and combined
+  fidelity labels and to open the warning details panel. Workspace routing,
+  the single persistent iframe, hidden runtime nodes, and zero console/page
+  errors remain covered.
+- GitHub Actions CI run `30640829971` passed safety/unit, lint, and build for
+  commit `8d56590`.
+- Chrome extension settings could not be opened through the browser tool's
+  URL policy, so no permission was changed. Roll20 upload remains blocked
+  before transmission and actual evidence remains `0/4`.
+
 ## 2026-07-31 - Import truthfulness and smoke-harness gate
 
 - `ImportDialog` now labels the HTML, CSS, and combined structured coverage

@@ -1,5 +1,18 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Import result smoke coverage
+
+- `DONE LOCAL`: import dialog smoke now asserts the three fidelity-scope labels
+  and opens the warning details panel, in addition to checking workspace
+  routing, one persistent iframe, hidden runtime nodes, and zero browser
+  errors.
+- `VERIFIED REMOTE`: GitHub Actions CI run `30640829971` passed safety/unit,
+  lint, and build for commit `8d56590`.
+- `VERIFY EXTERNAL`: Chrome's extension settings page could not be opened by
+  the browser automation URL policy, so no permission was changed. Roll20
+  Sandbox upload remains pre-transmission blocked and actual evidence stays
+  `0/4`.
+
 # 2026-07-31 Import truthfulness and smoke-harness gate
 
 - `DONE LOCAL`: Import 결과 패널의 수치를 `HTML 구조화`, `CSS 구조화`,
