@@ -5,6 +5,7 @@ import {
   filterDropTargetForPlacement,
   resolveIframeEditDropTarget,
   resolveIframeFreePlacement,
+  resolveIframeMultiFreePlacement,
   resolveIframeLayerDropTarget,
   resolveIframeLayerFreePlacement,
   resolveIframeWidgetDropTarget,
@@ -329,6 +330,68 @@ assert.equal(resolveIframeFreePlacement(freeOrigin, {
   pointer: { x: 300, y: 80 },
 }, lookup, 8)?.containingBlockId, null);
 assert.equal(resolveIframeFreePlacement(freeEnd, freeEnd, lookup, 8), null);
+
+const multiSubject = geometry('subject', 30, 24, {
+  rect: { left: 30, top: 30, width: 80, height: 24 },
+  offsetLeft: 20,
+  offsetTop: 10,
+  offsetParentBlockId: 'frame',
+  offsetParentPosition: 'relative',
+  position: 'absolute',
+});
+const multiSibling = geometry('sibling', 70, 24, {
+  rect: { left: 80, top: 70, width: 80, height: 24 },
+  offsetLeft: 70,
+  offsetTop: 50,
+  offsetParentBlockId: 'frame',
+  offsetParentPosition: 'relative',
+  position: 'absolute',
+});
+const multiFrame = geometry('frame', 0, 200, {
+  rect: { left: 10, top: 20, width: 240, height: 200 },
+  position: 'relative',
+});
+const multiOriginNodes = [
+  { geometry: multiSubject, hitPath: [multiSubject, multiFrame] },
+  { geometry: multiSibling, hitPath: [multiSibling, multiFrame] },
+];
+const multiEndNodes = multiOriginNodes.map((node) => ({
+  ...node,
+  geometry: {
+    ...node.geometry,
+    rect: {
+      ...node.geometry.rect,
+      left: node.geometry.rect.left + 12,
+      top: node.geometry.rect.top + 8,
+    },
+  },
+}));
+assert.deepEqual(resolveIframeMultiFreePlacement(
+  multiOriginNodes[0],
+  multiEndNodes[0],
+  { x: 100, y: 100 },
+  { x: 112, y: 108 },
+  lookup,
+  4,
+), {
+  left: 32,
+  top: 20,
+  containingBlockId: 'frame',
+  containingBlockNeedsRelative: false,
+});
+assert.deepEqual(resolveIframeMultiFreePlacement(
+  multiOriginNodes[1],
+  multiEndNodes[1],
+  { x: 100, y: 100 },
+  { x: 112, y: 108 },
+  lookup,
+  4,
+), {
+  left: 84,
+  top: 60,
+  containingBlockId: 'frame',
+  containingBlockNeedsRelative: false,
+});
 
 const nestedBlocks = new Map<string, BlockSnapshot>([
   ['outer', {

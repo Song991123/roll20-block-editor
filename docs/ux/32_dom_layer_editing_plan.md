@@ -66,6 +66,10 @@ invent separate DOM models.
     the clicked layer to the transient selection list and makes it primary;
     the list is shared with the layer panel before any grouping or structural
     operation.
+12. In free placement, dragging a multi-selection applies one pointer delta to
+    every selected top-level layer without reparenting it. Pointer-up must use
+    the stable rendered selection IDs when iframe messages arrive out of order,
+    then commit each layer's managed position back to its existing parent.
 
 ## Visual Language
 
@@ -91,10 +95,11 @@ already-selected insertion position.
 ## Verification Boundary
 
 Local tests cover classification, cycle protection, before/inside/after layer
-operations, flow versus free placement, grouping preconditions, and selection
-synchronization. The browser smoke also proves Ctrl selection -> iframe
-multi-highlight -> group keeps the model parent, iframe parent, and emitted
-HTML aligned. A future browser acceptance test must additionally prove that
+operations, flow versus free placement, grouping preconditions, selection
+synchronization, and multi-object free transform. The browser smoke also
+proves Ctrl selection -> iframe multi-highlight -> shared free movement ->
+persisted emitted positions, while grouping keeps the model parent, iframe
+parent, and emitted HTML aligned. A future browser acceptance test must additionally prove that
 the same imported HTML surface is visible in preview and edit after a nested
 drop, with no rollback frame and with the generated CSS output stable after
 re-import.

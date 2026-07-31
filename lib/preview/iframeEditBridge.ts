@@ -30,6 +30,11 @@ export type IframeEditNodeGeometry = {
   offsetParentPosition: string;
 };
 
+export type IframeEditSelectionNode = {
+  geometry: IframeEditNodeGeometry;
+  hitPath: IframeEditNodeGeometry[];
+};
+
 export type IframeEditReadyMessage = {
   type: 'r20:edit-ready';
   protocol: typeof R20_IFRAME_EDIT_PROTOCOL;
@@ -50,6 +55,8 @@ export type IframeEditHitMessage = {
   modifiers?: IframeEditModifiers;
   subject: IframeEditNodeGeometry;
   hitPath: IframeEditNodeGeometry[];
+  /** Top-level selected layers captured on the same iframe render surface. */
+  selection?: IframeEditSelectionNode[];
 };
 
 export type IframeEditAppliedMessage = {
@@ -166,6 +173,14 @@ function isModifiers(value: unknown): value is IframeEditModifiers {
     && typeof value.ctrlKey === 'boolean'
     && typeof value.metaKey === 'boolean'
     && typeof value.shiftKey === 'boolean';
+}
+
+function isSelectionNode(value: unknown): value is IframeEditSelectionNode {
+  if (!isRecord(value)) return false;
+  return isNodeGeometry(value.geometry)
+    && Array.isArray(value.hitPath)
+    && value.hitPath.length <= 64
+    && value.hitPath.every(isNodeGeometry);
 }
 
 export function parseIframeEditBridgeMessage(value: unknown): IframeEditBridgeMessage | null {
@@ -333,6 +348,20 @@ export function parseIframeEditBridgeMessage(value: unknown): IframeEditBridgeMe
     hitPath: value.hitPath,
   };
   if (value.modifiers !== undefined) parsed.modifiers = value.modifiers;
+  if (value.selection !== undefined) {
+    if (
+      !Array.isArray(value.selection)
+      || value.selection.length < 1
+      || value.selection.length > 128
+      || !value.selection.every(isSelectionNode)
+    ) return null;
+    const unique = new Set<string>();
+    for (const selected of value.selection) {
+      if (unique.has(selected.geometry.blockId)) return null;
+      unique.add(selected.geometry.blockId);
+    }
+    parsed.selection = value.selection;
+  }
   return parsed;
 }
 

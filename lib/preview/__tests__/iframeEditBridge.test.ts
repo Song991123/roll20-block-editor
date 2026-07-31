@@ -48,6 +48,27 @@ const hit = {
 };
 
 assert.deepEqual(parseIframeEditBridgeMessage(hit), hit);
+const multiHit = {
+  ...hit,
+  selection: [
+    { geometry: subject, hitPath: hit.hitPath },
+    {
+      geometry: {
+        ...subject,
+        blockId: 'block-2',
+        rect: { left: 120, top: 20, width: 80, height: 40 },
+        offsetLeft: 116,
+      },
+      hitPath: [{
+        ...subject,
+        blockId: 'block-2',
+        rect: { left: 120, top: 20, width: 80, height: 40 },
+        offsetLeft: 116,
+      }],
+    },
+  ],
+};
+assert.deepEqual(parseIframeEditBridgeMessage(multiHit), multiHit);
 assert.deepEqual(parseIframeEditBridgeMessage({
   type: 'r20:edit-applied',
   protocol: R20_IFRAME_EDIT_PROTOCOL,
@@ -119,6 +140,9 @@ assert.equal(parseIframeEditBridgeMessage({
 }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...hit, pointerId: 1.5 }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...hit, modifiers: { ctrlKey: 'yes' } }), null);
+assert.equal(parseIframeEditBridgeMessage({ ...multiHit, selection: [multiHit.selection[0], multiHit.selection[0]] }), null);
+assert.equal(parseIframeEditBridgeMessage({ ...multiHit, selection: [] }), null);
+assert.equal(parseIframeEditBridgeMessage({ ...multiHit, selection: [{ geometry: subject, hitPath: new Array(65).fill(subject) }] }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...hit, hitPath: new Array(65).fill(subject) }), null);
 assert.equal(parseIframeEditBridgeMessage({
   ...hit,

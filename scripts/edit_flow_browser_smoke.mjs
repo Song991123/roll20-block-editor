@@ -304,6 +304,80 @@ async function main() {
       `canvas multi-selection is not visible: ${JSON.stringify(result.tests.canvasMultiSelection)}`,
     );
 
+    await page.click('[data-testid="edit-placement-free"]');
+    const multiBefore = await frame.evaluate(({ firstId, secondId }) => {
+      const read = (id) => {
+        const node = document.querySelector(`[data-r20-block-id="${CSS.escape(id)}"]`);
+        const rect = node?.getBoundingClientRect();
+        return rect ? { left: rect.left, top: rect.top } : null;
+      };
+      return {
+        first: read(firstId),
+        second: read(secondId),
+      };
+    }, { firstId: ids.groupOneId, secondId: ids.groupTwoId });
+    const multiDragTarget = await canvasSecond.boundingBox();
+    assert(multiDragTarget && multiBefore.first && multiBefore.second, 'multi-drag targets are missing');
+    await page.mouse.move(
+      multiDragTarget.x + multiDragTarget.width / 2,
+      multiDragTarget.y + multiDragTarget.height / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.move(
+      multiDragTarget.x + multiDragTarget.width / 2 + 24,
+      multiDragTarget.y + multiDragTarget.height / 2 + 16,
+      { steps: 4 },
+    );
+    await page.waitForTimeout(60);
+    const multiDuring = await frame.evaluate(({ firstId, secondId }) => {
+      const read = (id) => {
+        const node = document.querySelector(`[data-r20-block-id="${CSS.escape(id)}"]`);
+        const rect = node?.getBoundingClientRect();
+        return rect ? { left: rect.left, top: rect.top } : null;
+      };
+      return { first: read(firstId), second: read(secondId) };
+    }, { firstId: ids.groupOneId, secondId: ids.groupTwoId });
+    assert(multiDuring.first && multiDuring.second, 'multi-drag visual targets disappeared');
+    const duringDeltaFirst = multiDuring.first.left - multiBefore.first.left;
+    const duringDeltaSecond = multiDuring.second.left - multiBefore.second.left;
+    assert(
+      Math.abs(duringDeltaFirst - duringDeltaSecond) < 1,
+      `multi-drag did not move both layers together: ${JSON.stringify({ multiBefore, multiDuring })}`,
+    );
+    await page.mouse.up();
+    await page.waitForTimeout(900);
+    const multiAfter = await frame.evaluate(({ firstId, secondId }) => {
+      const read = (id) => {
+        const node = document.querySelector(`[data-r20-block-id="${CSS.escape(id)}"]`);
+        const rect = node?.getBoundingClientRect();
+        return rect ? { left: rect.left, top: rect.top } : null;
+      };
+      return {
+        first: read(firstId),
+        second: read(secondId),
+      };
+    }, { firstId: ids.groupOneId, secondId: ids.groupTwoId });
+    const emittedMulti = await page.evaluate(() => window.__perfHook.getEmitContent());
+    assert(multiAfter.first && multiAfter.second, 'multi-drag committed targets disappeared');
+    const afterDeltaFirst = multiAfter.first.left - multiBefore.first.left;
+    const afterDeltaSecond = multiAfter.second.left - multiBefore.second.left;
+    result.tests.canvasMultiMove = {
+      before: multiBefore,
+      during: multiDuring,
+      after: multiAfter,
+      emittedHtml: emittedMulti.html,
+      emittedCss: emittedMulti.css,
+      duringDeltaFirst,
+      duringDeltaSecond,
+      afterDeltaFirst,
+      afterDeltaSecond,
+    };
+    assert(
+      Math.abs(afterDeltaFirst - afterDeltaSecond) < 1
+        && Math.abs(afterDeltaFirst) >= 16,
+      `multi-drag did not persist as a group move: ${JSON.stringify(result.tests.canvasMultiMove)}`,
+    );
+
     // This is the user-facing path: move a real rendered node over another
     // rendered node, let the iframe show the optimistic order immediately,
     // then confirm the emitted/live-patched order stays authoritative.
@@ -790,6 +864,9 @@ async function main() {
       if (!target) return { modes: [], reason: 'missing target layer row' };
       const rect = target.getBoundingClientRect();
       const modes = [];
+      const settle = () => new Promise((resolve) => requestAnimationFrame(
+        () => requestAnimationFrame(resolve),
+      ));
       for (const ratio of [0.1, 0.5, 0.9]) {
         const dataTransfer = new DataTransfer();
         dataTransfer.setData('application/x-r20-layer-block', movingId);
@@ -802,7 +879,7 @@ async function main() {
         const dragover = new DragEvent('dragover', init);
         Object.defineProperty(dragover, 'dataTransfer', { value: dataTransfer });
         target.dispatchEvent(dragover);
-        await new Promise((resolve) => requestAnimationFrame(resolve));
+        await settle();
         modes.push(target.getAttribute('data-r20-layer-drop-mode') || null);
       }
       const inner = target.querySelector('[data-testid="edit-layer-role-rail"]') || target.firstElementChild;
@@ -817,14 +894,14 @@ async function main() {
       const hoverOver = new DragEvent('dragover', hoverInit);
       Object.defineProperty(hoverOver, 'dataTransfer', { value: hoverTransfer });
       target.dispatchEvent(hoverOver);
-      await new Promise((resolve) => requestAnimationFrame(resolve));
+      await settle();
       const modeBeforeChildLeave = target.getAttribute('data-r20-layer-drop-mode') || null;
       const childLeave = new DragEvent('dragleave', {
         ...hoverInit,
         relatedTarget: inner,
       });
       target.dispatchEvent(childLeave);
-      await new Promise((resolve) => requestAnimationFrame(resolve));
+      await settle();
       const modeAfterChildLeave = target.getAttribute('data-r20-layer-drop-mode') || null;
       target.dispatchEvent(new DragEvent('dragleave', { bubbles: true, cancelable: true }));
       return {

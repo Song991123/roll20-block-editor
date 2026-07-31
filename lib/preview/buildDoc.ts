@@ -142,6 +142,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   var optimisticFlowSnapshot = null;
   var optimisticFlowCommit = null;
   var optimisticEditMove = null;
+  var selectedEditBlockIds = [];
   var pendingLivePatchChunks = null;
   function blockNodeOf(node) {
     while (node && node !== document.body) {
@@ -209,8 +210,24 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (!editBridgeEnabled) return;
     var subject = geometryOf(subjectNode);
     if (!subject) return;
+    var selectedNodes = activeEditPointer && activeEditPointer.selectedNodes
+      ? activeEditPointer.selectedNodes
+      : [];
+    if (
+      selectedEditBlockIds.length > 1
+      && selectedEditBlockIds.indexOf(subject.blockId) >= 0
+    ) {
+      var stableSelectedNodes = activeDragSelectionNodes(selectedEditBlockIds);
+      if (stableSelectedNodes.length > 1) selectedNodes = stableSelectedNodes;
+    }
+    var selection = selectedNodes.length
+      ? selectedNodes.map(function (node) {
+          var geometry = geometryOf(node);
+          return geometry ? { geometry: geometry, hitPath: hitPathOf(node) } : null;
+        }).filter(Boolean)
+      : [];
     try {
-      parent.postMessage({
+      var message = {
         type: 'r20:edit-hit',
         protocol: 1,
         bridgeId: editBridgeId,
@@ -228,8 +245,10 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
           shiftKey: pointer.shiftKey === true,
         },
         subject: subject,
-        hitPath: hitPathOf(hitNode)
-      }, '*');
+        hitPath: hitPathOf(hitNode),
+        selection: selection.length > 1 ? selection : undefined
+      };
+      parent.postMessage(message, '*');
     } catch (e) {}
   }
   function hasFriendlyWidgetPayload(dataTransfer) {
@@ -318,9 +337,130 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   function setEditSelection(selectedBlockIds) {
     var previous = document.querySelectorAll('[data-r20-selected="1"]');
     for (var i = 0; i < previous.length; i += 1) previous[i].removeAttribute('data-r20-selected');
-    for (var j = 0; j < selectedBlockIds.length; j += 1) {
-      var selected = document.querySelector('[data-r20-block-id="' + cssEscape(selectedBlockIds[j]) + '"]');
+    var nextSelectedBlockIds = Array.isArray(selectedBlockIds) ? selectedBlockIds.slice(0, 128) : [];
+    // React effects can deliver an older single-selection command after the
+    // additive selection update. Keep a selected member's multi-selection
+    // stable; a genuinely new block still resets it as expected.
+    if (
+      editBridgeEnabled
+      && selectedEditBlockIds.length > 1
+      && (
+        nextSelectedBlockIds.length === 0
+        || (
+          nextSelectedBlockIds.length === 1
+          && selectedEditBlockIds.indexOf(nextSelectedBlockIds[0]) >= 0
+        )
+      )
+    ) {
+      nextSelectedBlockIds = selectedEditBlockIds.slice(0, 128);
+    }
+    selectedEditBlockIds = nextSelectedBlockIds;
+    if (activeEditPointer) {
+      var nextSelectionKey = selectedEditBlockIds.join('\u0001');
+      if (activeEditPointer.dragSelectionKey !== nextSelectionKey) {
+        activeEditPointer.dragSelectionKey = '';
+      }
+    }
+    if (activeEditPointer && selectedEditBlockIds.length > 1) {
+      activeEditPointer.dragSelectionIds = selectedEditBlockIds.slice(0, 128);
+    }
+    for (var j = 0; j < selectedEditBlockIds.length; j += 1) {
+      var selected = document.querySelector('[data-r20-block-id="' + cssEscape(selectedEditBlockIds[j]) + '"]');
       if (selected) selected.setAttribute('data-r20-selected', '1');
+    }
+    syncActiveEditSelection();
+  }
+  function selectedEditNodes(subjectNode) {
+    var subjectId = subjectNode && subjectNode.dataset ? subjectNode.dataset.r20BlockId : '';
+    var markedNodes = Array.prototype.slice.call(document.querySelectorAll('[data-r20-selected="1"]'));
+    var markedIds = markedNodes.map(function (node) {
+      return node.dataset && node.dataset.r20BlockId ? node.dataset.r20BlockId : '';
+    }).filter(Boolean);
+    var markedSelection = markedNodes.length > 1 && markedIds.indexOf(subjectId) >= 0;
+    var isMulti = markedSelection || (selectedEditBlockIds.length > 1
+      && subjectId
+      && selectedEditBlockIds.indexOf(subjectId) >= 0);
+    var selected = !isMulti
+      ? (subjectNode ? [subjectNode] : [])
+      : selectedNodesForIds(markedSelection ? markedIds : selectedEditBlockIds);
+    return selected;
+  }
+  function selectedNodesForIds(sourceIds) {
+    var selectedSet = {};
+    var candidates = [];
+    for (var i = 0; i < sourceIds.length; i += 1) {
+      selectedSet[sourceIds[i]] = true;
+    }
+    // Block ids can contain punctuation that differs across browser CSS.escape
+    // implementations. Read the already-rendered DOM attribute instead of
+    // rebuilding a selector from an untrusted id.
+    var renderedNodes = document.querySelectorAll('[data-r20-block-id]');
+    for (var renderedIndex = 0; renderedIndex < renderedNodes.length; renderedIndex += 1) {
+      var renderedNode = renderedNodes[renderedIndex];
+      var renderedId = renderedNode.dataset && renderedNode.dataset.r20BlockId;
+      if (renderedId && selectedSet[renderedId]) candidates.push(renderedNode);
+    }
+    var topLevel = candidates.filter(function (node) {
+      var parent = node.parentNode;
+      while (parent && parent !== document.body) {
+        var parentId = parent.dataset && parent.dataset.r20BlockId;
+        if (parentId && selectedSet[parentId]) return false;
+        parent = parent.parentNode;
+      }
+      return true;
+    });
+    return topLevel;
+  }
+  function activeDragSelectionNodes(sourceIds) {
+    var selectionKey = sourceIds.join('\u0001');
+    var existing = activeEditPointer && activeEditPointer.selectedNodes
+      ? activeEditPointer.selectedNodes
+      : [];
+    var reusable = activeEditPointer
+      && activeEditPointer.dragSelectionKey === selectionKey
+      && existing.length > 0
+      && existing.every(function (selected) {
+        return selected.node && selected.node.isConnected;
+      });
+    if (reusable) return existing.map(function (selected) { return selected.node; });
+    var resolved = selectedNodesForIds(sourceIds);
+    if (activeEditPointer) activeEditPointer.dragSelectionKey = selectionKey;
+    return resolved;
+  }
+  function syncActiveEditSelection() {
+    if (!activeEditPointer || !activeEditPointer.subjectNode) return;
+    var existing = activeEditPointer.selectedNodes || [];
+    var dragSelectionIds = activeEditPointer.dragSelectionIds || [];
+    var nodes;
+    if (dragSelectionIds.length > 1) {
+      nodes = activeDragSelectionNodes(dragSelectionIds);
+    } else {
+      nodes = selectedEditNodes(activeEditPointer.subjectNode);
+    }
+    if (!nodes.length) return;
+    var orderedNodes = existing
+      .filter(function (selected) { return selected.node && selected.node.isConnected; })
+      .map(function (selected) { return selected.node; });
+    for (var nodeIndex = 0; nodeIndex < nodes.length; nodeIndex += 1) {
+      if (orderedNodes.indexOf(nodes[nodeIndex]) < 0) orderedNodes.push(nodes[nodeIndex]);
+    }
+    var next = orderedNodes.map(function (node) {
+      var current = existing.find(function (selected) { return selected.node === node; });
+      if (current) return current;
+      var created = {
+        node: node,
+        originTransform: node.style.transform,
+        originTransition: node.style.transition,
+        originWillChange: node.style.willChange,
+      };
+      node.style.transition = 'none';
+      node.style.willChange = 'transform';
+      return created;
+    });
+    activeEditPointer.selectedNodes = next;
+    optimisticEditMove = activeEditPointer;
+    if (Number.isFinite(activeEditPointer.lastX) && Number.isFinite(activeEditPointer.lastY)) {
+      applyOptimisticEditMove({ x: activeEditPointer.lastX, y: activeEditPointer.lastY });
     }
   }
   function setEditBridgeEnabled(enabled, selectedBlockId, selectedBlockIds) {
@@ -528,21 +668,29 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   function clearOptimisticEditMove() {
     var move = optimisticEditMove;
     optimisticEditMove = null;
-    if (!move || !move.subjectNode || !move.subjectNode.isConnected) return false;
-    move.subjectNode.style.transform = move.originTransform;
-    move.subjectNode.style.transition = move.originTransition;
-    move.subjectNode.style.willChange = move.originWillChange;
+    if (!move || !move.selectedNodes || !move.selectedNodes.length) return false;
+    for (var i = 0; i < move.selectedNodes.length; i += 1) {
+      var selected = move.selectedNodes[i];
+      if (!selected.node || !selected.node.isConnected) continue;
+      selected.node.style.transform = selected.originTransform;
+      selected.node.style.transition = selected.originTransition;
+      selected.node.style.willChange = selected.originWillChange;
+    }
     return true;
   }
   function applyOptimisticEditMove(pointer) {
     var move = optimisticEditMove;
-    if (!move || !move.subjectNode || !pointer) return false;
+    if (!move || !move.selectedNodes || !move.selectedNodes.length || !pointer) return false;
     var dx = Number(pointer.x) - move.originX;
     var dy = Number(pointer.y) - move.originY;
-    var base = move.originTransform && move.originTransform !== 'none'
-      ? move.originTransform + ' '
-      : '';
-    move.subjectNode.style.transform = base + 'translate3d(' + dx + 'px, ' + dy + 'px, 0)';
+    for (var i = 0; i < move.selectedNodes.length; i += 1) {
+      var selected = move.selectedNodes[i];
+      if (!selected.node || !selected.node.isConnected) continue;
+      var base = selected.originTransform && selected.originTransform !== 'none'
+        ? selected.originTransform + ' '
+        : '';
+      selected.node.style.transform = base + 'translate3d(' + dx + 'px, ' + dy + 'px, 0)';
+    }
     return true;
   }
   function finalizeOptimisticFlowMove(data) {
@@ -1253,6 +1401,9 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   document.addEventListener('pointermove', function (e) {
     if (!editBridgeEnabled) return;
     if (!activeEditPointer || activeEditPointer.pointerId !== e.pointerId) return;
+    activeEditPointer.lastX = e.clientX;
+    activeEditPointer.lastY = e.clientY;
+    syncActiveEditSelection();
     pendingEditMove = {
       subjectNode: activeEditPointer.subjectNode,
       hitNode: hitNodeAt(e.clientX, e.clientY, e.target),
@@ -1287,18 +1438,32 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (!subjectNode) return;
     rollbackOptimisticFlowMove();
     clearValidatedFlowTarget();
+    var selectedNodes = selectedEditNodes(subjectNode).map(function (node) {
+      return {
+        node: node,
+        originTransform: node.style.transform,
+        originTransition: node.style.transition,
+        originWillChange: node.style.willChange,
+      };
+    });
     activeEditPointer = {
       pointerId: e.pointerId,
       subjectNode: subjectNode,
+      selectedNodes: selectedNodes,
+      dragSelectionIds: selectedEditBlockIds.slice(0, 128),
       originX: e.clientX,
       originY: e.clientY,
+      lastX: e.clientX,
+      lastY: e.clientY,
       originTransform: subjectNode.style.transform,
       originTransition: subjectNode.style.transition,
       originWillChange: subjectNode.style.willChange
     };
     optimisticEditMove = activeEditPointer;
-    subjectNode.style.transition = 'none';
-    subjectNode.style.willChange = 'transform';
+    for (var i = 0; i < selectedNodes.length; i += 1) {
+      selectedNodes[i].node.style.transition = 'none';
+      selectedNodes[i].node.style.willChange = 'transform';
+    }
     try { subjectNode.setPointerCapture(e.pointerId); } catch (_) {}
     postEditHit('pointerdown', subjectNode, subjectNode, {
       x: e.clientX,
@@ -1318,6 +1483,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (!editBridgeEnabled) return;
     if (!activeEditPointer || activeEditPointer.pointerId !== e.pointerId) return;
     var subjectNode = activeEditPointer.subjectNode;
+    syncActiveEditSelection();
     if (editMoveFrame) window.cancelAnimationFrame(editMoveFrame);
     editMoveFrame = 0;
     pendingEditMove = null;
@@ -1480,6 +1646,21 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   }, true);
   window.addEventListener('message', function (e) {
     if (e.source !== parent || !e.data) return;
+    if (
+      e.data.type === 'r20:edit-drag-selection'
+      && e.data.protocol === 1
+      && e.data.bridgeId === editBridgeId
+    ) {
+      var dragSelection = normalizeSelectedBlockIds(
+        e.data.selectedBlockId || null,
+        e.data.selectedBlockIds,
+      );
+      if (activeEditPointer && dragSelection.length > 1) {
+        activeEditPointer.dragSelectionIds = dragSelection.slice(0, 128);
+      }
+      setEditSelection(dragSelection);
+      return;
+    }
     if (
       e.data.type === 'r20:edit-mode'
       && e.data.protocol === 1

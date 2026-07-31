@@ -4,6 +4,7 @@ import type {
   IframeBlockTypeDragMessage,
   IframeEditHitMessage,
   IframeEditNodeGeometry,
+  IframeEditSelectionNode,
   IframeLayerDragMessage,
   IframeWidgetDragMessage,
 } from '@/lib/preview/iframeEditBridge';
@@ -345,5 +346,60 @@ export function resolveIframeFreePlacement(
     top: snap(baseTop + deltaY),
     containingBlockId: containingGeometry?.blockId ?? null,
     containingBlockNeedsRelative: containingGeometry?.position === 'static',
+  };
+}
+
+/**
+ * Resolve one member of a free-placement multi-selection without changing its
+ * layer parent. A group drag is a visual transform first; reparenting the
+ * whole selection remains an explicit layer/container operation so nested
+ * frames and table semantics cannot be changed accidentally.
+ */
+export function resolveIframeMultiFreePlacement(
+  origin: IframeEditSelectionNode,
+  end: IframeEditSelectionNode,
+  originPointer: { x: number; y: number },
+  endPointer: { x: number; y: number },
+  lookup: IframeDropTargetLookup,
+  snapSize = 1,
+): IframeFreePlacement | null {
+  if (origin.geometry.blockId !== end.geometry.blockId) return null;
+  if (!lookup.getBlock(origin.geometry.blockId)) return null;
+
+  const currentParentId = lookup.getBlock(origin.geometry.blockId)?.layerParentId ?? null;
+  const currentParentGeometry = currentParentId
+    ? origin.hitPath.find((geometry) => geometry.blockId === currentParentId) ?? null
+    : null;
+  const deltaX = endPointer.x - originPointer.x;
+  const deltaY = endPointer.y - originPointer.y;
+  let baseLeft = origin.geometry.offsetLeft;
+  let baseTop = origin.geometry.offsetTop;
+
+  if (
+    currentParentGeometry
+    && (
+      origin.geometry.offsetParentBlockId !== currentParentId
+      || origin.geometry.position === 'absolute'
+    )
+  ) {
+    baseLeft = origin.geometry.rect.left
+      - currentParentGeometry.rect.left
+      - currentParentGeometry.clientLeft
+      + currentParentGeometry.scrollLeft;
+    baseTop = origin.geometry.rect.top
+      - currentParentGeometry.rect.top
+      - currentParentGeometry.clientTop
+      + currentParentGeometry.scrollTop;
+  }
+
+  const step = Number.isFinite(snapSize)
+    ? Math.max(1, Math.min(128, Math.round(snapSize)))
+    : 1;
+  const snap = (value: number) => Math.max(0, Math.round(value / step) * step);
+  return {
+    left: snap(baseLeft + deltaX),
+    top: snap(baseTop + deltaY),
+    containingBlockId: currentParentId,
+    containingBlockNeedsRelative: currentParentGeometry?.position === 'static',
   };
 }

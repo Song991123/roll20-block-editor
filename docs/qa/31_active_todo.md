@@ -1,3 +1,19 @@
+# 2026-07-31 Canvas multi-object free transform
+
+- DONE LOCAL: Ctrl/Cmd-selected layers now move together on the persistent
+  iframe surface in free placement. Each selected layer keeps its existing
+  parent and receives the same pointer delta; the pointer-up payload rebuilds
+  the stable selection from rendered `data-r20-block-id` attributes before
+  writing managed CSS positions.
+- VERIFIED LOCAL: focused iframe bridge/drop/position/build-doc tests, lint,
+  production build, and two consecutive clean `smoke:edit-flow` runs pass.
+  The smoke proves visual movement during drag and persisted movement after
+  the emitted HTML/CSS update, with no console or page errors.
+- CLAIM BOUNDARY: this is anonymous synthetic local evidence. It does not
+  prove arbitrary imported-sheet behavior or actual Roll20 visual parity.
+- TODO P0: resume modern Sandbox upload/capture after the browser file-URL
+  permission is enabled; verify the legacy path in its separate destination.
+
 # 2026-07-31 Canvas modifier multi-selection
 
 - DONE LOCAL: iframe pointer hits now carry modifier state. Ctrl/Cmd-clicking

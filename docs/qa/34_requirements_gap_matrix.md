@@ -1,5 +1,16 @@
 # 34. Requirements Gap Matrix
 
+## Canvas Multi-Object Free Transform - 2026-07-31
+
+| Area | Current evidence | Status | Boundary |
+| --- | --- | --- | --- |
+| Shared pointer transform | Selected top-level iframe nodes move by one pointer delta during free drag | DONE LOCAL | Anonymous synthetic browser smoke |
+| Stable pointer-up selection | Rendered block IDs rebuild the multi-selection payload before managed CSS commit | DONE LOCAL | No external renderer evidence |
+| Persisted output | Both selected positions remain changed after iframe patch and emitted HTML/CSS update | DONE LOCAL | Does not prove arbitrary-sheet semantics |
+
+The current local evidence covers the editor interaction contract only. Roll20
+Sandbox upload/render and the separate legacy-room contract remain open.
+
 ## Canvas Modifier Multi-Selection - 2026-07-31
 
 | Area | Current evidence | Status | Boundary |

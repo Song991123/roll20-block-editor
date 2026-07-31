@@ -1,3 +1,18 @@
+# 2026-07-31 - Canvas multi-object free transform
+
+- The persistent iframe now keeps a Ctrl/Cmd selection stable through a free
+  drag. All selected top-level rendered nodes receive one optimistic pointer
+  delta, while each model block keeps its existing layer parent.
+- Pointer-up selection payloads prefer the current stable selected IDs and
+  re-read those IDs from the rendered DOM, avoiding a stale one-node pointer
+  snapshot when React/iframe messages interleave.
+- Focused bridge/drop/position/build-doc tests, lint, production build, and
+  two consecutive clean edit-flow browser smoke runs pass with no browser
+  console/page errors. This remains anonymous local evidence only.
+- External gate is unchanged: the dedicated modern Sandbox upload is still
+  blocked by Chrome's `Not allowed` file chooser response; no Roll20 parity
+  claim is made. Legacy verification remains a separate destination.
+
 # 2026-07-31 - Canvas modifier multi-selection
 
 - Extended the iframe edit-hit contract with optional validated modifier

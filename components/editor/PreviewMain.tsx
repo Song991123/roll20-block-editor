@@ -32,12 +32,14 @@ import {
   isTrustedIframeMessage,
   parseIframeEditBridgeMessage,
   type IframeEditHitMessage,
+  type IframeEditSelectionNode,
 } from '@/lib/preview/iframeEditBridge';
 import {
   commitIframeFlowDrop,
   filterDropTargetForPlacement,
   resolveIframeEditDropTarget,
   resolveIframeFreePlacement,
+  resolveIframeMultiFreePlacement,
   resolveIframeLayerDropTarget,
   resolveIframeLayerFreePlacement,
   resolveIframeWidgetDropTarget,
@@ -57,6 +59,40 @@ type OptimisticFlowCommit = {
   containerBlockId: string | null;
   siblingBlockId: string | null;
 };
+
+function inferMultiDragOrigin(
+  origin: IframeEditHitMessage,
+  end: IframeEditHitMessage,
+): IframeEditHitMessage {
+  if ((origin.selection?.length ?? 0) > 1 || (end.selection?.length ?? 0) <= 1) {
+    return origin;
+  }
+  const deltaX = end.pointer.x - origin.pointer.x;
+  const deltaY = end.pointer.y - origin.pointer.y;
+  const selection = end.selection?.map((selected): IframeEditSelectionNode => ({
+    geometry: {
+      ...selected.geometry,
+      rect: {
+        ...selected.geometry.rect,
+        left: selected.geometry.rect.left - deltaX,
+        top: selected.geometry.rect.top - deltaY,
+      },
+    },
+    hitPath: selected.hitPath.map((geometry, index) => index === 0
+      ? {
+          ...geometry,
+          rect: {
+            ...geometry.rect,
+            left: geometry.rect.left - deltaX,
+            top: geometry.rect.top - deltaY,
+          },
+        }
+      : geometry),
+  }));
+  return selection?.length
+    ? { ...origin, selection }
+    : origin;
+}
 
 /**
  * 미리보기 메인 — iframe srcdoc, sandbox.
@@ -709,9 +745,28 @@ export default function PreviewMain() {
               editMessage.blockId,
               ...store.selectedBlockIds.filter((id) => id !== editMessage.blockId),
             ], 'preview');
-          } else {
+          } else if (
+            store.selectedBlockIds.length <= 1
+            || !store.selectedBlockIds.includes(editMessage.blockId)
+          ) {
             setSelected(editMessage.blockId, 'preview');
           }
+          const currentSelection = useWorkspaceStore.getState();
+          iframeRef.current?.contentWindow?.postMessage({
+            type: 'r20:edit-mode',
+            protocol: R20_IFRAME_EDIT_PROTOCOL,
+            bridgeId: editMessage.bridgeId,
+            enabled: true,
+            selectedBlockId: currentSelection.selectedBlockId,
+            selectedBlockIds: currentSelection.selectedBlockIds,
+          }, '*');
+          iframeRef.current?.contentWindow?.postMessage({
+            type: 'r20:edit-drag-selection',
+            protocol: R20_IFRAME_EDIT_PROTOCOL,
+            bridgeId: editMessage.bridgeId,
+            selectedBlockId: currentSelection.selectedBlockId,
+            selectedBlockIds: currentSelection.selectedBlockIds,
+          }, '*');
         } else if (editMessage.phase === 'pointercancel') {
           iframeEditDropTargetRef.current = null;
           iframeEditDragOriginRef.current = null;
@@ -726,43 +781,93 @@ export default function PreviewMain() {
             moved = commitIframeFlowDrop(editMessage.subject.blockId, committedDropTarget, adapter);
           } else {
             markEditorTiming('commit-start');
-            const origin = iframeEditDragOriginRef.current;
-            const placement = origin
-              ? resolveIframeFreePlacement(origin, editMessage, {
-                  getBlock: (blockId) => htmlLayerMap.get(blockId) ?? null,
-                  canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
-                  canNestBlockInContainer: (movingBlockId, targetBlockId) => adapter.canNestBlockInContainer(
-                    'html',
-                    movingBlockId,
-                    targetBlockId,
-                  ),
-                }, ui.snapEnabled ? 8 : 1)
-              : null;
-            if (placement) {
-              const subject = htmlLayerMap.get(editMessage.subject.blockId) ?? null;
-              const currentParentId = subject?.layerParentId ?? null;
-              let structureMoved = true;
-              if (placement.containingBlockId && currentParentId !== placement.containingBlockId) {
-                structureMoved = adapter.nestBlockInContainer(
-                  'html',
-                  editMessage.subject.blockId,
-                  placement.containingBlockId,
+            const dragOrigin = iframeEditDragOriginRef.current;
+            const origin = dragOrigin ? inferMultiDragOrigin(dragOrigin, editMessage) : null;
+            const lookup = {
+              getBlock: (blockId: string) => htmlLayerMap.get(blockId) ?? null,
+              canNestInContainer: (blockId: string) => adapter.canNestInContainer('html', blockId),
+              canNestBlockInContainer: (movingBlockId: string, targetBlockId: string) => adapter.canNestBlockInContainer(
+                'html',
+                movingBlockId,
+                targetBlockId,
+              ),
+            };
+            const originSelection = origin?.selection ?? [];
+            const endSelection = editMessage.selection ?? [];
+            const originBlockId = origin?.subject.blockId ?? null;
+            const canMoveAsGroup = originSelection.length > 1
+              && endSelection.length === originSelection.length
+              && originBlockId !== null
+              && originSelection.some((selected) => selected.geometry.blockId === originBlockId)
+              && originSelection.every((selected) => endSelection.some(
+                (endSelected) => endSelected.geometry.blockId === selected.geometry.blockId,
+              ));
+            if (canMoveAsGroup && origin) {
+              let cssBlockCreated = false;
+              const placements = originSelection.map((selected) => {
+                const endSelected = endSelection.find(
+                  (candidate) => candidate.geometry.blockId === selected.geometry.blockId,
                 );
-              } else if (!placement.containingBlockId && currentParentId) {
-                structureMoved = adapter.moveBlockToRoot('html', editMessage.subject.blockId);
-              }
-              if (structureMoved) {
-                const committed = commitManagedDesignPosition(adapter, {
-                  workspace: 'html',
-                  blockId: editMessage.subject.blockId,
-                  left: placement.left,
-                  top: placement.top,
-                  containingBlockId: placement.containingBlockId,
-                  containingBlockNeedsRelative: placement.containingBlockNeedsRelative,
+                return endSelected
+                  ? resolveIframeMultiFreePlacement(
+                      selected,
+                      endSelected,
+                      origin.pointer,
+                      editMessage.pointer,
+                      lookup,
+                      ui.snapEnabled ? 8 : 1,
+                    )
+                  : null;
+              });
+              if (placements.every((placement) => placement !== null)) {
+                placements.forEach((placement, index) => {
+                  if (!placement) return;
+                  const blockId = originSelection[index].geometry.blockId;
+                  const committed = commitManagedDesignPosition(adapter, {
+                    workspace: 'html',
+                    blockId,
+                    left: placement.left,
+                    top: placement.top,
+                    containingBlockId: placement.containingBlockId,
+                    containingBlockNeedsRelative: placement.containingBlockNeedsRelative,
+                  });
+                  moved = committed.moved || moved;
+                  cssBlockCreated = committed.cssBlockCreated || cssBlockCreated;
                 });
-                moved = committed.moved;
-                if (committed.cssBlockCreated) {
-                  useWorkspaceStore.getState().bumpStructure('css', adapter.countBlocks('css'));
+              }
+              if (cssBlockCreated) {
+                useWorkspaceStore.getState().bumpStructure('css', adapter.countBlocks('css'));
+              }
+            } else {
+              const placement = origin
+                ? resolveIframeFreePlacement(origin, editMessage, lookup, ui.snapEnabled ? 8 : 1)
+                : null;
+              if (placement) {
+                const subject = htmlLayerMap.get(editMessage.subject.blockId) ?? null;
+                const currentParentId = subject?.layerParentId ?? null;
+                let structureMoved = true;
+                if (placement.containingBlockId && currentParentId !== placement.containingBlockId) {
+                  structureMoved = adapter.nestBlockInContainer(
+                    'html',
+                    editMessage.subject.blockId,
+                    placement.containingBlockId,
+                  );
+                } else if (!placement.containingBlockId && currentParentId) {
+                  structureMoved = adapter.moveBlockToRoot('html', editMessage.subject.blockId);
+                }
+                if (structureMoved) {
+                  const committed = commitManagedDesignPosition(adapter, {
+                    workspace: 'html',
+                    blockId: editMessage.subject.blockId,
+                    left: placement.left,
+                    top: placement.top,
+                    containingBlockId: placement.containingBlockId,
+                    containingBlockNeedsRelative: placement.containingBlockNeedsRelative,
+                  });
+                  moved = committed.moved;
+                  if (committed.cssBlockCreated) {
+                    useWorkspaceStore.getState().bumpStructure('css', adapter.countBlocks('css'));
+                  }
                 }
               }
             }
