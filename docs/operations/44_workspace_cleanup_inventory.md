@@ -1495,6 +1495,20 @@ directories that had been recreated by the local build.
 - VERIFIED: all generated roots are absent again and `reports/README.md` is
   retained.
 
+## 2026-07-31 post-smoke cleanup retry
+
+- RECHECKED: the current local build and browser smoke recreated only ignored
+  `.next/`, `out/`, and generated smoke/audit report folders under the active
+  worktree. `reports/README.md`, source, dependencies, worktrees, and
+  protected external sheet roots were excluded.
+- ATTEMPTED: a boundary-checked native recursive cleanup was requested after
+  the smoke completed and no project listener remained.
+- BLOCKED HOST: the session execution boundary rejected the deletion request
+  before PowerShell ran. No alternate shell, native API, per-file workaround,
+  or safety bypass was used.
+- NOT DELETED: the ignored build/smoke outputs remain local-only and are not
+  tracked or publishable; the policy README remains preserved.
+
 ## 2026-07-31 latest user-authorized retry
 
 - RECHECKED: the previously approved generated/stale targets were all absent:
