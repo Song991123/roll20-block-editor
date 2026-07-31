@@ -53,6 +53,7 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
   deletion rules. Do not collapse them into one undifferentiated folder.
 - The visual language must be original: light pink/pastel is allowed, but do not imitate Roll20 screens or default to an AI-looking dark blue/purple palette.
 - User-facing UI must prefer plain Korean action language, compact icons with tooltips, and optional visual previews over raw DOM/CSS/worker terminology.
+- Figma-like layer grouping must remain structure-aware: additive selection may group only contiguous siblings under one valid parent, and the operation must preserve HTML order, preview/edit synchronization, and Roll20-valid table/conditional structure.
 - Current persistence is local browser autosave/IndexedDB. Do not imply account sync or require login until a real auth/storage service exists and its privacy boundary is documented.
 - The public app must not expose repository/source links as product chrome. Bug reports should use `mailto:sjh11235678@gmail.com` unless the user changes that address.
 

@@ -51,6 +51,13 @@ invent separate DOM models.
    Blockly is changed.
 7. The iframe overlay and layer panel clear their target state after drop or
    pointer cancellation.
+8. Ctrl/Cmd-click may select multiple layers in the panel. Grouping is
+   available only when the selection contains contiguous siblings under one
+   parent; it creates a normal editable `r20_element_container` (`<div>`) and
+   preserves the selected order.
+9. Grouping rejects mixed parents, non-contiguous selections, and invalid
+   table/conditional insertion points. The rejected action must leave the
+   Blockly graph and rendered iframe unchanged.
 
 ## Visual Language
 
@@ -76,10 +83,12 @@ already-selected insertion position.
 ## Verification Boundary
 
 Local tests cover classification, cycle protection, before/inside/after layer
-operations, flow versus free placement, and selection synchronization. A
-future browser acceptance test must additionally prove that the same imported
-HTML surface is visible in preview and edit after a nested drop, with no
-rollback frame and with the generated CSS output stable after re-import.
+operations, flow versus free placement, grouping preconditions, and selection
+synchronization. The browser smoke also proves Ctrl selection -> group keeps
+the model parent, iframe parent, and emitted HTML aligned. A future browser
+acceptance test must additionally prove that the same imported HTML surface is
+visible in preview and edit after a nested drop, with no rollback frame and
+with the generated CSS output stable after re-import.
 
 ## Composite And Shadow Role Contract
 

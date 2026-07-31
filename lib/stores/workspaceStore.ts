@@ -5,7 +5,7 @@
  *
  * Blockly workspace 객체 자체는 BlocklyModelHost 가 useRef 로 관리.
  * 본 store 에는 직렬화된 XML 캐시 + dirty / count / lastSavedAt
- *   + selectedBlockId + emit 결과 + warnings.
+ *   + selectedBlockId/selectedBlockIds + emit 결과 + warnings.
  */
 
 import { create } from 'zustand';
@@ -100,6 +100,7 @@ interface WorkspaceStore {
   lastClearedAt: number;
 
   selectedBlockId: string | null;
+  selectedBlockIds: string[];
   selectionOrigin: SelectionOrigin;
 
   // Phase A — WYSIWYG 위젯 인스턴스 (sheet / rolltemplate 별도).
@@ -127,6 +128,8 @@ interface WorkspaceStore {
   setEmitCache: (out: Partial<EmitOutput>) => void;
   setEmitWarnings: (warnings: EmitWarning[]) => void;
   setSelectedBlockId: (id: string | null, origin: Exclude<SelectionOrigin, null>) => void;
+  setSelectedBlockIds: (ids: string[], origin: Exclude<SelectionOrigin, null>) => void;
+  toggleSelectedBlockId: (id: string, origin: Exclude<SelectionOrigin, null>) => void;
   /**
    * 활성 워크스페이스 (또는 지정 워크스페이스) 에 새 블록 인스턴스 추가.
    * Blockly adapter 가 실제 Block 객체 생성 → 워크스페이스 changeListener 가
@@ -212,6 +215,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
   emitWarnings: [],
   lastClearedAt: 0,
   selectedBlockId: null,
+  selectedBlockIds: [],
   selectionOrigin: null,
   sheetWidgets: [],
   rolltemplateWidgets: [],
@@ -275,6 +279,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
       emitWarnings: [],
       lastClearedAt: Date.now(),
       selectedBlockId: null,
+      selectedBlockIds: [],
       selectionOrigin: null,
       sheetWidgets: [],
       rolltemplateWidgets: [],
@@ -287,7 +292,29 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
   setEmitWarnings: (warnings) => set({ emitWarnings: warnings }),
 
   setSelectedBlockId: (id, origin) =>
-    set({ selectedBlockId: id, selectionOrigin: origin }),
+    set({ selectedBlockId: id, selectedBlockIds: id ? [id] : [], selectionOrigin: origin }),
+
+  setSelectedBlockIds: (ids, origin) => {
+    const unique = Array.from(new Set(ids.filter(Boolean)));
+    set({
+      selectedBlockId: unique[0] ?? null,
+      selectedBlockIds: unique,
+      selectionOrigin: origin,
+    });
+  },
+
+  toggleSelectedBlockId: (id, origin) =>
+    set((state) => {
+      const current = state.selectedBlockIds;
+      const next = current.includes(id)
+        ? current.filter((selectedId) => selectedId !== id)
+        : [...current, id];
+      return {
+        selectedBlockId: next[0] ?? null,
+        selectedBlockIds: next,
+        selectionOrigin: origin,
+      };
+    }),
 
   appendBlockToActive: (blockType, target) => {
     const state = useWorkspaceStore.getState();
@@ -303,7 +330,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
       ) {
         adapter.setBlockField('html', id, 'STYLE', DEFAULT_NEW_DIV_STYLE);
       }
-      set({ selectedBlockId: id, selectionOrigin: 'tree' });
+      set({ selectedBlockId: id, selectedBlockIds: id ? [id] : [], selectionOrigin: 'tree' });
       // Phase D fix (add-block bumpStructure 버그, local_1abb2993):
       // adapter 내부에서 BLOCK_CREATE 이벤트를 fire 하므로 changeListener 가
       // bumpStructure 를 자동 호출하지만, Events.disable 카운터가 미해소된

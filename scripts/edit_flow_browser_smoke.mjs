@@ -173,6 +173,8 @@ async function main() {
       '  <td class="sheet-table-cell-b"><input type="text" name="attr_table_b" value="B"></td>',
       '</tr></tbody></table>',
       '<div class="outside" style="width:180px; min-height:54px; padding:8px">Outside</div>',
+      '<div class="group-one" style="padding:4px">Group A</div>',
+      '<div class="group-two" style="padding:4px">Group B</div>',
     ].join('\n');
     await page.evaluate((html) => window.__perfHook.importSheet({ html, css: '', i18n: '{}' }), syntheticHtml);
     await page.waitForTimeout(500);
@@ -188,6 +190,8 @@ async function main() {
       const tableCellA = document.querySelector('.sheet-table-cell-a');
       const tableCellB = document.querySelector('.sheet-table-cell-b');
       const outside = document.querySelector('.sheet-outside');
+      const groupOne = document.querySelector('.sheet-group-one');
+      const groupTwo = document.querySelector('.sheet-group-two');
       return {
         frameId: frameNode?.getAttribute('data-r20-block-id') ?? null,
         rowAId: rowA?.getAttribute('data-r20-block-id') ?? null,
@@ -198,13 +202,74 @@ async function main() {
         tableCellAId: tableCellA?.getAttribute('data-r20-block-id') ?? null,
         tableCellBId: tableCellB?.getAttribute('data-r20-block-id') ?? null,
         outsideId: outside?.getAttribute('data-r20-block-id') ?? null,
+        groupOneId: groupOne?.getAttribute('data-r20-block-id') ?? null,
+        groupTwoId: groupTwo?.getAttribute('data-r20-block-id') ?? null,
       };
     });
     assert(
       ids.frameId && ids.rowAId && ids.rowBId && ids.tableId && ids.tableBodyId
-        && ids.tableRowId && ids.outsideId,
+        && ids.tableRowId && ids.outsideId && ids.groupOneId && ids.groupTwoId,
       `synthetic structural IDs were not emitted: ${JSON.stringify(ids)}`,
     );
+
+    const groupOneRow = page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.groupOneId}"]`,
+    );
+    const groupTwoRow = page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.groupTwoId}"]`,
+    );
+    await groupOneRow.click();
+    await groupTwoRow.dispatchEvent('click', { bubbles: true, ctrlKey: true });
+    await page.locator('[data-testid="edit-layer-group-selection"]').click();
+    await page.waitForTimeout(900);
+    result.tests.layerGrouping = await page.evaluate(({ firstId, secondId }) => {
+      const graph = window.__perfHook.getLayerSnapshot('html');
+      const first = graph.find((node) => node.id === firstId);
+      const second = graph.find((node) => node.id === secondId);
+      const groupId = first?.layerParentId ?? null;
+      const group = groupId ? graph.find((node) => node.id === groupId) : null;
+      const emitted = window.__perfHook.getEmitContent().html;
+      return {
+        groupId,
+        groupType: group?.type ?? null,
+        firstParent: first?.layerParentId ?? null,
+        secondParent: second?.layerParentId ?? null,
+        emittedNested: Boolean(groupId)
+          && emitted.indexOf(`data-r20-block-id="${firstId}"`) > emitted.indexOf(`data-r20-block-id="${groupId}"`),
+      };
+    }, { firstId: ids.groupOneId, secondId: ids.groupTwoId });
+    const renderedGrouping = await frame.evaluate(({ firstId, secondId, groupId }) => {
+      const firstNode = document.querySelector(`[data-r20-block-id="${CSS.escape(firstId)}"]`);
+      const secondNode = document.querySelector(`[data-r20-block-id="${CSS.escape(secondId)}"]`);
+      const groupNode = groupId
+        ? document.querySelector(`[data-r20-block-id="${CSS.escape(groupId)}"]`)
+        : null;
+      return {
+        firstFound: Boolean(firstNode),
+        secondFound: Boolean(secondNode),
+        groupFound: Boolean(groupNode),
+        renderedParent: firstNode?.parentElement?.closest('[data-r20-block-id]')?.getAttribute('data-r20-block-id') ?? null,
+        renderedSecondParent: secondNode?.parentElement?.closest('[data-r20-block-id]')?.getAttribute('data-r20-block-id') ?? null,
+      };
+    }, {
+      firstId: ids.groupOneId,
+      secondId: ids.groupTwoId,
+      groupId: result.tests.layerGrouping.groupId,
+    });
+    result.tests.layerGrouping = { ...result.tests.layerGrouping, ...renderedGrouping };
+    assert(result.tests.layerGrouping.groupId, 'layer grouping did not create a parent frame');
+    assert(result.tests.layerGrouping.groupType === 'r20_element_container', 'layer grouping used the wrong HTML container');
+    assert(
+      result.tests.layerGrouping.firstParent === result.tests.layerGrouping.groupId
+        && result.tests.layerGrouping.secondParent === result.tests.layerGrouping.groupId,
+      `layer grouping did not preserve both model parents: ${JSON.stringify(result.tests.layerGrouping)}`,
+    );
+    assert(
+      result.tests.layerGrouping.renderedParent === result.tests.layerGrouping.groupId
+        && result.tests.layerGrouping.renderedSecondParent === result.tests.layerGrouping.groupId,
+      `layer grouping did not update the iframe surface: ${JSON.stringify(result.tests.layerGrouping)}`,
+    );
+    assert(result.tests.layerGrouping.emittedNested, 'layer grouping did not update emitted HTML');
 
     // This is the user-facing path: move a real rendered node over another
     // rendered node, let the iframe show the optimistic order immediately,

@@ -1,3 +1,16 @@
+# 2026-07-31 - Layer multi-select and grouping
+
+- Added `selectedBlockIds` to the workspace selection model. Ctrl/Cmd-click
+  toggles layer rows without changing the single primary selection used by
+  the inspector and iframe outline.
+- Added a structural adapter operation that groups only contiguous siblings
+  under one parent into a generic `r20_element_container`; invalid table,
+  mixed-parent, and non-contiguous selections are rejected.
+- Added the panel `묶기` action and Ctrl/Cmd+G, then verified the model graph,
+  persistent iframe, and emitted HTML stay aligned in `smoke:edit-flow`.
+- `ci:verify`, lint, and production build pass. Actual Roll20 capture remains
+  a separate external gate.
+
 # 2026-07-31 - Layer-panel free-placement containment
 
 - Changed `resolveIframeLayerDropTarget` to receive the active flow/free

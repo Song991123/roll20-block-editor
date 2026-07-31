@@ -1,3 +1,18 @@
+# 2026-07-31 Layer multi-select and grouping
+
+- DONE LOCAL: the layer panel now supports Ctrl/Cmd additive selection and a
+  `묶기` action plus Ctrl/Cmd+G. Only contiguous siblings with one parent are
+  accepted; the adapter wraps them in a generic editable HTML container and
+  preserves order.
+- VERIFIED LOCAL: adapter layer-operation regression, `smoke:edit-flow`,
+  `ci:verify`, lint, and production build pass. The browser smoke checks the
+  model parent, iframe parent, and emitted HTML together.
+- CLAIM BOUNDARY: this is local editor evidence. It does not prove arbitrary
+  third-party sheet coverage or actual Roll20 visual parity.
+- TODO P0: resume current-payload modern Sandbox capture after the browser
+  file-URL permission is enabled; keep legacy verification in its separate
+  dedicated destination.
+
 # 2026-07-31 Layer-panel free-placement containment
 
 - DONE LOCAL: layer drags from the Figma-style panel now pass the active

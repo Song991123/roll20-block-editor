@@ -1,5 +1,13 @@
 # 34. Requirements Gap Matrix
 
+## Layer Multi-Select And Grouping - 2026-07-31
+
+| Area | Current evidence | Status | Boundary |
+| --- | --- | --- | --- |
+| Layer multi-select | Ctrl/Cmd additive selection and primary-selection preservation | DONE LOCAL | Browser evidence is synthetic-only |
+| Layer grouping | Contiguous same-parent selection becomes an editable generic HTML frame; model/iframe/emit parents agree | DONE LOCAL | Does not prove arbitrary-sheet semantics or Roll20 parity |
+| Invalid grouping guard | Mixed parents, non-contiguous siblings, and invalid structural parents are rejected | DONE LOCAL | Broader DOM families remain open |
+
 ## Local Edit-Surface Synchronization Increment - 2026-07-31
 
 | Area | Current evidence | Status | Boundary |

@@ -4,6 +4,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent as ReactDragEvent } from 'react';
 import { ChevronDown, ChevronRight, CircleHelp, Layers, Redo2, Search, Undo2, Ungroup } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { toast } from 'sonner';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import type { BlockSnapshot } from '@/lib/blockly/adapter';
 import { canMoveLayerDrop, getLayerRole, type LayerDropMode } from '@/lib/editor/layerRoles';
@@ -318,7 +319,9 @@ function EditLayerPanel({
   // they could never appear on the sheet canvas.
   const tab: WorkspaceKey = 'html';
   const selectedId = useWorkspaceStore((s) => s.selectedBlockId);
+  const selectedIds = useWorkspaceStore((s) => s.selectedBlockIds);
   const setSelected = useWorkspaceStore((s) => s.setSelectedBlockId);
+  const toggleSelected = useWorkspaceStore((s) => s.toggleSelectedBlockId);
   const bumpStructure = useWorkspaceStore((s) => s.bumpStructure);
   const structureVersion = useWorkspaceStore((s) => s.workspaces[tab].structureVersion);
   const [collapsedLayerIds, setCollapsedLayerIds] = useState<Set<string>>(() => new Set());
@@ -435,6 +438,38 @@ function EditLayerPanel({
     [bumpStructure, setSelected, tab],
   );
 
+  const selectLayer = useCallback((blockId: string, additive: boolean) => {
+    if (additive) toggleSelected(blockId, 'tree');
+    else setSelected(blockId, 'tree');
+  }, [setSelected, toggleSelected]);
+
+  const groupSelection = useCallback(() => {
+    if (selectedIds.length < 2) return;
+    const adapter = getBlocklyAdapter();
+    const groupId = adapter.groupBlocksInContainer(tab, selectedIds);
+    if (!groupId) {
+      toast('같은 틀 안에서 이어진 레이어만 묶을 수 있어요.', { duration: 2400 });
+      return;
+    }
+    bumpStructure(tab, adapter.countBlocks(tab));
+    flushEmitPipeline();
+    setSelected(groupId, 'tree');
+    toast.success('레이어를 하나의 틀로 묶었어요.', { duration: 1600 });
+  }, [bumpStructure, selectedIds, setSelected, tab]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey || event.key.toLowerCase() !== 'g') return;
+      const target = event.target as HTMLElement | null;
+      if (target?.isContentEditable || target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.tagName === 'SELECT') return;
+      if (selectedIds.length < 2) return;
+      event.preventDefault();
+      groupSelection();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [groupSelection, selectedIds.length]);
+
   return (
     <aside
       className="flex min-h-0 flex-col border-r border-border bg-[var(--bg-elevated)]"
@@ -443,6 +478,19 @@ function EditLayerPanel({
       <div className="flex h-11 shrink-0 items-center gap-2 border-b border-border px-3 text-sm font-semibold text-foreground">
         <Layers className="h-[17px] w-[17px] text-[var(--primary)]" />
         <span>레이어</span>
+        {selectedIds.length > 1 && (
+          <button
+            type="button"
+            onClick={groupSelection}
+            className="inline-flex items-center gap-1 rounded-full border border-[var(--primary-soft-border)] bg-[var(--primary-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--primary-active)] transition-colors hover:bg-[var(--primary-soft-strong)] active:scale-95"
+            title="고른 레이어를 하나의 HTML 틀로 묶어요"
+            aria-label={`고른 레이어 ${selectedIds.length}개 묶기`}
+            data-testid="edit-layer-group-selection"
+          >
+            <Layers className="h-3.5 w-3.5" aria-hidden="true" />
+            묶기 {selectedIds.length}
+          </button>
+        )}
         <span className="ml-auto rounded-full border border-border bg-[var(--bg-elevated-2)] px-2 py-0.5 text-xs font-normal tabular-nums text-muted-foreground">
           {search.trim() ? `${visibleNodes.filter((item) => item.searchMatch).length}+맥락 ${visibleNodes.length}/${nodes.length}` : `${visibleNodes.length}/${nodes.length}`}
         </span>
@@ -538,10 +586,10 @@ function EditLayerPanel({
                   <EditLayerRow
                     node={node}
                     workspace={tab}
-                    selected={node.id === selectedId}
+                    selected={selectedIds.includes(node.id)}
                     searchMatch={item.searchMatch}
                     contextOnly={item.contextOnly}
-                    onSelect={() => setSelected(node.id, 'tree')}
+                    onSelect={(additive) => selectLayer(node.id, additive)}
                     onMove={moveLayer}
                     canDrop={canMoveLayer}
                     onEject={ejectLayer}
@@ -576,7 +624,7 @@ const EditLayerRow = memo(function EditLayerRow({
   selected: boolean;
   searchMatch: boolean;
   contextOnly: boolean;
-  onSelect: () => void;
+  onSelect: (additive: boolean) => void;
   onMove: (draggedId: string, targetId: string, mode: LayerDropMode) => void;
   canDrop: (draggedId: string, targetId: string, mode: LayerDropMode) => boolean;
   onEject: (blockId: string) => void;
@@ -623,14 +671,15 @@ const EditLayerRow = memo(function EditLayerRow({
       data-r20-layer-selected={selected ? '1' : '0'}
       data-r20-layer-dragging={isDragging ? '1' : '0'}
       aria-grabbed={isDragging}
+      aria-pressed={selected}
       aria-label={`${node.label} ${role.label}${role.canReceiveChildren ? ' 컨테이너' : ''}`}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          onSelect();
+          onSelect(false);
         }
       }}
-      onClick={onSelect}
+      onClick={(e) => onSelect(e.metaKey || e.ctrlKey)}
       onDragStart={(e) => {
         e.dataTransfer.setData('application/x-r20-layer-block', node.id);
         e.dataTransfer.effectAllowed = 'move';

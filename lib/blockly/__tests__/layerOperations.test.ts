@@ -213,4 +213,29 @@ try {
   duplicateWorkspace.dispose();
 }
 
+const groupWorkspace = new Blockly.Workspace();
+const groupFirst = groupWorkspace.newBlock('r20_i18n_text');
+const groupSecond = groupWorkspace.newBlock('r20_i18n_text');
+groupFirst.nextConnection!.connect(groupSecond.previousConnection!);
+
+adapter.registerWorkspace('html', groupWorkspace as unknown as Blockly.WorkspaceSvg);
+try {
+  const groupId = adapter.groupBlocksInContainer('html', [groupFirst.id, groupSecond.id]);
+  assert.ok(groupId);
+  const group = groupWorkspace.getBlockById(groupId!);
+  assert.ok(group);
+  assert.equal(group!.type, 'r20_element_container');
+  assert.equal(group!.getFieldValue('TAG'), 'div');
+  const content = group!.getInput('CONTENT')!.connection!.targetBlock();
+  assert.equal(content?.id, groupFirst.id);
+  assert.equal(content?.nextConnection?.targetBlock()?.id, groupSecond.id);
+  assert.equal(groupFirst.getSurroundParent()?.id, groupId);
+  assert.equal(groupSecond.getSurroundParent()?.id, groupId);
+  assert.equal(groupWorkspace.getTopBlocks(true).length, 1);
+  assert.equal(adapter.groupBlocksInContainer('html', [groupFirst.id, groupId!]), null);
+} finally {
+  adapter.unregisterWorkspace('html');
+  groupWorkspace.dispose();
+}
+
 console.log('blockly layer operations test PASS');

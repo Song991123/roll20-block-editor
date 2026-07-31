@@ -165,6 +165,8 @@ export interface BlocklyAdapter {
   canNestTypeInContainer(key: WorkspaceKey, movingType: string, targetId: string): boolean;
   canNestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean;
   nestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean;
+  /** Group contiguous sibling layers in a new generic HTML container. */
+  groupBlocksInContainer(key: WorkspaceKey, blockIds: string[]): string | null;
   canUndo(key: WorkspaceKey): boolean;
   canRedo(key: WorkspaceKey): boolean;
   undo(key: WorkspaceKey): boolean;
@@ -940,6 +942,63 @@ class DefaultAdapter implements BlocklyAdapter {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  /**
+   * Wrap a contiguous sibling selection in a normal editable `<div>` block.
+   * Requiring one parent and contiguous layer order keeps table/conditional
+   * structures from being silently reshaped by a convenience action.
+   */
+  groupBlocksInContainer(key: WorkspaceKey, blockIds: string[]): string | null {
+    const ws = this.workspaces[key];
+    if (!ws) return null;
+    const ids = Array.from(new Set(blockIds.filter(Boolean)));
+    if (ids.length < 2) return null;
+    const blocks = ids
+      .map((id) => ws.getBlockById(id))
+      .filter((block): block is Blockly.Block => Boolean(block));
+    if (blocks.length !== ids.length) return null;
+
+    const parent = blocks[0].getSurroundParent?.() ?? null;
+    if (blocks.some((block) => (block.getSurroundParent?.() ?? null) !== parent)) return null;
+
+    const layerOrder = this.listAllBlocks(key);
+    const parentId = parent?.id ?? null;
+    const siblingOrder = layerOrder.filter((layer) => layer.layerParentId === parentId);
+    const selectedInLayerOrder = siblingOrder.filter((layer) => ids.includes(layer.id));
+    if (selectedInLayerOrder.length !== ids.length) return null;
+    const firstSiblingIndex = siblingOrder.findIndex((layer) => layer.id === selectedInLayerOrder[0]?.id);
+    if (firstSiblingIndex < 0 || selectedInLayerOrder.some((layer, index) => {
+      return siblingOrder[firstSiblingIndex + index]?.id !== layer.id;
+    })) {
+      return null;
+    }
+
+    const group = ws.newBlock('r20_element_container');
+    try {
+      group.setFieldValue('div', 'TAG');
+      group.setFieldValue('', 'CLASS');
+      if (parentId && !this.canNestBlockInContainer(key, group.id, parentId)) {
+        group.dispose(false);
+        return null;
+      }
+      const firstId = selectedInLayerOrder[0]?.id;
+      if (!firstId || !this.moveBlockBefore(key, group.id, firstId)) {
+        group.dispose(false);
+        return null;
+      }
+      for (const layer of selectedInLayerOrder) {
+        if (!this.nestBlockInContainer(key, layer.id, group.id)) {
+          return null;
+        }
+      }
+      return group.id;
+    } catch {
+      // The preflight above keeps this path structural. Do not dispose a
+      // partially connected group here: Blockly may own selected children;
+      // leaving the failed mutation visible is safer than deleting user data.
+      return null;
     }
   }
 
