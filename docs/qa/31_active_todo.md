@@ -1,3 +1,28 @@
+# 2026-08-01 Four-zone harness and context budget refresh
+
+- `DONE LOCAL`: confirmed the parent workspace already has the four ownership
+  zones (`01_ACTIVE`, `02_REFERENCE`, `03_ARCHIVE`, `04_LOCAL`). Fixed
+  compatibility roots remain at parent level because current consumers are
+  path-sensitive; no duplicate product copy was added.
+- `DONE LOCAL`: replaced the seven-file full-history startup path with
+  `AGENTS.md` plus `43_agent_context_pack.md` and task-routed reads. Measured
+  startup context changed from `2,249,317` bytes / `24,448` lines / roughly
+  `642,662` tokens to `12,045` bytes / `181` lines / roughly `3,442` tokens,
+  a `99.46%` estimated reduction under the same `bytes / 3.5` formula.
+- `DONE LOCAL`: installed Caveman's seven Codex skills globally and Ponytail
+  plugin `4.8.4`. Ponytail hooks need review and a Codex restart/new task;
+  Caveman's Claude-log stats are not reported as Codex usage.
+- `VERIFIED LOCAL`: the revised modern/legacy persistent-preview smoke and the
+  full `ci:verify` gate pass; server hygiene reports zero project/CDP
+  listeners. Ponytail review removed the redundant stale-patch payload from
+  the new revision-ordering probe.
+- `BLOCKED CLEANUP`: the latest exact deletion set contained only generated
+  build output, synthetic reports, an expendable visual fixture, empty help
+  output, and `next-env.d.ts`. The host rejected the PowerShell recursive
+  deletion before execution. No target was deleted and no alternate route was
+  used. Active `node_modules`, source/worktrees, compatibility roots, and the
+  anonymous payload needed for the next Sandbox upload remain preserved.
+
 # 2026-08-01 Live-patch revision ordering guard
 
 - `DONE LOCAL`: the shared iframe bridge now rejects delayed older HTML/CSS
@@ -11,6 +36,10 @@
   persistent-preview surface, strict imported-edit sync, and edit-flow smoke
   all pass after the bridge change. Modern/legacy local runs still use one
   persistent iframe each.
+- `VERIFIED LOCAL`: the persistent-preview browser smoke now applies a newer
+  synthetic revision and then delivers an older one out of order. Modern and
+  legacy both retain the newer DOM (`new`), report the same newest revision,
+  count one stale drop, and finish with zero console/page errors.
 - `VERIFY EXTERNAL`: this removes one local transport race; it does not prove
   same-payload Roll20 Sandbox/legacy-room parity. Current external evidence
   remains `0/4` until the supported visible file selection completes.

@@ -12,13 +12,12 @@ Use this skill when working in `web-push-main` on Roll20 render parity, edit/pre
 Open these before changing files or reporting status:
 
 1. `AGENTS.md`
-2. `docs/operations/33_working_rules_and_requirements.md`
-3. `docs/qa/31_active_todo.md`
-4. `docs/qa/34_requirements_gap_matrix.md`
-5. `docs/operations/35_agent_progress_log.md`
-6. `docs/operations/34_branch_and_deployment_plan.md`
-7. `docs/operations/38_multi_agent_render_plan.md`
-8. `docs/research/40_roll20_render_reference_inventory.md`
+2. `docs/operations/43_agent_context_pack.md`
+3. `git status --short --branch`
+
+Then follow the context pack's task route. Search append-only TODO, progress,
+gap, and report histories and open only the relevant section. Do not load
+those files end to end as startup context.
 
 For render parity, also read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `docs/spec/31_asset_preservation_policy.md`, and `reports/README.md`.
 

@@ -33,17 +33,13 @@ These are planning estimates, not pass/fail claims.
 Every agent starts with:
 
 1. `AGENTS.md`
-2. `docs/operations/33_working_rules_and_requirements.md`
-3. `docs/qa/31_active_todo.md`
-4. `docs/qa/34_requirements_gap_matrix.md`
-5. `docs/operations/35_agent_progress_log.md`
-6. `docs/operations/34_branch_and_deployment_plan.md`
-7. `docs/research/40_roll20_render_reference_inventory.md`
-8. `docs/spec/25_roll20_baseline.md`
-9. `docs/spec/29_universal_roll20_mapping_contract.md`
-10. `docs/spec/31_asset_preservation_policy.md`
+2. `docs/operations/43_agent_context_pack.md`
+3. Git status and server hygiene.
+4. Only the task-specific files named by the context pack.
 
-Optional token-saving skill: repo copy `agent/skills/roll20-render-ops`. On a new machine, copy or symlink that folder into the local Codex skills directory.
+Shared project skill: repo copy `agent/skills/roll20-render-ops`. On a new
+machine, copy or symlink that folder into the local Codex skills directory.
+Do not load append-only histories end to end.
 
 ## Branch Strategy
 
@@ -96,7 +92,7 @@ cd /d "D:\훙냥냥\마렌상\legacy-sheet-corpus 시트 고치기\web-push-main
 git fetch origin
 git switch -c codex/ops-render-integration-20260715 origin/codex/roll20-mapping-fidelity-smoke
 
-Use $roll20-render-ops. You are the lead integrator. Read AGENTS.md, docs/operations/33_working_rules_and_requirements.md, docs/qa/31_active_todo.md, docs/qa/34_requirements_gap_matrix.md, docs/operations/35_agent_progress_log.md, docs/operations/34_branch_and_deployment_plan.md, and docs/operations/38_multi_agent_render_plan.md. Keep README untouched unless explicitly asked. Update TODO/progress docs after each coherent batch. Run server hygiene, ci:verify, lint, build, push, and check GitHub Actions. Do not claim Roll20 visual parity unless current actual Roll20 evidence proves it.
+Use $roll20-render-ops. You are the lead integrator. Read AGENTS.md and docs/operations/43_agent_context_pack.md, then follow only its task route. Keep README untouched unless explicitly asked. Update current TODO/progress sections after each coherent batch. Run server hygiene, ci:verify, lint, build, push, and check GitHub Actions. Do not claim Roll20 visual parity unless current actual Roll20 evidence proves it.
 ```
 
 ### Codex 2: Render Evidence
@@ -148,6 +144,11 @@ corepack pnpm run lint
 corepack pnpm run build
 
 To use the shared skill, copy or symlink agent/skills/roll20-render-ops into ~/.codex/skills/roll20-render-ops.
+Optional Codex-wide token/code controls:
+npx skills add JuliusBrussee/caveman -g -a codex -y
+codex plugin marketplace add DietrichGebert/ponytail
+codex plugin add ponytail@ponytail
+Restart Codex, review /hooks, and trust only the two Ponytail lifecycle hooks.
 Do not copy private fixtures or screenshots to the public repo.
 ```
 

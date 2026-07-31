@@ -64,6 +64,8 @@ This file explains where things should live. It is intentionally conservative: d
 | DONE | Keep indexes for `docs/`, `docs/operations/`, `docs/qa/`, `docs/spec/`, `docs/ux/`, `docs/validation/`, and `reports/`. |
 | DONE | Keep old QA snapshots under `docs/qa/archive/` and generated evidence ignored. |
 | DONE | Add a short context pack so agents do not read the entire reports tree. |
+| DONE | Route startup through the context pack; the measured core estimate is `99.46%` smaller than the former seven-file full-history read. |
+| DONE | Keep the parent workspace navigable through four ownership zones without duplicating or moving path-sensitive roots. |
 | TODO | Inventory references before moving any parent-folder legacy or experiment copy. |
 | TODO | Remove or archive only proven-unused root byproducts after checking scripts, CI, and user workflows. |
 | HOLD | Do not rename or move protected source folders, active worktrees, or ignored reports during the product reset. |

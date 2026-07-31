@@ -1,3 +1,23 @@
+# 2026-08-01 - Four-zone harness and context budget refresh
+
+- Confirmed the existing four-zone parent harness without moving the
+  path-sensitive compatibility roots or creating another product copy.
+- Reduced mandatory startup reading from seven full history files
+  (`2,249,317` bytes, `24,448` lines, roughly `642,662` tokens) to
+  `AGENTS.md` plus the context pack (`12,045` bytes, `181` lines, roughly
+  `3,442` tokens). The fixed `bytes / 3.5` estimate reports `99.46%` less
+  startup context; it is not provider billing data.
+- Updated the shared repo skill and two-host prompts to use task-routed reads.
+  Installed Caveman's seven global Codex skills and Ponytail plugin `4.8.4`;
+  Ponytail lifecycle hooks require review after restarting Codex.
+- Persistent-preview smoke passes in modern and legacy after the Ponytail
+  simplification, and the full `ci:verify` gate passes. Server hygiene reports
+  no project or CDP listener.
+- Revalidated the exact generated cleanup targets and preserved active
+  dependencies, source/worktrees, compatibility roots, and the anonymous
+  Sandbox payload. The host rejected the recursive PowerShell deletion before
+  execution, so nothing was deleted and no alternate path was attempted.
+
 # 2026-08-01 - Public-tree privacy audit and deletion boundary
 
 ## 2026-08-01 - Anonymization and cleanup retry
@@ -64,6 +84,9 @@
   strict imported-edit sync, and edit-flow smoke passed. This is local
   synchronization evidence only; current external Roll20 evidence remains
   `0/4`.
+- Extended the persistent-preview browser smoke with a real out-of-order
+  revision probe. Modern and legacy each retained the newest synthetic DOM,
+  recorded one stale drop, and produced zero console/page errors.
 
 # 2026-08-01 - Cleanup retry status
 

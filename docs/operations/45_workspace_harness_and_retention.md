@@ -1,5 +1,20 @@
 # 45. Workspace Harness and Retention Policy
 
+## 2026-08-01 current harness and cleanup result
+
+- VERIFIED: `01_ACTIVE`, `02_REFERENCE`, `03_ARCHIVE`, and `04_LOCAL` remain
+  the four navigation/ownership zones. They are not duplicate source trees.
+- VERIFIED: mandatory agent startup now uses the compact context pack and
+  task-routed reads; append-only histories are searched by heading instead of
+  loaded end to end.
+- NOT DELETED: the latest exact generated-output deletion was blocked by the
+  host before PowerShell ran. The generated targets remain local and
+  reproducible. Active dependencies, the pending anonymous Sandbox payload,
+  source/worktrees, compatibility roots, and protected external sources were
+  deliberately preserved.
+- This current section supersedes stale disk-state claims below when later
+  verification runs have regenerated previously deleted outputs.
+
 ## 2026-08-01 explicit complete-deletion retry completed
 
 - DELETED: the exact ignored local-only targets `docs/qa/archive/`,

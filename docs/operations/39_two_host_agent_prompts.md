@@ -25,7 +25,7 @@ Branch: codex/roll20-mapping-fidelity-smoke
 
 Use $roll20-render-ops. You are the lead integrator and the only agent allowed to merge or push the integration branch.
 
-Read, in order: AGENTS.md, docs/operations/33_working_rules_and_requirements.md, docs/qa/31_active_todo.md, docs/qa/34_requirements_gap_matrix.md, docs/operations/35_agent_progress_log.md, docs/operations/38_multi_agent_render_plan.md, docs/operations/39_two_host_agent_prompts.md, docs/spec/25_roll20_baseline.md, docs/spec/29_universal_roll20_mapping_contract.md, docs/spec/30_roll20_actual_sandbox_contract.md, docs/spec/31_asset_preservation_policy.md, and reports/README.md.
+Read AGENTS.md and docs/operations/43_agent_context_pack.md first. Follow its render/preview and multi-agent routes; open only the current TODO/progress sections and named contracts.
 
 First run git status and corepack pnpm run check:server-hygiene. Stop only matching project dev/smoke listeners; preserve Roll20 CDP 9222 while actual-browser verification is active.
 
@@ -47,6 +47,9 @@ git fetch origin
 git switch -c codex/edit-overlay-mac-20260715 origin/codex/roll20-mapping-fidelity-smoke
 mkdir -p ~/.codex/skills
 ln -sfn "$PWD/agent/skills/roll20-render-ops" ~/.codex/skills/roll20-render-ops
+npx skills add JuliusBrussee/caveman -g -a codex -y
+codex plugin marketplace add DietrichGebert/ponytail
+codex plugin add ponytail@ponytail
 corepack enable
 corepack pnpm install --frozen-lockfile
 ```
@@ -59,7 +62,7 @@ Branch: codex/edit-overlay-mac-20260715
 
 Use $roll20-render-ops and $ui-ux-pro-max. Work only on edit-mode interaction and measured performance. Do not merge the integration branch and do not edit preview/ChatPane renderer policy unless the lead explicitly hands it off.
 
-Read AGENTS.md, docs/operations/33_working_rules_and_requirements.md, docs/qa/31_active_todo.md, docs/ux/32_dom_layer_editing_plan.md, docs/operations/35_agent_progress_log.md, docs/operations/38_multi_agent_render_plan.md, docs/operations/39_two_host_agent_prompts.md, and inspect lib/editor/layerRoles.ts plus the current EditCanvas/layer panel implementation.
+Read AGENTS.md and docs/operations/43_agent_context_pack.md, then follow its edit UX and multi-agent routes. Inspect lib/editor/layerRoles.ts plus the current EditCanvas/layer panel implementation; open only current TODO/progress sections.
 
 Required behavior: edit mode is the exact preview-rendered sheet with an edit-only overlay. During drag, move the overlay immediately with requestAnimationFrame and keep the dropped object visually fixed at the user's drop point while model/HTML/CSS commit finishes. In structured containers, support explicit before, inside, and after insertion so siblings move in normal flow. Preserve explicit absolute positioning inside a frame using frame-relative coordinates. Show frame/flow/table container roles and the active target clearly in both canvas and layer panel. Runtime script/worker and rolltemplate nodes must not appear as visible sheet objects.
 
@@ -88,7 +91,7 @@ Branch: claude/universal-mapping-legacy-20260715
 
 Work autonomously until this track's acceptance checks pass, then commit and push your branch. Do not stop after an audit or proposal when an in-scope implementation and test can be completed.
 
-Read AGENTS.md, docs/operations/33_working_rules_and_requirements.md, docs/qa/31_active_todo.md, docs/qa/34_requirements_gap_matrix.md, docs/spec/29_universal_roll20_mapping_contract.md, docs/spec/30_roll20_actual_sandbox_contract.md, docs/spec/31_asset_preservation_policy.md, docs/research/40_roll20_render_reference_inventory.md, and reports/README.md. Do not edit docs/qa/31_active_todo.md, docs/operations/35_agent_progress_log.md, README.md, preview renderer CSS, ChatPane, EditCanvas, or layer panel files. The Windows Codex lead owns those surfaces.
+Read AGENTS.md and docs/operations/43_agent_context_pack.md, then follow its import/export route. Open only named current sections and contracts. Do not edit docs/qa/31_active_todo.md, docs/operations/35_agent_progress_log.md, README.md, preview renderer CSS, ChatPane, EditCanvas, or layer panel files. The Windows Codex lead owns those surfaces.
 
 Own only the universal user-import-to-export mapping path and the real separation of modern mode, legacy CSS sanitize, selector auto-prefix, and Roll20 preupload sanitize. Trace HTML, CSS, translation/i18n, default attrs, assets, rolltemplates, script[type="text/worker"], ordinary script tags, raw unsupported nodes, block IDs, and emitted HTML/CSS. Remove fixture-specific behavior from product code if found. Unsupported source must remain losslessly represented as a raw/fallback block or explicit diagnostic; worker and script source must remain inert and invisible in sheet preview while preserved for a future worker workspace/export policy.
 
@@ -120,7 +123,7 @@ Branch: claude/ci-security-cleanroom-20260715
 
 Work autonomously until this track's acceptance checks pass, then commit and push your branch. Do not stop at a review when a safe in-scope CI, security-gate, or verification fix can be implemented.
 
-Read AGENTS.md, docs/operations/33_working_rules_and_requirements.md, docs/operations/34_branch_and_deployment_plan.md, docs/operations/36_public_portfolio_and_copyright_rules.md, docs/operations/38_multi_agent_render_plan.md, docs/operations/39_two_host_agent_prompts.md, package.json, next.config.*, .github/workflows, scripts/ci_verify.mjs, import/export paths, preview/edit renderer paths, and asset replacement paths. Do not edit docs/qa/31_active_todo.md, docs/operations/35_agent_progress_log.md, README.md, product renderer CSS, ChatPane, EditCanvas, layer panel, or importer/emitter behavior. The lead and other agents own those surfaces.
+Read AGENTS.md and docs/operations/43_agent_context_pack.md, then follow its branch/CI/security and multi-agent routes. Inspect package.json, next.config.*, .github/workflows, scripts/ci_verify.mjs, and only the code paths needed by the gate. Do not edit docs/qa/31_active_todo.md, docs/operations/35_agent_progress_log.md, README.md, product renderer CSS, ChatPane, EditCanvas, layer panel, or importer/emitter behavior. The lead and other agents own those surfaces.
 
 Own CI/CD, security gates, public-repo leakage prevention, dependency/bundle budgets, and clean-clone verification. Verify main production deploy and dev/feature CI separation, GitHub Pages static-export assumptions, artifact handling, branch protection expectations, and workflow concurrency. Strengthen deterministic guards for private fixtures/reports/screenshots/asset maps, untrusted imported HTML/CSS/translation/assets/future worker JS, active script execution, unsafe URLs, and accidental public sample inclusion. Security checks must not delete or rewrite user source silently. Do not add an optimization library without a measured bottleneck, bundle impact, maintenance justification, and tests.
 

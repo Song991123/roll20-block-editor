@@ -6,23 +6,19 @@ This document is the operating contract for Codex, Claude, and any other agents 
 
 ## 0. Mandatory Startup Checklist
 
-Every agent must do this before changing code or claiming status. `AGENTS.md` is the repository-level entrypoint; this document is the expanded operating contract.
+Every agent must do this before changing code or claiming status. `AGENTS.md`
+is the repository-level entrypoint; this document is the expanded contract and
+is opened only when a task needs its detail.
 
 1. Read `AGENTS.md`.
-2. Read `docs/operations/33_working_rules_and_requirements.md`.
-3. Read `docs/qa/31_active_todo.md`.
-4. Read `docs/qa/34_requirements_gap_matrix.md`.
-5. Read `docs/PROJECT_STRUCTURE.md`.
-6. Read `docs/operations/35_agent_progress_log.md`.
-7. Read `docs/operations/36_public_portfolio_and_copyright_rules.md`.
-8. Read `docs/operations/37_roll20_actual_verification.md` for Roll20 actual-screen checks.
-9. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
-10. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `docs/spec/31_asset_preservation_policy.md`, `reports/README.md`, and the relevant local report under `reports/` when present.
-11. For actual Roll20 sandbox sanitize/prefix behavior, read `docs/spec/30_roll20_actual_sandbox_contract.md` before changing preview/export sanitize, prefix, URL proxy, or allow-list behavior.
-11. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
-12. Check `git status --short --branch`.
-13. Check for unnecessary local dev/smoke servers before starting another one. Prefer `corepack pnpm run check:server-hygiene`; use `-- --kill-project` only for matching project `node.exe` listeners. Preserve Roll20 CDP `9222` when actual Roll20 verification is active.
-14. Update `docs/qa/31_active_todo.md` after each coherent work batch.
+2. Read `docs/operations/43_agent_context_pack.md`.
+3. Check `git status --short --branch` and server hygiene.
+4. Use the context pack's task route. Search append-only histories and open
+   only the relevant section; never read them end to end by default.
+5. Open this expanded contract or another task-specific document only when
+   the route names it.
+6. Update `docs/qa/31_active_todo.md` and
+   `docs/operations/35_agent_progress_log.md` after each coherent work batch.
 
 ## 0.1 Source Safety
 

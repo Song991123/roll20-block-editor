@@ -5,23 +5,17 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 ## Mandatory Startup Order
 
 1. Read `AGENTS.md`.
-2. Read `docs/operations/33_working_rules_and_requirements.md`.
-3. Read `docs/qa/31_active_todo.md`.
-4. Read `docs/qa/34_requirements_gap_matrix.md`.
-5. Read `docs/PROJECT_STRUCTURE.md`.
-6. Read `docs/operations/35_agent_progress_log.md`.
-7. Read `docs/operations/36_public_portfolio_and_copyright_rules.md`.
-8. For Roll20 actual-screen verification, read `docs/operations/37_roll20_actual_verification.md`.
-9. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
-10. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `docs/spec/31_asset_preservation_policy.md`, `reports/README.md`, and the relevant local report under `reports/` when present.
-11. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
-12. For two-host Codex/Claude parallel work, read `docs/operations/39_two_host_agent_prompts.md`; only the lead integration agent merges or pushes the integration branch.
-13. For external render/editor references, read `docs/research/40_roll20_render_reference_inventory.md`.
-14. For parallel Codex/Claude/MacBook work, read `docs/operations/38_multi_agent_render_plan.md`.
-15. When the product goal or work allocation is being reset, read `docs/operations/41_product_reset_and_short_term_goals.md` and `docs/operations/43_agent_context_pack.md` before starting a new track.
-16. Run `git status --short --branch`.
-17. Check for unnecessary local dev servers before starting another one.
-18. For folder cleanup or retention work, read `docs/operations/45_workspace_harness_and_retention.md`.
+2. Read `docs/operations/43_agent_context_pack.md`.
+3. Run `git status --short --branch` and check server hygiene.
+4. Follow the task route in the context pack. Open only the named current
+   section or task-specific contract; do not load full append-only TODO,
+   progress, gap, or report histories as startup context.
+5. For Roll20 actual-screen verification, read `docs/operations/37_roll20_actual_verification.md`.
+6. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
+7. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `docs/spec/30_roll20_actual_sandbox_contract.md`, `docs/spec/31_asset_preservation_policy.md`, and `reports/README.md`.
+8. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
+9. For multi-agent work, read `docs/operations/38_multi_agent_render_plan.md` and `docs/operations/39_two_host_agent_prompts.md`.
+10. For folder cleanup or retention work, read `docs/operations/45_workspace_harness_and_retention.md`.
 
 ## Non-Negotiable Rules
 

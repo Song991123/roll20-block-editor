@@ -1,5 +1,20 @@
 # 44. Workspace Cleanup Inventory
 
+## 2026-08-01 latest generated-output cleanup state
+
+- CURRENT: four navigation zones are present and the canonical product remains
+  `web-push-main/`. Parent compatibility roots stay in place until a dedicated
+  path migration updates and verifies every consumer.
+- PRESERVED: active `node_modules`, source, both worktrees, fixed compatibility
+  roots, protected external sources, `reports/README.md`, and the anonymous
+  payload required by the pending Sandbox upload.
+- NOT DELETED: regenerated `.next/` (`20.03 MiB`), `out/` (`3.07 MiB`), the
+  expendable visual fixture, generated synthetic reports, empty help output,
+  and `next-env.d.ts`. The host rejected the exact recursive PowerShell
+  deletion before execution. No alternate route was used.
+- This section is the latest disk state. Earlier same-date deletion entries
+  describe prior states before later verification runs regenerated outputs.
+
 ## 2026-08-01 complete local-only purge completed
 
 - DELETED: the exact ignored `docs/qa/archive/`,
