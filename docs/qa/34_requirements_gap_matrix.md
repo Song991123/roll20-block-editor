@@ -39,6 +39,16 @@ The new evidence is stored only in ignored local report paths under
 `reports/roll20-actual-compare/anonymous-modern-sandbox/`. It contains no
 source sheet, room identifier, or public fixture.
 
+## Latest Local Render Regression Gate - 2026-07-31
+
+| Area | Current evidence | Status | Boundary |
+| --- | --- | --- | --- |
+| Full local contract suite | `ci:verify` passed, including mapping, worker, export, sanitizer, layer, evidence, and UI-copy guards | DONE LOCAL | No external renderer claim |
+| Persistent shared surface | Modern and legacy persistent iframe smoke passed with zero reloads | DONE LOCAL | Synthetic/local runtime only |
+| Imported edit synchronization | Three anonymous synthetic DOM families passed edit-to-preview and resource checks | DONE LOCAL | Does not prove arbitrary-sheet semantics |
+| Local visual equality | Four synthetic preview/edit cases passed at `0%` mismatch with zero page/console errors | DONE LOCAL | Synthetic contracts, not Roll20 screenshot parity |
+| Actual Roll20 parity | Still requires same-payload Sandbox upload, full-root crop normalization, and current roll/chat evidence | OPEN | Keep external status partial |
+
 ## Local Imported Edit-Sync Recheck - 2026-07-31
 
 | Area | Current evidence | Status | Boundary |

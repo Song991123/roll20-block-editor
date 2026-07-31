@@ -1,3 +1,16 @@
+# 2026-07-31 - Latest local render regression gate
+
+- `VERIFIED LOCAL`: `ci:verify` passed end to end, including import mapping,
+  preserved attributes/classes, worker parser, export/sanitize contracts,
+  layer operations, privacy/evidence guards, and UI-copy guard.
+- `VERIFIED LOCAL`: persistent preview surface passed in modern and legacy
+  modes with zero iframe reloads; imported edit-sync passed `3/3` with no
+  final resource failures.
+- `VERIFIED LOCAL`: four synthetic preview/edit cases passed at `0%` mismatch
+  and zero page/console errors across modern and legacy compatibility modes.
+- `CLAIM BOUNDARY`: this refresh strengthens local contract evidence only; it
+  does not replace same-payload actual Roll20 Sandbox/legacy-room evidence.
+
 # 2026-07-31 - Dedicated Roll20 root/chat and Sandbox observation
 
 - `VERIFIED EXTERNAL READ-ONLY`: the two dedicated anonymous Roll20 tabs were

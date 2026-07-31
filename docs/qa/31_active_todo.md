@@ -1,3 +1,17 @@
+# 2026-07-31 Latest local render regression gate
+
+- `VERIFIED LOCAL`: `ci:verify` passed, including import structure,
+  preserved attributes/classes, worker parser, modern/legacy sanitizer
+  boundaries, layer roles, export smoke, and evidence/privacy guards.
+- `VERIFIED LOCAL`: persistent preview surface passed in both modern and
+  legacy modes with zero iframe reloads; imported edit-sync passed `3/3` with
+  no final resource failures.
+- `VERIFIED LOCAL`: synthetic preview/edit visual smoke passed four cases
+  (two anonymous DOM families x modern/legacy) at `0%` mismatch and `0` page
+  or console errors.
+- `CLAIM BOUNDARY`: these are local contract gates only. They do not promote
+  actual Roll20 Sandbox or dedicated legacy-room pixel parity.
+
 # 2026-07-31 Latest Roll20 root/chat and Sandbox observation
 
 - `VERIFIED EXTERNAL READ-ONLY`: the supported browser control surface listed
