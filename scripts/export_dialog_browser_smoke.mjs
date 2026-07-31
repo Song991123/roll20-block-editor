@@ -540,6 +540,16 @@ async function main() {
 
     await page.click('[data-testid="header-export-button"]');
     await page.waitForSelector('[data-testid="export-roll20-readiness"]', { timeout: 15000 });
+    await page.waitForFunction(
+      () => {
+        const dialog = document.querySelector('[role="dialog"]');
+        if (!(dialog instanceof HTMLElement)) return false;
+        const style = getComputedStyle(dialog);
+        return style.visibility !== 'hidden' && Number(style.opacity) >= 0.99;
+      },
+      null,
+      { timeout: 5000 },
+    );
     result.checks.exportDialog = await page.evaluate(() => {
       const dialogText = document.querySelector('[role="dialog"]')?.textContent ?? '';
       const sandboxDetails = document.querySelector('[data-testid="export-roll20-sandbox-diagnostics"]');

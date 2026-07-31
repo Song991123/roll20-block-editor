@@ -1,3 +1,15 @@
+## 2026-07-31 - Current gate reconciliation and screenshot stability
+
+- IMPLEMENTED: export-dialog browser smoke now waits for the dialog to be
+  visible and fully opaque before saving its screenshot, so the report cannot
+  capture the opening animation as a false visual regression.
+- VERIFIED: current `status:roll20-actual` remains `PREUPLOAD_READY_MISSING_GENERATED_ACTUAL`:
+  local pre-upload is PASS, generated actual screenshots are `0/4`, and
+  current chat metrics are missing `2/2`.
+- BOUNDARY: prior anonymous runtime observations remain useful context only;
+  fresh current-payload root/chat captures are still required before parity
+  or renderer readiness can be claimed.
+
 ## 2026-07-31 - Complete cleanup retry
 
 - RECHECKED: 61 generated/stale targets were inside the workspace and outside

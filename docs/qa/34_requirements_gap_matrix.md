@@ -2,6 +2,22 @@
 
 Date: 2026-07-31
 
+## Current Gate Reconciliation - 2026-07-31
+
+- `VERIFIED LOCAL`: current branch is `claude/design-reset` at `e865198`;
+  the export-dialog smoke now waits for an opaque, open dialog before taking
+  its screenshot, preventing a transition frame from being treated as UI
+  evidence.
+- `VERIFIED CURRENT STATUS`: `status:roll20-actual` reports the anonymous
+  local pre-upload run as `PASS`, but current generated actual screenshots are
+  `0/4`, diffed actual screenshots are `0/4`, and current chat metrics are
+  missing `2/2`.
+- `VERIFY / BLOCKED EXTERNAL`: the dedicated modern Sandbox and legacy test
+  destination must still receive the current payload and produce fresh root
+  and chat captures. Historical runtime observations do not close this gate.
+- `CLAIM BOUNDARY`: no live Roll20 visual parity, same-payload attachment
+  hash parity, worker mutation parity, or arbitrary-sheet coverage is claimed.
+
 ## Imported Non-Leaf Layer Reorder Refresh - 2026-07-31
 
 - VERIFIED LOCAL: `smoke:imported-edit-sync --only
