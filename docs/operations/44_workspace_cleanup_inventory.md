@@ -1,5 +1,19 @@
 # 44. Workspace Cleanup Inventory
 
+## 2026-08-01 explicit complete-deletion retry completed
+
+- DELETED: the exact generated targets `web/tsconfig.tsbuildinfo`, the seven
+  zero-byte `web/_tmp_*` files, and canonical `web-push-main/.tmp/` including
+  its synthetic visual fixtures and Roll20 Sandbox upload payload.
+- PRESERVED: both Git worktrees, canonical `node_modules/`, current local
+  comparison reports, all source and compatibility roots, and protected
+  external sheet folders.
+- VERIFIED: every deleted path was ignored, untracked, inside the workspace,
+  and absent after deletion; no project or CDP listener was active and the
+  canonical worktree remained clean.
+- FOLLOW-UP: the Roll20 Sandbox upload evidence must regenerate the ignored
+  `.tmp/roll20-sandbox-synthetic/` payload before the external check resumes.
+
 ## 2026-07-31 user-authorized generated cleanup completed
 
 - DELETED: the canonical worktree's generated `.next/`, `out/`, and

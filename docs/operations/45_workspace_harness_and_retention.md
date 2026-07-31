@@ -1,5 +1,16 @@
 # 45. Workspace Harness and Retention Policy
 
+## 2026-08-01 explicit complete-deletion retry completed
+
+- DELETED: the stale parent-worktree build metadata and zero-byte `_tmp_*`
+  files, plus the canonical ignored `.tmp/` root and its generated children.
+- PRESERVED: active dependencies, current comparison reports, tracked source,
+  Git worktree metadata, four-zone markers, compatibility roots, and protected
+  external sheet sources.
+- VERIFIED: the exact deletion set is absent, no project/CDP listener is
+  active, and the canonical worktree is clean. The removed Roll20 payload is
+  reproducible and must be regenerated when Sandbox verification resumes.
+
 ## 2026-07-31 generated cleanup result
 
 - The approved stale generated targets were removed after an exact dry-run:
