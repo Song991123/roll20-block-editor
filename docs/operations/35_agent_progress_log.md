@@ -1,5 +1,16 @@
 # 2026-07-31 - Actual-status and renderer-action gate refresh
 
+## 2026-08-01 - User-facing shell and export UX review
+
+- Rebuilt the anonymous local app and reviewed fresh shell/export screenshots;
+  no new overlap, runtime-code leakage, sample-sheet UI, or console/page/request
+  errors were observed.
+- `smoke:export-dialog` and `smoke:edit-flow` passed. The captured export flow
+  kept readiness, asset status/replacement controls, worker visibility, and
+  modern/legacy selection understandable without changing renderer behavior.
+- This remains local UX evidence only; Roll20 actual root/chat parity is still
+  blocked before file transmission.
+
 ## 2026-08-01 - Official Roll20 contract cross-check
 
 - Cross-checked the local Sandbox/legacy/worker contract against the official

@@ -1,3 +1,15 @@
+# 2026-08-01 User-facing shell and export UX review
+
+- `VERIFIED LOCAL`: anonymous shell capture and export-dialog browser smoke
+  passed with no console/page/request failures. The shell keeps the pastel
+  three-column workspace, the preview/edit mode switch, modern/legacy choice,
+  and the layer-oriented editing surface without shipping sample-sheet UI.
+- `VERIFIED LOCAL`: export readiness, external-asset status, replacement-map
+  controls, worker visibility copy, and the legacy toggle were all present and
+  readable in the captured flow. Edit-flow smoke passed after the same review.
+- `CLAIM BOUNDARY`: this is a local UX review. It does not replace a real
+  Roll20 Sandbox or legacy-room screenshot comparison.
+
 # 2026-08-01 Local imported-layer sync refresh
 
 - `VERIFIED LOCAL`: production build, `smoke:edit-flow`, and the imported
