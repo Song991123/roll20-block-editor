@@ -1,5 +1,16 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-08-01 Roll20 Sandbox upload retry
+
+- `VERIFIED EXTERNAL READ-ONLY`: the dedicated Sandbox still showed exactly
+  `1 구성원` immediately before the retry, with the visible HTML/CSS/
+  Translation controls open.
+- `BLOCKED EXTERNAL`: the supported visible HTML chooser again returned
+  `Not allowed` before transmission. CSS and translation were not attempted;
+  no sheet save, room setting change, or chat message was made.
+- `CURRENT EVIDENCE`: actual Sandbox/root/chat evidence remains `0/4`.
+  This is an upload-permission blocker, not a Roll20 parity result.
+
 # 2026-07-31 Import result smoke coverage
 
 - `DONE LOCAL`: import dialog smoke now asserts the three fidelity-scope labels

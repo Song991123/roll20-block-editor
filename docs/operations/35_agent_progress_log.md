@@ -1,5 +1,16 @@
 # 2026-07-31 - Actual-status and renderer-action gate refresh
 
+## 2026-08-01 - Roll20 Sandbox upload retry
+
+- Rechecked the dedicated Sandbox immediately before transmission: the visible
+  member indicator was exactly `1 구성원`, and the HTML/CSS/Translation
+  controls were present.
+- The supported visible HTML chooser again returned `Not allowed` before any
+  file bytes were transmitted. CSS and translation were not attempted, and no
+  room setting, sheet save, or chat write occurred.
+- Actual Sandbox/root/chat evidence remains `0/4`; this is still an upload
+  permission boundary rather than a visual parity result.
+
 ## 2026-07-31 - Import result smoke coverage
 
 - Extended the import dialog smoke to assert the HTML, CSS, and combined

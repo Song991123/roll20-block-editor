@@ -2,6 +2,18 @@
 
 Date: 2026-06-18
 
+## 2026-08-01 upload retry result
+
+- `VERIFIED EXTERNAL READ-ONLY`: the dedicated modern Sandbox showed exactly
+  `1 구성원` immediately before the action, with the visible HTML/CSS/
+  Translation controls available.
+- `BLOCKED EXTERNAL`: the supported visible HTML chooser returned `Not
+  allowed` before transmission again. CSS and Translation were not attempted;
+  no sheet payload was saved, no room setting changed, and no chat was sent.
+- `CURRENT EVIDENCE`: actual generated Sandbox/root/chat evidence remains
+  `0/4`. This is not evidence of visual mismatch or parity; it is an upload
+  permission boundary. Legacy still requires a separate dedicated legacy room.
+
 ## 2026-07-31 current external gate and local readiness result
 
 - `VERIFIED LOCAL`: the product parent now honors the same iframe
