@@ -16,6 +16,16 @@
   the generation-specific legacy evidence. Until then actual parity remains
   partial and unclaimed.
 
+# 2026-07-31 Fresh-sheet regression recheck
+
+- `VERIFIED LOCAL`: a blank workspace starts with zero HTML/CSS/i18n/JS/worker
+  blocks, zero layer IDs, an empty HTML emit, and no ghost `sheet-section`.
+- `VERIFIED LOCAL`: the first gallery widget is inserted as nested flow content
+  without an absolute position, retains the single persistent iframe, and
+  reports the default sheet canvas width as `850px`.
+- `CLAIM BOUNDARY`: this covers the fresh-sheet/local canvas path only; it does
+  not expand arbitrary imported-sheet or actual Roll20 parity evidence.
+
 # 2026-07-31 Local imported edit-sync recheck
 
 - VERIFIED LOCAL: after rebuilding the deleted static `out` directory, the

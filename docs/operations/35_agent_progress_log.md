@@ -10449,3 +10449,14 @@ same-hash modern/legacy comparison.
 - `NEXT P0`: enable the supported Chrome local-file upload access, then apply
   anonymous `fixture-A` in the dedicated modern Sandbox and rerun the separate
   legacy evidence pass. Keep actual parity partial until those captures exist.
+
+## 2026-07-31 - Fresh-sheet regression recheck
+
+- `VERIFIED LOCAL`: the blank workspace started with zero HTML/CSS/i18n/JS/
+  worker blocks, zero layer IDs, an empty HTML emit, and no ghost
+  `sheet-section`.
+- `VERIFIED LOCAL`: the first gallery widget was inserted as nested flow content
+  without an absolute position, kept the single persistent iframe, and reported
+  the default sheet canvas width as `850px`.
+- `CLAIM BOUNDARY`: this confirms the fresh-sheet/local canvas path only; it
+  does not expand arbitrary imported-sheet or actual Roll20 parity evidence.
