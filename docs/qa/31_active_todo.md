@@ -9797,3 +9797,25 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   before PowerShell execution.
 - `NOT DONE`: all three generated targets remain. No alternate deletion path
   was used, and protected sources/worktrees remain intact.
+
+## 2026-07-31 Dedicated Roll20 Evidence Refresh
+
+- `DONE / OBSERVATION`: modern and legacy dedicated destinations both passed a
+  fresh participant preflight of exactly one visible member. No existing user
+  room was used.
+- `DONE / ROLL SMOKE`: both destinations rendered the anonymous synthetic
+  sheet root and accepted the roll control. Modern and legacy chat surfaces
+  produced visible rolltemplate cards.
+- `DONE / DOM METRICS`: both live roots measured `852x340`; the modern and
+  legacy iframe viewports measured `900x285.69` and `900x283.55`. The
+  measured controls were two inputs, one select, one table, and one roll
+  button.
+- `PARTIAL / LOCAL EVIDENCE`: modern `fixture-B` has two generated actual
+  targets and legacy `fixture-B` has two generated actual targets in a
+  separate ignored report. Current sandbox diagnostic mismatches are `6.90%`
+  modern and `6.75%` legacy; the classifier reports Roll20 dialog viewport
+  clipping. Chat diffs are diagnostic only and are not parity claims.
+- `VERIFY / NOT DONE`: fixture-A was not applied because the current Chrome
+  MCP upload surface lacks a supported file-input handoff. Full-height root
+  stitching, fixture-A modern/legacy upload, normalized screenshot diff, and
+  actual parity remain open.

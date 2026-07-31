@@ -10400,3 +10400,35 @@ same-hash modern/legacy comparison.
 - `PRESERVED`: no deletion occurred; protected sheet sources, Git worktrees,
   dependencies, reports, and source files were not targeted. No alternate
   shell, native API, or per-file bypass was attempted.
+
+## 2026-07-31 - Dedicated modern/legacy Roll20 evidence refresh
+
+- `VERIFIED EXTERNAL / MODERN`: the dedicated modern test surface had a fresh
+  visible participant count of exactly one. The live sheet iframe exposed the
+  anonymous layout fixture with `form.sheetform` and `.charactersheet` at
+  `852x340`; the iframe viewport was `900x285.69`. The live DOM had two inputs,
+  one select, one table, and one roll button.
+- `VERIFIED EXTERNAL / LEGACY`: the dedicated legacy test room also had a
+  fresh visible participant count of exactly one. Its live sheet root was the
+  same `852x340` geometry with a `900x283.55` iframe viewport. A visible
+  foreground rolltemplate card was captured after closing the sheet dialog.
+- `VERIFIED EXTERNAL / ROLL SMOKE`: the modern and legacy dedicated surfaces
+  both accepted the synthetic roll control and produced Roll20 chat cards.
+  Evidence was written only to ignored, anonymous local report folders. Any
+  visible participant identity, room link, and unrelated chat history were
+  excluded from the saved crops.
+- `MEASURED LOCAL EVIDENCE`: modern `fixture-B` now has two generated actual
+  captures (sandbox root viewport and chat card) and two diagnostic diffs.
+  The sandbox crop mismatch is `6.90%`; chat crop mismatch is `59.78%` and is
+  diagnostic only. Legacy `fixture-B` is separated into its own local report
+  with sandbox mismatch `6.75%` and chat mismatch `58.59%`.
+- `CLASSIFIED`: the current sandbox mismatch is classified as a clipped
+  Roll20 dialog viewport, not yet as a product CSS defect. Live wrapper
+  metrics show `#dialog-window` at `900x285.6` with `overflow:auto` while the
+  authored root is `852x340`; the dialog therefore clips a taller sheet in the
+  real Roll20 surface.
+- `VERIFY / OPEN`: `fixture-A` was not uploaded in this pass because the
+  available Chrome MCP surface exposes no `setInputFiles` and the prior file
+  chooser handoff did not complete. Modern and legacy actual evidence remain
+  partial, not full parity. Full-height root stitching, normalized diff, and
+  independent fixture-A smoke are still required.
