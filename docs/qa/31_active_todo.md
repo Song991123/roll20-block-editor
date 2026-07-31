@@ -1,3 +1,15 @@
+## 2026-07-31 Local parity refresh and external handoff retry
+
+- `DONE LOCAL`: current edit-flow browser smoke passed.
+- `DONE LOCAL`: synthetic fixture-A/B preview and edit captures remained
+  exact (`0%` mismatch) for both modern and legacy render contracts.
+- `VERIFY`: dedicated modern Sandbox tab remained visible in Chrome, but tab
+  claiming stopped responding; direct hidden file-input interaction was
+  rejected before upload. No external state changed.
+- `TODO P0`: capture fresh Sandbox root and chat evidence through the visible
+  supported upload control, then repeat independently for the dedicated
+  legacy-enabled test room. Until then actual Roll20 parity is unverified.
+
 ## 2026-07-31 Complete-cleanup retry
 
 - `VERIFY`: exact disposable targets were rechecked as workspace-local and

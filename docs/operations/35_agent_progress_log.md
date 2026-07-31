@@ -1,3 +1,15 @@
+## 2026-07-31 - Local parity refresh and Sandbox handoff retry
+
+- VERIFIED LOCAL: the current `claude/design-reset` head passed the edit-flow
+  browser smoke. The synthetic fixture-A and fixture-B both measured `0%`
+  preview/edit mismatch in modern and legacy contracts.
+- RETRIED EXTERNAL: the dedicated modern Roll20 tab was visible in the fresh
+  tab list, but the supported tab-claim operation stopped responding before
+  the tab could be inspected. A direct hidden file input was also rejected as
+  non-actionable; no upload, save, room change, or chat action occurred.
+- CLAIM BOUNDARY: current actual Sandbox screenshots remain missing. The
+  local `0%` result must not be reported as live Roll20 visual parity.
+
 ## 2026-07-31 - Complete-cleanup retry stopped at host boundary
 
 - Revalidated the disposable cleanup set after confirming no project or CDP
