@@ -1,3 +1,15 @@
+## 2026-07-31 Export evidence stability
+
+- `DONE LOCAL`: export-dialog browser smoke waits for an open, fully opaque
+  dialog before taking the screenshot, so the report is not an animation
+  transition frame.
+- `VERIFIED`: local export/import, modern/legacy switch, privacy guard, CI,
+  lint, build, and server hygiene pass. Current Roll20 status remains
+  `0/4` generated actual screenshots and missing `2/2` chat metrics.
+- `TODO P0`: resume fresh current-payload root and chat capture in the
+  dedicated modern Sandbox and legacy test destination. Do not promote older
+  anonymous runtime observations to visual parity.
+
 ## 2026-07-31 Complete cleanup retry
 
 - `BLOCKED HOST`: user-authorized deletion was rechecked against 61 exact
