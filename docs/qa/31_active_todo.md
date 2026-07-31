@@ -11175,3 +11175,15 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `VERIFY / OPEN EXTERNAL`: current-payload modern Sandbox upload and a
   dedicated legacy-room paint check remain separate external gates. Local
   chat equality is not actual Roll20 visual parity.
+
+## 2026-08-01 Result-Card Live Sandbox Retry
+
+- `VERIFIED READ-ONLY`: the dedicated modern Sandbox still showed exactly one
+  visible participant, the `Sheet Sandbox Tools` dialog, and unique
+  HTML/CSS/Translation file controls.
+- `BLOCKED BEFORE TRANSMISSION`: the supported visible HTML file chooser
+  opened, but Chrome rejected `setFiles` with `Not allowed`. No sheet source,
+  room setting, character, or chat state changed.
+- `NEXT P0`: enable local-file access for the Codex Chrome extension, then
+  apply the ignored anonymous current payload and capture root plus chat paint.
+  Keep the dedicated legacy-room run as an independent later gate.

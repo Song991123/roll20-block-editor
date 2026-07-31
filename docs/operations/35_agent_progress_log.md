@@ -11645,3 +11645,14 @@ same-hash modern/legacy comparison.
   Preview/Edit comparison at exact `0%` mismatch for four captures.
 - Actual current-payload modern Sandbox and dedicated legacy-room visual proof
   remain open external evidence gates.
+
+## 2026-08-01 - Result-card modern Sandbox retry
+
+- Reclaimed only the dedicated verification Sandbox and freshly confirmed one
+  visible participant plus the expected HTML/CSS/Translation controls.
+- Generated the current anonymous layout and result-card payload in an ignored
+  local folder. The normal visible HTML chooser opened, but Chrome returned
+  `Not allowed` when assigning the file, before any transmission or Roll20
+  state change.
+- Live modern root/chat paint therefore remains unverified. Local Preview/Edit
+  equality and local chat reuse are not promoted to actual Roll20 parity.
