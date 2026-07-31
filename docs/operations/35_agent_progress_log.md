@@ -1,3 +1,16 @@
+## 2026-07-31 - Sandbox upload permission diagnosis
+
+- VERIFIED EXTERNAL: the dedicated modern tab was freshly listed and safely
+  claimed with visible participant count `1 구성원`; only the Sandbox Tools
+  surface was inspected.
+- BLOCKED EXTERNAL: the supported visible HTML file chooser rejected the
+  anonymous local payload with `Not allowed` before any file reached Roll20.
+  No save, room change, or chat action occurred.
+- DIAGNOSIS: the Chrome upload troubleshooting contract points to the ChatGPT
+  Chrome Extension setting `Allow access to file URLs`. This permission must
+  be enabled before the supported chooser can transmit the local payload;
+  Codex did not change the browser permission.
+
 ## 2026-07-31 - Local parity refresh and Sandbox handoff retry
 
 - VERIFIED LOCAL: the current `claude/design-reset` head passed the edit-flow

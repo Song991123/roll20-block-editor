@@ -1,3 +1,17 @@
+## 2026-07-31 Sandbox upload permission blocker
+
+- `DONE`: dedicated modern tab preflight passed with exactly one visible
+  participant; no ordinary room was touched.
+- `BLOCKED EXTERNAL`: the supported visible HTML chooser returned `Not
+  allowed` before upload. No Roll20 state changed.
+- `ACTION REQUIRED`: enable `Allow access to file URLs` under the ChatGPT
+  Chrome Extension details in `chrome://extensions`, then rerun the modern
+  Sandbox upload. This is a browser permission change and was not performed
+  by Codex.
+- `TODO P0`: after the permission is enabled, upload anonymous fixture-A/B,
+  capture Sandbox root and chat evidence, then verify the dedicated legacy
+  destination independently.
+
 ## 2026-07-31 Local parity refresh and external handoff retry
 
 - `DONE LOCAL`: current edit-flow browser smoke passed.
