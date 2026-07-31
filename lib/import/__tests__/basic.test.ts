@@ -331,8 +331,21 @@ function testCssMediaQueryStructure(): void {
   const complex = importSheet({
     css: '@media screen and (max-width: 640px) { .sheet-header { color: red; } }',
   });
-  assert(!complex.css.includes('r20_media_query'), 'complex media shape stays out of the typed block');
-  assert(complex.css.includes('r20_raw_css'), 'complex media query remains lossless raw CSS');
+  assert(complex.css.includes('r20_media_query'), 'complex media shape maps to the typed block');
+  assert(!complex.css.includes('r20_raw_css'), 'complex media query has no raw fallback');
+  assert(complex.css.includes('screen and (max-width: 640px)'), 'full media prelude is preserved');
+
+  const print = importSheet({
+    css: '@media print { .sheet-header { color: black; } }',
+  });
+  assert(print.css.includes('r20_media_query'), 'media type maps to the typed block');
+  assert(print.css.includes('print'), 'media type is preserved');
+
+  const unsafe = importSheet({
+    css: '@media screen; color: red { .sheet-header { color: black; } }',
+  });
+  assert(!unsafe.css.includes('r20_media_query'), 'unsafe media prelude is not typed');
+  assert(unsafe.css.includes('r20_raw_css'), 'unsafe media prelude remains lossless raw CSS');
 }
 
 function testCssKeyframesStructureAndFallback(): void {

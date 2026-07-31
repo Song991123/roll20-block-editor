@@ -65,7 +65,11 @@ export function parseCss(css: string, ctx: CssMatchContext): MatchedBlock[] {
         ctx.matched++;
         continue;
       }
-      const structured = structuredAtRuleToBlock(headTrim, r.body, ctx);
+      // A semicolon-terminated at-rule has no nested rule body. Do not let a
+      // malformed `@media screen;` masquerade as an empty typed media block.
+      const structured = r.terminator === 'block'
+        ? structuredAtRuleToBlock(headTrim, r.body, ctx)
+        : null;
       if (structured) {
         out.push(structured);
         ctx.matched++;
@@ -238,20 +242,21 @@ function ruleToBlock(head: string, body: string, ctx: CssMatchContext): MatchedB
 }
 
 /**
- * Map only at-rules whose generator can preserve the source shape.
+ * Map at-rules whose generator can preserve the source shape.
  *
- * The media block generator owns the surrounding parentheses, so a media
- * query is typed only when its condition is one balanced parenthesized
- * expression. Complex media lists and media types stay raw rather than being
- * rewritten into a different query. Keyframe stops outside the catalog's
- * dropdown are kept as raw child CSS inside a typed keyframe container.
+ * The media block generator accepts both the historical shorthand
+ * `max-width: 640px` and a complete media prelude such as
+ * `screen and (max-width: 640px)`. Keep the full balanced prelude so import
+ * does not silently change the meaning of a responsive rule. Keyframe stops
+ * outside the catalog's dropdown are kept as raw child CSS inside a typed
+ * keyframe container.
  */
 function structuredAtRuleToBlock(
   head: string,
   body: string,
   ctx: CssMatchContext,
 ): MatchedBlock | null {
-  const mediaCondition = singleParenthesizedMediaCondition(head);
+  const mediaCondition = balancedMediaCondition(head);
   if (mediaCondition) {
     const nestedCtx = newCssCtx();
     const children = parseCss(body, nestedCtx);
@@ -275,10 +280,10 @@ function structuredAtRuleToBlock(
   return null;
 }
 
-function singleParenthesizedMediaCondition(head: string): string | null {
+function balancedMediaCondition(head: string): string | null {
   const match = /^@media\s+([\s\S]+)$/i.exec(head.trim());
   const condition = match?.[1]?.trim() ?? '';
-  if (!condition.startsWith('(') || !condition.endsWith(')')) return null;
+  if (!condition || /[{};]/.test(condition)) return null;
 
   let depth = 0;
   let quote = '';
@@ -296,11 +301,11 @@ function singleParenthesizedMediaCondition(head: string): string | null {
     if (char === '(') depth += 1;
     else if (char === ')') {
       depth -= 1;
-      if (depth < 0 || (depth === 0 && i !== condition.length - 1)) return null;
+      if (depth < 0) return null;
     }
   }
   if (depth !== 0 || quote) return null;
-  return condition.slice(1, -1).trim() || null;
+  return condition;
 }
 
 const KEYFRAME_STOP_VALUES = new Set(['from', 'to', '0%', '25%', '50%', '75%', '100%']);

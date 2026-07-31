@@ -1,5 +1,19 @@
 # 2026-07-31 - Actual-status and renderer-action gate refresh
 
+# 2026-07-31 - Composite media-query mapping
+
+- Fixed the CSS importer so balanced composite media preludes, including a
+  media type plus a feature condition, map to editable `r20_media_query`
+  blocks while preserving the full prelude.
+- Kept shorthand media conditions compatible with the existing generator and
+  rejected semicolon-terminated or unbalanced preludes from typed mapping.
+- Verified import structure `44/44`, high-priority mapping, layer-role and
+  Blockly operation tests, lint, `ci:verify`, production build, imported
+  non-leaf browser sync, persistent preview surface, and server hygiene.
+- External status is unchanged: generated Roll20 root/chat evidence is `0/4`,
+  chat parity is missing, and renderer readiness is `NO` because the supported
+  chooser still requires file-URL permission.
+
 - Re-ran actual-status: `PREUPLOAD_READY_MISSING_GENERATED_ACTUAL`, with
   preupload `PASS`, generated actual screenshots/diffs `0/4`, missing chat
   parity, and renderer-ready `NO`.

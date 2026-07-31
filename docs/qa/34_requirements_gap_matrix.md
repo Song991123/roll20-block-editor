@@ -1,5 +1,20 @@
 # 34. Requirements Gap Matrix
 
+# Composite media query mapping - 2026-07-31
+
+- `DONE LOCAL`: balanced composite media preludes such as
+  `screen and (max-width: 640px)` and media types such as `print` now map to
+  editable `r20_media_query` blocks, while shorthand conditions remain
+  generator-compatible.
+- `DONE LOCAL`: malformed or semicolon-terminated media preludes remain raw
+  instead of producing an invalid empty typed block.
+- `VERIFIED LOCAL`: importer structure `44/44`, high-priority mapping,
+  layer-role/Blockly operation tests, lint, `ci:verify`, production build,
+  imported edit-sync, persistent preview surface, and server hygiene passed.
+- `OPEN EXTERNAL`: this is a targeted CSS mapping improvement, not proof of
+  complete CSS grammar support or actual Roll20 visual/chat parity. Current
+  generated Roll20 evidence remains `0/4` until the supported chooser can run.
+
 # Local full-gate recheck - 2026-07-31
 
 - `DONE LOCAL`: `ci:verify` passed the full import/export, layer, iframe,

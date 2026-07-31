@@ -188,6 +188,24 @@ function wrapBraces(ctx: GeneratorContext, head: string, content: string): strin
   return `${head} {\n${ctx.indent(content)}\n}`;
 }
 
+/**
+ * Keep the friendly field shorthand while accepting an imported full media
+ * prelude. A semicolon or brace can terminate the at-rule, so strip those
+ * delimiters at the emit boundary just like other CSS headers.
+ */
+function formatMediaCondition(raw: string): string {
+  const condition = safeCss(raw).replace(/[;]/g, ' ').trim();
+  if (!condition) return '(max-width: 640px)';
+  if (
+    condition.startsWith('(')
+    || /^(?:all|print|screen|speech|not|only)\b/i.test(condition)
+    || /\b(?:and|or)\b/i.test(condition)
+  ) {
+    return condition;
+  }
+  return `(${condition})`;
+}
+
 // ---------- 19 블록 정의 ----------
 
 export const CSS_BLOCKS: BlockDef[] = [
@@ -720,7 +738,7 @@ export const CSS_BLOCKS: BlockDef[] = [
     shape: 'c',
     category: CSS,
     label: '화면 크기 조건',
-    tooltip: '@media (CONDITION) { ... } — 반응형 묶음.',
+    tooltip: '@media CONDITION { ... } — 반응형 묶음. 단순 조건은 괄호를 자동으로 붙입니다.',
     init: mkInit((b) => {
       b.appendDummyInput()
         .appendField('@media (')
@@ -731,9 +749,9 @@ export const CSS_BLOCKS: BlockDef[] = [
     }),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
-      const cond = safeCss(String(b.getFieldValue('CONDITION') ?? ''));
+      const cond = formatMediaCondition(String(b.getFieldValue('CONDITION') ?? ''));
       const children = ctx.statementToCode(block, 'CHILDREN');
-      return wrapBraces(ctx, `@media (${cond})`, children);
+      return wrapBraces(ctx, `@media ${cond}`, children);
     },
   },
 

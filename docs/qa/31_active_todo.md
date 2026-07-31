@@ -1,5 +1,24 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Composite media-query mapping
+
+- `DONE LOCAL`: CSS import now maps balanced composite media preludes such as
+  `screen and (max-width: 640px)` and media types such as `print` to the
+  editable `r20_media_query` block instead of raw CSS. Legacy shorthand
+  `max-width: 640px` remains emitted with parentheses.
+- `DONE LOCAL`: semicolon-terminated or otherwise malformed media preludes are
+  rejected from typed mapping rather than becoming empty media blocks.
+- `VERIFIED LOCAL`: import structure `44/44`, high-priority mapping,
+  layer-role/Blockly operation tests, lint, `ci:verify`, production build,
+  imported non-leaf browser sync, persistent preview surface, and server
+  hygiene all pass.
+- `CLAIM BOUNDARY`: this raises CSS mapping coverage for this media family; it
+  does not prove all CSS grammar, arbitrary-sheet support, actual Roll20 visual
+  parity, worker mutation, assets, or chat parity.
+- `NEXT`: continue broader CSS at-rule and selector coverage only with generic
+  anonymous tests, then resume actual modern Sandbox and dedicated legacy
+  destination capture after file-URL permission is enabled.
+
 # 2026-07-31 Local full-gate recheck while external upload is blocked
 
 - `VERIFIED LOCAL`: `corepack pnpm run ci:verify` passed all importer,
