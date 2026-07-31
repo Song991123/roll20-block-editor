@@ -9694,6 +9694,20 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: restore a supported user-mediated Chrome tab handoff, then obtain
   fresh modern and independent legacy crop/sidecar evidence.
 
+## 2026-07-31 Persistent Surface And Scale Refresh
+
+- `DONE LOCAL`: the persistent preview smoke accepts browser-normalized CSS
+  identity transforms instead of treating `matrix(1,0,0,1,0,0)` as a failure.
+- `VERIFIED LOCAL`: modern and legacy persistent-surface contracts both pass
+  with reload count `0`, shared iframe identity, compatibility switching,
+  Figma-like placement/context actions, worker state, rolltemplate chat, and
+  manual width `850px`.
+- `VERIFIED LOCAL`: large workspace smoke passes for `5,200` synthetic items,
+  `5,205` blocks, 100% mapping, search, nested reparenting, and zero browser
+  errors.
+- `VERIFY / BLOCKED EXTERNAL`: actual Roll20 screenshot/diff and independent
+  legacy same-payload evidence remain unchanged at `0/4` current captures.
+
 ## 2026-07-31 Actual Roll20 Gate Status Refresh
 
 - `MEASURED`: current status is `generatedActualScreenshots=0/4`,

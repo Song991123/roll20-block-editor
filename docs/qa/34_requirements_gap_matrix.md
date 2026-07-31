@@ -1119,3 +1119,13 @@ not close the external Roll20 parity rows above.
   manifest are healthy according to the packaged checks.
 - `VERIFY / BLOCKED EXTERNAL`: the dedicated tab control path still times out;
   no new upload, screenshot, or external mutation was produced.
+
+## Persistent Surface And Scale Refresh - 2026-07-31
+
+- `FIXED LOCAL`: the persistent-surface browser contract now recognizes the
+  CSS identity matrix emitted by `getComputedStyle()`.
+- `VERIFIED LOCAL`: modern and legacy persistent-surface smoke both pass with
+  reload count `0`; the large-workspace smoke passes for `5,200` synthetic
+  items and `5,205` mapped blocks.
+- `OPEN EXTERNAL`: live Roll20 screenshot/diff evidence and independent
+  legacy same-payload evidence are still absent from the current gate.

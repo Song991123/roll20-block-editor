@@ -10294,6 +10294,19 @@ same-hash modern/legacy comparison.
   accept a local payload. No upload, save, chat, or ordinary-room mutation
   occurred.
 
+## 2026-07-31 - Persistent surface and scale smoke refresh
+
+- FIXED LOCAL TEST: the persistent-surface smoke now accepts both CSS
+  `transform: none` and the browser-normalized identity matrix returned by
+  `getComputedStyle()`.
+- VERIFIED LOCAL: modern and legacy persistent-surface runs both pass with
+  zero iframe reloads, one shared iframe, live compatibility switching,
+  flow/free placement, layer selection, context-menu duplicate/delete,
+  worker state, rolltemplate chat, and manual `850px` canvas width.
+- VERIFIED LOCAL: the 5,200-item large-workspace smoke passed with 100%
+  synthetic mapping, 5,205 blocks, search selection, nested reparenting,
+  one persistent iframe, and zero console/page errors.
+
 ## 2026-07-31 - Roll20 actual gate status refresh
 
 - `VERIFIED STATUS`: the current actual-evidence gate reports generated

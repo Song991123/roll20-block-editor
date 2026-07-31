@@ -28,6 +28,11 @@ const OPTIMISTIC_BUDGET_MS = Math.max(
 );
 const MODES = ['modern', 'legacy'];
 
+function isIdentityTransform(value) {
+  const normalized = String(value ?? '').replace(/\s+/g, '').toLowerCase();
+  return normalized === 'none' || normalized === 'matrix(1,0,0,1,0,0)';
+}
+
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript',
@@ -1378,7 +1383,7 @@ async function runMode(browser, mode) {
       && Number.isFinite(result.freeCommit.computedLeft)
       && Number.isFinite(result.freeCommit.computedTop)
       && result.freeCommit.optimisticTransform.includes('translate3d(')
-      && result.freeCommit.transform === 'none'
+      && isIdentityTransform(result.freeCommit.transform)
       && result.freeCommit.computedLeft % 8 === 0
       && result.freeCommit.computedTop % 8 === 0
       && result.freeCommit.containerPosition === 'relative'
