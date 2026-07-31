@@ -41,10 +41,15 @@ const CHAT_SHADOW_POLICY = argOf('--chat-shadow-policy', 'default');
 const CHAT_GEOMETRY_POLICY = argOf('--chat-geometry-policy', 'default');
 const CHAT_TYPOGRAPHY_POLICY = argOf('--chat-typography-policy', 'default');
 const CHAT_PAINT_POLICY = argOf('--chat-paint-policy', 'default');
+const DEVICE_SCALE_FACTOR = Number(argOf('--device-scale-factor', '1'));
 const VIEWPORT = { width: 2200, height: 1200 };
 const LOCAL_HTML_PATH = process.env.R20_ROLL_CHAT_HTML_PATH || '';
 const LOCAL_CSS_PATH = process.env.R20_ROLL_CHAT_CSS_PATH || '';
 const LOCAL_I18N_PATH = process.env.R20_ROLL_CHAT_I18N_PATH || '';
+
+if (!Number.isFinite(DEVICE_SCALE_FACTOR) || DEVICE_SCALE_FACTOR <= 0) {
+  throw new Error('--device-scale-factor must be a positive number');
+}
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -260,11 +265,17 @@ async function clickRollAndReadChat(page, fixtureId) {
   await card.waitFor({ state: 'visible', timeout: 30000 });
   await waitForRolltemplateAssets(page);
   const screenshotPath = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-chat.png`);
-  await page.locator('[data-testid="chat-list"]').screenshot({ path: screenshotPath });
+  await page.locator('[data-testid="chat-list"]').screenshot({
+    path: screenshotPath,
+    scale: 'css',
+  });
   const templateScreenshotPath = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-chat-template.png`);
   const templateLocator = page.locator('[data-testid="chat-list"] [data-r20-chat-card] [class*="sheet-rolltemplate-"]').first();
   if (await templateLocator.count()) {
-    await templateLocator.screenshot({ path: templateScreenshotPath });
+    await templateLocator.screenshot({
+      path: templateScreenshotPath,
+      scale: 'css',
+    });
   }
   const cardCount = await page.locator('[data-testid="chat-list"] [data-r20-chat-card]').count();
   const cardInfo = await card.evaluate((el) => {
@@ -785,8 +796,16 @@ async function main() {
   if (fixtures.length === 0) throw new Error(`No fixtures found in ${FIXTURES_DIR}`);
 
   const server = await startServer();
-  const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage({ viewport: VIEWPORT });
+  const browser = await chromium.launch({
+    headless: true,
+    args: DEVICE_SCALE_FACTOR === 1
+      ? []
+      : [`--force-device-scale-factor=${DEVICE_SCALE_FACTOR}`],
+  });
+  const page = await browser.newPage({
+    viewport: VIEWPORT,
+    deviceScaleFactor: DEVICE_SCALE_FACTOR,
+  });
   const report = {
     startedAt: new Date().toISOString(),
     baseUrl: `http://127.0.0.1:${PORT}${BASE_PATH}/`,
@@ -796,6 +815,8 @@ async function main() {
     chatGeometryPolicy: CHAT_GEOMETRY_POLICY,
     chatTypographyPolicy: CHAT_TYPOGRAPHY_POLICY,
     chatPaintPolicy: CHAT_PAINT_POLICY,
+    deviceScaleFactor: DEVICE_SCALE_FACTOR,
+    screenshotScale: 'css',
     fixtures: [],
   };
 

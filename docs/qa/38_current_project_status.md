@@ -29,6 +29,10 @@ local output and is deleted after the verification batch.
   computed styles establish the built-in chat card contract.
 - `VERIFIED LOCAL`: the fallback renderer now matches that contract and passes
   focused unit/browser tests, lint, build, and full `ci:verify`.
+- `VERIFIED LOCAL NORMALIZED`: matching the actual DPR reproduces exact
+  default-card table/caption geometry and fractional border snapping. The
+  remaining same-result pixel mismatch is concentrated in text/edge raster,
+  so visual parity remains open.
 - `CURRENT`: this narrow runtime result does not change the generated
   same-payload gate. Fresh root/chat captures remain `0/4`,
   `rendererReady=NO`, because the current HTML/CSS/translation files were not

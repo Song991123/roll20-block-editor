@@ -14,6 +14,8 @@ the entire history and generated evidence tree.
 - Actual Roll20's built-in default chat-template DOM and typography were
   measured in the dedicated one-member modern Sandbox. The local fallback now
   matches its caption/row/inline-roll structure and passes browser smoke.
+  DPR-normalized smoke reproduces exact table/caption geometry; text/edge
+  pixel raster remains open and must not be called visual parity.
 - Actual same-payload Roll20 evidence remains `0/4`. Modern Sandbox upload and
   separate legacy-enabled test-room proof are still open. The visible upload
   route is blocked before transmission until Chrome extension file-URL access

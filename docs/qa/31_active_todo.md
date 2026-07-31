@@ -14,6 +14,15 @@
   `268 x 59.172` locally versus `267.8 x 58.575` in Roll20. This raw residual
   includes different capture scales (`devicePixelRatio 1.0` local versus
   `1.25` Roll20) and is not promoted to an exact pixel-parity claim.
+- `VERIFIED LOCAL NORMALIZED`: chat smoke now accepts
+  `--device-scale-factor`. It applies both browser context DPR and Chromium's
+  forced device scale, then captures at CSS-pixel scale. At Roll20's measured
+  DPR `1.25`, local and actual table geometry both measured
+  `267.800018 x 58.575001`, including the same `0.8px` table and `1.6px`
+  inline-roll border snapping. A same-result image comparison still had
+  `11.1534%` best-aligned mismatch above RGB threshold 30, concentrated in
+  text/edge raster and affected by actual browser image normalization; visual
+  pixel parity therefore remains open.
 - `DIAGNOSTIC ONLY`: local Preview/Edit are byte-identical for the anonymous
   synthetic payload. The existing Sandbox root comparison measured `1.3095%`
   RGB mismatch above threshold 60, but the Sandbox source was not freshly

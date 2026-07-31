@@ -10,6 +10,12 @@
   geometry is `268 x 59.172` local and `267.8 x 58.575` actual; local and
   actual captures used DPR `1.0` and `1.25`, so the residual remains a
   normalization item rather than an exact-pixel claim.
+- Added DPR-aware chat smoke. Context DPR plus Chromium's forced device scale
+  reproduces Roll20's fractional border snapping; CSS-scale screenshots keep
+  output dimensions comparable. At DPR `1.25`, table/caption geometry is exact
+  between local and actual. Same-result best-aligned pixel mismatch remains
+  `11.1534%` above threshold 30 around text/edges, so pixel parity is still
+  open rather than promoted from geometry alone.
 - `test:rolltemplate-render`, browser chat smoke, lint, build, and full
   `ci:verify` pass. No project/CDP listener remains after the run.
 - Fresh supported Sandbox file upload remains blocked before transmission by

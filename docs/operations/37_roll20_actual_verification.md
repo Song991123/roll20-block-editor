@@ -242,6 +242,7 @@ node scripts\rolltemplate_chat_smoke.mjs `
   --base-path /roll20-block-editor `
   --fixtures test-fixtures\visual `
   --report-dir ..\_tmp_codex_smoke\rolltemplate-chat-smoke-<candidate> `
+  --device-scale-factor <actual-device-pixel-ratio> `
   --chat-geometry-policy <policy> `
   --chat-typography-policy <policy>
 
@@ -282,6 +283,12 @@ corepack pnpm run diagnose:roll20-chat-intrinsic-width -- reports\roll20-actual-
   ..\_tmp_codex_smoke\rolltemplate-chat-smoke-<candidate>\rolltemplate-chat-smoke-results.json `
   --out-dir ..\_tmp_codex_smoke\intrinsic-width-<candidate>
 ```
+
+For actual/local geometry comparison, use the actual capture sidecar's
+`devicePixelRatio`. The smoke applies both browser context DPR and Chromium's
+forced device scale so fractional border snapping is reproduced, while
+screenshots stay at CSS-pixel scale. Matching geometry does not replace the
+pixel-diff or fresh-payload gates.
 
 This is especially important for fixture-A-style candidates: a policy can be
 `APPLIED` while still breaking intrinsic cell allocation. Treat the intrinsic
