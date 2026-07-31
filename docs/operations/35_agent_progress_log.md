@@ -11,7 +11,16 @@
 - External gate is unchanged: the supported Chrome file chooser still rejects
   the modern Sandbox payload with `Not allowed`. No hidden-input, endpoint,
   CDP, or ordinary-room workaround was used; actual Roll20 parity remains
-  unproven.
+unproven.
+
+# 2026-07-31 - Chrome permission handoff
+
+- The supported Roll20 file chooser continues to return `Not allowed`.
+- Browser policy refused navigation to Chrome's extension-settings URL, so no
+  permission change or indirect workaround was attempted. The temporary blank
+  tab used for the check was closed.
+- The next external gate requires the user to enable the extension's file
+  upload/file-URL permission manually, then reconnect the dedicated Sandbox.
 
 # 2026-07-31 - Imported smoke preflight guard
 

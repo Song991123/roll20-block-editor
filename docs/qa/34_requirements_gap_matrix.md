@@ -13,6 +13,14 @@ The first failed strict attempt after cleanup was a missing generated `out`
 document. Rebuilding before the rerun separated that harness issue from the
 product result.
 
+## Chrome Permission Handoff - 2026-07-31
+
+| Area | Current evidence | Status | Boundary |
+| --- | --- | --- | --- |
+| Supported chooser | Roll20 HTML file chooser returns `Not allowed` before upload | BLOCKED EXTERNAL | No payload transmission |
+| Permission recovery | Browser policy refuses the Chrome extension-settings URL | USER ACTION | Manual Chrome permission change required |
+| Safety | Temporary blank tab closed; no Roll20 state changed | DONE SAFETY | Does not advance parity |
+
 ## Imported Smoke Preflight Guard - 2026-07-31
 
 - `IMPLEMENTED / VERIFIED LOCAL`: the imported edit-sync smoke now validates

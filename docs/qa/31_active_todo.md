@@ -10,7 +10,18 @@
   prove arbitrary-sheet coverage or actual Roll20 visual parity.
 - BLOCKED EXTERNAL P0: the supported modern Sandbox chooser still returns
   `Not allowed` before upload; current actual evidence remains `0/4` root/chat
-  captures. Do not use a CDP or hidden-input upload bypass.
+captures. Do not use a CDP or hidden-input upload bypass.
+
+# 2026-07-31 Chrome permission handoff
+
+- BLOCKED EXTERNAL: the supported file chooser still returns `Not allowed`.
+  Opening Chrome's extension-settings page through the browser connector is
+  also refused by its URL policy, so no permission change or workaround was
+  performed.
+- ACTION REQUIRED: enable the browser extension's file-upload/file-URL
+  permission in Chrome manually, then reconnect the dedicated Sandbox tab.
+- PRESERVED: the temporary blank tab opened for this check was closed; no
+  Roll20 state, room, upload, or chat was changed.
 
 # 2026-07-31 Imported smoke preflight guard
 
