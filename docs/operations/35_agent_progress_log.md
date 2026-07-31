@@ -1,3 +1,14 @@
+## 2026-07-31 - UI copy and mode-switch smoke refresh
+
+- VERIFIED LOCAL: the current export/import browser smoke passed with no
+  console, page, request, or external-resource errors.
+- MEASURED LOCAL: initial shell and export dialog contain no mojibake; public
+  sample actions remain absent; HTML/CSS/i18n/JS/worker tabs, legacy toggle,
+  actual-verification boundary copy, asset preflight, and modern/legacy mode
+  switching all passed their assertions.
+- CLAIM BOUNDARY: this closes the checked core UI slice only; it does not
+  replace the pending actual Roll20 screenshot/chat parity gate.
+
 ## 2026-07-31 - Sandbox permission recheck
 
 - RECHECKED: the same dedicated modern Sandbox tab still showed exactly one

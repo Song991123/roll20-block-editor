@@ -1,3 +1,13 @@
+## 2026-07-31 UI copy and mode-switch smoke
+
+- `DONE LOCAL`: export/import browser smoke passed with zero console/page/
+  request/external-resource errors.
+- `DONE LOCAL`: checked core shell has no mojibake and no public sample actions;
+  code tabs, legacy toggle, boundary warning, asset preflight, and modern /
+  legacy mode switching passed.
+- `VERIFY`: remaining broad copy audit and actual Roll20 parity are separate
+  gates; do not promote this smoke to universal UI or visual parity.
+
 ## 2026-07-31 Sandbox permission recheck
 
 - `VERIFY`: modern Sandbox participant preflight still passed with one visible
