@@ -1,5 +1,13 @@
 # 34. Requirements Gap Matrix
 
+# Post-sanitizer browser recheck - 2026-07-31
+
+- `DONE LOCAL`: persistent Preview/Edit remained zero-reload in both modes.
+- `DONE LOCAL`: synthetic visual smoke remained `4/4` exact with `0%`
+  mismatch; server hygiene passed.
+- `OPEN EXTERNAL`: local synthetic results do not promote actual Roll20
+  screenshot or chat parity. Generated evidence remains `0/4`.
+
 # Nested at-rule sandbox sanitizer - 2026-07-31
 
 - `DONE LOCAL`: nested `@container`, `@supports`, and `@layer` blocks now

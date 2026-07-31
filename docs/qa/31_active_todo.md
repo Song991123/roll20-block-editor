@@ -1,5 +1,15 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Post-sanitizer browser recheck
+
+- `VERIFIED LOCAL`: persistent Preview/Edit remained `loads=0` in modern and
+  legacy modes after the nested at-rule sanitizer change.
+- `VERIFIED LOCAL`: synthetic visual smoke remained `4/4` exact (`0%`
+  mismatch) across both modes, and server hygiene found no project or CDP
+  listeners afterward.
+- `CLAIM BOUNDARY`: this still covers only anonymous local fixtures; actual
+  Roll20 generated evidence remains `0/4`.
+
 # 2026-07-31 Nested at-rule sandbox sanitizer
 
 - `DONE LOCAL`: Sandbox CSS sanitization now walks nested at-rules instead of

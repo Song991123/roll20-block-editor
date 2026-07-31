@@ -1,5 +1,14 @@
 # 2026-07-31 - Actual-status and renderer-action gate refresh
 
+# 2026-07-31 - Post-sanitizer browser recheck
+
+- Persistent Preview/Edit remained at zero iframe reloads in modern and legacy
+  modes after the recursive sanitizer change.
+- Synthetic visual smoke remained `4/4` exact with `0%` mismatch in both modes;
+  server hygiene found no project or CDP listeners.
+- No external Roll20 claim is added; generated root/chat evidence remains
+  `0/4` and chat parity is missing.
+
 # 2026-07-31 - Nested at-rule sandbox sanitizer
 
 - Replaced the flat CSS selector regex in the Sandbox sanitizer with a
