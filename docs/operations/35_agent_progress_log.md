@@ -1,3 +1,22 @@
+# 2026-07-31 - Local edit surface recheck
+
+- `VERIFIED LOCAL`: the canonical edit-flow browser smoke passed. It covered
+  the persistent iframe owner, layer selection/grouping, inside/before/after
+  drops, flow/free placement, absolute positioning, and canvas-width input;
+  page and console errors were both zero.
+- `VERIFIED LOCAL`: persistent preview smoke passed in modern and legacy modes
+  with zero iframe reloads.
+- `CLAIM BOUNDARY`: local synchronization evidence is refreshed, but actual
+  Roll20 Sandbox upload/render parity remains open.
+
+# 2026-07-31 - Generated-output cleanup retry
+
+- Rechecked the exact active-worktree generated targets `.next/`, `out/`, and
+  `.tmp/`; all resolved inside `web-push-main/`.
+- The guarded native recursive deletion was explicitly authorized but rejected
+  by the host before PowerShell execution. No alternate deletion mechanism was
+  used and no source or protected sheet folder changed.
+
 # 2026-07-31 - Modern Sandbox supported-upload reconnect
 
 - Re-observed the dedicated Sandbox as a read-only surface with exactly one

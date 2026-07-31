@@ -1,3 +1,24 @@
+# 2026-07-31 Local edit surface recheck
+
+- `VERIFIED LOCAL`: `smoke:edit-flow` passed with the canonical persistent
+  iframe, Figma-style layer panel, multi-selection/grouping, inside/before/after
+  layer drops, flow/free placement, absolute positioning, and editable canvas
+  widths. The report recorded zero console errors and zero page errors.
+- `VERIFIED LOCAL`: `smoke:persistent-preview-surface` passed for modern and
+  legacy modes with `loads=0` in both cases.
+- `CLAIM BOUNDARY`: this confirms the local edit/preview synchronization
+  contract only; it does not close the actual Roll20 Sandbox parity item.
+
+# 2026-07-31 Generated-output cleanup retry
+
+- `BLOCKED HOST`: the explicitly approved deletion of only the active
+  worktree's generated `.next/`, `out/`, and `.tmp/` directories was rejected
+  before PowerShell executed.
+- `PRESERVED`: no source, protected sheet folder, dependency tree, worktree,
+  or Roll20 room changed. No deletion workaround was used.
+- `TODO`: retry only when the host permits the guarded native deletion, then
+  verify the three paths are absent and the worktree remains clean.
+
 # 2026-07-31 Modern Sandbox supported-upload reconnect
 
 - `VERIFIED EXTERNAL READ-ONLY`: the dedicated Sandbox again exposed a fresh

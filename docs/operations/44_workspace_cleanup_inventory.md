@@ -1,5 +1,19 @@
 # 44. Workspace Cleanup Inventory
 
+# 2026-07-31 post-smoke cleanup retry
+
+- RECHECKED: only the active worktree's generated `.next/`, `out/`, and
+  `.tmp/` directories were approved for deletion after the local browser
+  smoke. All three resolved inside `web-push-main/`; source, dependencies,
+  worktrees, reports policy, and protected external sheet roots were excluded.
+- ATTEMPTED: one boundary-checked native PowerShell recursive deletion was
+  issued after explicit user approval.
+- BLOCKED HOST: the execution boundary rejected the destructive invocation
+  before PowerShell ran. No alternate shell, native API, per-file workaround,
+  or safety bypass was used.
+- NOT DELETED: the three generated directories remain; product source and Git
+  state are unchanged.
+
 # 2026-07-31 post-build cleanup retry
 
 - RECHECKED: the active worktree generated targets `.next/`, `out/`, and
