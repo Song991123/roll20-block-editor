@@ -1,6 +1,6 @@
 'use client';
 
-import type { CSSProperties } from 'react';
+import type { CSSProperties, KeyboardEvent } from 'react';
 import { Dice5, RotateCcw } from 'lucide-react';
 import type { LayerRole } from '@/lib/editor/layerRoles';
 import type { ManagedDesignDeclarations } from '@/lib/editor/designPosition';
@@ -48,7 +48,7 @@ export default function VisualStyleInspector({
                   aria-label={`${presetGroup.title} ${preset.label}`}
                   title={preset.description}
                   className={cn(
-                    'grid min-h-[64px] grid-cols-[42px_minmax(0,1fr)] items-center gap-2 rounded-lg border px-2 py-2 text-left transition-colors',
+                    'grid min-h-[104px] grid-rows-[68px_auto] gap-2 rounded-lg border p-2 text-left transition-colors',
                     active
                       ? 'border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary-active)]'
                       : 'border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:border-[var(--primary-soft-border)] hover:bg-[var(--bg-hover)]',
@@ -57,7 +57,7 @@ export default function VisualStyleInspector({
                   data-testid={`design-preset-${presetGroup.family}-${preset.id}`}
                 >
                   <PresetPreview family={presetGroup.family} preset={preset} />
-                  <span className="truncate text-xs font-semibold">{preset.label}</span>
+                  <span className="truncate px-0.5 text-xs font-semibold">{preset.label}</span>
                 </button>
               );
             })}
@@ -67,25 +67,25 @@ export default function VisualStyleInspector({
 
       <StyleSection title="크기와 여백">
         <div className="grid grid-cols-2 gap-2">
-          <PxField
+          <LengthField
             label="너비"
             value={values.width}
             onChange={(value) => onPatch({ width: value })}
             testid="design-style-width"
           />
-          <PxField
+          <LengthField
             label="최소 높이"
             value={values['min-height']}
             onChange={(value) => onPatch({ 'min-height': value })}
             testid="design-style-min-height"
           />
-          <PxField
+          <LengthField
             label="안쪽 여백"
             value={values.padding}
             onChange={(value) => onPatch({ padding: value })}
             testid="design-style-padding"
           />
-          <PxField
+          <LengthField
             label="모서리"
             value={values['border-radius']}
             onChange={(value) => onPatch({ 'border-radius': value })}
@@ -113,7 +113,7 @@ export default function VisualStyleInspector({
 
       <StyleSection title="테두리">
         <div className="grid grid-cols-2 gap-2">
-          <PxField
+          <LengthField
             label="두께"
             value={values['border-width']}
             onChange={(value) => onPatch({ 'border-width': value })}
@@ -177,7 +177,7 @@ export default function VisualStyleInspector({
             ))}
           </div>
           <div className="mt-2 grid grid-cols-2 gap-2">
-            <PxField
+            <LengthField
               label="사이 간격"
               value={values.gap}
               onChange={(value) => onPatch({ gap: value })}
@@ -204,7 +204,7 @@ export default function VisualStyleInspector({
 
       <StyleSection title="글자">
         <div className="grid grid-cols-2 gap-2">
-          <PxField
+          <LengthField
             label="크기"
             value={values['font-size']}
             onChange={(value) => onPatch({ 'font-size': value })}
@@ -269,37 +269,57 @@ function PresetPreview({
 
   if (family === 'button') {
     return (
-      <span className="grid h-8 w-10 place-items-center" style={style} aria-hidden="true">
-        <Dice5 className="h-4 w-4" />
+      <span className="grid h-[68px] w-full place-items-center overflow-hidden bg-[var(--bg-elevated-2)] px-2" aria-hidden="true">
+        <span className="grid min-h-9 min-w-[76px] place-items-center gap-1 px-2" style={style}>
+          <Dice5 className="h-4 w-4" />
+        </span>
       </span>
     );
   }
   if (family === 'text') {
     return (
-      <span className="grid h-9 w-10 place-items-center overflow-hidden" style={style} aria-hidden="true">
-        <span className="text-[11px] leading-none">가나</span>
+      <span className="grid h-[68px] w-full place-items-center overflow-hidden bg-[var(--bg-elevated-2)] px-2" aria-hidden="true">
+        <span className="w-full" style={style}>구역 제목</span>
       </span>
     );
   }
   if (family === 'control') {
     return (
-      <span className="flex h-8 w-10 items-center overflow-hidden px-1.5 text-[9px]" style={style} aria-hidden="true">
-        12
+      <span className="grid h-[68px] w-full place-items-center overflow-hidden bg-[var(--bg-elevated-2)] px-2" aria-hidden="true">
+        <span className="flex h-9 w-full items-center overflow-hidden px-2 text-xs" style={style}>12</span>
+      </span>
+    );
+  }
+  if (family === 'result-card') {
+    return (
+      <span className="grid h-[68px] w-full place-items-center overflow-hidden bg-[var(--bg-elevated-2)] px-2 py-1.5" aria-hidden="true">
+        <span className="flex h-full w-full flex-col" style={style}>
+          <span className="flex min-h-6 items-center justify-between border-b border-current/20 px-2 text-[9px] font-bold">
+            <span>판정</span><Dice5 className="h-3 w-3" />
+          </span>
+          <span className="flex flex-1 items-center justify-between px-2 text-[9px]">
+            <span className="opacity-65">결과</span><strong className="text-xs">12</strong>
+          </span>
+        </span>
       </span>
     );
   }
   if (family === 'result') {
     return (
-      <span className="flex h-9 w-10 items-center justify-between gap-1 overflow-hidden px-1.5" style={style} aria-hidden="true">
-        <span className="h-1 w-4 rounded-full bg-current opacity-35" />
-        <span className="h-1 w-2 rounded-full bg-current opacity-80" />
+      <span className="grid h-[68px] w-full place-items-center overflow-hidden bg-[var(--bg-elevated-2)] px-2" aria-hidden="true">
+        <span className="flex h-10 w-full items-center justify-between gap-2 overflow-hidden px-2" style={style}>
+          <span className="text-[9px] opacity-65">결과</span>
+          <strong className="text-xs">12</strong>
+        </span>
       </span>
     );
   }
   return (
-    <span className="flex h-9 w-10 flex-col justify-center gap-1 overflow-hidden px-1.5" style={style} aria-hidden="true">
-      <span className="h-1 w-5 rounded-full bg-current opacity-70" />
-      <span className="h-1 w-7 rounded-full bg-current opacity-30" />
+    <span className="grid h-[68px] w-full place-items-center overflow-hidden bg-[var(--bg-elevated-2)] px-2 py-1.5" aria-hidden="true">
+      <span className="flex h-full w-full flex-col justify-center gap-2 overflow-hidden px-2" style={style}>
+        <span className="h-1.5 w-2/3 rounded-full bg-current opacity-70" />
+        <span className="h-1.5 w-4/5 rounded-full bg-current opacity-30" />
+      </span>
     </span>
   );
 }
@@ -313,7 +333,7 @@ function StyleSection({ title, children }: { title: string; children: React.Reac
   );
 }
 
-function PxField({
+function LengthField({
   label,
   value,
   onChange,
@@ -324,24 +344,35 @@ function PxField({
   onChange: (value: string | null) => void;
   testid: string;
 }) {
+  const commit = (input: HTMLInputElement) => {
+    const next = normalizeLengthValue(input.value);
+    input.value = next ?? '';
+    if (next !== (value || null)) onChange(next);
+  };
+
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') event.currentTarget.blur();
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.currentTarget.value = value ?? '';
+    }
+  };
+
   return (
     <label className="block">
       <span className="r20-field-label">{label}</span>
-      <div className="relative">
-        <input
-          type="number"
-          min="0"
-          step="1"
-          value={readNumber(value)}
-          onChange={(event) => {
-            const next = event.target.value;
-            onChange(next === '' ? null : `${Math.max(0, Number(next))}px`);
-          }}
-          className="r20-input pr-8 tabular-nums"
-          data-testid={testid}
-        />
-        <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">px</span>
-      </div>
+      <input
+        key={value ?? ''}
+        type="text"
+        inputMode="decimal"
+        defaultValue={value ?? ''}
+        onBlur={(event) => commit(event.currentTarget)}
+        onKeyDown={onKeyDown}
+        placeholder="자동"
+        spellCheck={false}
+        className="r20-input tabular-nums"
+        data-testid={testid}
+      />
     </label>
   );
 }
@@ -408,10 +439,11 @@ function layoutPatch(mode: LayoutMode): ManagedDesignDeclarations {
   return { display: null, 'flex-direction': null };
 }
 
-function readNumber(value?: string): string {
-  if (!value) return '';
-  const match = value.match(/^-?\d+(?:\.\d+)?/);
-  return match ? match[0] : '';
+function normalizeLengthValue(value: string): string | null {
+  const raw = value.trim();
+  if (!raw) return null;
+  if (/^-?\d+(?:\.\d+)?$/.test(raw)) return `${Math.max(0, Number(raw))}px`;
+  return raw;
 }
 
 function normalizeHex(value?: string): string | null {

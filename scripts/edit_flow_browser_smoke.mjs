@@ -305,9 +305,20 @@ async function main() {
       await canvasFirst.count() === 1 && await canvasSecond.count() === 1,
       'canvas multi-selection targets are missing',
     );
-    await canvasFirst.click();
-    await canvasSecond.click({ modifiers: ['Control'] });
-    await page.waitForTimeout(120);
+    let canvasMultiSelected = false;
+    for (let attempt = 0; attempt < 3 && !canvasMultiSelected; attempt += 1) {
+      await canvasFirst.click({ force: true });
+      await canvasSecond.click({ modifiers: ['Control'], force: true });
+      try {
+        await frame.waitForFunction(({ firstId, secondId }) => (
+          Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(firstId)}"][data-r20-selected="1"]`))
+          && Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(secondId)}"][data-r20-selected="1"]`))
+        ), { firstId: ids.groupOneId, secondId: ids.groupTwoId }, { timeout: 1200 });
+        canvasMultiSelected = true;
+      } catch {
+        await page.waitForTimeout(80);
+      }
+    }
     result.tests.canvasMultiSelection = await frame.evaluate(({ firstId, secondId }) => ({
       selectedIds: [...document.querySelectorAll('[data-r20-selected="1"]')]
         .map((node) => node.getAttribute('data-r20-block-id'))
@@ -1181,8 +1192,9 @@ async function main() {
     );
 
     result.tests.layerReorder = await page.evaluate(async ({ movingId, targetId }) => {
+      const moving = document.querySelector(`[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(movingId)}"]`);
       const target = document.querySelector(`[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(targetId)}"]`);
-      if (!target) return { moved: false, reason: 'missing target layer row' };
+      if (!moving || !target) return { moved: false, reason: 'missing moving or target layer row' };
       const rect = target.getBoundingClientRect();
       const dataTransfer = new DataTransfer();
       dataTransfer.setData('application/x-r20-layer-block', movingId);
@@ -1192,10 +1204,16 @@ async function main() {
         clientX: rect.left + rect.width / 2,
         clientY: rect.top + rect.height * 0.86,
       };
+      const dragstart = new DragEvent('dragstart', init);
+      Object.defineProperty(dragstart, 'dataTransfer', { value: dataTransfer });
+      moving.dispatchEvent(dragstart);
+      await new Promise((resolve) => requestAnimationFrame(resolve));
       const dragover = new DragEvent('dragover', init);
       Object.defineProperty(dragover, 'dataTransfer', { value: dataTransfer });
       target.dispatchEvent(dragover);
-      await new Promise((resolve) => requestAnimationFrame(resolve));
+      for (let attempt = 0; attempt < 4 && !target.getAttribute('data-r20-layer-drop-mode'); attempt += 1) {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      }
       const mode = target.getAttribute('data-r20-layer-drop-mode');
       const drop = new DragEvent('drop', init);
       Object.defineProperty(drop, 'dataTransfer', { value: dataTransfer });
@@ -1680,6 +1698,44 @@ async function main() {
     await page.locator(
       `[data-testid="edit-layer-row"][data-r20-block-id="${result.tests.rolltemplatePreviewValues.rootBlockId}"]`,
     ).click();
+    const resultCardRosePreset = page.locator('[data-testid="design-preset-result-card-rose"]');
+    await resultCardRosePreset.waitFor({ state: 'visible', timeout: 10000 });
+    await resultCardRosePreset.click();
+    await page.waitForFunction(() => {
+      const root = document.querySelector('[data-testid="rolltemplate-edit-card"] .sheet-rolltemplate-default');
+      return root && getComputedStyle(root).backgroundColor === 'rgb(255, 246, 249)';
+    }, null, { timeout: 10000 });
+    result.tests.rolltemplateCardPreset = await page.evaluate(() => {
+      const root = document.querySelector('[data-testid="rolltemplate-edit-card"] .sheet-rolltemplate-default');
+      const style = root ? getComputedStyle(root) : null;
+      const emit = window.__perfHook.getEmitContent();
+      return {
+        background: style?.backgroundColor ?? null,
+        color: style?.color ?? null,
+        borderColor: style?.borderTopColor ?? null,
+        borderWidth: style?.borderTopWidth ?? null,
+        radius: style?.borderTopLeftRadius ?? null,
+        width: style?.width ?? null,
+        inspectorWidthValue: document.querySelector('[data-testid="design-style-width"]')?.value ?? null,
+        inlineStyle: root?.getAttribute('style') ?? '',
+        emittedCssHasRootRule: emit.css.includes('.sheet-rolltemplate-default.sheet-rolltemplate-default.sheet-rolltemplate-default.sheet-rolltemplate-default'),
+        emittedHtmlHasInlineFill: /<rolltemplate\b[^>]*style="[^"]*background-color:\s*#fff6f9/i.test(emit.html),
+      };
+    });
+    const cardPresetDebug = JSON.stringify(result.tests.rolltemplateCardPreset);
+    assert(result.tests.rolltemplateCardPreset.background === 'rgb(255, 246, 249)', `result-card preset fill did not render: ${cardPresetDebug}`);
+    assert(result.tests.rolltemplateCardPreset.color === 'rgb(93, 47, 64)', `result-card preset text did not render: ${cardPresetDebug}`);
+    assert(result.tests.rolltemplateCardPreset.borderColor === 'rgb(217, 107, 145)', `result-card preset border did not render: ${cardPresetDebug}`);
+    assert(result.tests.rolltemplateCardPreset.borderWidth === '2px', `result-card preset border width did not render: ${cardPresetDebug}`);
+    assert(result.tests.rolltemplateCardPreset.radius === '6px', `result-card preset radius did not render: ${cardPresetDebug}`);
+    assert(result.tests.rolltemplateCardPreset.inspectorWidthValue === '100%', `result-card width unit was misreported: ${cardPresetDebug}`);
+    assert(result.tests.rolltemplateCardPreset.emittedCssHasRootRule, 'result-card preset did not emit a Roll20 template-root CSS rule');
+    assert(!result.tests.rolltemplateCardPreset.inlineStyle, 'result-card preset leaked presentation into rendered inline HTML');
+    assert(!result.tests.rolltemplateCardPreset.emittedHtmlHasInlineFill, 'result-card preset leaked presentation into emitted inline HTML');
+    await page.screenshot({
+      path: path.join(REPORT_DIR, 'rolltemplate-card-style-gallery.png'),
+      fullPage: false,
+    });
     const templateNameInput = page.locator('[data-testid="edit-inspector-field-name"]');
     await templateNameInput.waitFor({ state: 'visible', timeout: 10000 });
     await templateNameInput.fill('renamed');
@@ -1687,6 +1743,7 @@ async function main() {
       const emit = window.__perfHook.getEmitContent();
       return emit.html.includes('sheet-rolltemplate-renamed')
         && emit.css.includes(`.sheet-rolltemplate-renamed .${designClass}`)
+        && emit.css.includes('.sheet-rolltemplate-renamed.sheet-rolltemplate-renamed.sheet-rolltemplate-renamed.sheet-rolltemplate-renamed')
         && !emit.css.includes(`.sheet-rolltemplate-default .${designClass}`);
     }, result.tests.rolltemplateStyleSync.designClass, { timeout: 10000 });
     await templateNameInput.fill('default');
@@ -1694,6 +1751,7 @@ async function main() {
       const emit = window.__perfHook.getEmitContent();
       return emit.html.includes('sheet-rolltemplate-default')
         && emit.css.includes(`.sheet-rolltemplate-default .${designClass}`)
+        && emit.css.includes('.sheet-rolltemplate-default.sheet-rolltemplate-default.sheet-rolltemplate-default.sheet-rolltemplate-default')
         && !emit.css.includes(`.sheet-rolltemplate-renamed .${designClass}`);
     }, result.tests.rolltemplateStyleSync.designClass, { timeout: 10000 });
     result.tests.rolltemplateNameStyleMigration = await page.evaluate((designClass) => {
@@ -1701,12 +1759,16 @@ async function main() {
       return {
         name: document.querySelector('[data-testid="rolltemplate-picker"]')?.value ?? null,
         restoredScope: emit.css.includes(`.sheet-rolltemplate-default .${designClass}`),
+        restoredRoot: emit.css.includes('.sheet-rolltemplate-default.sheet-rolltemplate-default.sheet-rolltemplate-default.sheet-rolltemplate-default'),
         staleScope: emit.css.includes(`.sheet-rolltemplate-renamed .${designClass}`),
+        staleRoot: emit.css.includes('.sheet-rolltemplate-renamed.sheet-rolltemplate-renamed.sheet-rolltemplate-renamed.sheet-rolltemplate-renamed'),
       };
     }, result.tests.rolltemplateStyleSync.designClass);
     assert(result.tests.rolltemplateNameStyleMigration.name === result.tests.rolltemplatePreviewValues.rootBlockId, 'template picker lost the renamed template root');
     assert(result.tests.rolltemplateNameStyleMigration.restoredScope, 'template style scope did not return to default');
+    assert(result.tests.rolltemplateNameStyleMigration.restoredRoot, 'template root style did not return to default');
     assert(!result.tests.rolltemplateNameStyleMigration.staleScope, 'stale renamed template style scope remained');
+    assert(!result.tests.rolltemplateNameStyleMigration.staleRoot, 'stale renamed template root style remained');
     await page.locator(
       `[data-testid="edit-layer-row"][data-r20-block-id="${result.tests.rolltemplatePreviewValues.rowBlockId}"]`,
     ).click();
@@ -1743,12 +1805,22 @@ async function main() {
     await page.waitForSelector('[data-testid="chat-list"] [data-r20-chat-rolltemplate="1"] .sheet-template-row', { timeout: 10000 });
     result.tests.rolltemplateChatSync = await page.evaluate(() => {
       const row = document.querySelector('[data-testid="chat-list"] [data-r20-chat-rolltemplate="1"] .sheet-template-row');
+      const root = document.querySelector('[data-testid="chat-list"] [data-r20-chat-rolltemplate="1"] .sheet-rolltemplate-default');
+      const rootStyle = root ? getComputedStyle(root) : null;
       return {
         background: row ? getComputedStyle(row).backgroundColor : null,
+        cardBackground: rootStyle?.backgroundColor ?? null,
+        cardBorderColor: rootStyle?.borderTopColor ?? null,
+        cardBorderWidth: rootStyle?.borderTopWidth ?? null,
+        cardRadius: rootStyle?.borderTopLeftRadius ?? null,
         addedLabel: document.querySelectorAll('[data-testid="chat-list"] .sheet-result-label').length,
       };
     });
     assert(result.tests.rolltemplateChatSync.background === 'rgb(253, 231, 239)', 'chat card did not reuse the visual editor CSS');
+    assert(result.tests.rolltemplateChatSync.cardBackground === 'rgb(255, 246, 249)', 'chat card root did not reuse the visual editor fill');
+    assert(result.tests.rolltemplateChatSync.cardBorderColor === 'rgb(217, 107, 145)', 'chat card root did not reuse the visual editor border');
+    assert(result.tests.rolltemplateChatSync.cardBorderWidth === '2px', 'chat card root did not reuse the visual editor border width');
+    assert(result.tests.rolltemplateChatSync.cardRadius === '6px', 'chat card root did not reuse the visual editor radius');
     assert(result.tests.rolltemplateChatSync.addedLabel === 1, 'chat card did not reuse the edited rolltemplate body');
 
     const creationPage = await browser.newPage({ viewport: { width: 1480, height: 960 } });
@@ -1773,19 +1845,38 @@ async function main() {
     await creationPage.waitForSelector('[data-testid="rolltemplate-edit-card"] .sheet-result-row', { timeout: 10000 });
     result.tests.rolltemplateCreate = await creationPage.evaluate(() => {
       const emit = window.__perfHook.getEmitContent();
+      const root = document.querySelector('[data-testid="rolltemplate-edit-card"] .sheet-rolltemplate-default');
+      const title = document.querySelector('[data-testid="rolltemplate-edit-card"] .sheet-result-title');
+      const row = document.querySelector('[data-testid="rolltemplate-edit-card"] .sheet-result-row');
       return {
         name: document.querySelector('[data-testid="rolltemplate-edit-surface"]')?.getAttribute('data-template-name') ?? null,
-        title: document.querySelector('[data-testid="rolltemplate-edit-card"] .sheet-result-title')?.textContent ?? '',
+        title: title?.textContent ?? '',
         rowCount: document.querySelectorAll('[data-testid="rolltemplate-edit-card"] .sheet-result-row').length,
+        rootBackground: root ? getComputedStyle(root).backgroundColor : null,
+        rootBorder: root ? getComputedStyle(root).borderTopColor : null,
+        titleBackground: title ? getComputedStyle(title).backgroundColor : null,
+        titleColor: title ? getComputedStyle(title).color : null,
+        rowBackground: row ? getComputedStyle(row).backgroundColor : null,
         emittedTemplate: /<rolltemplate\b[^>]*class="[^"]*sheet-rolltemplate-default[^"]*"/i.test(emit.html),
+        emittedRootCss: emit.css.includes('.sheet-rolltemplate-default.sheet-rolltemplate-default.sheet-rolltemplate-default.sheet-rolltemplate-default'),
         emittedManagedCss: emit.css.includes('.sheet-r20-node-'),
       };
     });
     assert(result.tests.rolltemplateCreate.name === 'default', 'empty workspace created the wrong template name');
     assert(result.tests.rolltemplateCreate.title.includes('예시 이름'), 'new template title did not render its preview value');
     assert(result.tests.rolltemplateCreate.rowCount === 1, 'new template did not create its default result row');
+    assert(result.tests.rolltemplateCreate.rootBackground === 'rgb(255, 253, 253)', 'new template did not start with the paper card fill');
+    assert(result.tests.rolltemplateCreate.rootBorder === 'rgb(217, 197, 205)', 'new template did not start with the paper card border');
+    assert(result.tests.rolltemplateCreate.titleBackground === 'rgb(217, 107, 145)', 'new template title did not start with the rose fill');
+    assert(result.tests.rolltemplateCreate.titleColor === 'rgb(255, 255, 255)', 'new template title did not start with readable text');
+    assert(result.tests.rolltemplateCreate.rowBackground === 'rgb(255, 253, 253)', 'new template row did not start with the paper fill');
     assert(result.tests.rolltemplateCreate.emittedTemplate, 'new template did not reach emitted HTML');
+    assert(result.tests.rolltemplateCreate.emittedRootCss, 'new template card style did not reach emitted CSS');
     assert(result.tests.rolltemplateCreate.emittedManagedCss, 'new template styles did not reach emitted CSS');
+    await creationPage.screenshot({
+      path: path.join(REPORT_DIR, 'rolltemplate-created-default.png'),
+      fullPage: false,
+    });
     await creationPage.close();
 
     result.finishedAt = new Date().toISOString();

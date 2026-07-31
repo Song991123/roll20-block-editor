@@ -63,6 +63,12 @@ type DesignPositionAdapter = Pick<
   | 'setBlockField'
 >;
 
+type ManagedStyleTarget = {
+  className: string;
+  scopeSelector: string | null;
+  attachStableClass: boolean;
+};
+
 export function commitManagedDesignPosition(
   adapter: DesignPositionAdapter,
   request: DesignPositionRequest,
@@ -169,6 +175,9 @@ export function readManagedDesignStyle(
   const block = adapter.getBlock(workspace, blockId);
   if (!block) return {};
 
+  const target = resolveManagedStyleTarget(adapter, workspace, blockId);
+  if (!target) return {};
+
   const styleField = resolveDesignStyleField(adapter, workspace, blockId);
   const inline = styleField
     ? parseCssDeclarations(adapter.getBlockField(workspace, blockId, styleField) ?? '')
@@ -176,10 +185,9 @@ export function readManagedDesignStyle(
   const managedCss = findDesignCssBlock(adapter);
   if (!managedCss) return inline;
   const css = adapter.getBlockField('css', managedCss.id, 'CSS') ?? '';
-  const scopeSelector = resolveManagedStyleScope(adapter, workspace, blockId);
   return {
     ...inline,
-    ...readCssRule(css, designClassForBlock(blockId), scopeSelector),
+    ...readCssRule(css, target.className, target.scopeSelector),
   };
 }
 
@@ -188,8 +196,7 @@ export function canManageDesignStyle(
   workspace: WorkspaceKey,
   blockId: string,
 ): boolean {
-  return Boolean(adapter.getBlock(workspace, blockId))
-    && Boolean(resolveDesignClassField(adapter, workspace, blockId));
+  return Boolean(resolveManagedStyleTarget(adapter, workspace, blockId));
 }
 
 /**
@@ -204,7 +211,8 @@ export function commitManagedDesignStyle(
 ): DesignStyleResult {
   const { workspace, blockId } = request;
   if (!adapter.getBlock(workspace, blockId)) return styleFailure('missing-block');
-  if (!resolveDesignClassField(adapter, workspace, blockId)) {
+  const target = resolveManagedStyleTarget(adapter, workspace, blockId);
+  if (!target) {
     return styleFailure('missing-style-or-class');
   }
 
@@ -213,7 +221,7 @@ export function commitManagedDesignStyle(
     return {
       changed: false,
       reason: 'managed-css',
-      designClass: designClassForBlock(blockId),
+      designClass: target.className,
       cssBlockCreated: false,
       htmlChanged: false,
       cssChanged: false,
@@ -223,11 +231,15 @@ export function commitManagedDesignStyle(
   const managedCss = findOrCreateDesignCssBlock(adapter);
   if (!managedCss) return styleFailure('css-workspace-unavailable');
 
-  const classFieldBefore = resolveDesignClassField(adapter, workspace, blockId);
+  const classFieldBefore = target.attachStableClass
+    ? resolveDesignClassField(adapter, workspace, blockId)
+    : null;
   const classValueBefore = classFieldBefore
     ? adapter.getBlockField(workspace, blockId, classFieldBefore) ?? ''
     : '';
-  const designClass = ensureDesignClass(adapter, workspace, blockId);
+  const designClass = target.attachStableClass
+    ? ensureDesignClass(adapter, workspace, blockId)
+    : target.className;
   if (!designClass) return styleFailure('missing-style-or-class');
 
   let htmlChanged = stripInlineDesignDeclarations(
@@ -239,14 +251,16 @@ export function commitManagedDesignStyle(
 
   const beforeCss = adapter.getBlockField('css', managedCss.id, 'CSS')
     ?? `/* ${DESIGN_CSS_MARKER} */`;
-  const scopeSelector = resolveManagedStyleScope(adapter, workspace, blockId);
-  const afterCss = patchCssRule(beforeCss, designClass, normalized, scopeSelector);
+  const afterCss = patchCssRule(beforeCss, designClass, normalized, target.scopeSelector);
   const cssChanged = beforeCss !== afterCss;
   if (cssChanged) adapter.setBlockField('css', managedCss.id, 'CSS', afterCss);
 
   // ensureDesignClass may have attached the class even when no inline style
   // needed migration.
-  htmlChanged = htmlChanged || !classValueBefore.split(/\s+/).includes(designClass);
+  htmlChanged = htmlChanged || (
+    target.attachStableClass
+    && !classValueBefore.split(/\s+/).includes(designClass)
+  );
 
   return {
     changed: htmlChanged || cssChanged || managedCss.created,
@@ -277,6 +291,17 @@ export function migrateManagedRolltemplateStyleScope(
   const nodes = adapter.listAllBlocks('html');
   let css = adapter.getBlockField('css', managedCss.id, 'CSS') ?? '';
   let migratedRules = 0;
+
+  const previousRootClass = previousScope.slice(1);
+  const nextRootClass = nextScope.slice(1);
+  const previousRootMatcher = managedRuleMatcher(previousRootClass, '[^}]*', null);
+  if (previousRootMatcher.test(css)) {
+    const previous = readExactCssRule(css, previousRootClass, null);
+    const next = readExactCssRule(css, nextRootClass, null);
+    css = css.replace(previousRootMatcher, '').trim();
+    css = upsertCssRule(css, nextRootClass, { ...previous, ...next }, null);
+    migratedRules += 1;
+  }
 
   for (const node of nodes) {
     if (node.id === rootId || findOwningRolltemplateId(nodes, node.id) !== rootId) continue;
@@ -357,6 +382,30 @@ function resolveDesignStyleField(
   if (!block) return null;
   const preferred = designStyleFieldForBlockType(block.type);
   return adapter.hasBlockField(workspace, blockId, preferred) ? preferred : null;
+}
+
+function resolveManagedStyleTarget(
+  adapter: DesignPositionAdapter,
+  workspace: WorkspaceKey,
+  blockId: string,
+): ManagedStyleTarget | null {
+  const block = adapter.getBlock(workspace, blockId);
+  if (!block) return null;
+  if (workspace === 'html' && block.type === ROLLTEMPLATE_ROOT_TYPE) {
+    return {
+      className: rolltemplateSelectorForName(
+        adapter.getBlockField('html', blockId, 'NAME'),
+      ).slice(1),
+      scopeSelector: null,
+      attachStableClass: false,
+    };
+  }
+  if (!resolveDesignClassField(adapter, workspace, blockId)) return null;
+  return {
+    className: designClassForBlock(blockId),
+    scopeSelector: resolveManagedStyleScope(adapter, workspace, blockId),
+    attachStableClass: true,
+  };
 }
 
 function stripInlineDesignDeclarations(

@@ -1,7 +1,13 @@
 import type { LayerRole } from './layerRoles';
 import type { ManagedDesignDeclarations } from './designPosition';
 
-export type VisualStylePresetFamily = 'section' | 'button' | 'text' | 'control' | 'result';
+export type VisualStylePresetFamily =
+  | 'section'
+  | 'button'
+  | 'text'
+  | 'control'
+  | 'result-card'
+  | 'result';
 export type VisualStylePresetScope = 'sheet' | 'rolltemplate';
 
 export type VisualStylePreset = {
@@ -231,6 +237,73 @@ const CONTROL_PRESETS: VisualStylePreset[] = [
   }),
 ];
 
+const RESULT_CARD_PRESETS: VisualStylePreset[] = [
+  preset('paper', '종이 카드', '밝은 종이와 얇은 선을 쓴 기본 굴림 결과 카드', {
+    display: 'block',
+    width: '100%',
+    'max-width': '100%',
+    'box-sizing': 'border-box',
+    overflow: 'hidden',
+    'background-color': '#fffdfd',
+    'background-image': 'none',
+    color: '#3f3439',
+    'border-width': '1px',
+    'border-style': 'solid',
+    'border-color': '#d9c5cd',
+    'border-radius': '6px',
+    padding: '0',
+    'box-shadow': '0 2px 8px rgba(73, 45, 57, 0.12)',
+  }),
+  preset('rose', '장미 카드', '주요 판정을 또렷하게 보여주는 분홍 결과 카드', {
+    display: 'block',
+    width: '100%',
+    'max-width': '100%',
+    'box-sizing': 'border-box',
+    overflow: 'hidden',
+    'background-color': '#fff6f9',
+    'background-image': 'none',
+    color: '#5d2f40',
+    'border-width': '2px',
+    'border-style': 'solid',
+    'border-color': '#d96b91',
+    'border-radius': '6px',
+    padding: '0',
+    'box-shadow': '0 3px 10px rgba(169, 70, 107, 0.18)',
+  }),
+  preset('mint', '민트 카드', '보조 판정과 회복 결과에 어울리는 민트 카드', {
+    display: 'block',
+    width: '100%',
+    'max-width': '100%',
+    'box-sizing': 'border-box',
+    overflow: 'hidden',
+    'background-color': '#f6fcf9',
+    'background-image': 'none',
+    color: '#245648',
+    'border-width': '1px',
+    'border-style': 'solid',
+    'border-color': '#75bca4',
+    'border-radius': '6px',
+    padding: '0',
+    'box-shadow': 'inset 5px 0 0 #4ea88b, 0 2px 7px rgba(36, 86, 72, 0.12)',
+  }),
+  preset('ink', '잉크 카드', '어두운 바탕으로 강한 결과를 강조하는 카드', {
+    display: 'block',
+    width: '100%',
+    'max-width': '100%',
+    'box-sizing': 'border-box',
+    overflow: 'hidden',
+    'background-color': '#403940',
+    'background-image': 'none',
+    color: '#ffffff',
+    'border-width': '1px',
+    'border-style': 'solid',
+    'border-color': '#292429',
+    'border-radius': '4px',
+    padding: '0',
+    'box-shadow': '0 3px 10px rgba(32, 25, 29, 0.22)',
+  }),
+];
+
 const RESULT_PRESETS: VisualStylePreset[] = [
   preset('paper', '종이 행', '흰 카드에 얇은 구분선을 둔 결과 행', {
     'background-color': '#fffdfd',
@@ -283,6 +356,13 @@ export function getVisualStylePresetGroup(
   blockType: string,
   scope: VisualStylePresetScope = 'sheet',
 ): VisualStylePresetGroup | null {
+  if (scope === 'rolltemplate' && blockType === 'r20_rolltemplate_define') {
+    return {
+      family: 'result-card',
+      title: '결과 카드 모양',
+      presets: RESULT_CARD_PRESETS,
+    };
+  }
   if (scope === 'rolltemplate' && (role.kind === 'frame' || role.kind === 'flow')) {
     return { family: 'result', title: '결과 행 모양', presets: RESULT_PRESETS };
   }

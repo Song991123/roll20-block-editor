@@ -109,9 +109,9 @@ already-selected insertion position.
 - Friendly gallery defaults use the same managed CSS path. The gallery now
   includes an anonymous generic Roll button whose preview click produces the
   built-in default Roll20 template card.
-- The direct inspector provides 19 generic one-click starting styles: four
-  section styles, four button styles, three text styles, four input styles, and
-  four result-row styles. These are authored product presets, not copied sheet
+- The direct inspector provides 23 generic one-click starting styles: four
+  section styles, four button styles, three text styles, four input styles,
+  four result-card styles, and four result-row styles. These are authored product presets, not copied sheet
   designs or bundled community examples.
 - Managed rules repeat the stable node class to outrank Roll20's baseline
   control selectors without `!important`. The editor selection overlay uses an
@@ -140,10 +140,18 @@ already-selected insertion position.
   `.sheet-rolltemplate-NAME` selector. This keeps the rule outside Roll20's
   `.charsheet` prefix and lets the same CSS reach the actual chat card. Normal
   sheet layers continue to use sheet-scoped selectors.
+- The template root itself is editable even though Roll20 does not expose a
+  separate author class for it. Managed root presentation targets the emitted
+  `.sheet-rolltemplate-NAME` class directly. A newly created template starts
+  with a generic paper card, rose title, and readable result row; no third-party
+  sheet design is bundled.
 - Changing a template `NAME` through either inspector or the Blockly field
   migrates every managed descendant rule to the new
-  `.sheet-rolltemplate-NAME` scope. The old scope must not remain after the
+  `.sheet-rolltemplate-NAME` scope and migrates the managed root rule itself.
+  The old root or descendant scope must not remain after the
   rename, and changing the name back must restore the original chat linkage.
+- Length controls preserve authored units such as `%`, `rem`, and multi-value
+  spacing. A bare number is normalized to `px` only when the user commits it.
 - This is an implementation and local synthetic-browser result. It does not
   prove that every third-party template helper or actual modern/legacy Roll20
   chat renderer is visually identical.

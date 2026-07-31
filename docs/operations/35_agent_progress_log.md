@@ -11621,3 +11621,27 @@ same-hash modern/legacy comparison.
   four Preview/Edit captures remain exact at `0%` mismatch.
 - Live modern Sandbox and dedicated legacy-room paint remain unverified and
   keep their separate external evidence gates.
+
+## 2026-08-01 - Result-card root styling and visible gallery
+
+- Made the outer result-template card a first-class visual target. It writes
+  managed CSS directly to `.sheet-rolltemplate-NAME`, while ordinary template
+  children keep stable node classes under that scope.
+- Added four generic result-card presets and enlarged all preset previews so a
+  user sees section, control, button, row, or card shape before applying it.
+  Total authored starting styles are now 23.
+- Styled newly created result templates with a generic paper card, rose title,
+  and result row. No external sheet identity, source, or derived design entered
+  the product tree.
+- Migrated root and descendant managed rules together when a template name
+  changes. Added focused and browser assertions for forward and reverse rename.
+- Replaced px-only visual length inputs with unit-preserving commit fields.
+  Browser proof checks that `100%` remains `100%`; bare numbers still normalize
+  to pixels.
+- Stabilized two timing-sensitive edit-flow probes by waiting for multi-select
+  paint and dispatching a complete layer drag start before the reorder drop.
+- Verified focused design tests, lint, production build, edit-flow browser
+  smoke, editor-to-chat card paint reuse, and modern/legacy synthetic
+  Preview/Edit comparison at exact `0%` mismatch for four captures.
+- Actual current-payload modern Sandbox and dedicated legacy-room visual proof
+  remain open external evidence gates.

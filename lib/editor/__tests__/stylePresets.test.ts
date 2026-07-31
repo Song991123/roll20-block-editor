@@ -47,6 +47,17 @@ assert.equal(result?.title, '결과 행 모양');
 assert.equal(result?.presets.length, 4);
 assert.equal(result?.presets.find((item) => item.id === 'rose')?.declarations['box-shadow'], 'inset 3px 0 0 #d96b91');
 
+const resultCard = getVisualStylePresetGroup(
+  getLayerRole('r20_rolltemplate_define'),
+  'r20_rolltemplate_define',
+  'rolltemplate',
+);
+assert.equal(resultCard?.family, 'result-card');
+assert.equal(resultCard?.title, '결과 카드 모양');
+assert.equal(resultCard?.presets.length, 4);
+assert.equal(resultCard?.presets.find((item) => item.id === 'rose')?.declarations.width, '100%');
+assert.equal(resultCard?.presets.find((item) => item.id === 'mint')?.declarations.overflow, 'hidden');
+
 const rose = rollButton?.presets.find((item) => item.id === 'rose');
 assert(rose);
 assert.equal(presetMatches({

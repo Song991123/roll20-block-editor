@@ -11147,3 +11147,31 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `VERIFY / OPEN EXTERNAL`: actual modern Sandbox and dedicated legacy-room
   paint remain independent evidence gates. No local result promotes a live
   Roll20 parity claim.
+
+## 2026-08-01 Result-Card Root Styling
+
+- `DONE LOCAL`: expanded the visual inspector from 19 to 23 authored presets.
+  Four new result-card presets style the outer `.sheet-rolltemplate-NAME`
+  surface; child frames still receive the separate result-row set.
+- `FIXED LOCAL`: the result-template root no longer disappears from visual
+  styling because it lacks an ordinary author `CLASS` field. Managed root CSS
+  targets Roll20's emitted template class directly and removes touched inline
+  declarations from the source `STYLE` field.
+- `FIXED LOCAL`: template-name changes migrate both the root card rule and all
+  managed descendant rules. Old root and child selectors are removed when the
+  name changes and when it changes back.
+- `DONE LOCAL`: a newly created result template starts as a generic paper card
+  with a rose title and readable result row. This is product-authored UI, not a
+  bundled or derived third-party sheet.
+- `FIXED LOCAL`: length controls preserve `%`, `rem`, and multi-value spacing.
+  Bare numbers become `px` only on commit, so a `100%` card width is no longer
+  displayed or accidentally saved as `100px`.
+- `VERIFIED LOCAL`: focused design tests, lint, production build,
+  `smoke:edit-flow`, and modern/legacy synthetic Preview/Edit comparison pass.
+  Browser proof covers the larger preset previews, result-card paint in the
+  editor and existing chat result, `100%` unit retention, root/child rename
+  migration, and the styled empty-workspace creation path. The four synthetic
+  Preview/Edit captures remain exact at `0%` mismatch.
+- `VERIFY / OPEN EXTERNAL`: current-payload modern Sandbox upload and a
+  dedicated legacy-room paint check remain separate external gates. Local
+  chat equality is not actual Roll20 visual parity.

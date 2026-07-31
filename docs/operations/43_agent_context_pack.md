@@ -11,15 +11,17 @@ the entire history and generated evidence tree.
   editing.
 - Local preview/edit share one persistent iframe. Modern and legacy browser
   smoke currently pass, including delayed stale-revision rejection.
-- Direct edit exposes managed CSS controls plus 19 generic starting styles
-  for sections, Roll buttons, text, inputs, and result rows. Managed selectors beat the Roll20 base
+- Direct edit exposes managed CSS controls plus 23 generic starting styles
+  for sections, Roll buttons, text, inputs, result cards, and result rows. Managed selectors beat the Roll20 base
   without inline presentation or `!important`; template-child rules are scoped
-  through their owning `.sheet-rolltemplate-NAME`. The rolltemplate submode now uses the same chat
+  through their owning `.sheet-rolltemplate-NAME`. Result-card root rules use
+  that same Roll20 class directly and migrate with template-name changes. The
+  rolltemplate submode now uses the same chat
   renderer as the roll history: users can select a template root or child,
-  edit common presentation through managed CSS, and drop template-specific
+  edit the outer card and common child presentation through managed CSS, and drop template-specific
   rows/text into flow. The persistent sheet iframe remains mounted separately,
   so card width cannot reflow the sheet. Blockly template-name changes migrate
-  descendant managed CSS to the new chat scope. This is locally browser-verified, not
+  root and descendant managed CSS to the new chat scope. This is locally browser-verified, not
   arbitrary-sheet actual Roll20 parity.
 - Actual Roll20's built-in default chat-template DOM and typography were
   measured in the dedicated one-member modern Sandbox. The local fallback now

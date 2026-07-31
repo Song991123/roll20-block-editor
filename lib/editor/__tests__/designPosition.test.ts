@@ -1,6 +1,7 @@
 import { strict as assert } from 'node:assert';
 import type { BlockSnapshot, BlocklyAdapter } from '@/lib/blockly/adapter';
 import {
+  canManageDesignStyle,
   commitManagedDesignPosition,
   commitManagedDesignStyle,
   designClassForBlock,
@@ -23,7 +24,7 @@ const blocks = new Map<string, Map<string, TestBlock>>([
     ['dual', block('dual', 'r20_dual_roll_button', { ROW_CLASS: 'dual-row' })],
     ['row', block('row', 'r20_skill_row', { TR_CLASS: 'skill-row', TR_STYLE: 'display: table-row' })],
     ['wrapper', block('wrapper', 'r20_repeating_section_wrapper', { FIELDSET_CLASS: 'inventory', FIELDSET_STYLE: 'padding: 4px' })],
-    ['template', block('template', 'r20_rolltemplate_define', { NAME: 'proof', STYLE: '' })],
+    ['template', block('template', 'r20_rolltemplate_define', { NAME: 'proof', STYLE: 'padding: 3px; color: red' })],
     ['template-row', {
       ...block('template-row', 'r20_rolltemplate_row', { CLASS: 'result-row', STYLE: '' }),
       layerParentId: 'template',
@@ -211,6 +212,32 @@ assert.deepEqual(readManagedDesignStyle(adapter, 'html', 'template-row'), {
   padding: '8px 10px',
 });
 
+assert.equal(canManageDesignStyle(adapter, 'html', 'template'), true);
+const templateCardStyled = commitManagedDesignStyle(adapter, {
+  workspace: 'html',
+  blockId: 'template',
+  declarations: {
+    'background-color': '#fff6f9',
+    color: '#5d2f40',
+    padding: '0',
+    'border-radius': '6px',
+  },
+});
+assert.equal(templateCardStyled.changed, true);
+assert.equal(templateCardStyled.designClass, 'sheet-rolltemplate-proof');
+assert.equal(adapter.getBlockField('html', 'template', 'STYLE'), '');
+const templateCardCss = adapter.getBlockField('css', 'managed-css', 'CSS') ?? '';
+assert.match(
+  templateCardCss,
+  /\.sheet-rolltemplate-proof\.sheet-rolltemplate-proof\.sheet-rolltemplate-proof\.sheet-rolltemplate-proof, \.sheet-rolltemplate-proof \{[^}]*background-color: #fff6f9;/,
+);
+assert.deepEqual(readManagedDesignStyle(adapter, 'html', 'template'), {
+  'background-color': '#fff6f9',
+  color: '#5d2f40',
+  padding: '0',
+  'border-radius': '6px',
+});
+
 adapter.setBlockField('html', 'template', 'NAME', 'renamed');
 const migratedTemplate = migrateManagedRolltemplateStyleScope(
   adapter,
@@ -218,13 +245,21 @@ const migratedTemplate = migrateManagedRolltemplateStyleScope(
   'proof',
   'renamed',
 );
-assert.deepEqual(migratedTemplate, { changed: true, migratedRules: 1 });
+assert.deepEqual(migratedTemplate, { changed: true, migratedRules: 2 });
 const renamedTemplateCss = adapter.getBlockField('css', 'managed-css', 'CSS') ?? '';
 assert.doesNotMatch(renamedTemplateCss, /\.sheet-rolltemplate-proof \.sheet-r20-node-template-row/);
 assert.match(renamedTemplateCss, /\.sheet-rolltemplate-renamed \.sheet-r20-node-template-row/);
+assert.doesNotMatch(renamedTemplateCss, /^\.sheet-rolltemplate-proof(?:\.|\s|,)/m);
+assert.match(renamedTemplateCss, /^\.sheet-rolltemplate-renamed\.sheet-rolltemplate-renamed/m);
 assert.deepEqual(readManagedDesignStyle(adapter, 'html', 'template-row'), {
   'background-color': '#f8d7e3',
   padding: '8px 10px',
+});
+assert.deepEqual(readManagedDesignStyle(adapter, 'html', 'template'), {
+  'background-color': '#fff6f9',
+  color: '#5d2f40',
+  padding: '0',
+  'border-radius': '6px',
 });
 
 console.log('designPosition.test PASS');
