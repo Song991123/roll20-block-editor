@@ -2,6 +2,20 @@
 
 Date: 2026-07-31
 
+## Mixed Runtime-Source Preservation Regression - 2026-07-31
+
+- `VERIFIED LOCAL`: an anonymous mixed HTML/CSS input now has regression
+  coverage for modern selector arguments, unsupported container at-rules,
+  worker source, and ordinary page JavaScript. The importer keeps visual HTML
+  free of page-script source, preserves worker/page workspaces separately,
+  keeps selector structure, and retains the unsupported container rule as raw
+  CSS.
+- Focused import structure is `43/43`; full CI, lint, build, diff check, and
+  server hygiene pass.
+- `VERIFY / OPEN`: this strengthens local preservation only. It does not close
+  arbitrary-sheet coverage, live worker execution, or actual Roll20 screenshot
+  parity.
+
 ## Sandbox Upload Permission Retry - 2026-07-31
 
 - `VERIFY / BLOCKED EXTERNAL`: a fresh dedicated modern Sandbox preflight again

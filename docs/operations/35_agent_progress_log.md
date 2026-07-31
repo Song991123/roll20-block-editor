@@ -1,3 +1,16 @@
+## 2026-07-31 - Mixed runtime-source preservation regression
+
+- Added an anonymous regression for modern CSS selector arguments, unsupported
+  container at-rules, Roll20 worker source, and ordinary page JavaScript in one
+  imported document.
+- Verified that visual HTML does not expose page-script source, worker/page
+  code remains in its separate editable workspaces, structured selector data
+  is preserved, and unsupported container CSS remains lossless raw CSS.
+- Focused importer tests passed `43/43`; full `ci:verify`, lint, build,
+  `git diff --check`, and server hygiene also passed.
+- This is local generic evidence only. The current Roll20 actual screenshot and
+  chat gate remains blocked at the browser file-URL permission.
+
 ## 2026-07-31 - Sandbox upload permission retry
 
 - Reclaimed the dedicated modern Sandbox and confirmed a fresh visible member

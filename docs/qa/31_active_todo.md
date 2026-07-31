@@ -1,3 +1,20 @@
+## 2026-07-31 Mixed runtime-source preservation regression
+
+- DONE LOCAL: added an anonymous importer regression covering modern selector
+  arguments, unsupported container at-rules, a Roll20 worker script, and an
+  ordinary page script in one HTML/CSS input.
+- VERIFIED LOCAL: the worker remains in the worker workspace, page JavaScript
+  keeps its editable anchor/workspace block without becoming visible sheet
+  content, the modern selector remains structured, and the container rule is
+  an explicit lossless raw-CSS block. Import structure is `43/43`.
+- VERIFIED LOCAL: `ci:verify`, lint, production build, `git diff --check`, and
+  server hygiene pass.
+- CLAIM BOUNDARY: this is anonymous local preservation evidence. It does not
+  prove arbitrary-sheet coverage, live worker execution, or Roll20 screenshot
+  parity.
+- TODO P0: resume current-payload modern Sandbox capture after the browser
+  file-URL permission is enabled.
+
 ## 2026-07-31 Sandbox upload permission retry
 
 - `VERIFY / BLOCKED EXTERNAL`: the dedicated modern Sandbox was reclaimed and

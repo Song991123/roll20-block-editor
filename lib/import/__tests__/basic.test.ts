@@ -355,6 +355,27 @@ function testCssSelectorComplexFallback(): void {
   assert(literalCount === 0, 'no r20_literal_string fallback');
 }
 
+function testModernCssAndMixedScriptPreservation(): void {
+  const html = `
+    <div class="sheet-frame"><input name="attr_hp"></div>
+    <script type="text/worker">on('change:hp', function(){ setAttrs({ hp: 1 }); });</script>
+    <script type="text/javascript" src="page-runtime.js">window.sheetReady = true;</script>
+  `;
+  const css = `
+    .sheet-frame:has(> input) { display: grid; }
+    @container sheet (min-width: 420px) { .sheet-frame { gap: 4px; } }
+  `;
+  const r = importSheet({ html, css });
+  assert(r.html.includes('r20_raw_worker'), 'worker source stays in worker workspace');
+  assert(r.html.includes('r20_page_js_slot'), 'page script keeps an HTML anchor');
+  assert(r.js.includes('r20_raw_page_js'), 'page script enters the page-JS workspace');
+  assert(!r.html.includes('window.sheetReady'), 'page script body does not become visible sheet content');
+  assert(r.css.includes('r20_selector_pseudo'), 'modern selector remains structured');
+  assert(r.css.includes('&gt; input'), 'modern pseudo argument is preserved');
+  assert(r.css.includes('@container sheet'), 'container rule remains lossless');
+  assert(r.stats.cssRawFallback >= 1, 'unsupported container rule is explicit raw CSS');
+}
+
 function testCssCompoundSelector(): void {
   // tag.class compound — `input.sheet-hide`.
   const css = `input.sheet-hide { display: none; }`;
@@ -466,6 +487,7 @@ const tests = [
   ['css @media structure', testCssMediaQueryStructure],
   ['css @keyframes structure', testCssKeyframesStructureAndFallback],
   ['css selector_complex fallback', testCssSelectorComplexFallback],
+  ['modern CSS and mixed script preservation', testModernCssAndMixedScriptPreservation],
   ['css compound selector', testCssCompoundSelector],
   ['css pseudo-element ::-webkit-*', testCssPseudoElementWebkit],
   ['css extended element tags', testCssExtendedElementTags],
