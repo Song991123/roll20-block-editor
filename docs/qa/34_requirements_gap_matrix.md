@@ -1613,3 +1613,14 @@ not close the external Roll20 parity rows above.
   current local three-file fixture export. The supported file chooser still
   stops before transmission, so current-payload visual parity and the
   modern/legacy same-payload gate remain unverified.
+
+## Supported Chooser Retry After Closing Sheet Window - 2026-07-31
+
+- `VERIFIED EXTERNAL READ-ONLY`: the dedicated test destination showed one
+  visible member; the existing character window was closed before retrying
+  the official Sandbox upload control.
+- `BLOCKED EXTERNAL`: `fileChooser.setFiles` returned `Not allowed` again
+  before transmission. No generated payload was accepted, saved, or compared.
+- `OPEN`: current-payload modern parity, independent legacy-room parity, and
+  their screenshot/chat evidence remain unverified. No workaround outside the
+  supported visible chooser policy was used.

@@ -11178,3 +11178,15 @@ same-hash modern/legacy comparison.
   not current-payload parity. The supported file chooser still rejects the
   upload before transmission, and modern/legacy same-payload screenshot
   evidence remains open.
+
+## 2026-07-31 - Supported chooser retry after sheet window close
+
+- `VERIFIED READ-ONLY`: the dedicated test destination continued to show one
+  visible member. The existing character window was closed before the retry,
+  leaving the official Sandbox upload controls in the foreground.
+- `BLOCKED EXTERNAL`: the official visible HTML chooser again rejected
+  `fileChooser.setFiles` with `Not allowed` before transmission. No payload was
+  saved and no room setting changed.
+- `CLAIM BOUNDARY`: no hidden input, endpoint, CDP upload, ordinary room, or
+  protected source path was used. The tab remains a handoff for a user-led
+  permission/file-selection retry.

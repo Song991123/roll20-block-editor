@@ -10628,3 +10628,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   chooser still rejects `fileChooser.setFiles` before transmission, so this
   observation cannot be promoted to current-payload visual parity or the
   modern/legacy same-payload gate.
+
+## 2026-07-31 Supported Chooser Retry After Sheet Window Close
+
+- `VERIFIED EXTERNAL READ-ONLY`: the dedicated test destination still showed
+  exactly one visible member. The existing character window was closed before
+  retrying so the official Sandbox upload controls were visibly in front.
+- `BLOCKED EXTERNAL`: the visible HTML control opened the supported chooser,
+  but `fileChooser.setFiles` again returned `Not allowed` before any file was
+  transmitted. No CSS/HTML/translation payload was saved and no room setting
+  changed.
+- `PRESERVED`: no hidden input, direct endpoint, CDP upload, ordinary room, or
+  protected source path was used. The handoff tab remains available for a
+  user-mediated permission/file-selection retry.
