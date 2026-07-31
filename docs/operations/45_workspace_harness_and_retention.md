@@ -653,3 +653,16 @@ external material remain preserved.
   targets after a new dry run; `.tmp/` was already absent.
 - PRESERVED: active dependencies, source, worktrees, report policy, and
   protected external sheet roots. The generated roots are absent again.
+
+## 2026-07-31 repeated user-authorized generated-output retry (host blocked)
+
+- RECHECKED: only the exact canonical-worktree `.next/`, `out/`, and `.tmp/`
+  paths were selected. They resolved inside `web-push-main/`, were generated
+  and ignored, and no project listener was active.
+- ATTEMPTED: one boundary-checked native PowerShell recursive deletion request
+  was issued after the user's explicit approval.
+- BLOCKED HOST: the execution boundary rejected the `Remove-Item -Recurse`
+  invocation before PowerShell executed. No alternate shell, native API,
+  per-file workaround, or safety bypass was used.
+- NOT DELETED: all three exact targets remain present. Protected sheet roots,
+  source, dependencies, worktrees, and tracked report policy were preserved.

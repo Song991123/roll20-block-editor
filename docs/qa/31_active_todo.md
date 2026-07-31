@@ -10566,3 +10566,24 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   headless workspace, full `ci:verify`, lint, and production build pass.
 - `VERIFY / OPEN`: this is local worker mapping only. Actual Roll20 worker
   execution and modern/legacy visual/chat parity remain unverified.
+
+## 2026-07-31 Protected Local Input Render Rerun
+
+- `VERIFIED LOCAL`: the protected local HTML/CSS/translation input was read
+  directly through the import path without copying or modifying the source.
+  Import reported `100%` match with 3,787 HTML blocks, 1,952 CSS blocks, 399
+  translation blocks, zero page-JS blocks, one worker block, and 6,139 total
+  workspace blocks. Resources, pointer edit flow, layer operations, nested
+  flow/free insertion, and emit/re-import stability passed.
+- `VERIFY / OPEN LOCAL`: the post-mutation full-sheet capture reported a
+  localized `4.89%` mismatch across a 96px strip. The independent modern and
+  legacy preview/edit visual smoke for the same protected local input was
+  exact at `0%` with translation coverage `93/93`. This is therefore not
+  reported as full imported-mutation visual parity; the localized difference
+  remains an investigation item for dynamic state or capture timing.
+- `VERIFY / OPEN EXTERNAL`: no actual Roll20 Sandbox payload was transmitted.
+  Modern/legacy same-payload screenshots, worker execution, and chat parity
+  remain blocked at the supported visible chooser handoff.
+- `BLOCKED HOST`: the user-authorized retry to remove only active generated
+  `.next/`, `out/`, and `.tmp/` was rejected before PowerShell execution;
+  those paths remain local cleanup candidates.

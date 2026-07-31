@@ -11126,3 +11126,19 @@ same-hash modern/legacy comparison.
   headless workspace, `ci:verify`, lint, and production build passed.
 - `CLAIM BOUNDARY`: this remains local JS mapping evidence. It does not prove
   live Roll20 worker execution or actual modern/legacy visual/chat parity.
+
+## 2026-07-31 - Protected local input render rerun
+
+- `VERIFIED LOCAL`: direct protected-source import reached `100%` match with
+  3,787 HTML blocks, 1,952 CSS blocks, 399 translation blocks, zero page-JS
+  blocks, one worker block, and 6,139 total workspace blocks. Resources,
+  pointer edit, layer reorder, nested/free insertion, and re-import stability
+  passed.
+- `VERIFY / OPEN LOCAL`: the post-mutation root screenshot had a localized
+  `4.89%` mismatch in a 96px strip. The separate modern/legacy visual smoke
+  for the same local input was exact at `0%` with translation coverage `93/93`.
+  This keeps the mutation-path visual gate open rather than claiming complete
+  parity.
+- `BLOCKED HOST`: an explicitly approved deletion retry for only `.next/`,
+  `out/`, and `.tmp/` was rejected before PowerShell execution. No workaround
+  or protected-source operation was used; the generated paths remain.
