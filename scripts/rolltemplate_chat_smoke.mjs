@@ -12,6 +12,10 @@
  *   node scripts/rolltemplate_chat_smoke.mjs \
  *     --out-dir ./out --base-path /roll20-block-editor \
  *     --fixtures test-fixtures/visual --report-dir reports/rolltemplate-chat-smoke
+ *
+ * A protected local source can be measured without copying it into the
+ * repository by setting R20_ROLL_CHAT_HTML_PATH and optionally the CSS/i18n
+ * path variables. The report identity remains `local-input`.
  */
 
 import http from 'node:http';
@@ -38,6 +42,9 @@ const CHAT_GEOMETRY_POLICY = argOf('--chat-geometry-policy', 'default');
 const CHAT_TYPOGRAPHY_POLICY = argOf('--chat-typography-policy', 'default');
 const CHAT_PAINT_POLICY = argOf('--chat-paint-policy', 'default');
 const VIEWPORT = { width: 2200, height: 1200 };
+const LOCAL_HTML_PATH = process.env.R20_ROLL_CHAT_HTML_PATH || '';
+const LOCAL_CSS_PATH = process.env.R20_ROLL_CHAT_CSS_PATH || '';
+const LOCAL_I18N_PATH = process.env.R20_ROLL_CHAT_I18N_PATH || '';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -89,6 +96,16 @@ function isResourceConsoleIssue(msg) {
 }
 
 async function listFixtures() {
+  if (LOCAL_HTML_PATH) {
+    const html = await readMaybe(path.resolve(LOCAL_HTML_PATH));
+    if (!html.trim()) return [];
+    return [{
+      id: 'local-input',
+      html,
+      css: LOCAL_CSS_PATH ? await readMaybe(path.resolve(LOCAL_CSS_PATH)) : '',
+      i18n: LOCAL_I18N_PATH ? await readMaybe(path.resolve(LOCAL_I18N_PATH)) : '',
+    }];
+  }
   const entries = await fs.readdir(FIXTURES_DIR, { withFileTypes: true });
   const out = [];
   for (const ent of entries) {

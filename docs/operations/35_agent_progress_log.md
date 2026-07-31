@@ -11146,3 +11146,17 @@ same-hash modern/legacy comparison.
 - `BLOCKED HOST`: an explicitly approved deletion retry for only `.next/`,
   `out/`, and `.tmp/` was rejected before PowerShell execution. No workaround
   or protected-source operation was used; the generated paths remain.
+
+## 2026-07-31 - Protected local input L2 and chat
+
+- `VERIFIED LOCAL`: a direct browser L2 roundtrip of the protected local
+  HTML/CSS/translation input passed twice at `100%` import match. Both emits
+  were stable for HTML/CSS/i18n/worker, with 3,787 blocks and zero console or
+  page errors.
+- `VERIFIED LOCAL`: a real user-click path on the first visible roll control
+  produced one local `rolltemplate` ChatPane card. The Roll20-like message,
+  textchat, spacer, sender, timestamp, template class, and total markers were
+  present; no app-only debug label or browser error appeared.
+- `CLAIM BOUNDARY`: this strengthens the generic local runtime contract only.
+  Live Roll20 worker/chat execution and actual modern/legacy screenshot parity
+  remain open until the supported external upload produces fresh evidence.

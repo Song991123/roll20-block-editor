@@ -10591,3 +10591,19 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `BLOCKED HOST`: the user-authorized retry to remove only active generated
   `.next/`, `out/`, and `.tmp/` was rejected before PowerShell execution;
   those paths remain local cleanup candidates.
+
+## 2026-07-31 Protected Local Input L2 And Chat
+
+- `VERIFIED LOCAL`: the protected local HTML/CSS/translation input now passes
+  the dedicated browser L2 roundtrip without copying source into the repo.
+  Import 1 and import 2 both reported `100%` match, 3,787 blocks, stable
+  HTML/CSS/i18n/worker output, and zero console or page errors.
+- `VERIFIED LOCAL`: the same local input's first visible roll control was
+  activated with a real user-click path. It produced one `rolltemplate` card
+  with the expected message/textchat/spacer/sender/timestamp shell, template
+  class, total field, and no debug label. Import match was `100%`; console and
+  page errors were zero.
+- `VERIFY / OPEN EXTERNAL`: these are local browser/runtime results only.
+  They do not prove Roll20's live worker execution, actual chat pixels, or
+  modern/legacy same-payload parity. Those remain dependent on the supported
+  Sandbox upload and fresh evidence gate.

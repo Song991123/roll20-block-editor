@@ -1,5 +1,20 @@
 # 34. Requirements Gap Matrix
 
+## Protected Local Input L2 And Chat Refresh - 2026-07-31
+
+- `VERIFIED LOCAL`: a direct local HTML/CSS/translation input passed the
+  browser L2 import -> emit -> re-import -> emit roundtrip twice with `100%`
+  match, 3,787 blocks, stable HTML/CSS/i18n/worker output, and zero console or
+  page errors. The source was read through environment variables and was not
+  copied into the repository.
+- `VERIFIED LOCAL`: a real user-click on the first visible roll control
+  produced one Roll20-like local `rolltemplate` ChatPane card with message,
+  textchat, spacer, sender, timestamp, template-class, and total markers; no
+  app-only debug label or browser error appeared.
+- `OPEN EXTERNAL`: local L2/chat results do not prove live Roll20 worker/chat
+  execution or same-payload modern/legacy screenshot parity. The actual gate
+  still requires supported Sandbox upload and fresh evidence.
+
 ## UI copy cleanup - 2026-07-31
 
 - `DONE LOCAL`: removed a user-visible English TODO placeholder from the HTML

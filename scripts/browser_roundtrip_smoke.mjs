@@ -21,6 +21,10 @@
  *   node scripts/browser_roundtrip_smoke.mjs \
  *     --out-dir ./out --report-dir reports/roundtrip-browser \
  *     [--fixtures test-fixtures/visual] [--only fixtureC-commission-1bu] [--port 4180]
+ *
+ * A protected local source can be measured without copying it into the
+ * repository by setting R20_ROUNDTRIP_HTML_PATH and optionally the CSS/i18n
+ * path variables. The report identity remains `local-input`.
  */
 
 import http from 'node:http';
@@ -39,6 +43,9 @@ const REPORT_DIR = path.resolve(argOf('--report-dir', 'reports/roundtrip-browser
 const FIXTURES_DIR = path.resolve(argOf('--fixtures', 'test-fixtures/visual'));
 const ONLY = argOf('--only', '');
 const PORT = Number(argOf('--port', '4180'));
+const LOCAL_HTML_PATH = process.env.R20_ROUNDTRIP_HTML_PATH || '';
+const LOCAL_CSS_PATH = process.env.R20_ROUNDTRIP_CSS_PATH || '';
+const LOCAL_I18N_PATH = process.env.R20_ROUNDTRIP_I18N_PATH || '';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -100,6 +107,16 @@ function firstDiffIndex(a, b) {
 }
 
 async function listFixtures() {
+  if (LOCAL_HTML_PATH) {
+    const html = await readMaybe(path.resolve(LOCAL_HTML_PATH));
+    if (!html.trim()) return [];
+    return [{
+      id: 'local-input',
+      html,
+      css: LOCAL_CSS_PATH ? await readMaybe(path.resolve(LOCAL_CSS_PATH)) : '',
+      i18n: LOCAL_I18N_PATH ? await readMaybe(path.resolve(LOCAL_I18N_PATH)) : '',
+    }];
+  }
   const entries = await fs.readdir(FIXTURES_DIR, { withFileTypes: true });
   const out = [];
   for (const ent of entries) {
