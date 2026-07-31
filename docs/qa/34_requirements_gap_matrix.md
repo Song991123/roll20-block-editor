@@ -1,5 +1,16 @@
 # 34. Requirements Gap Matrix
 
+# Browser shared-surface recheck - 2026-07-31
+
+- `DONE LOCAL`: modern/legacy persistent Preview/Edit passed with zero iframe
+  reloads.
+- `DONE LOCAL`: strict imported edit-sync passed for three anonymous synthetic
+  families without resource issues.
+- `DONE LOCAL`: synthetic visual comparison passed `4/4` exact results across
+  both compatibility modes; server hygiene passed.
+- `OPEN EXTERNAL`: synthetic exactness is not actual Roll20 visual or chat
+  parity. Current generated Roll20 evidence remains `0/4`.
+
 # Media-condition editor surface - 2026-07-31
 
 - `DONE LOCAL`: composite media conditions no longer display duplicate-looking

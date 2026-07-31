@@ -1,5 +1,19 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Browser shared-surface recheck
+
+- `VERIFIED LOCAL`: persistent Preview/Edit surface passed in modern and
+  legacy modes with `loads=0`.
+- `VERIFIED LOCAL`: strict imported edit-sync passed for synthetic generic
+  elements, sibling layers, and non-leaf flow containers with no resource
+  issues.
+- `VERIFIED LOCAL`: synthetic preview/edit visual smoke passed `4/4` exact
+  comparisons (`0%` mismatch) across both compatibility modes and the server
+  hygiene check found no project or CDP listeners afterward.
+- `CLAIM BOUNDARY`: these are anonymous synthetic/browser contracts; they do
+  not establish actual Roll20 screenshot parity, arbitrary-sheet support, or
+  chat/worker/asset parity.
+
 # 2026-07-31 Media-condition editor surface
 
 - `DONE LOCAL`: the `r20_media_query` editor now shows the full condition

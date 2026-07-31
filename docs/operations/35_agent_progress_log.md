@@ -1,5 +1,18 @@
 # 2026-07-31 - Actual-status and renderer-action gate refresh
 
+# 2026-07-31 - Browser shared-surface recheck
+
+- Persistent Preview/Edit passed in modern and legacy modes with zero iframe
+  reloads.
+- Strict imported edit-sync passed for three anonymous synthetic families with
+  no resource issues.
+- Synthetic preview/edit visual smoke passed `4/4` exact comparisons across
+  both compatibility modes; server hygiene found no project or CDP listeners
+  afterward.
+- This does not change the external Roll20 status: generated root/chat
+  evidence remains `0/4`, chat parity is missing, and renderer readiness is
+  `NO`.
+
 # 2026-07-31 - Media-condition editor surface
 
 - Removed the fixed visual parentheses from the `r20_media_query` Blockly
