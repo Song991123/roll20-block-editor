@@ -1,5 +1,19 @@
 # 2026-07-31 - Actual-status and renderer-action gate refresh
 
+# 2026-07-31 - Fresh local browser rerun
+
+- Built the production static app successfully and reran the canonical browser
+  checks against it.
+- Persistent Preview/Edit passed in modern and legacy modes with `loads=0`.
+- Strict imported generic-element edit sync and direct edit-flow smoke passed.
+- Synthetic Preview/Edit comparison passed `4/4` exact results at `0%`
+  mismatch in both compatibility modes.
+- The exact `.next/`, `out/`, and `.tmp/` cleanup request was rejected by the
+  host before PowerShell execution. No shell or per-file deletion workaround
+  was used, and the generated output remains local-only.
+- This does not change the external Roll20 boundary: actual root/chat evidence
+  is still `0/4` and the upload permission must be enabled before retry.
+
 # 2026-07-31 - Visible participant gate passed; upload permission blocked
 
 - Opened the dedicated test-room page menu through its visible control; the

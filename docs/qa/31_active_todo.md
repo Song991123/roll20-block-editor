@@ -1,5 +1,21 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Fresh local browser rerun
+
+- `VERIFIED LOCAL`: production build completed successfully, then the fresh
+  static app passed persistent Preview/Edit in modern and legacy modes with
+  `loads=0`.
+- `VERIFIED LOCAL`: strict imported edit-sync passed the generic-element path
+  with resource checks enabled; direct edit-flow smoke also passed.
+- `VERIFIED LOCAL`: synthetic Preview/Edit visual smoke passed `4/4` exact
+  comparisons at `0%` mismatch in both compatibility modes.
+- `BLOCKED HOST`: the exact post-smoke `.next/`, `out/`, and `.tmp/` cleanup
+  request was rejected before PowerShell execution. No deletion workaround
+  was used; generated output remains local and is not a completion claim.
+- `CLAIM BOUNDARY`: this rerun strengthens local evidence only. Actual Roll20
+  root/chat evidence remains `0/4` until the supported upload permission is
+  enabled in Chrome.
+
 # 2026-07-31 Visible participant gate passed; upload permission blocked
 
 - `VERIFIED EXTERNAL READ-ONLY`: the dedicated test-room page menu was opened

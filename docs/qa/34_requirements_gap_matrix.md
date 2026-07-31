@@ -1,5 +1,19 @@
 # 34. Requirements Gap Matrix
 
+## Fresh local browser rerun - 2026-07-31
+
+- `DONE LOCAL`: the production build and canonical persistent Preview/Edit
+  smoke passed with `loads=0` in modern and legacy modes.
+- `DONE LOCAL`: strict imported generic-element edit sync and direct edit-flow
+  browser smoke passed.
+- `DONE LOCAL`: synthetic Preview/Edit visual comparison passed `4/4` exact
+  results at `0%` mismatch across both compatibility modes.
+- `BLOCKED HOST`: post-smoke deletion of the exact `.next/`, `out/`, and
+  `.tmp/` targets was rejected before PowerShell execution; no workaround was
+  used and the outputs remain local-only.
+- `OPEN EXTERNAL`: actual Roll20 root/chat evidence remains `0/4`; local exact
+  results do not establish Roll20 visual, worker, asset, or chat parity.
+
 ## Visible participant gate passed; upload permission blocked - 2026-07-31
 
 - `VERIFIED OBSERVATION`: the dedicated test room now showed exactly `1
