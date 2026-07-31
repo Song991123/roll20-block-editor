@@ -1571,3 +1571,22 @@ directories that had been recreated by the local build.
   executed, even without recursive deletion.
 - NOT DELETED: `next-env.d.ts` remains. No alternate shell, API, per-file
   workaround, or safety bypass was used.
+
+## 2026-07-31 complete generated-output cleanup after explicit approval
+
+- RECHECKED: only the canonical worktree's generated `.next/`, `out/`, and
+  `.tmp/` directories plus untracked Next-generated `next-env.d.ts` were in
+  scope. All resolved inside `web-push-main/`, were ignored/recreatable, and
+  were outside source, dependencies, worktree metadata, reports policy, and
+  protected external sheet roots.
+- DELETED: `.next/`, `out/`, `.tmp/`, and `next-env.d.ts`. The first exact
+  directory pass removed their generated files; read-only attributes were
+  then cleared only within those same targets so the remaining empty
+  generated directories could be removed.
+- VERIFIED: all four targets are absent, `git clean -ndX -d -- .next out .tmp`
+  lists nothing, and `check:server-hygiene` reports no project or CDP
+  listener. The only remaining Git diff is this cleanup-ledger entry.
+- PRESERVED: active `node_modules/`, source, Git worktrees, fixed reference
+  roots, report policy, four-zone markers, and protected external sheet
+  folders. No alternate shell, broad wildcard, or out-of-scope deletion was
+  used.
