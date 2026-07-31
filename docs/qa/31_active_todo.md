@@ -1,3 +1,35 @@
+# 2026-07-31 Latest Roll20 root/chat and Sandbox observation
+
+- `VERIFIED EXTERNAL READ-ONLY`: the supported browser control surface listed
+  and claimed the two dedicated anonymous verification tabs. Both showed the
+  fresh participant indicator `1 구성원`; no ordinary room was opened or
+  changed.
+- `VERIFIED EXTERNAL READ-ONLY`: the dedicated legacy character iframe exposed
+  a `.sheet-layout-proof` root measuring `760x320`. Its computed background,
+  border, text color, and `border-box` sizing matched the generated anonymous
+  layout payload. Roll20 added runtime classes such as `btn ui-draggable`,
+  which are expected environment augmentation rather than authored source.
+- `MEASURED EXTERNAL`: the legacy iframe dialog viewport measured about
+  `893x283` while the dialog scroll height was `401`. The visible screenshot
+  therefore clips the lower part of the root unless the capture normalizes the
+  Roll20 viewport/crop. This is a capture-boundary finding, not a parity pass.
+- `MEASURED EXTERNAL`: six existing `.sheet-rolltemplate-default` cards were
+  observed in the dedicated chat surface at roughly `267x58.575`. They are
+  historical proof messages; no current generated payload roll was triggered,
+  so this does not prove current-payload chat parity.
+- `VERIFIED EXTERNAL READ-ONLY`: the dedicated modern tab exposed the `Sheet
+  Sandbox Tools` dialog, HTML/CSS/Translation file inputs, an iframe target,
+  and the same `1 구성원` indicator. No file upload, save, chat, or room
+  mutation was performed; the iframe was hidden at `0x0` while the tools dialog
+  was active.
+- `PARTIAL EXTERNAL`: current evidence proves a matching legacy runtime DOM
+  shell and identifies the modern Sandbox upload surface, but not pixel parity
+  for the current export. Generated-payload identity, full-root crop
+  normalization, current roll event, and modern Sandbox render remain open.
+- `TODO P0`: restore permitted local-file upload in the supported browser,
+  apply the anonymous payload only in the dedicated Sandbox, then capture
+  payload identity, full-root screenshot, chat/roll smoke, and normalized diff.
+
 # 2026-07-31 Latest dedicated-tab control retry
 
 - `MEASURED EXTERNAL`: the browser listed both dedicated anonymous Roll20

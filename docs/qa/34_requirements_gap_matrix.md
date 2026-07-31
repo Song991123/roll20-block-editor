@@ -23,6 +23,22 @@ additional authored fieldset classes instead of replacing them with an empty
 class field. Focused composite, import-structure, high-priority mapping, and
 lint checks pass. Broad roundtrip and actual Roll20 verification remain open.
 
+## Dedicated Roll20 Root, Chat, and Sandbox Observation - 2026-07-31
+
+| Area | Current evidence | Status | Boundary |
+| --- | --- | --- | --- |
+| Participant safety | Both dedicated verification tabs showed `1 구성원` through the supported browser surface | DONE OBSERVATION | No ordinary room was modified |
+| Legacy root structure | `.sheet-layout-proof` root was `760x320`; computed colors, border, and `border-box` matched the anonymous generated payload | DONE OBSERVATION | DOM/runtime shell evidence, not pixel parity |
+| Legacy viewport/crop | iframe dialog was about `893x283` with `scrollHeight=401` | MEASURED | Full-root capture must normalize Roll20 crop before diff |
+| Legacy chat surface | Six existing `.sheet-rolltemplate-default` cards were observed at about `267x58.575` | DONE OBSERVATION | Historical messages; no current-payload roll event |
+| Modern Sandbox surface | `Sheet Sandbox Tools` plus HTML/CSS/Translation file inputs were present | DONE OBSERVATION | No upload or save was performed |
+| Actual exported-sheet parity | Generated-payload identity, modern render, normalized screenshot diff, and current roll smoke are still missing | OPEN | No broad Roll20 parity claim |
+
+The new evidence is stored only in ignored local report paths under
+`reports/roll20-actual-compare/anonymous-generic-layout-legacy/` and
+`reports/roll20-actual-compare/anonymous-modern-sandbox/`. It contains no
+source sheet, room identifier, or public fixture.
+
 ## Local Imported Edit-Sync Recheck - 2026-07-31
 
 | Area | Current evidence | Status | Boundary |

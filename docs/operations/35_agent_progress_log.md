@@ -1,3 +1,25 @@
+# 2026-07-31 - Dedicated Roll20 root/chat and Sandbox observation
+
+- `VERIFIED EXTERNAL READ-ONLY`: the two dedicated anonymous Roll20 tabs were
+  claimed through the supported browser path and each exposed the fresh
+  participant indicator `1 구성원`. No ordinary room was touched.
+- `MEASURED EXTERNAL`: the legacy iframe root `.sheet-layout-proof` measured
+  `760x320`; computed background, border, color, and `border-box` matched the
+  generated anonymous layout payload. Roll20 runtime-added `btn ui-draggable`
+  classes were observed as expected environment augmentation.
+- `MEASURED EXTERNAL`: the legacy dialog viewport was about `893x283` with a
+  `401px` scroll height. The next screenshot diff must normalize the crop;
+  the current observation is not a pixel-parity pass.
+- `MEASURED EXTERNAL`: six existing default rolltemplate cards were visible in
+  the dedicated chat surface. They remain historical proof messages, so no
+  current-payload roll/chat claim is made.
+- `VERIFIED EXTERNAL READ-ONLY`: the modern dedicated tab exposed `Sheet
+  Sandbox Tools` with HTML/CSS/Translation inputs and an iframe target. No
+  upload, save, chat, or room mutation was performed.
+- `CLAIM BOUNDARY`: the legacy runtime shell is now directly observed, but
+  modern Sandbox rendering, generation-specific identity, normalized full-root
+  screenshot diff, and current roll event remain open.
+
 # 2026-07-31 - Anonymous corpus inventory and repeating-class preservation
 
 - `VERIFIED LOCAL`: a read-only corrected inventory covered three anonymous
