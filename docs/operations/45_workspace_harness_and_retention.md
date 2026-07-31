@@ -1,5 +1,20 @@
 # 45. Workspace Harness and Retention Policy
 
+## 2026-07-31 generated-output deletion completed after explicit approval
+
+- RECHECKED: only the canonical worktree's ignored generated targets were in
+  scope: `web-push-main/.next/`, `out/`, and `.tmp/`. Active
+  `node_modules/`, source, reports policy, Git worktrees, fixed reference
+  roots, and protected external sheet folders were excluded.
+- VERIFIED BEFORE DELETE: the exact targets resolved inside the canonical
+  worktree, had no top-level reparse point, and no project listener was active.
+  A targeted Git dry-run listed only those three directories.
+- DELETED: the three generated directories after clearing read-only attributes
+  only inside those exact targets, then rerunning the same targeted cleanup.
+- VERIFIED AFTER DELETE: all three paths are absent and the canonical Git
+  worktree is clean. No alternate shell, broad wildcard, protected source,
+  dependency tree, report policy, or worktree metadata was touched.
+
 ## 2026-07-31 explicit complete-deletion retry (host blocked)
 
 - RECHECKED: the only present approved disposable targets were the active

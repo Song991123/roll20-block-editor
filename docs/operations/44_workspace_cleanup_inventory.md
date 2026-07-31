@@ -1,5 +1,21 @@
 # 44. Workspace Cleanup Inventory
 
+# 2026-07-31 generated-output deletion completed after explicit approval
+
+- RECHECKED: the exact approved targets were the canonical worktree's ignored
+  `.next/`, `out/`, and `.tmp/` directories. Active `node_modules/`, source,
+  reports policy, Git worktrees, fixed reference roots, and protected external
+  sheet folders were excluded.
+- VERIFIED BEFORE DELETE: all three targets resolved inside
+  `web-push-main/`, no top-level target was a reparse point, no project
+  listener was active, and a targeted Git dry-run listed only those paths.
+- DELETED: all three generated directories. Read-only attributes were cleared
+  only within the exact targets so their empty child directories could be
+  removed.
+- VERIFIED AFTER DELETE: `.next/`, `out/`, and `.tmp/` are absent and the
+  canonical worktree is clean. No source, dependency tree, report policy,
+  worktree metadata, or protected external sheet folder changed.
+
 # 2026-07-31 explicit complete-deletion retry (host blocked)
 
 - RECHECKED: the only present approved disposable targets were the active
