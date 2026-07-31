@@ -1,3 +1,18 @@
+# 2026-08-01 Live-patch revision ordering guard
+
+- `DONE LOCAL`: the shared iframe bridge now rejects delayed older HTML/CSS
+  revisions and stale chunk completions, preventing a late transport retry
+  from restoring a previous layer position after a newer edit commit.
+- `DONE LOCAL`: same-revision retries remain idempotent and resend the ACK, so
+  a lost acknowledgement does not leave the editor waiting indefinitely.
+- `VERIFIED LOCAL`: focused build-doc test, lint, production build,
+  persistent-preview surface, strict imported-edit sync, and edit-flow smoke
+  all pass after the bridge change. Modern/legacy local runs still use one
+  persistent iframe each.
+- `VERIFY EXTERNAL`: this removes one local transport race; it does not prove
+  same-payload Roll20 Sandbox/legacy-room parity. Current external evidence
+  remains `0/4` until the supported visible file selection completes.
+
 # 2026-08-01 Public-tree privacy audit and deletion boundary
 
 - `DONE LOCAL`: audited tracked/public paths and found only the policy file

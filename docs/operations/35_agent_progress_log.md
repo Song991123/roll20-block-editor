@@ -53,6 +53,16 @@
   no external payload or chat/save action was made. `status:roll20-actual`
   remains `OPEN` because the actual report directory is intentionally empty.
 
+# 2026-08-01 - Live-patch revision ordering guard
+
+- Implemented a monotonic revision guard in the persistent iframe bridge.
+  Delayed older HTML/CSS patches and stale chunk completions are dropped, while
+  same-revision retries resend an ACK for transport recovery.
+- Focused build-doc test, lint, production build, persistent-preview surface,
+  strict imported-edit sync, and edit-flow smoke passed. This is local
+  synchronization evidence only; current external Roll20 evidence remains
+  `0/4`.
+
 # 2026-08-01 - Cleanup retry status
 
 - The user-authorized removal of the explicitly verified generated build,

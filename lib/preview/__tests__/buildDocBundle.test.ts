@@ -143,6 +143,11 @@ assert.match(
   'worker bridge reads the sanitized source attribute',
 );
 assert.match(bundle.doc, /var htmlChanged = data\.htmlKey !== lastAppliedHtmlKey/);
+assert.match(
+  bundle.doc,
+  /lastAppliedRevision[\s\S]*data-r20-stale-apply-drops/,
+  'iframe bridge rejects delayed older live-patch revisions',
+);
 assert.match(roll20BaseIframeCss, /\.ui-dialog\s+\.charsheet/);
 assert.ok(roll20BaseShadowCss.length > 0, 'Shadow baseline is generated');
 assert.match(bundle.doc, /#dialog-window\.r20-preview-dialog/);

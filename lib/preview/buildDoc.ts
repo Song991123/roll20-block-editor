@@ -145,6 +145,11 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   var optimisticEditMove = null;
   var selectedEditBlockIds = [];
   var pendingLivePatchChunks = null;
+  // Parent retries an apply message for transport reliability. A delayed
+  // retry or chunk from an older revision must never roll the iframe back to
+  // stale HTML after a newer revision has already been accepted.
+  var lastAppliedRevision = 0;
+  var staleApplyDropCount = 0;
   var renderReadyGeneration = 0;
   var renderReadyTimer = 0;
   function blockNodeOf(node) {
@@ -700,6 +705,17 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     }
     return true;
   }
+  function postLivePatchAck(revision) {
+    try {
+      parent.postMessage({
+        type: 'r20:edit-applied',
+        protocol: 1,
+        bridgeId: editBridgeId,
+        revision: revision,
+        blockCount: lastAppliedBlockCount
+      }, '*');
+    } catch (e) {}
+  }
   function finalizeOptimisticFlowMove(data) {
     if (data && data.committed === true) {
       optimisticFlowSnapshot = null;
@@ -825,6 +841,12 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   function applyLivePatch(data) {
     var applyStartedAt = window.performance.now();
     if (!data || !Number.isInteger(data.revision) || data.revision < 1) return;
+    if (data.revision <= lastAppliedRevision) {
+      staleApplyDropCount += 1;
+      document.body.setAttribute('data-r20-stale-apply-drops', String(staleApplyDropCount));
+      if (data.revision === lastAppliedRevision) postLivePatchAck(data.revision);
+      return;
+    }
     if (typeof data.html !== 'string' || data.html.length > 15000000) return;
     if (typeof data.htmlKey !== 'string' || !/^[a-z0-9-]{1,128}$/.test(data.htmlKey)) return;
     if (!data.styles || typeof data.styles !== 'object') return;
@@ -847,6 +869,10 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     document.body.setAttribute('data-r20-render-ready', '0');
     var root = document.querySelector('form.sheetform > .charactersheet.charsheet');
     if (!root) return;
+    if (pendingLivePatchChunks && pendingLivePatchChunks.revision < data.revision) {
+      pendingLivePatchChunks = null;
+    }
+    lastAppliedRevision = data.revision;
     var htmlChanged = data.htmlKey !== lastAppliedHtmlKey;
     var usedOptimisticFlowPatch = htmlChanged && canApplyOptimisticFlowCommit(data.optimisticFlow);
     var attrs = htmlChanged && !usedOptimisticFlowPatch ? collectAttrs() : null;
@@ -953,6 +979,8 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     document.body.setAttribute('data-r20-optimistic-flow-rollbacks', String(optimisticFlowRollbackCount));
     document.body.setAttribute('data-r20-optimistic-flow-fast-patches', String(optimisticFlowFastPatchCount));
     document.body.setAttribute('data-r20-optimistic-flow-check', optimisticFlowCheck);
+    document.body.setAttribute('data-r20-last-applied-revision', String(lastAppliedRevision));
+    document.body.setAttribute('data-r20-stale-apply-drops', String(staleApplyDropCount));
     document.body.setAttribute('data-r20-last-apply-at', window.performance.now().toFixed(3));
     document.body.setAttribute(
       'data-r20-last-apply-cost-ms',
@@ -964,18 +992,16 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     );
     scheduleResize();
     scheduleRenderReady();
-    try {
-      parent.postMessage({
-        type: 'r20:edit-applied',
-        protocol: 1,
-        bridgeId: editBridgeId,
-        revision: data.revision,
-        blockCount: lastAppliedBlockCount
-      }, '*');
-    } catch (e) {}
+    postLivePatchAck(data.revision);
   }
   function beginLivePatchChunks(data) {
     if (!data || !Number.isInteger(data.revision) || data.revision < 1) return;
+    if (data.revision <= lastAppliedRevision) {
+      staleApplyDropCount += 1;
+      document.body.setAttribute('data-r20-stale-apply-drops', String(staleApplyDropCount));
+      if (data.revision === lastAppliedRevision) postLivePatchAck(data.revision);
+      return;
+    }
     if (!Number.isInteger(data.totalChunks) || data.totalChunks < 1 || data.totalChunks > 256) return;
     if (!Number.isInteger(data.htmlLength) || data.htmlLength < 0 || data.htmlLength > 15000000) return;
     if (typeof data.htmlKey !== 'string' || !/^[a-z0-9-]{1,128}$/.test(data.htmlKey)) return;
@@ -1000,6 +1026,13 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   function receiveLivePatchChunk(data) {
     var pending = pendingLivePatchChunks;
     if (!pending || !data || data.revision !== pending.revision) return;
+    if (data.revision <= lastAppliedRevision) {
+      pendingLivePatchChunks = null;
+      staleApplyDropCount += 1;
+      document.body.setAttribute('data-r20-stale-apply-drops', String(staleApplyDropCount));
+      if (data.revision === lastAppliedRevision) postLivePatchAck(data.revision);
+      return;
+    }
     if (!Number.isInteger(data.index) || data.index < 0 || data.index >= pending.totalChunks) return;
     if (typeof data.text !== 'string' || pending.parts[data.index] !== undefined) return;
     pending.parts[data.index] = data.text;
