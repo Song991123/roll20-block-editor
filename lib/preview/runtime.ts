@@ -47,7 +47,6 @@ export const runtimeCss = String.raw`
 .charsheet [data-r20-preview-selected='1'] {
   outline: 2px solid #2f81f7;
   outline-offset: 1px;
-  border-radius: 3px;
 }
 
 /* ─── generic layout helpers (Roll20 표준 X — 우리 helper) ─────── */

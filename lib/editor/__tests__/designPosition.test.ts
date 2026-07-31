@@ -22,6 +22,12 @@ const blocks = new Map<string, Map<string, TestBlock>>([
     ['dual', block('dual', 'r20_dual_roll_button', { ROW_CLASS: 'dual-row' })],
     ['row', block('row', 'r20_skill_row', { TR_CLASS: 'skill-row', TR_STYLE: 'display: table-row' })],
     ['wrapper', block('wrapper', 'r20_repeating_section_wrapper', { FIELDSET_CLASS: 'inventory', FIELDSET_STYLE: 'padding: 4px' })],
+    ['template', block('template', 'r20_rolltemplate_define', { NAME: 'proof', STYLE: '' })],
+    ['template-row', {
+      ...block('template-row', 'r20_rolltemplate_row', { CLASS: 'result-row', STYLE: '' }),
+      layerParentId: 'template',
+      layerRelation: 'child',
+    }],
   ])],
   ['css', new Map()],
   ['i18n', new Map()],
@@ -72,6 +78,7 @@ assert.equal(adapter.getBlockField('html', 'frame', 'STYLE'), 'padding: 8px');
 assert.match(adapter.getBlockField('html', 'subject', 'CLASS') ?? '', /sheet-r20-node-subject/);
 assert.match(adapter.getBlockField('html', 'frame', 'CLASS') ?? '', /sheet-r20-node-frame/);
 const css = adapter.getBlockField('css', 'managed-css', 'CSS') ?? '';
+assert.match(css, /\.sheet-r20-node-subject\.sheet-r20-node-subject\.sheet-r20-node-subject\.sheet-r20-node-subject, \.sheet-r20-node-subject \{/);
 assert.match(css, /\.sheet-r20-node-frame \{ position: relative; \}/);
 assert.match(css, /\.sheet-r20-node-subject \{ position: absolute; left: 48px; top: 64px; \}/);
 
@@ -114,6 +121,10 @@ const movedAfterStyle = commitManagedDesignPosition(adapter, {
 });
 assert.equal(movedAfterStyle.moved, true);
 const movedStyledCss = adapter.getBlockField('css', 'managed-css', 'CSS') ?? '';
+assert.equal(
+  movedStyledCss.match(/\.sheet-r20-node-subject\.sheet-r20-node-subject\.sheet-r20-node-subject\.sheet-r20-node-subject/g)?.length,
+  1,
+);
 assert.match(movedStyledCss, /\.sheet-r20-node-subject \{[^}]*left: 96px;[^}]*top: 112px;/);
 assert.match(movedStyledCss, /\.sheet-r20-node-subject \{[^}]*background-color: #f7c6d9;/);
 
@@ -178,6 +189,26 @@ assert.match(adapter.getBlockField('html', 'row', 'TR_CLASS') ?? '', /sheet-r20-
 assert.match(adapter.getBlockField('html', 'wrapper', 'FIELDSET_CLASS') ?? '', /sheet-r20-node-wrapper/);
 assert.equal(adapter.getBlockField('html', 'row', 'TR_STYLE'), 'display: table-row');
 assert.equal(adapter.getBlockField('html', 'wrapper', 'FIELDSET_STYLE'), 'padding: 4px');
+
+const templateStyled = commitManagedDesignStyle(adapter, {
+  workspace: 'html',
+  blockId: 'template-row',
+  declarations: {
+    'background-color': '#f8d7e3',
+    padding: '8px 10px',
+  },
+});
+assert.equal(templateStyled.changed, true);
+const templateCss = adapter.getBlockField('css', 'managed-css', 'CSS') ?? '';
+assert.match(
+  templateCss,
+  /\.sheet-rolltemplate-proof \.sheet-r20-node-template-row\.sheet-r20-node-template-row\.sheet-r20-node-template-row\.sheet-r20-node-template-row, \.sheet-rolltemplate-proof \.sheet-r20-node-template-row \{/,
+);
+assert.doesNotMatch(templateCss, /^\.sheet-r20-node-template-row/m);
+assert.deepEqual(readManagedDesignStyle(adapter, 'html', 'template-row'), {
+  'background-color': '#f8d7e3',
+  padding: '8px 10px',
+});
 
 console.log('designPosition.test PASS');
 

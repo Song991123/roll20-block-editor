@@ -2,6 +2,15 @@ import type { BlockSnapshot } from '@/lib/blockly/adapter';
 
 export const ROLLTEMPLATE_ROOT_TYPE = 'r20_rolltemplate_define';
 
+export function normalizeRolltemplateName(name: string | null | undefined): string {
+  const safe = String(name ?? '').trim().replace(/[^A-Za-z0-9_-]/g, '');
+  return safe || 'default';
+}
+
+export function rolltemplateSelectorForName(name: string | null | undefined): string {
+  return `.sheet-rolltemplate-${normalizeRolltemplateName(name)}`;
+}
+
 type LayerNode = Pick<BlockSnapshot, 'id' | 'type' | 'layerParentId'>;
 
 export function listRolltemplateRoots<T extends LayerNode>(nodes: T[]): T[] {

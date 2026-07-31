@@ -26,11 +26,25 @@ function testCssPrefixesSelectors(): void {
     #title, .row { color: red; }
     .charsheet .kept { color: blue; }
     .sheet-rolltemplate-default { width: 280px; }
+    .sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a,
+    .sheet-r20-node-a { padding: 7px 14px; }
+    .sheet-rolltemplate-proof .sheet-r20-node-b.sheet-r20-node-b.sheet-r20-node-b.sheet-r20-node-b,
+    .sheet-rolltemplate-proof .sheet-r20-node-b { background-color: #f8d7e3; }
   `);
 
   expectContains(r.css, '.charsheet .title,.charsheet .row', 'prefixes normal selectors');
   expectContains(r.css, '.charsheet .kept', 'keeps existing charsheet selector');
   expectContains(r.css, '.sheet-rolltemplate-default', 'keeps rolltemplate selector');
+  expectContains(
+    r.css,
+    '.charsheet .sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a,.charsheet .sheet-r20-node-a',
+    'keeps managed selector specificity while applying Sandbox scope',
+  );
+  expectContains(
+    r.css,
+    '.sheet-rolltemplate-proof .sheet-r20-node-b.sheet-r20-node-b.sheet-r20-node-b.sheet-r20-node-b,.sheet-rolltemplate-proof .sheet-r20-node-b',
+    'keeps managed rolltemplate selector outside charsheet scope',
+  );
   assert(
     r.warnings.some((w) => w.code === 'css-selector-prefixed'),
     'selector warning present',

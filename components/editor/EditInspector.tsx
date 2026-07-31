@@ -192,6 +192,7 @@ export default function EditInspector() {
           <VisualStyleInspector
             values={visualStyle}
             role={resolvedRole}
+            blockType={snapshot.type}
             onPatch={commitVisualStyle}
           />
         )}

@@ -213,6 +213,30 @@ function testIntegration(): void {
   assert(codes.has('var-decl-stripped'), 'var-decl-stripped warning');
 }
 
+function testManagedSelectorPreserved(): void {
+  const css = `.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a, .sheet-r20-node-a { padding: 7px 14px; color: #fff; }`;
+  const r = sanitizeForRoll20Legacy(css);
+  expectContains(
+    r.sanitized,
+    '.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a, .sheet-r20-node-a',
+    'managed specificity selector preserved',
+  );
+  expectContains(r.sanitized, 'padding: 7px 14px', 'managed padding preserved');
+  assert(r.warnings.length === 0, `managed selector should not warn, got ${r.warnings.length}`);
+}
+
+function testManagedRolltemplateSelectorPreserved(): void {
+  const css = `.sheet-rolltemplate-proof .sheet-r20-node-b.sheet-r20-node-b.sheet-r20-node-b.sheet-r20-node-b, .sheet-rolltemplate-proof .sheet-r20-node-b { background-color: #f8d7e3; padding: 8px 10px; }`;
+  const r = sanitizeForRoll20Legacy(css);
+  expectContains(
+    r.sanitized,
+    '.sheet-rolltemplate-proof .sheet-r20-node-b.sheet-r20-node-b.sheet-r20-node-b.sheet-r20-node-b, .sheet-rolltemplate-proof .sheet-r20-node-b',
+    'managed rolltemplate scope preserved',
+  );
+  expectContains(r.sanitized, 'background-color: #f8d7e3', 'managed rolltemplate fill preserved');
+  assert(r.warnings.length === 0, `managed rolltemplate selector should not warn, got ${r.warnings.length}`);
+}
+
 function testLargeStylesheetLinearBudget(): void {
   const makeCss = (count: number) => Array.from(
     { length: count },
@@ -264,6 +288,8 @@ const tests: Array<[string, () => void]> = [
   ['position: fixed -> absolute', testPositionFixed],
   ['position: sticky -> relative', testPositionSticky],
   ['no-op simple', testNoOpSimple],
+  ['managed selector preserved', testManagedSelectorPreserved],
+  ['managed rolltemplate selector preserved', testManagedRolltemplateSelectorPreserved],
   ['empty input', testEmptyInput],
   ['integration', testIntegration],
   ['large stylesheet linear budget', testLargeStylesheetLinearBudget],

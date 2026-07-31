@@ -6,6 +6,7 @@ import {
   designPreservedAttrsFieldForBlockType,
   designStyleFieldForBlockType,
 } from './designClassField';
+import { findOwningRolltemplateId, rolltemplateSelectorForName } from './rolltemplateScope';
 
 export const DESIGN_CSS_MARKER = 'r20-design-css:managed';
 
@@ -139,8 +140,9 @@ export function upsertManagedCssRule(
   css: string,
   className: string,
   declarations: Record<string, string>,
+  scopeSelector: string | null = null,
 ): string {
-  return upsertCssRule(css, className, declarations);
+  return upsertCssRule(css, className, declarations, scopeSelector);
 }
 
 /**
@@ -165,9 +167,10 @@ export function readManagedDesignStyle(
   const managedCss = findDesignCssBlock(adapter);
   if (!managedCss) return inline;
   const css = adapter.getBlockField('css', managedCss.id, 'CSS') ?? '';
+  const scopeSelector = resolveManagedStyleScope(adapter, workspace, blockId);
   return {
     ...inline,
-    ...readCssRule(css, designClassForBlock(blockId)),
+    ...readCssRule(css, designClassForBlock(blockId), scopeSelector),
   };
 }
 
@@ -227,7 +230,8 @@ export function commitManagedDesignStyle(
 
   const beforeCss = adapter.getBlockField('css', managedCss.id, 'CSS')
     ?? `/* ${DESIGN_CSS_MARKER} */`;
-  const afterCss = patchCssRule(beforeCss, designClass, normalized);
+  const scopeSelector = resolveManagedStyleScope(adapter, workspace, blockId);
+  const afterCss = patchCssRule(beforeCss, designClass, normalized, scopeSelector);
   const cssChanged = beforeCss !== afterCss;
   if (cssChanged) adapter.setBlockField('css', managedCss.id, 'CSS', afterCss);
 
@@ -365,15 +369,27 @@ function findDesignCssBlock(
   return existing ? { id: existing.id } : null;
 }
 
+function resolveManagedStyleScope(
+  adapter: Pick<DesignPositionAdapter, 'listAllBlocks' | 'getBlockField'>,
+  workspace: WorkspaceKey,
+  blockId: string,
+): string | null {
+  if (workspace !== 'html') return null;
+  const nodes = adapter.listAllBlocks('html');
+  const rootId = findOwningRolltemplateId(nodes, blockId);
+  if (!rootId || rootId === blockId) return null;
+  return rolltemplateSelectorForName(adapter.getBlockField('html', rootId, 'NAME'));
+}
+
 function upsertCssRule(
   css: string,
   className: string,
   declarations: Record<string, string>,
+  scopeSelector: string | null = null,
 ): string {
-  const selector = `.${className}`;
-  const rule = `${selector} { ${formatCssDeclarations(declarations)} }`;
-  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const matcher = new RegExp(`${escaped}\\s*\\{[^}]*\\}`, 'm');
+  const selectors = managedSelectorParts(className, scopeSelector);
+  const rule = `${selectors.strong}, ${selectors.base} { ${formatCssDeclarations(declarations)} }`;
+  const matcher = managedRuleMatcher(className, '[^}]*', scopeSelector);
   const base = css.trim() || `/* ${DESIGN_CSS_MARKER} */`;
   if (matcher.test(base)) return base.replace(matcher, rule);
   return `${base}\n${rule}`;
@@ -389,20 +405,70 @@ function patchCssRule(
   css: string,
   className: string,
   patch: ManagedDesignDeclarations,
+  scopeSelector: string | null = null,
 ): string {
-  const current = readCssRule(css, className);
+  const scopedCurrent = readExactCssRule(css, className, scopeSelector);
+  const legacyCurrent = scopeSelector
+    ? readExactCssRule(css, className, null)
+    : {};
+  const current = { ...legacyCurrent, ...scopedCurrent };
   for (const [property, value] of Object.entries(patch)) {
     if (value == null || value === '') delete current[property];
     else current[property] = value;
   }
-  return upsertCssRule(css, className, current);
+  const withoutLegacy = scopeSelector
+    ? css.replace(managedRuleMatcher(className, '[^}]*', null), '').trim()
+    : css;
+  return upsertCssRule(withoutLegacy, className, current, scopeSelector);
 }
 
-function readCssRule(css: string, className: string): Record<string, string> {
-  const selector = `.${className}`;
-  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = css.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`, 'm'));
+function readCssRule(
+  css: string,
+  className: string,
+  scopeSelector: string | null = null,
+): Record<string, string> {
+  const scoped = readExactCssRule(css, className, scopeSelector);
+  if (Object.keys(scoped).length > 0 || !scopeSelector) return scoped;
+  return readExactCssRule(css, className, null);
+}
+
+function readExactCssRule(
+  css: string,
+  className: string,
+  scopeSelector: string | null,
+): Record<string, string> {
+  const match = css.match(managedRuleMatcher(className, '([^}]*)', scopeSelector));
   return match ? parseCssDeclarations(match[1]) : {};
+}
+
+function managedSelectorParts(
+  className: string,
+  scopeSelector: string | null,
+): { base: string; strong: string } {
+  const node = `.${className}`;
+  const scope = scopeSelector ? `${scopeSelector} ` : '';
+  return {
+    base: `${scope}${node}`,
+    strong: `${scope}${node}${node}${node}${node}`,
+  };
+}
+
+function managedRuleMatcher(
+  className: string,
+  bodyPattern: string,
+  scopeSelector: string | null,
+): RegExp {
+  const { base, strong } = managedSelectorParts(className, scopeSelector);
+  const escapedBase = escapeRegExp(base);
+  const escapedStrong = escapeRegExp(strong);
+  return new RegExp(
+    `^[\\t ]*(?:${escapedStrong}\\s*,\\s*${escapedBase}|${escapedBase})\\s*\\{${bodyPattern}\\}[\\t ]*$`,
+    'm',
+  );
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function normalizeDesignDeclarations(

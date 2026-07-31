@@ -11581,3 +11581,26 @@ same-hash modern/legacy comparison.
   `Not allowed` before transmission. No sheet, room setting, or chat changed.
 - Current-payload actual modern root/chat paint and the independent dedicated
   legacy-room run remain open. No parity claim is made from local equality.
+
+## 2026-08-01 - Section, Roll button, and text presets
+
+- Added 11 generic visual presets in `stylePresets.ts`: four section, four
+  button, and three text starting styles. They contain no third-party sheet
+  source or copied design.
+- The direct inspector chooses the set from the selected layer role and block
+  type. The edit-flow smoke now applies a section preset and a Roll-button
+  preset, then proves the computed style survives the Preview switch and Roll
+  action without inline HTML presentation.
+- Strengthened managed node selectors so Roll20 base controls do not override
+  chosen fill, text, spacing, border, or radius. Removed the edit selection
+  overlay radius that previously made Edit differ from Preview.
+- Scoped result-template child rules through their owning
+  `.sheet-rolltemplate-NAME`; modern Sandbox and legacy sanitizer tests preserve
+  the scoped selector and declarations. The same edit appears in the result
+  editor and local chat renderer.
+- Focused design tests, modern sanitizer `8/8`, legacy sanitizer `18/18`, lint,
+  production build, full `ci:verify`, `smoke:edit-flow`, and the modern/legacy
+  synthetic visual smoke pass. Preview/Edit remains exact at `0%` mismatch for
+  four captures.
+- Actual current-payload modern Sandbox and dedicated legacy-room paint remain
+  unverified. Supported modern file selection still blocks before upload.

@@ -1,13 +1,21 @@
 'use client';
 
-import { RotateCcw } from 'lucide-react';
+import type { CSSProperties } from 'react';
+import { Dice5, RotateCcw } from 'lucide-react';
 import type { LayerRole } from '@/lib/editor/layerRoles';
 import type { ManagedDesignDeclarations } from '@/lib/editor/designPosition';
+import {
+  getVisualStylePresetGroup,
+  presetMatches,
+  type VisualStylePreset,
+  type VisualStylePresetFamily,
+} from '@/lib/editor/stylePresets';
 import { cn } from '@/lib/utils/cn';
 
 type VisualStyleInspectorProps = {
   values: Record<string, string>;
   role: LayerRole;
+  blockType: string;
   onPatch: (declarations: ManagedDesignDeclarations) => void;
 };
 
@@ -16,12 +24,44 @@ type LayoutMode = 'auto' | 'row' | 'column' | 'grid';
 export default function VisualStyleInspector({
   values,
   role,
+  blockType,
   onPatch,
 }: VisualStyleInspectorProps) {
   const layoutMode = resolveLayoutMode(values);
+  const presetGroup = getVisualStylePresetGroup(role, blockType);
 
   return (
     <div className="space-y-4" data-testid="visual-style-inspector">
+      {presetGroup && (
+        <StyleSection title={presetGroup.title}>
+          <div className="grid grid-cols-2 gap-2" data-testid="design-style-presets">
+            {presetGroup.presets.map((preset) => {
+              const active = presetMatches(values, preset);
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  aria-pressed={active}
+                  aria-label={`${presetGroup.title} ${preset.label}`}
+                  title={preset.description}
+                  className={cn(
+                    'grid min-h-[64px] grid-cols-[42px_minmax(0,1fr)] items-center gap-2 rounded-lg border px-2 py-2 text-left transition-colors',
+                    active
+                      ? 'border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary-active)]'
+                      : 'border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:border-[var(--primary-soft-border)] hover:bg-[var(--bg-hover)]',
+                  )}
+                  onClick={() => onPatch(preset.declarations)}
+                  data-testid={`design-preset-${presetGroup.family}-${preset.id}`}
+                >
+                  <PresetPreview family={presetGroup.family} preset={preset} />
+                  <span className="truncate text-xs font-semibold">{preset.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </StyleSection>
+      )}
+
       <StyleSection title="크기와 여백">
         <div className="grid grid-cols-2 gap-2">
           <PxField
@@ -199,6 +239,50 @@ export default function VisualStyleInspector({
         </label>
       </StyleSection>
     </div>
+  );
+}
+
+function PresetPreview({
+  family,
+  preset,
+}: {
+  family: VisualStylePresetFamily;
+  preset: VisualStylePreset;
+}) {
+  const declarations = preset.declarations;
+  const style: CSSProperties = {
+    backgroundColor: declarations['background-color'] ?? undefined,
+    backgroundImage: declarations['background-image'] ?? undefined,
+    color: declarations.color ?? undefined,
+    borderWidth: declarations['border-width'] ?? undefined,
+    borderStyle: declarations['border-style'] ?? undefined,
+    borderColor: declarations['border-color'] ?? undefined,
+    borderRadius: declarations['border-radius'] ?? undefined,
+    boxShadow: declarations['box-shadow'] ?? undefined,
+    fontSize: declarations['font-size'] ?? undefined,
+    fontWeight: declarations['font-weight'] ?? undefined,
+    textAlign: declarations['text-align'] as CSSProperties['textAlign'],
+  };
+
+  if (family === 'button') {
+    return (
+      <span className="grid h-8 w-10 place-items-center" style={style} aria-hidden="true">
+        <Dice5 className="h-4 w-4" />
+      </span>
+    );
+  }
+  if (family === 'text') {
+    return (
+      <span className="grid h-9 w-10 place-items-center overflow-hidden" style={style} aria-hidden="true">
+        <span className="text-[11px] leading-none">가나</span>
+      </span>
+    );
+  }
+  return (
+    <span className="flex h-9 w-10 flex-col justify-center gap-1 overflow-hidden px-1.5" style={style} aria-hidden="true">
+      <span className="h-1 w-5 rounded-full bg-current opacity-70" />
+      <span className="h-1 w-7 rounded-full bg-current opacity-30" />
+    </span>
   );
 }
 

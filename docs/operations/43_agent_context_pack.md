@@ -11,8 +11,10 @@ the entire history and generated evidence tree.
   editing.
 - Local preview/edit share one persistent iframe. Modern and legacy browser
   smoke currently pass, including delayed stale-revision rejection.
-- Direct edit exposes managed CSS controls for visual sheet layers and a
-  generic Roll button preset. The rolltemplate submode now uses the same chat
+- Direct edit exposes managed CSS controls plus 11 generic starting styles
+  for sections, Roll buttons, and text. Managed selectors beat the Roll20 base
+  without inline presentation or `!important`; template-child rules are scoped
+  through their owning `.sheet-rolltemplate-NAME`. The rolltemplate submode now uses the same chat
   renderer as the roll history: users can select a template root or child,
   edit common presentation through managed CSS, and drop template-specific
   rows/text into flow. The persistent sheet iframe remains mounted separately,

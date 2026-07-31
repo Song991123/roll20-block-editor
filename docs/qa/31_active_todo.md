@@ -11101,3 +11101,28 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   visible HTML/CSS/Translation selections manually in the retained Sandbox,
   then capture current-payload modern root and chat evidence. Run the same
   anonymous payload separately in a newly created legacy-enabled test room.
+
+## 2026-08-01 Section, Roll Button, And Text Presets
+
+- `DONE LOCAL`: added 11 anonymous one-click styles to the direct inspector:
+  four section styles, four button styles, and three text styles. A selected
+  Roll control receives the button set under the user-facing Roll-button label.
+- `FIXED LOCAL`: managed CSS now uses enough class specificity to beat the
+  Roll20 base button rule without inline presentation or `!important`.
+  Selection highlighting no longer changes the selected object's radius, so
+  Edit and Preview keep the same geometry.
+- `FIXED LOCAL`: styles for children of a result template are emitted under
+  the owning `.sheet-rolltemplate-NAME` scope. The modern Sandbox sanitizer
+  keeps that chat scope unprefixed; the legacy sanitizer preserves the same
+  declarations. Old unscoped managed rules migrate when the element is edited.
+- `VERIFIED LOCAL`: design tests pass; modern sanitizer is `8/8`; legacy
+  sanitizer is `18/18`; lint, production build, full `ci:verify`, and
+  `smoke:edit-flow` pass. The smoke
+  applies section and Roll-button presets, switches Edit to Preview, performs
+  a Roll click, edits a result row, and confirms the same style in chat.
+- `VERIFIED LOCAL`: modern and legacy synthetic Preview/Edit comparison remains
+  exact at `0%` mismatch for all four captures.
+- `VERIFY / OPEN EXTERNAL`: these results prove local rendering and export
+  contracts only. Current generated payload paint in modern Sandbox remains
+  blocked at the supported visible file chooser; dedicated legacy-room visual
+  proof also remains open.

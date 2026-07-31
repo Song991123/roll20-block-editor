@@ -1349,6 +1349,39 @@ async function main() {
     assert(styledEmit.css.includes('background-color: #f1a7bf'), 'visual background was not emitted to CSS');
     assert(styledEmit.css.includes('padding: 18px'), 'visual padding was not emitted to CSS');
 
+    const sectionRosePreset = page.locator('[data-testid="design-preset-section-rose"]');
+    assert((await sectionRosePreset.count()) === 1, 'section style preset is missing');
+    await sectionRosePreset.click();
+    await page.waitForFunction(
+      () => {
+        const css = window.__perfHook.getEmitContent().css;
+        return css.includes('background-color: #fff2f6')
+          && css.includes('border-color: #d96b91')
+          && css.includes('box-shadow: none');
+      },
+      null,
+      { timeout: 10000 },
+    );
+    await page.waitForTimeout(300);
+    result.tests.sectionStylePreset = await frame.evaluate((blockId) => {
+      const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+      if (!(element instanceof HTMLElement)) return null;
+      const style = getComputedStyle(element);
+      return {
+        inlineStyle: element.getAttribute('style') ?? '',
+        backgroundColor: style.backgroundColor,
+        borderColor: style.borderColor,
+        borderRadius: style.borderRadius,
+        paddingTop: style.paddingTop,
+      };
+    }, ids.rowBId);
+    const sectionPresetDebug = JSON.stringify(result.tests.sectionStylePreset);
+    assert(result.tests.sectionStylePreset?.backgroundColor === 'rgb(255, 242, 246)', `section preset fill did not reach the shared iframe: ${sectionPresetDebug}`);
+    assert(result.tests.sectionStylePreset?.borderColor === 'rgb(217, 107, 145)', `section preset border did not reach the shared iframe: ${sectionPresetDebug}`);
+    assert(result.tests.sectionStylePreset?.borderRadius === '6px', `section preset radius did not reach the shared iframe: ${sectionPresetDebug}`);
+    assert(result.tests.sectionStylePreset?.paddingTop === '16px', `section preset padding did not reach the shared iframe: ${sectionPresetDebug}`);
+    assert(!/background|border|padding/i.test(result.tests.sectionStylePreset?.inlineStyle ?? ''), 'section preset leaked presentation into inline HTML');
+
     const rollButtonCard = page.locator('[data-testid="widget-card-roll-button"]');
     assert((await rollButtonCard.count()) === 1, 'friendly Roll button preset is missing');
     await page.click('[data-testid="edit-placement-flow"]');
@@ -1397,6 +1430,51 @@ async function main() {
     );
     assert(!result.tests.rollButtonPreset.inlineStyle, 'friendly Roll button emitted inline presentation CSS');
     assert(result.tests.rollButtonPreset.parentClassName.includes('sheet-row-b'), 'friendly Roll button did not enter the selected flow section');
+
+    result.tests.rollButtonLayer = await page.evaluate((parentId) => {
+      const nodes = window.__perfHook.getLayerSnapshot('html');
+      const button = nodes.find((node) => node.type.startsWith('r20_roll_button') && node.layerParentId === parentId);
+      return button ? { id: button.id, type: button.type, parentId: button.layerParentId } : null;
+    }, ids.rowBId);
+    assert(result.tests.rollButtonLayer?.id, 'dropped Roll button layer was not found');
+    await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${result.tests.rollButtonLayer.id}"]`,
+    ).click();
+    const rollRosePreset = page.locator('[data-testid="design-preset-button-rose"]');
+    await rollRosePreset.waitFor({ state: 'visible', timeout: 10000 });
+    await rollRosePreset.click();
+    await page.waitForFunction(
+      () => {
+        const css = window.__perfHook.getEmitContent().css;
+        return css.includes('background-color: #d96b91')
+          && css.includes('background-image: none')
+          && css.includes('box-shadow: 0 2px 0 #963653');
+      },
+      null,
+      { timeout: 10000 },
+    );
+    await page.waitForTimeout(300);
+    result.tests.rollButtonStylePreset = await rollButton.evaluate((button) => {
+      const style = getComputedStyle(button);
+      return {
+        inlineStyle: button.getAttribute('style') ?? '',
+        backgroundColor: style.backgroundColor,
+        backgroundImage: style.backgroundImage,
+        color: style.color,
+        borderColor: style.borderColor,
+        borderRadius: style.borderRadius,
+        paddingTop: style.paddingTop,
+        boxShadow: style.boxShadow,
+      };
+    });
+    const rollPresetDebug = JSON.stringify(result.tests.rollButtonStylePreset);
+    assert(result.tests.rollButtonStylePreset.backgroundColor === 'rgb(217, 107, 145)', `Roll button preset fill did not render: ${rollPresetDebug}`);
+    assert(result.tests.rollButtonStylePreset.backgroundImage === 'none', `Roll button preset did not remove the baseline gradient: ${rollPresetDebug}`);
+    assert(result.tests.rollButtonStylePreset.color === 'rgb(255, 255, 255)', `Roll button preset text color did not render: ${rollPresetDebug}`);
+    assert(result.tests.rollButtonStylePreset.borderColor === 'rgb(185, 79, 117)', `Roll button preset border did not render: ${rollPresetDebug}`);
+    assert(result.tests.rollButtonStylePreset.borderRadius === '6px', `Roll button preset radius did not render: ${rollPresetDebug}`);
+    assert(result.tests.rollButtonStylePreset.paddingTop === '7px', `Roll button preset padding did not render: ${rollPresetDebug}`);
+    assert(!result.tests.rollButtonStylePreset.inlineStyle, 'Roll button preset leaked presentation into inline HTML');
     await page.waitForFunction(
       () => document.querySelector('[data-r20-render-ready]')?.getAttribute('data-r20-render-ready') === '1',
       null,
@@ -1408,6 +1486,24 @@ async function main() {
     });
 
     await page.click('[data-testid="main-mode-preview"]');
+    result.tests.rollButtonPreviewStyle = await rollButton.evaluate((button) => {
+      const style = getComputedStyle(button);
+      return {
+        backgroundColor: style.backgroundColor,
+        color: style.color,
+        borderRadius: style.borderRadius,
+        paddingTop: style.paddingTop,
+      };
+    });
+    assert(
+      JSON.stringify(result.tests.rollButtonPreviewStyle) === JSON.stringify({
+        backgroundColor: 'rgb(217, 107, 145)',
+        color: 'rgb(255, 255, 255)',
+        borderRadius: '6px',
+        paddingTop: '7px',
+      }),
+      `Roll button style changed between edit and preview: ${JSON.stringify(result.tests.rollButtonPreviewStyle)}`,
+    );
     await rollButton.click();
     await page.waitForSelector('[data-r20-chat-rolltemplate="1"]', { timeout: 10000 });
     await page.screenshot({
@@ -1500,16 +1596,31 @@ async function main() {
     result.tests.rolltemplateStyleSync = await page.evaluate((blockId) => {
       const row = document.querySelector(`[data-testid="rolltemplate-edit-card"] [data-r20-block-id="${CSS.escape(blockId)}"]`);
       const emit = window.__perfHook.getEmitContent();
+      const layers = window.__perfHook.getLayerSnapshot('html');
+      const byId = new Map(layers.map((layer) => [layer.id, layer]));
+      const layerTrace = [];
+      let current = byId.get(blockId) ?? null;
+      while (current && layerTrace.length < 8) {
+        layerTrace.push({ id: current.id, type: current.type, parentId: current.layerParentId });
+        current = current.layerParentId ? byId.get(current.layerParentId) ?? null : null;
+      }
       return {
         background: row ? getComputedStyle(row).backgroundColor : null,
         inlineStyle: row?.getAttribute('style') ?? '',
         emittedCssHasColor: emit.css.includes('background-color: #fde7ef'),
+        emittedCssHasTemplateScope: emit.css.includes('.sheet-rolltemplate-default .sheet-r20-node-'),
+        managedColorRules: emit.css.match(/[^{}]*sheet-r20-node-[^{}]*\{[^}]*background-color:\s*#fde7ef[^}]*\}/g) ?? [],
+        layerTrace,
         emittedHtmlHasInlineColor: /style="[^"]*background-color:\s*#fde7ef/i.test(emit.html),
       };
     }, result.tests.rolltemplatePreviewValues.rowBlockId);
     assert(result.tests.rolltemplateStyleSync.background === 'rgb(253, 231, 239)', 'rolltemplate visual style did not reach the card renderer');
     assert(!result.tests.rolltemplateStyleSync.inlineStyle, 'rolltemplate visual style leaked into inline HTML');
     assert(result.tests.rolltemplateStyleSync.emittedCssHasColor, 'rolltemplate visual style did not reach emitted CSS');
+    assert(
+      result.tests.rolltemplateStyleSync.emittedCssHasTemplateScope,
+      `rolltemplate visual style was not scoped for Roll20 chat: ${JSON.stringify(result.tests.rolltemplateStyleSync)}`,
+    );
     assert(!result.tests.rolltemplateStyleSync.emittedHtmlHasInlineColor, 'rolltemplate visual style was emitted inline');
 
     result.tests.rolltemplateDrop = await page.evaluate(() => {
