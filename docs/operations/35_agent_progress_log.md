@@ -1,3 +1,16 @@
+# 2026-08-01 - Sandbox file-transfer boundary recheck
+
+## 2026-08-01 - Temp-path retry
+
+- Copied only the anonymous synthetic HTML/CSS/translation payload into the
+  Windows temp directory and rechecked the dedicated Sandbox's visible
+  participant gate (`1 구성원`) and HTML control.
+- The visible file chooser still returned `fileChooser.setFiles: Not allowed`
+  before any file bytes were transmitted. No CSS/Translation selection, save,
+  room setting, or chat action followed.
+- This confirms a browser automation file-transfer permission boundary rather
+  than a payload/path problem. Actual Roll20 evidence remains `0/4`.
+
 # 2026-08-01 - CI verification refresh
 
 ## 2026-08-01 - Full local gate

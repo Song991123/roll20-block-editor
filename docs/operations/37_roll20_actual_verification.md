@@ -1000,3 +1000,17 @@ room. With that flag it performs the same fresh participant check on the
 current editor page before navigating to settings or evaluating an upload
 snippet. Sandbox uploads remain a separate path and must never be used as
 legacy-room evidence.
+# 2026-08-01 fresh upload boundary evidence
+
+- The dedicated Sandbox was rechecked with a fresh visible `1 구성원` gate.
+- The same anonymous synthetic payload was tried first from the canonical
+  ignored workspace payload and then from `C:\Users\acorn\AppData\Local\Temp`.
+  Both attempts stopped at the supported visible HTML file chooser with
+  `fileChooser.setFiles: Not allowed`, before transmission.
+- No CSS/translation upload, save, room setting, existing-room write, or chat
+  action was performed. This does not prove or disprove Roll20 parity; it
+  proves only that this browser automation session cannot deliver local files
+  through the chooser.
+- Next supported path: user-assisted file selection in the already-open
+  Sandbox or a browser permission/tool path that explicitly permits local file
+  chooser transfer. Do not use hidden endpoints as parity evidence.

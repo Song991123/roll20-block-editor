@@ -1,3 +1,14 @@
+# 2026-08-01 Sandbox file-transfer boundary recheck
+
+- `VERIFY EXTERNAL`: copied only the anonymous synthetic payload to the
+  Windows temp directory and retried the visible Sandbox HTML file control
+  with a fresh exactly-one-member gate. The browser still returned
+  `fileChooser.setFiles: Not allowed` before transmission.
+- `BLOCKED EXTERNAL`: this is a browser automation file-transfer permission
+  boundary, not a payload validation result. CSS/Translation, save, room
+  settings, and chat actions were not attempted; actual evidence remains
+  `0/4`.
+
 # 2026-08-01 CI verification refresh
 
 - `DONE LOCAL`: `corepack pnpm run ci:verify` passed, including safety/unit,
