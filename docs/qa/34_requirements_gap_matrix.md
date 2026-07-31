@@ -1,5 +1,18 @@
 # 34. Requirements Gap Matrix
 
+# Generic block at-rule mapping - 2026-07-31
+
+- `DONE LOCAL`: safe block at-rules such as `@container`, `@supports`, and
+  `@layer` now map to editable `r20_css_at_rule` containers with recursive
+  selector/declaration children.
+- `DONE LOCAL`: semicolon-only and unbalanced at-rules remain raw and are not
+  silently rewritten.
+- `VERIFIED LOCAL`: importer `44/44`, high-priority mapping, layer-role and
+  Blockly operation tests, lint, `ci:verify`, and production build passed.
+- `OPEN EXTERNAL`: this is common CSS grammar coverage, not proof of complete
+  CSS support or actual Roll20 visual/chat parity. Generated Roll20 evidence
+  remains `0/4` while the supported chooser is blocked.
+
 # Composite media query mapping - 2026-07-31
 
 - `DONE LOCAL`: balanced composite media preludes such as

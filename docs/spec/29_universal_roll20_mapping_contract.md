@@ -40,7 +40,7 @@ Every source artifact must become blocks, not opaque app-only state.
 | `style=""` attr | Preserved as source style unless it was created by the design editor. Imported inline style is source fidelity, not layout-editor output. |
 | `class=""` attr | Token-preserving class field. Never collapse multi-class strings. |
 | CSS rule | CSS selector block with declaration child blocks or raw CSS fallback with parser diagnostics. |
-| CSS at-rule | At-rule block or raw CSS fallback. `@media`, `@keyframes`, `@import`, and Roll20-unsafe rules must be represented before sanitization. |
+| CSS at-rule | At-rule block or raw CSS fallback. `@media`, `@keyframes`, `@import`, common block at-rules such as `@supports`, `@container`, and `@layer`, and Roll20-unsafe rules must be represented before sanitization. Safe nested block at-rules use the editable `r20_css_at_rule` container; malformed or semicolon-only forms stay lossless raw CSS. |
 | Rolltemplate | Hidden from sheet canvas preview, represented as rolltemplate blocks, rendered in chat simulation when a roll invokes it. |
 | Sheet worker JS | Hidden from sheet canvas preview, represented as worker/event blocks or raw worker blocks, executed in the preview sandbox simulator when supported. |
 | Translation file | i18n key/value blocks or translation table. The preview must apply translations before visual comparison. Locale metadata must accept the user's valid BCP-47-like tag; do not limit custom sheets to a fixed language list. Roll20 export remains a flat `translation.json` string map. |

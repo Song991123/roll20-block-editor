@@ -206,6 +206,13 @@ function formatMediaCondition(raw: string): string {
   return `(${condition})`;
 }
 
+/** Preserve a block at-rule prelude while keeping braces out of the field. */
+function formatAtRulePrelude(raw: string): string {
+  const prelude = safeCss(raw).replace(/[;]/g, ' ').trim();
+  if (/^@[A-Za-z][\w-]*(?:\s|$)/.test(prelude)) return prelude;
+  return '@supports';
+}
+
 // ---------- 19 블록 정의 ----------
 
 export const CSS_BLOCKS: BlockDef[] = [
@@ -753,6 +760,37 @@ export const CSS_BLOCKS: BlockDef[] = [
       const children = ctx.statementToCode(block, 'CHILDREN');
       return wrapBraces(ctx, `@media ${cond}`, children);
     },
+  },
+
+  // 16.5) generic block at-rule -------------------------------------------
+  {
+    type: 'r20_css_at_rule',
+    shape: 'c',
+    category: CSS,
+    label: 'CSS at-rule',
+    tooltip: '@supports / @container / @layer 같은 블록형 CSS 규칙을 보존합니다.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('at-rule')
+        .appendField(new Blockly.FieldTextInput('@supports'), 'PRELUDE');
+      b.appendStatementInput('BODY').setCheck(null);
+      setStatementHooks(b);
+    }),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const prelude = formatAtRulePrelude(String(b.getFieldValue('PRELUDE') ?? ''));
+      const body = ctx.statementToCode(block, 'BODY');
+      return wrapBraces(ctx, prelude, body);
+    },
+    inspectorSchema: [
+      {
+        name: 'PRELUDE',
+        label: 'at-rule 조건',
+        kind: 'text',
+        placeholder: '@supports (display: grid)',
+        description: '앞의 @와 조건을 함께 입력합니다. 중괄호는 자동으로 붙습니다.',
+      },
+    ],
   },
 
   // 17) keyframes ----------------------------------------------------------

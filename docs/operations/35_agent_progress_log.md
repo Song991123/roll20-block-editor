@@ -1,5 +1,18 @@
 # 2026-07-31 - Actual-status and renderer-action gate refresh
 
+# 2026-07-31 - Generic block at-rule mapping
+
+- Added the generic editable `r20_css_at_rule` container for safe block
+  at-rules such as `@container`, `@supports`, and `@layer`.
+- Nested CSS is parsed recursively, so ordinary selectors and declarations
+  remain structured inside the at-rule instead of becoming one raw blob.
+- Semicolon-only or unbalanced preludes still use the lossless raw path.
+- Verified importer `44/44`, high-priority mapping, layer/Blockly operations,
+  lint, `ci:verify`, and production build.
+- External Roll20 status is unchanged: generated root/chat evidence is `0/4`,
+  chat parity is missing, and renderer readiness is `NO` because upload still
+  requires file-URL permission.
+
 # 2026-07-31 - Composite media-query mapping
 
 - Fixed the CSS importer so balanced composite media preludes, including a

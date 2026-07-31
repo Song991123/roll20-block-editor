@@ -277,6 +277,18 @@ function structuredAtRuleToBlock(
     };
   }
 
+  const genericPrelude = balancedBlockAtRulePrelude(head);
+  if (genericPrelude) {
+    const nestedCtx = newCssCtx();
+    const children = parseCss(body, nestedCtx);
+    mergeNestedDiagnostics(ctx, nestedCtx);
+    return {
+      blockType: 'r20_css_at_rule',
+      fields: { PRELUDE: genericPrelude },
+      children: { BODY: children },
+    };
+  }
+
   return null;
 }
 
@@ -306,6 +318,32 @@ function balancedMediaCondition(head: string): string | null {
   }
   if (depth !== 0 || quote) return null;
   return condition;
+}
+
+function balancedBlockAtRulePrelude(head: string): string | null {
+  const prelude = head.trim();
+  if (!/^@[A-Za-z][\w-]*(?:\s|$)/.test(prelude) || /[{};]/.test(prelude)) return null;
+
+  let depth = 0;
+  let quote = '';
+  for (let i = 0; i < prelude.length; i += 1) {
+    const char = prelude[i];
+    if (quote) {
+      if (char === '\\') i += 1;
+      else if (char === quote) quote = '';
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      continue;
+    }
+    if (char === '(') depth += 1;
+    else if (char === ')') {
+      depth -= 1;
+      if (depth < 0) return null;
+    }
+  }
+  return depth === 0 && !quote ? prelude : null;
 }
 
 const KEYFRAME_STOP_VALUES = new Set(['from', 'to', '0%', '25%', '50%', '75%', '100%']);

@@ -386,8 +386,22 @@ function testModernCssAndMixedScriptPreservation(): void {
   assert(!r.html.includes('window.sheetReady'), 'page script body does not become visible sheet content');
   assert(r.css.includes('r20_selector_pseudo'), 'modern selector remains structured');
   assert(r.css.includes('&gt; input'), 'modern pseudo argument is preserved');
+  assert(r.css.includes('r20_css_at_rule'), 'container rule maps to a generic at-rule block');
+  assert(r.css.includes('r20_css_rule'), 'nested container rule remains structured');
   assert(r.css.includes('@container sheet'), 'container rule remains lossless');
-  assert(r.stats.cssRawFallback >= 1, 'unsupported container rule is explicit raw CSS');
+  assert(r.stats.cssRawFallback === 0, 'structured container rule has no raw fallback');
+
+  const supports = importSheet({
+    css: '@supports (display: grid) { @layer components { .card { display: grid; } } }',
+  });
+  assert((supports.css.match(/r20_css_at_rule/g) || []).length === 2, 'nested at-rules map recursively');
+  assert(supports.css.includes('field name="NAME">card'), 'nested at-rule selector is preserved');
+
+  const malformed = importSheet({
+    css: '@container sheet (min-width: 420px { .card { display: grid; } }',
+  });
+  assert(!malformed.css.includes('r20_css_at_rule'), 'unbalanced at-rule prelude is not typed');
+  assert(malformed.css.includes('r20_raw_css'), 'unbalanced at-rule remains raw');
 }
 
 function testCssCompoundSelector(): void {

@@ -1,5 +1,20 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Generic block at-rule mapping
+
+- `DONE LOCAL`: safe block at-rules such as `@container`, `@supports`, and
+  `@layer` now map to editable `r20_css_at_rule` containers. Nested ordinary
+  CSS rules continue to map to their normal selector/declaration blocks.
+- `DONE LOCAL`: semicolon-only, unbalanced, or otherwise unsafe at-rule
+  preludes remain lossless raw CSS instead of being rewritten as a block.
+- `VERIFIED LOCAL`: import structure `44/44`, high-priority mapping, layer-role
+  and Blockly operation tests, lint, `ci:verify`, and production build pass.
+- `CLAIM BOUNDARY`: this expands common block at-rule editing; it does not
+  prove every CSS grammar, arbitrary-sheet support, actual Roll20 visual/chat
+  parity, worker mutation, or asset parity.
+- `NEXT`: continue anonymous CSS grammar coverage and then resume the blocked
+  modern Sandbox upload plus separate legacy-room capture.
+
 # 2026-07-31 Composite media-query mapping
 
 - `DONE LOCAL`: CSS import now maps balanced composite media preludes such as
