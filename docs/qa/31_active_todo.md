@@ -1,5 +1,13 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Upload handoff CLI recovery
+
+- `VERIFIED LOCAL`: upload snippet option parsing now keeps separated option
+  values such as `--expected-runtime-mode modern` out of the fixture selector.
+  The self-test and missing-evidence snippet generation both pass.
+- `OPEN EXTERNAL`: snippets are prepared only; no file was transmitted to
+  Roll20 because the participant visibility gate is still not satisfied.
+
 # 2026-07-31 Pre-upload gate recovery
 
 - `VERIFIED LOCAL`: the default pre-upload command now creates a timestamped

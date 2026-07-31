@@ -1,5 +1,13 @@
 # 34. Requirements Gap Matrix
 
+# Upload handoff CLI recovery - 2026-07-31
+
+- `DONE LOCAL`: separated upload-snippet option values no longer become a
+  false fixture ID; modern/legacy runtime mode selection remains explicit.
+- `VERIFIED LOCAL`: upload snippet self-test and current missing-evidence
+  snippet generation pass.
+- `OPEN EXTERNAL`: no Roll20 upload or actual screenshot evidence was created.
+
 # Pre-upload gate recovery - 2026-07-31
 
 - `DONE LOCAL`: the pre-upload orchestrator no longer depends on a removed

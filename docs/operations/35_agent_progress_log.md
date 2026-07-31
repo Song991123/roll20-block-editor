@@ -10658,6 +10658,16 @@ same-hash modern/legacy comparison.
   partial, not full parity. Full-height root stitching, normalized diff, and
   independent fixture-A smoke are still required.
 
+## 2026-07-31 - Upload handoff CLI recovery
+
+- `VERIFIED LOCAL`: `roll20_upload_snippet.mjs` now skips values belonging to
+  known options when collecting positional run/fixture arguments. Both the
+  self-test and a current `--missing-only --expected-runtime-mode modern`
+  generation pass.
+- `SAFETY`: this generated local-only handoff/snippet output was not sent to
+  Roll20. External writes remain gated by a fresh visible exactly-one
+  participant state.
+
 ## 2026-07-31 - Pre-upload gate recovery
 
 - `VERIFIED LOCAL`: `scripts/roll20_preupload_verification.mjs` now selects a

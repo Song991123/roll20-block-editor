@@ -14,7 +14,13 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const positionalArgs = args.filter((arg) => !arg.startsWith('--'));
+const VALUE_OPTIONS = new Set([
+  '--endpoint-campaign-id',
+  '--expected-runtime-mode',
+  '--out-dir',
+  '--payload-dir',
+]);
+const positionalArgs = collectPositionalArgs(args);
 const [RUN_DIR_ARG, ONLY] = parseArgs(positionalArgs);
 const RUN_ROOT = path.resolve('reports/roll20-actual-compare');
 const SELF_TEST = args.includes('--self-test');
@@ -41,6 +47,19 @@ function parseArgs(rawArgs) {
   const looksLikePath = first.includes('/') || first.includes('\\') || first.startsWith('.') || existsSync(first);
   if (looksLikePath) return [first, second];
   return ['', first];
+}
+
+function collectPositionalArgs(rawArgs) {
+  const positional = [];
+  for (let index = 0; index < rawArgs.length; index += 1) {
+    const arg = rawArgs[index];
+    if (!arg.startsWith('-')) {
+      positional.push(arg);
+      continue;
+    }
+    if (VALUE_OPTIONS.has(arg)) index += 1;
+  }
+  return positional;
 }
 
 function readOptionValue(rawArgs, name) {
