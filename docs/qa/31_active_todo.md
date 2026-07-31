@@ -1,3 +1,12 @@
+# 2026-08-01 CI verification refresh
+
+- `DONE LOCAL`: `corepack pnpm run ci:verify` passed, including safety/unit,
+  import and mapping, export, layer/edit contracts, modern/legacy sanitizer,
+  worker/rolltemplate, payload guards, room participant self-test, and UI copy
+  guard.
+- `CLAIM BOUNDARY`: this is repository and local-runtime evidence. It does
+  not create actual Roll20 Sandbox screenshots or prove external parity.
+
 # 2026-08-01 Local baseline regenerated after cleanup
 
 - `DONE LOCAL`: rebuilt the product and regenerated only anonymous ignored

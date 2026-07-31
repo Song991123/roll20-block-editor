@@ -1,3 +1,14 @@
+# 2026-08-01 - CI verification refresh
+
+## 2026-08-01 - Full local gate
+
+- `corepack pnpm run ci:verify` passed. The gate covered safety/unit,
+  import/mapping, export, layer/edit contracts, modern/legacy sanitizer,
+  worker/rolltemplate, payload guards, room participant self-test, and UI copy
+  guard.
+- The gate does not upload to Roll20 or generate actual Sandbox screenshots;
+  the external parity item remains open.
+
 # 2026-08-01 - Local baseline regenerated after cleanup
 
 ## 2026-08-01 - Local render and mapping gates
