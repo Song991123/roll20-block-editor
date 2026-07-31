@@ -11656,3 +11656,23 @@ same-hash modern/legacy comparison.
   state change.
 - Live modern root/chat paint therefore remains unverified. Local Preview/Edit
   equality and local chat reuse are not promoted to actual Roll20 parity.
+
+## 2026-08-01 - Interactive states and table styling
+
+- Added managed base, hover, active, and focus appearance states for action
+  buttons and ordinary inputs. Pseudo-state CSS keeps the existing stable class
+  and preserves touched imported inline values in the managed base rule before
+  removing the inline declaration.
+- Added four whole-table, four table-row, and four table-cell presets. The
+  inspector now offers 35 generic authored starting styles without wrapping or
+  flattening semantic table nodes.
+- Extended focused tests through state write/read/clear, active/focus selector
+  generation, rolltemplate scope migration, table preset routing, and modern
+  plus legacy sanitizer preservation.
+- Two consecutive edit-flow browser runs proved whole-table and cell computed
+  paint, Roll-button hover paint, Edit/Preview state equality, emitted CSS, and
+  no inline presentation leakage. Synthetic modern/legacy Preview/Edit remains
+  exact at `0%` mismatch for four captures; lint, build, and full `ci:verify`
+  pass.
+- Current-payload modern Sandbox upload is still blocked before transmission
+  by Chrome local-file access. No actual Roll20 parity claim is made.

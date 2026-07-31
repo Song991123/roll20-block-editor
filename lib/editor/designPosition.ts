@@ -33,10 +33,14 @@ export type DesignPositionResult = {
 
 export type ManagedDesignDeclarations = Record<string, string | null>;
 
+export const MANAGED_DESIGN_STATES = ['base', 'hover', 'active', 'focus'] as const;
+export type ManagedDesignState = (typeof MANAGED_DESIGN_STATES)[number];
+
 export type DesignStyleRequest = {
   workspace: WorkspaceKey;
   blockId: string;
   declarations: ManagedDesignDeclarations;
+  state?: ManagedDesignState;
 };
 
 export type DesignStyleResult = {
@@ -171,6 +175,7 @@ export function readManagedDesignStyle(
   adapter: DesignPositionAdapter,
   workspace: WorkspaceKey,
   blockId: string,
+  state: ManagedDesignState = 'base',
 ): Record<string, string> {
   const block = adapter.getBlock(workspace, blockId);
   if (!block) return {};
@@ -179,7 +184,7 @@ export function readManagedDesignStyle(
   if (!target) return {};
 
   const styleField = resolveDesignStyleField(adapter, workspace, blockId);
-  const inline = styleField
+  const inline = state === 'base' && styleField
     ? parseCssDeclarations(adapter.getBlockField(workspace, blockId, styleField) ?? '')
     : {};
   const managedCss = findDesignCssBlock(adapter);
@@ -187,7 +192,7 @@ export function readManagedDesignStyle(
   const css = adapter.getBlockField('css', managedCss.id, 'CSS') ?? '';
   return {
     ...inline,
-    ...readCssRule(css, target.className, target.scopeSelector),
+    ...readCssRule(css, target.className, target.scopeSelector, state),
   };
 }
 
@@ -209,7 +214,7 @@ export function commitManagedDesignStyle(
   adapter: DesignPositionAdapter,
   request: DesignStyleRequest,
 ): DesignStyleResult {
-  const { workspace, blockId } = request;
+  const { workspace, blockId, state = 'base' } = request;
   if (!adapter.getBlock(workspace, blockId)) return styleFailure('missing-block');
   const target = resolveManagedStyleTarget(adapter, workspace, blockId);
   if (!target) {
@@ -242,6 +247,30 @@ export function commitManagedDesignStyle(
     : target.className;
   if (!designClass) return styleFailure('missing-style-or-class');
 
+  const beforeCss = adapter.getBlockField('css', managedCss.id, 'CSS')
+    ?? `/* ${DESIGN_CSS_MARKER} */`;
+  let afterCss = beforeCss;
+
+  // A pseudo-state cannot beat an imported inline declaration without
+  // `!important`. Preserve the current base value in managed CSS before the
+  // touched inline property is removed, then write the state rule separately.
+  if (state !== 'base') {
+    const currentBase = readManagedDesignStyle(adapter, workspace, blockId, 'base');
+    const preservedBase: ManagedDesignDeclarations = {};
+    for (const property of Object.keys(normalized)) {
+      if (currentBase[property]) preservedBase[property] = currentBase[property];
+    }
+    if (Object.keys(preservedBase).length > 0) {
+      afterCss = patchCssRule(
+        afterCss,
+        designClass,
+        preservedBase,
+        target.scopeSelector,
+        'base',
+      );
+    }
+  }
+
   let htmlChanged = stripInlineDesignDeclarations(
     adapter,
     workspace,
@@ -249,9 +278,13 @@ export function commitManagedDesignStyle(
     Object.keys(normalized),
   );
 
-  const beforeCss = adapter.getBlockField('css', managedCss.id, 'CSS')
-    ?? `/* ${DESIGN_CSS_MARKER} */`;
-  const afterCss = patchCssRule(beforeCss, designClass, normalized, target.scopeSelector);
+  afterCss = patchCssRule(
+    afterCss,
+    designClass,
+    normalized,
+    target.scopeSelector,
+    state,
+  );
   const cssChanged = beforeCss !== afterCss;
   if (cssChanged) adapter.setBlockField('css', managedCss.id, 'CSS', afterCss);
 
@@ -294,25 +327,29 @@ export function migrateManagedRolltemplateStyleScope(
 
   const previousRootClass = previousScope.slice(1);
   const nextRootClass = nextScope.slice(1);
-  const previousRootMatcher = managedRuleMatcher(previousRootClass, '[^}]*', null);
-  if (previousRootMatcher.test(css)) {
-    const previous = readExactCssRule(css, previousRootClass, null);
-    const next = readExactCssRule(css, nextRootClass, null);
-    css = css.replace(previousRootMatcher, '').trim();
-    css = upsertCssRule(css, nextRootClass, { ...previous, ...next }, null);
-    migratedRules += 1;
+  for (const state of MANAGED_DESIGN_STATES) {
+    const previousRootMatcher = managedRuleMatcher(previousRootClass, '[^}]*', null, state);
+    if (previousRootMatcher.test(css)) {
+      const previous = readExactCssRule(css, previousRootClass, null, state);
+      const next = readExactCssRule(css, nextRootClass, null, state);
+      css = css.replace(previousRootMatcher, '').trim();
+      css = upsertCssRule(css, nextRootClass, { ...previous, ...next }, null, state);
+      migratedRules += 1;
+    }
   }
 
   for (const node of nodes) {
     if (node.id === rootId || findOwningRolltemplateId(nodes, node.id) !== rootId) continue;
     const className = designClassForBlock(node.id);
-    const previousMatcher = managedRuleMatcher(className, '[^}]*', previousScope);
-    if (!previousMatcher.test(css)) continue;
-    const previous = readExactCssRule(css, className, previousScope);
-    const next = readExactCssRule(css, className, nextScope);
-    css = css.replace(previousMatcher, '').trim();
-    css = upsertCssRule(css, className, { ...previous, ...next }, nextScope);
-    migratedRules += 1;
+    for (const state of MANAGED_DESIGN_STATES) {
+      const previousMatcher = managedRuleMatcher(className, '[^}]*', previousScope, state);
+      if (!previousMatcher.test(css)) continue;
+      const previous = readExactCssRule(css, className, previousScope, state);
+      const next = readExactCssRule(css, className, nextScope, state);
+      css = css.replace(previousMatcher, '').trim();
+      css = upsertCssRule(css, className, { ...previous, ...next }, nextScope, state);
+      migratedRules += 1;
+    }
   }
 
   if (migratedRules > 0) adapter.setBlockField('css', managedCss.id, 'CSS', css);
@@ -480,10 +517,11 @@ function upsertCssRule(
   className: string,
   declarations: Record<string, string>,
   scopeSelector: string | null = null,
+  state: ManagedDesignState = 'base',
 ): string {
-  const selectors = managedSelectorParts(className, scopeSelector);
+  const selectors = managedSelectorParts(className, scopeSelector, state);
   const rule = `${selectors.strong}, ${selectors.base} { ${formatCssDeclarations(declarations)} }`;
-  const matcher = managedRuleMatcher(className, '[^}]*', scopeSelector);
+  const matcher = managedRuleMatcher(className, '[^}]*', scopeSelector, state);
   const base = css.trim() || `/* ${DESIGN_CSS_MARKER} */`;
   if (matcher.test(base)) return base.replace(matcher, rule);
   return `${base}\n${rule}`;
@@ -500,10 +538,11 @@ function patchCssRule(
   className: string,
   patch: ManagedDesignDeclarations,
   scopeSelector: string | null = null,
+  state: ManagedDesignState = 'base',
 ): string {
-  const scopedCurrent = readExactCssRule(css, className, scopeSelector);
+  const scopedCurrent = readExactCssRule(css, className, scopeSelector, state);
   const legacyCurrent = scopeSelector
-    ? readExactCssRule(css, className, null)
+    ? readExactCssRule(css, className, null, state)
     : {};
   const current = { ...legacyCurrent, ...scopedCurrent };
   for (const [property, value] of Object.entries(patch)) {
@@ -511,39 +550,48 @@ function patchCssRule(
     else current[property] = value;
   }
   const withoutLegacy = scopeSelector
-    ? css.replace(managedRuleMatcher(className, '[^}]*', null), '').trim()
+    ? css.replace(managedRuleMatcher(className, '[^}]*', null, state), '').trim()
     : css;
-  return upsertCssRule(withoutLegacy, className, current, scopeSelector);
+  if (Object.keys(current).length === 0) {
+    return withoutLegacy
+      .replace(managedRuleMatcher(className, '[^}]*', scopeSelector, state), '')
+      .trim();
+  }
+  return upsertCssRule(withoutLegacy, className, current, scopeSelector, state);
 }
 
 function readCssRule(
   css: string,
   className: string,
   scopeSelector: string | null = null,
+  state: ManagedDesignState = 'base',
 ): Record<string, string> {
-  const scoped = readExactCssRule(css, className, scopeSelector);
+  const scoped = readExactCssRule(css, className, scopeSelector, state);
   if (Object.keys(scoped).length > 0 || !scopeSelector) return scoped;
-  return readExactCssRule(css, className, null);
+  return readExactCssRule(css, className, null, state);
 }
 
 function readExactCssRule(
   css: string,
   className: string,
   scopeSelector: string | null,
+  state: ManagedDesignState = 'base',
 ): Record<string, string> {
-  const match = css.match(managedRuleMatcher(className, '([^}]*)', scopeSelector));
+  const match = css.match(managedRuleMatcher(className, '([^}]*)', scopeSelector, state));
   return match ? parseCssDeclarations(match[1]) : {};
 }
 
 function managedSelectorParts(
   className: string,
   scopeSelector: string | null,
+  state: ManagedDesignState = 'base',
 ): { base: string; strong: string } {
   const node = `.${className}`;
   const scope = scopeSelector ? `${scopeSelector} ` : '';
+  const suffix = managedStateSuffix(state);
   return {
-    base: `${scope}${node}`,
-    strong: `${scope}${node}${node}${node}${node}`,
+    base: `${scope}${node}${suffix}`,
+    strong: `${scope}${node}${node}${node}${node}${suffix}`,
   };
 }
 
@@ -551,14 +599,22 @@ function managedRuleMatcher(
   className: string,
   bodyPattern: string,
   scopeSelector: string | null,
+  state: ManagedDesignState = 'base',
 ): RegExp {
-  const { base, strong } = managedSelectorParts(className, scopeSelector);
+  const { base, strong } = managedSelectorParts(className, scopeSelector, state);
   const escapedBase = escapeRegExp(base);
   const escapedStrong = escapeRegExp(strong);
   return new RegExp(
     `^[\\t ]*(?:${escapedStrong}\\s*,\\s*${escapedBase}|${escapedBase})\\s*\\{${bodyPattern}\\}[\\t ]*$`,
     'm',
   );
+}
+
+function managedStateSuffix(state: ManagedDesignState): string {
+  if (state === 'hover') return ':hover';
+  if (state === 'active') return ':active';
+  if (state === 'focus') return ':focus';
+  return '';
 }
 
 function escapeRegExp(value: string): string {

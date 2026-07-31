@@ -6,6 +6,7 @@ export type VisualStylePresetFamily =
   | 'button'
   | 'text'
   | 'control'
+  | 'table'
   | 'result-card'
   | 'result';
 export type VisualStylePresetScope = 'sheet' | 'rolltemplate';
@@ -237,6 +238,132 @@ const CONTROL_PRESETS: VisualStylePreset[] = [
   }),
 ];
 
+const TABLE_PRESETS: VisualStylePreset[] = [
+  preset('paper', '종이 표', '얇은 선과 밝은 바탕의 기본 표', {
+    width: '100%',
+    'border-collapse': 'separate',
+    'border-spacing': '0',
+    'background-color': '#fffdfd',
+    'background-image': 'none',
+    color: '#3f3439',
+    'border-width': '1px',
+    'border-style': 'solid',
+    'border-color': '#dfccd4',
+    'border-radius': '6px',
+    'box-shadow': '0 2px 8px rgba(73, 45, 57, 0.08)',
+  }),
+  preset('rose', '분홍 표', '중요 수치와 구역을 또렷하게 나누는 분홍 표', {
+    width: '100%',
+    'border-collapse': 'collapse',
+    'border-spacing': '0',
+    'background-color': '#fff6f9',
+    'background-image': 'none',
+    color: '#5d2f40',
+    'border-width': '2px',
+    'border-style': 'solid',
+    'border-color': '#d96b91',
+    'border-radius': '4px',
+    'box-shadow': 'none',
+  }),
+  preset('mint', '민트 표', '반복 항목을 차분하게 정리하는 민트 표', {
+    width: '100%',
+    'border-collapse': 'separate',
+    'border-spacing': '0 3px',
+    'background-color': 'transparent',
+    'background-image': 'none',
+    color: '#245648',
+    'border-width': '0',
+    'border-style': 'solid',
+    'border-color': '#86c9b3',
+    'border-radius': '0',
+    'box-shadow': 'none',
+  }),
+  preset('ink', '잉크 표', '좁은 공간에서 정보 밀도를 높이는 단정한 표', {
+    width: '100%',
+    'table-layout': 'fixed',
+    'border-collapse': 'collapse',
+    'border-spacing': '0',
+    'background-color': '#f7f5f6',
+    'background-image': 'none',
+    color: '#302a2e',
+    'border-width': '1px',
+    'border-style': 'solid',
+    'border-color': '#595057',
+    'border-radius': '2px',
+    'box-shadow': 'none',
+  }),
+];
+
+const TABLE_ROW_PRESETS: VisualStylePreset[] = [
+  preset('paper', '종이 줄', '본문을 가볍게 구분하는 밝은 줄', {
+    'background-color': '#fffdfd',
+    'background-image': 'none',
+    color: '#3f3439',
+    'box-shadow': 'inset 0 -1px 0 #ead8df',
+  }),
+  preset('rose', '분홍 줄', '핵심 줄을 강조하는 옅은 분홍 바탕', {
+    'background-color': '#fff2f6',
+    'background-image': 'none',
+    color: '#5d2f40',
+    'box-shadow': 'inset 4px 0 0 #d96b91, inset 0 -1px 0 #e2a0b8',
+  }),
+  preset('mint', '민트 줄', '상태와 반복 항목에 어울리는 민트 바탕', {
+    'background-color': '#f2fbf7',
+    'background-image': 'none',
+    color: '#245648',
+    'box-shadow': 'inset 4px 0 0 #4ea88b, inset 0 -1px 0 #9bd3c0',
+  }),
+  preset('ink', '잉크 줄', '표 머리나 합계에 쓰는 진한 줄', {
+    'background-color': '#403940',
+    'background-image': 'none',
+    color: '#ffffff',
+    'box-shadow': 'inset 0 -1px 0 #292429',
+  }),
+];
+
+const TABLE_CELL_PRESETS: VisualStylePreset[] = [
+  preset('paper', '종이 칸', '얇은 선과 넉넉한 여백의 기본 칸', {
+    'background-color': '#fffdfd',
+    'background-image': 'none',
+    color: '#3f3439',
+    'border-width': '1px',
+    'border-style': 'solid',
+    'border-color': '#ead8df',
+    padding: '8px 10px',
+    'text-align': 'left',
+  }),
+  preset('rose', '분홍 칸', '중요 값을 감싸는 옅은 분홍 칸', {
+    'background-color': '#fff2f6',
+    'background-image': 'none',
+    color: '#5d2f40',
+    'border-width': '1px',
+    'border-style': 'solid',
+    'border-color': '#e2a0b8',
+    padding: '8px 10px',
+    'text-align': 'center',
+  }),
+  preset('mint', '민트 칸', '보조 값과 상태를 나누는 민트 칸', {
+    'background-color': '#f2fbf7',
+    'background-image': 'none',
+    color: '#245648',
+    'border-width': '1px',
+    'border-style': 'solid',
+    'border-color': '#9bd3c0',
+    padding: '8px 10px',
+    'text-align': 'center',
+  }),
+  preset('ink', '잉크 칸', '짧은 제목과 합계에 쓰는 진한 칸', {
+    'background-color': '#403940',
+    'background-image': 'none',
+    color: '#ffffff',
+    'border-width': '1px',
+    'border-style': 'solid',
+    'border-color': '#595057',
+    padding: '7px 8px',
+    'text-align': 'center',
+  }),
+];
+
 const RESULT_CARD_PRESETS: VisualStylePreset[] = [
   preset('paper', '종이 카드', '밝은 종이와 얇은 선을 쓴 기본 굴림 결과 카드', {
     display: 'block',
@@ -366,6 +493,8 @@ export function getVisualStylePresetGroup(
   if (scope === 'rolltemplate' && (role.kind === 'frame' || role.kind === 'flow')) {
     return { family: 'result', title: '결과 행 모양', presets: RESULT_PRESETS };
   }
+  const tableGroup = getTablePresetGroup(blockType);
+  if (tableGroup) return tableGroup;
   if (role.kind === 'frame' || role.kind === 'flow') {
     return { family: 'section', title: '섹션 모양', presets: SECTION_PRESETS };
   }
@@ -386,6 +515,20 @@ export function getVisualStylePresetGroup(
       title: isNumberControlType(blockType) ? '숫자 칸 모양' : '입력 칸 모양',
       presets: CONTROL_PRESETS,
     };
+  }
+  return null;
+}
+
+function getTablePresetGroup(blockType: string): VisualStylePresetGroup | null {
+  const normalized = blockType.toLowerCase();
+  if (normalized === 'r20_table') {
+    return { family: 'table', title: '표 전체 모양', presets: TABLE_PRESETS };
+  }
+  if (/^r20_(?:tr|thead|tbody|tfoot|skill_row)$/.test(normalized)) {
+    return { family: 'table', title: '표 줄 모양', presets: TABLE_ROW_PRESETS };
+  }
+  if (/^r20_(?:td|th|table_caption)$/.test(normalized)) {
+    return { family: 'table', title: '표 칸 모양', presets: TABLE_CELL_PRESETS };
   }
   return null;
 }

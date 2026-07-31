@@ -19,6 +19,11 @@ const blocks = new Map<string, Map<string, TestBlock>>([
       STYLE: 'left: 1px; color: red',
       __R20_PRESERVED_ATTRS: '[["data-hook","subject"],["style","left:1px;color:red"]]',
     })],
+    ['stateful', block('stateful', 'r20_roll_button', {
+      CLASS: 'sheet-stateful',
+      STYLE: 'background-color: #334455; color: #ffffff',
+      __R20_PRESERVED_ATTRS: '[["style","background-color:#334455;color:#ffffff"]]',
+    })],
     ['positioned', block('positioned', 'r20_positioned', { LEFT_PX: '2', TOP_PX: '3' })],
     ['unsupported', block('unsupported', 'r20_raw_html', { HTML: '<hr>' })],
     ['dual', block('dual', 'r20_dual_roll_button', { ROW_CLASS: 'dual-row' })],
@@ -140,6 +145,67 @@ const clearedCss = adapter.getBlockField('css', 'managed-css', 'CSS') ?? '';
 assert.doesNotMatch(clearedCss, /background-color: #f7c6d9/);
 assert.match(clearedCss, /color: #432033/);
 
+const hoverStyled = commitManagedDesignStyle(adapter, {
+  workspace: 'html',
+  blockId: 'stateful',
+  state: 'hover',
+  declarations: {
+    'background-color': '#d96b91',
+    color: '#ffffff',
+  },
+});
+assert.equal(hoverStyled.changed, true);
+assert.equal(adapter.getBlockField('html', 'stateful', 'STYLE'), '');
+assert.equal(adapter.getBlockField('html', 'stateful', '__R20_PRESERVED_ATTRS'), '');
+const hoverCss = adapter.getBlockField('css', 'managed-css', 'CSS') ?? '';
+assert.match(hoverCss, /\.sheet-r20-node-stateful \{[^}]*background-color: #334455;[^}]*color: #ffffff;/);
+assert.match(hoverCss, /\.sheet-r20-node-stateful:hover \{[^}]*background-color: #d96b91;[^}]*color: #ffffff;/);
+assert.deepEqual(readManagedDesignStyle(adapter, 'html', 'stateful', 'base'), {
+  'background-color': '#334455',
+  color: '#ffffff',
+});
+assert.deepEqual(readManagedDesignStyle(adapter, 'html', 'stateful', 'hover'), {
+  'background-color': '#d96b91',
+  color: '#ffffff',
+});
+
+commitManagedDesignStyle(adapter, {
+  workspace: 'html',
+  blockId: 'stateful',
+  state: 'active',
+  declarations: { 'box-shadow': 'inset 0 2px 4px rgba(0, 0, 0, 0.2)' },
+});
+commitManagedDesignStyle(adapter, {
+  workspace: 'html',
+  blockId: 'stateful',
+  state: 'focus',
+  declarations: { 'outline-color': '#d96b91', 'outline-width': '2px' },
+});
+const interactiveStateCss = adapter.getBlockField('css', 'managed-css', 'CSS') ?? '';
+assert.match(interactiveStateCss, /\.sheet-r20-node-stateful:active \{[^}]*box-shadow: inset 0 2px 4px rgba\(0, 0, 0, 0\.2\);/);
+assert.match(interactiveStateCss, /\.sheet-r20-node-stateful:focus \{[^}]*outline-color: #d96b91;[^}]*outline-width: 2px;/);
+assert.deepEqual(readManagedDesignStyle(adapter, 'html', 'stateful', 'active'), {
+  'box-shadow': 'inset 0 2px 4px rgba(0, 0, 0, 0.2)',
+});
+assert.deepEqual(readManagedDesignStyle(adapter, 'html', 'stateful', 'focus'), {
+  'outline-color': '#d96b91',
+  'outline-width': '2px',
+});
+
+const hoverCleared = commitManagedDesignStyle(adapter, {
+  workspace: 'html',
+  blockId: 'stateful',
+  state: 'hover',
+  declarations: {
+    'background-color': null,
+    color: null,
+  },
+});
+assert.equal(hoverCleared.changed, true);
+const hoverClearedCss = adapter.getBlockField('css', 'managed-css', 'CSS') ?? '';
+assert.doesNotMatch(hoverClearedCss, /\.sheet-r20-node-stateful:hover/);
+assert.match(hoverClearedCss, /\.sheet-r20-node-stateful \{[^}]*background-color: #334455;/);
+
 const positioned = commitManagedDesignPosition(adapter, {
   workspace: 'html',
   blockId: 'positioned',
@@ -238,6 +304,17 @@ assert.deepEqual(readManagedDesignStyle(adapter, 'html', 'template'), {
   'border-radius': '6px',
 });
 
+const templateRowHover = commitManagedDesignStyle(adapter, {
+  workspace: 'html',
+  blockId: 'template-row',
+  state: 'hover',
+  declarations: { 'background-color': '#f2fbf7' },
+});
+assert.equal(templateRowHover.changed, true);
+assert.deepEqual(readManagedDesignStyle(adapter, 'html', 'template-row', 'hover'), {
+  'background-color': '#f2fbf7',
+});
+
 adapter.setBlockField('html', 'template', 'NAME', 'renamed');
 const migratedTemplate = migrateManagedRolltemplateStyleScope(
   adapter,
@@ -245,15 +322,19 @@ const migratedTemplate = migrateManagedRolltemplateStyleScope(
   'proof',
   'renamed',
 );
-assert.deepEqual(migratedTemplate, { changed: true, migratedRules: 2 });
+assert.deepEqual(migratedTemplate, { changed: true, migratedRules: 3 });
 const renamedTemplateCss = adapter.getBlockField('css', 'managed-css', 'CSS') ?? '';
 assert.doesNotMatch(renamedTemplateCss, /\.sheet-rolltemplate-proof \.sheet-r20-node-template-row/);
 assert.match(renamedTemplateCss, /\.sheet-rolltemplate-renamed \.sheet-r20-node-template-row/);
+assert.match(renamedTemplateCss, /\.sheet-rolltemplate-renamed \.sheet-r20-node-template-row:hover/);
 assert.doesNotMatch(renamedTemplateCss, /^\.sheet-rolltemplate-proof(?:\.|\s|,)/m);
 assert.match(renamedTemplateCss, /^\.sheet-rolltemplate-renamed\.sheet-rolltemplate-renamed/m);
 assert.deepEqual(readManagedDesignStyle(adapter, 'html', 'template-row'), {
   'background-color': '#f8d7e3',
   padding: '8px 10px',
+});
+assert.deepEqual(readManagedDesignStyle(adapter, 'html', 'template-row', 'hover'), {
+  'background-color': '#f2fbf7',
 });
 assert.deepEqual(readManagedDesignStyle(adapter, 'html', 'template'), {
   'background-color': '#fff6f9',

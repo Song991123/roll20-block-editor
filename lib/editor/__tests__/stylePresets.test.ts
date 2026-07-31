@@ -37,6 +37,25 @@ assert.equal(numberControl?.title, '숫자 칸 모양');
 assert.equal(getVisualStylePresetGroup(getLayerRole('r20_checkbox'), 'r20_checkbox'), null);
 assert.equal(getVisualStylePresetGroup(getLayerRole('r20_radio'), 'r20_radio'), null);
 
+const table = getVisualStylePresetGroup(getLayerRole('r20_table'), 'r20_table');
+assert.equal(table?.family, 'table');
+assert.equal(table?.title, '표 전체 모양');
+assert.equal(table?.presets.length, 4);
+assert.equal(table?.presets.find((item) => item.id === 'rose')?.declarations['border-collapse'], 'collapse');
+
+const tableRow = getVisualStylePresetGroup(getLayerRole('r20_tr'), 'r20_tr');
+assert.equal(tableRow?.family, 'table');
+assert.equal(tableRow?.title, '표 줄 모양');
+assert.equal(tableRow?.presets.find((item) => item.id === 'mint')?.declarations['background-color'], '#f2fbf7');
+
+const tableCell = getVisualStylePresetGroup(getLayerRole('r20_td'), 'r20_td');
+assert.equal(tableCell?.family, 'table');
+assert.equal(tableCell?.title, '표 칸 모양');
+assert.equal(tableCell?.presets.find((item) => item.id === 'rose')?.declarations['text-align'], 'center');
+
+const packedTableRow = getVisualStylePresetGroup(getLayerRole('r20_skill_row'), 'r20_skill_row');
+assert.equal(packedTableRow?.title, '표 줄 모양');
+
 const result = getVisualStylePresetGroup(
   getLayerRole('r20_rolltemplate_row'),
   'r20_rolltemplate_row',

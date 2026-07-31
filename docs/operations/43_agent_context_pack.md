@@ -11,8 +11,10 @@ the entire history and generated evidence tree.
   editing.
 - Local preview/edit share one persistent iframe. Modern and legacy browser
   smoke currently pass, including delayed stale-revision rejection.
-- Direct edit exposes managed CSS controls plus 23 generic starting styles
-  for sections, Roll buttons, text, inputs, result cards, and result rows. Managed selectors beat the Roll20 base
+- Direct edit exposes managed CSS controls plus 35 generic starting styles
+  for sections, Roll buttons, text, inputs, table surfaces/rows/cells, result
+  cards, and result rows. Buttons and ordinary inputs can edit separate base,
+  hover, active, and focus states. Managed selectors beat the Roll20 base
   without inline presentation or `!important`; template-child rules are scoped
   through their owning `.sheet-rolltemplate-NAME`. Result-card root rules use
   that same Roll20 class directly and migrate with template-name changes. The

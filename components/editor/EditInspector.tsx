@@ -11,8 +11,10 @@ import {
 import {
   canManageDesignStyle,
   commitManagedDesignStyle,
+  MANAGED_DESIGN_STATES,
   readManagedDesignStyle,
   type ManagedDesignDeclarations,
+  type ManagedDesignState,
 } from '@/lib/editor/designPosition';
 import { designStyleFieldForBlockType } from '@/lib/editor/designClassField';
 import { getLayerRole } from '@/lib/editor/layerRoles';
@@ -87,9 +89,19 @@ export default function EditInspector() {
     && role.kind !== 'runtime'
     && canManageDesignStyle(getBlocklyAdapter(), workspace, selectedId),
   );
-  const visualStyle = useMemo(() => {
-    if (!visualStyleEnabled || !selectedId || workspace !== 'html') return {};
-    return readManagedDesignStyle(getBlocklyAdapter(), workspace, selectedId);
+  const visualStyles = useMemo(() => {
+    if (!visualStyleEnabled || !selectedId || workspace !== 'html') {
+      return Object.fromEntries(
+        MANAGED_DESIGN_STATES.map((state) => [state, {}]),
+      ) as Record<ManagedDesignState, Record<string, string>>;
+    }
+    const adapter = getBlocklyAdapter();
+    return Object.fromEntries(
+      MANAGED_DESIGN_STATES.map((state) => [
+        state,
+        readManagedDesignStyle(adapter, workspace, selectedId, state),
+      ]),
+    ) as Record<ManagedDesignState, Record<string, string>>;
   // structureVersion invalidates the external Blockly and CSS models.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId, workspace, structureVersion, visualStyleEnabled]);
@@ -103,13 +115,17 @@ export default function EditInspector() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId, workspace, structureVersion]);
 
-  const commitVisualStyle = useCallback((declarations: ManagedDesignDeclarations) => {
+  const commitVisualStyle = useCallback((
+    declarations: ManagedDesignDeclarations,
+    state: ManagedDesignState = 'base',
+  ) => {
     if (!selectedId || workspace !== 'html') return;
     const adapter = getBlocklyAdapter();
     const result = commitManagedDesignStyle(adapter, {
       workspace,
       blockId: selectedId,
       declarations,
+      state,
     });
     if (!result.changed) return;
     const store = useWorkspaceStore.getState();
@@ -202,7 +218,7 @@ export default function EditInspector() {
 
         {visualStyleEnabled && (
           <VisualStyleInspector
-            values={visualStyle}
+            valuesByState={visualStyles}
             role={resolvedRole}
             blockType={snapshot.type}
             scope={visualStyleScope}

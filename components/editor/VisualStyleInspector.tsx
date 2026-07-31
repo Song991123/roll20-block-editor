@@ -1,9 +1,12 @@
 'use client';
 
-import type { CSSProperties, KeyboardEvent } from 'react';
+import { useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { Dice5, RotateCcw } from 'lucide-react';
 import type { LayerRole } from '@/lib/editor/layerRoles';
-import type { ManagedDesignDeclarations } from '@/lib/editor/designPosition';
+import type {
+  ManagedDesignDeclarations,
+  ManagedDesignState,
+} from '@/lib/editor/designPosition';
 import {
   getVisualStylePresetGroup,
   presetMatches,
@@ -14,27 +17,81 @@ import {
 import { cn } from '@/lib/utils/cn';
 
 type VisualStyleInspectorProps = {
-  values: Record<string, string>;
+  valuesByState: Record<ManagedDesignState, Record<string, string>>;
   role: LayerRole;
   blockType: string;
   scope: VisualStylePresetScope;
-  onPatch: (declarations: ManagedDesignDeclarations) => void;
+  onPatch: (declarations: ManagedDesignDeclarations, state?: ManagedDesignState) => void;
 };
 
 type LayoutMode = 'auto' | 'row' | 'column' | 'grid';
 
 export default function VisualStyleInspector({
-  values,
+  valuesByState,
   role,
   blockType,
   scope,
   onPatch,
 }: VisualStyleInspectorProps) {
+  const [activeState, setActiveState] = useState<ManagedDesignState>('base');
+  const values = valuesByState[activeState] ?? {};
   const layoutMode = resolveLayoutMode(values);
   const presetGroup = getVisualStylePresetGroup(role, blockType, scope);
+  const interactiveStates = role.kind === 'action' || presetGroup?.family === 'control';
+  const applyPatch = (declarations: ManagedDesignDeclarations) => onPatch(declarations, activeState);
+  const clearActiveState = () => applyPatch(
+    Object.fromEntries(Object.keys(values).map((property) => [property, null])),
+  );
 
   return (
     <div className="space-y-4" data-testid="visual-style-inspector">
+      {interactiveStates && (
+        <StyleSection title="표시 상태">
+          <div
+            className="grid grid-cols-4 overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated-2)]"
+            role="group"
+            aria-label="표시 상태"
+            data-testid="design-style-states"
+          >
+            {([
+              ['base', '기본', '평소 모양'],
+              ['hover', '올림', '마우스를 올린 모양'],
+              ['active', '누름', '누르고 있는 동안의 모양'],
+              ['focus', '선택', '키보드로 선택한 모양'],
+            ] as const).map(([state, label, title]) => (
+              <button
+                key={state}
+                type="button"
+                aria-pressed={activeState === state}
+                title={title}
+                className={cn(
+                  'h-9 border-r border-[var(--border-subtle)] px-1 text-xs font-semibold last:border-r-0',
+                  activeState === state
+                    ? 'bg-[var(--primary-strong)] text-white'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]',
+                )}
+                onClick={() => setActiveState(state)}
+                data-testid={`design-style-state-${state}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {activeState !== 'base' && Object.keys(values).length > 0 && (
+            <button
+              type="button"
+              onClick={clearActiveState}
+              className="mt-2 inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-foreground"
+              title="이 상태에 따로 지정한 모양을 지웁니다"
+              data-testid="design-style-state-clear"
+            >
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+              상태 모양 지우기
+            </button>
+          )}
+        </StyleSection>
+      )}
+
       {presetGroup && (
         <StyleSection title={presetGroup.title}>
           <div className="grid grid-cols-2 gap-2" data-testid="design-style-presets">
@@ -53,7 +110,7 @@ export default function VisualStyleInspector({
                       ? 'border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary-active)]'
                       : 'border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:border-[var(--primary-soft-border)] hover:bg-[var(--bg-hover)]',
                   )}
-                  onClick={() => onPatch(preset.declarations)}
+                  onClick={() => applyPatch(preset.declarations)}
                   data-testid={`design-preset-${presetGroup.family}-${preset.id}`}
                 >
                   <PresetPreview family={presetGroup.family} preset={preset} />
@@ -70,25 +127,25 @@ export default function VisualStyleInspector({
           <LengthField
             label="너비"
             value={values.width}
-            onChange={(value) => onPatch({ width: value })}
+            onChange={(value) => applyPatch({ width: value })}
             testid="design-style-width"
           />
           <LengthField
             label="최소 높이"
             value={values['min-height']}
-            onChange={(value) => onPatch({ 'min-height': value })}
+            onChange={(value) => applyPatch({ 'min-height': value })}
             testid="design-style-min-height"
           />
           <LengthField
             label="안쪽 여백"
             value={values.padding}
-            onChange={(value) => onPatch({ padding: value })}
+            onChange={(value) => applyPatch({ padding: value })}
             testid="design-style-padding"
           />
           <LengthField
             label="모서리"
             value={values['border-radius']}
-            onChange={(value) => onPatch({ 'border-radius': value })}
+            onChange={(value) => applyPatch({ 'border-radius': value })}
             testid="design-style-radius"
           />
         </div>
@@ -99,13 +156,13 @@ export default function VisualStyleInspector({
           <ColorField
             label="채우기"
             value={values['background-color']}
-            onChange={(value) => onPatch({ 'background-color': value })}
+            onChange={(value) => applyPatch({ 'background-color': value })}
             testid="design-style-background"
           />
           <ColorField
             label="글자"
             value={values.color}
-            onChange={(value) => onPatch({ color: value })}
+            onChange={(value) => applyPatch({ color: value })}
             testid="design-style-color"
           />
         </div>
@@ -116,14 +173,14 @@ export default function VisualStyleInspector({
           <LengthField
             label="두께"
             value={values['border-width']}
-            onChange={(value) => onPatch({ 'border-width': value })}
+            onChange={(value) => applyPatch({ 'border-width': value })}
             testid="design-style-border-width"
           />
           <label className="block">
             <span className="r20-field-label">선 모양</span>
             <select
               value={values['border-style'] ?? ''}
-              onChange={(event) => onPatch({ 'border-style': event.target.value || null })}
+              onChange={(event) => applyPatch({ 'border-style': event.target.value || null })}
               className="r20-input"
               data-testid="design-style-border-style"
             >
@@ -139,7 +196,7 @@ export default function VisualStyleInspector({
           <ColorField
             label="선 색"
             value={values['border-color']}
-            onChange={(value) => onPatch({ 'border-color': value })}
+            onChange={(value) => applyPatch({ 'border-color': value })}
             testid="design-style-border-color"
           />
         </div>
@@ -169,7 +226,7 @@ export default function VisualStyleInspector({
                     ? 'bg-[var(--primary-strong)] text-white'
                     : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]',
                 )}
-                onClick={() => onPatch(layoutPatch(mode))}
+                onClick={() => applyPatch(layoutPatch(mode))}
                 data-testid={`design-style-layout-${mode}`}
               >
                 {label}
@@ -180,14 +237,14 @@ export default function VisualStyleInspector({
             <LengthField
               label="사이 간격"
               value={values.gap}
-              onChange={(value) => onPatch({ gap: value })}
+              onChange={(value) => applyPatch({ gap: value })}
               testid="design-style-gap"
             />
             <label className="block">
               <span className="r20-field-label">맞춤</span>
               <select
                 value={values['align-items'] ?? ''}
-                onChange={(event) => onPatch({ 'align-items': event.target.value || null })}
+                onChange={(event) => applyPatch({ 'align-items': event.target.value || null })}
                 className="r20-input"
                 data-testid="design-style-align"
               >
@@ -207,14 +264,14 @@ export default function VisualStyleInspector({
           <LengthField
             label="크기"
             value={values['font-size']}
-            onChange={(value) => onPatch({ 'font-size': value })}
+            onChange={(value) => applyPatch({ 'font-size': value })}
             testid="design-style-font-size"
           />
           <label className="block">
             <span className="r20-field-label">굵기</span>
             <select
               value={values['font-weight'] ?? ''}
-              onChange={(event) => onPatch({ 'font-weight': event.target.value || null })}
+              onChange={(event) => applyPatch({ 'font-weight': event.target.value || null })}
               className="r20-input"
               data-testid="design-style-font-weight"
             >
@@ -230,7 +287,7 @@ export default function VisualStyleInspector({
           <span className="r20-field-label">정렬</span>
           <select
             value={values['text-align'] ?? ''}
-            onChange={(event) => onPatch({ 'text-align': event.target.value || null })}
+            onChange={(event) => applyPatch({ 'text-align': event.target.value || null })}
             className="r20-input"
             data-testid="design-style-text-align"
           >
@@ -287,6 +344,18 @@ function PresetPreview({
     return (
       <span className="grid h-[68px] w-full place-items-center overflow-hidden bg-[var(--bg-elevated-2)] px-2" aria-hidden="true">
         <span className="flex h-9 w-full items-center overflow-hidden px-2 text-xs" style={style}>12</span>
+      </span>
+    );
+  }
+  if (family === 'table') {
+    return (
+      <span className="grid h-[68px] w-full place-items-center overflow-hidden bg-[var(--bg-elevated-2)] px-2 py-1.5" aria-hidden="true">
+        <span className="grid h-full w-full grid-cols-2 grid-rows-2 overflow-hidden text-[8px]" style={style}>
+          <span className="grid place-items-center border-b border-r border-current/20">이름</span>
+          <span className="grid place-items-center border-b border-current/20">값</span>
+          <span className="grid place-items-center border-r border-current/20 opacity-70">체력</span>
+          <strong className="grid place-items-center">12</strong>
+        </span>
       </span>
     );
   }

@@ -1403,6 +1403,66 @@ async function main() {
     assert(!/background|border|padding/i.test(result.tests.sectionStylePreset?.inlineStyle ?? ''), 'section preset leaked presentation into inline HTML');
 
     await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.tableId}"]`,
+    ).click();
+    const tablePaperPreset = page.locator('[data-testid="design-preset-table-paper"]');
+    await tablePaperPreset.waitFor({ state: 'visible', timeout: 10000 });
+    await tablePaperPreset.click();
+    await page.waitForTimeout(300);
+    result.tests.tableStylePreset = await frame.evaluate((blockId) => {
+      const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+      if (!(element instanceof HTMLTableElement)) return null;
+      const style = getComputedStyle(element);
+      return {
+        inlineStyle: element.getAttribute('style') ?? '',
+        backgroundColor: style.backgroundColor,
+        color: style.color,
+        borderColor: style.borderColor,
+        borderCollapse: style.borderCollapse,
+        borderRadius: style.borderRadius,
+      };
+    }, ids.tableId);
+    const tablePresetDebug = JSON.stringify(result.tests.tableStylePreset);
+    assert(result.tests.tableStylePreset?.backgroundColor === 'rgb(255, 253, 253)', `table preset fill did not render: ${tablePresetDebug}`);
+    assert(result.tests.tableStylePreset?.color === 'rgb(63, 52, 57)', `table preset text did not render: ${tablePresetDebug}`);
+    assert(result.tests.tableStylePreset?.borderColor === 'rgb(223, 204, 212)', `table preset border did not render: ${tablePresetDebug}`);
+    assert(result.tests.tableStylePreset?.borderCollapse === 'separate', `table preset layout did not render: ${tablePresetDebug}`);
+    assert(result.tests.tableStylePreset?.borderRadius === '6px', `table preset radius did not render: ${tablePresetDebug}`);
+    assert(!result.tests.tableStylePreset?.inlineStyle, 'table preset leaked presentation into inline HTML');
+
+    await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.tableCellAId}"]`,
+    ).click();
+    const tableCellRosePreset = page.locator('[data-testid="design-preset-table-rose"]');
+    await tableCellRosePreset.waitFor({ state: 'visible', timeout: 10000 });
+    await tableCellRosePreset.click();
+    await page.waitForTimeout(300);
+    result.tests.tableCellStylePreset = await frame.evaluate((blockId) => {
+      const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+      if (!(element instanceof HTMLTableCellElement)) return null;
+      const style = getComputedStyle(element);
+      return {
+        inlineStyle: element.getAttribute('style') ?? '',
+        backgroundColor: style.backgroundColor,
+        color: style.color,
+        borderColor: style.borderColor,
+        paddingTop: style.paddingTop,
+        textAlign: style.textAlign,
+      };
+    }, ids.tableCellAId);
+    const tableCellPresetDebug = JSON.stringify(result.tests.tableCellStylePreset);
+    assert(result.tests.tableCellStylePreset?.backgroundColor === 'rgb(255, 242, 246)', `table-cell preset fill did not render: ${tableCellPresetDebug}`);
+    assert(result.tests.tableCellStylePreset?.color === 'rgb(93, 47, 64)', `table-cell preset text did not render: ${tableCellPresetDebug}`);
+    assert(result.tests.tableCellStylePreset?.borderColor === 'rgb(226, 160, 184)', `table-cell preset border did not render: ${tableCellPresetDebug}`);
+    assert(result.tests.tableCellStylePreset?.paddingTop === '8px', `table-cell preset padding did not render: ${tableCellPresetDebug}`);
+    assert(result.tests.tableCellStylePreset?.textAlign === 'center', `table-cell preset alignment did not render: ${tableCellPresetDebug}`);
+    assert(!result.tests.tableCellStylePreset?.inlineStyle, 'table-cell preset leaked presentation into inline HTML');
+    await page.screenshot({
+      path: path.join(REPORT_DIR, 'table-style-gallery.png'),
+      fullPage: false,
+    });
+
+    await page.locator(
       `[data-testid="edit-layer-row"][data-r20-block-id="${ids.rowBInputId}"]`,
     ).click();
     const controlSoftPreset = page.locator('[data-testid="design-preset-control-soft"]');
@@ -1526,6 +1586,42 @@ async function main() {
     assert(result.tests.rollButtonStylePreset.borderRadius === '6px', `Roll button preset radius did not render: ${rollPresetDebug}`);
     assert(result.tests.rollButtonStylePreset.paddingTop === '7px', `Roll button preset padding did not render: ${rollPresetDebug}`);
     assert(!result.tests.rollButtonStylePreset.inlineStyle, 'Roll button preset leaked presentation into inline HTML');
+
+    await page.locator('[data-testid="design-style-state-hover"]').click();
+    const rollHoverMintPreset = page.locator('[data-testid="design-preset-button-mint"]');
+    await rollHoverMintPreset.click();
+    await page.waitForFunction(
+      () => {
+        const css = window.__perfHook.getEmitContent().css;
+        return css.includes(':hover')
+          && css.includes('background-color: #f2fbf7')
+          && css.includes('border-color: #69b99f');
+      },
+      null,
+      { timeout: 10000 },
+    );
+    await rollButton.hover();
+    await page.waitForTimeout(120);
+    result.tests.rollButtonHoverStyle = await rollButton.evaluate((button) => {
+      const style = getComputedStyle(button);
+      return {
+        backgroundColor: style.backgroundColor,
+        color: style.color,
+        borderColor: style.borderColor,
+        borderRadius: style.borderRadius,
+        inlineStyle: button.getAttribute('style') ?? '',
+      };
+    });
+    const rollHoverDebug = JSON.stringify(result.tests.rollButtonHoverStyle);
+    assert(result.tests.rollButtonHoverStyle.backgroundColor === 'rgb(242, 251, 247)', `Roll button hover fill did not render: ${rollHoverDebug}`);
+    assert(result.tests.rollButtonHoverStyle.color === 'rgb(36, 86, 72)', `Roll button hover text did not render: ${rollHoverDebug}`);
+    assert(result.tests.rollButtonHoverStyle.borderColor === 'rgb(105, 185, 159)', `Roll button hover border did not render: ${rollHoverDebug}`);
+    assert(!result.tests.rollButtonHoverStyle.inlineStyle, 'Roll button hover style leaked presentation into inline HTML');
+    await page.screenshot({
+      path: path.join(REPORT_DIR, 'roll-button-hover-state.png'),
+      fullPage: false,
+    });
+    await page.mouse.move(0, 0);
     await page.waitForFunction(
       () => document.querySelector('[data-r20-render-ready]')?.getAttribute('data-r20-render-ready') === '1',
       null,
@@ -1554,6 +1650,26 @@ async function main() {
         paddingTop: '7px',
       }),
       `Roll button style changed between edit and preview: ${JSON.stringify(result.tests.rollButtonPreviewStyle)}`,
+    );
+    await rollButton.hover();
+    await page.waitForTimeout(120);
+    result.tests.rollButtonPreviewHoverStyle = await rollButton.evaluate((button) => {
+      const style = getComputedStyle(button);
+      return {
+        backgroundColor: style.backgroundColor,
+        color: style.color,
+        borderColor: style.borderColor,
+        borderRadius: style.borderRadius,
+      };
+    });
+    assert(
+      JSON.stringify(result.tests.rollButtonPreviewHoverStyle) === JSON.stringify({
+        backgroundColor: 'rgb(242, 251, 247)',
+        color: 'rgb(36, 86, 72)',
+        borderColor: 'rgb(105, 185, 159)',
+        borderRadius: '6px',
+      }),
+      `Roll button hover style changed between edit and preview: ${JSON.stringify(result.tests.rollButtonPreviewHoverStyle)}`,
     );
     await rollButton.click();
     await page.waitForSelector('[data-r20-chat-rolltemplate="1"]', { timeout: 10000 });

@@ -28,6 +28,8 @@ function testCssPrefixesSelectors(): void {
     .sheet-rolltemplate-default { width: 280px; }
     .sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a,
     .sheet-r20-node-a { padding: 7px 14px; }
+    .sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a:hover,
+    .sheet-r20-node-a:hover { background-color: #f2fbf7; }
     .sheet-rolltemplate-proof .sheet-r20-node-b.sheet-r20-node-b.sheet-r20-node-b.sheet-r20-node-b,
     .sheet-rolltemplate-proof .sheet-r20-node-b { background-color: #f8d7e3; }
   `);
@@ -39,6 +41,11 @@ function testCssPrefixesSelectors(): void {
     r.css,
     '.charsheet .sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a,.charsheet .sheet-r20-node-a',
     'keeps managed selector specificity while applying Sandbox scope',
+  );
+  expectContains(
+    r.css,
+    '.charsheet .sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a:hover,.charsheet .sheet-r20-node-a:hover',
+    'keeps managed hover selector while applying Sandbox scope',
   );
   expectContains(
     r.css,

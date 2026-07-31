@@ -109,15 +109,25 @@ already-selected insertion position.
 - Friendly gallery defaults use the same managed CSS path. The gallery now
   includes an anonymous generic Roll button whose preview click produces the
   built-in default Roll20 template card.
-- The direct inspector provides 23 generic one-click starting styles: four
+- The direct inspector provides 35 generic one-click starting styles: four
   section styles, four button styles, three text styles, four input styles,
-  four result-card styles, and four result-row styles. These are authored product presets, not copied sheet
-  designs or bundled community examples.
+  four table-surface styles, four table-row styles, four table-cell styles,
+  four result-card styles, and four result-row styles. These are authored
+  product presets, not copied sheet designs or bundled community examples.
+- Buttons and ordinary input controls expose base, hover, active, and focus
+  appearance states. State rules use the same stable managed class with CSS
+  pseudo-classes. If a touched property came from an imported inline style,
+  its base value moves to managed CSS before the state rule is added, so the
+  normal appearance does not disappear and no `!important` is required.
+- Table roots, row groups/rows, and cells receive separate preset groups. The
+  editor styles the selected semantic table node directly and does not wrap it
+  in a layout-changing helper element.
 - Managed rules repeat the stable node class to outrank Roll20's baseline
   control selectors without `!important`. The editor selection overlay uses an
   outline only and must not change the selected element's corner radius.
-- This closes basic section/button/text styling and Roll-button creation
-  locally. It does not claim a complete design system for every custom sheet.
+- This closes basic section/button/text/input/table styling, interactive
+  control states, and Roll-button creation locally. It does not claim a
+  complete design system for every custom sheet.
 
 ## Rolltemplate Visual Surface
 

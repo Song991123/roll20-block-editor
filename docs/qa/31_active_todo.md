@@ -11187,3 +11187,26 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: enable local-file access for the Codex Chrome extension, then
   apply the ignored anonymous current payload and capture root plus chat paint.
   Keep the dedicated legacy-room run as an independent later gate.
+
+## 2026-08-01 Interactive States And Table Styling
+
+- `DONE LOCAL`: buttons and ordinary input controls now expose four separate
+  appearance states: base, hover, active, and focus. State declarations are
+  emitted as managed pseudo-class CSS, not inline HTML or `!important` rules.
+- `FIXED LOCAL`: when a state edit touches an imported inline property, the
+  original base value is first preserved in managed CSS. Hover styling can
+  therefore override the old inline declaration without changing the normal
+  appearance.
+- `DONE LOCAL`: added 12 generic table presets: four whole-table surfaces,
+  four row treatments, and four cell treatments. Total authored starting
+  styles are now 35. Semantic table elements remain unchanged.
+- `VERIFIED LOCAL`: focused style tests, modern sanitizer `8/8`, legacy
+  sanitizer `18/18`, lint, production build, full `ci:verify`, and two
+  consecutive edit-flow browser runs pass. Browser proof covers table and cell
+  paint plus a rose base Roll button changing to mint on hover in both Edit and
+  Preview with no inline presentation leakage.
+- `VERIFIED LOCAL`: modern and legacy synthetic Preview/Edit comparison remains
+  exact at `0%` mismatch for all four captures.
+- `VERIFY / OPEN EXTERNAL`: actual modern Sandbox paint for this current
+  payload remains blocked before transmission by Chrome local-file access.
+  Dedicated legacy-room state paint is also an independent open gate.
