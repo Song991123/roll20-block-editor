@@ -1,6 +1,6 @@
 # 43. Agent Context Pack
 
-Date: 2026-07-18
+Date: 2026-08-01
 
 This is the short reading path for agents. It prevents every task from loading
 the entire history and generated evidence tree.
@@ -11,8 +11,13 @@ the entire history and generated evidence tree.
   editing.
 - Local preview/edit share one persistent iframe. Modern and legacy browser
   smoke currently pass, including delayed stale-revision rejection.
+- Actual Roll20's built-in default chat-template DOM and typography were
+  measured in the dedicated one-member modern Sandbox. The local fallback now
+  matches its caption/row/inline-roll structure and passes browser smoke.
 - Actual same-payload Roll20 evidence remains `0/4`. Modern Sandbox upload and
-  separate legacy-enabled test-room proof are still open.
+  separate legacy-enabled test-room proof are still open. The visible upload
+  route is blocked before transmission until Chrome extension file-URL access
+  is enabled; do not use hidden-input or endpoint workarounds.
 - Generated `.next/`, `out/`, `.tmp/`, and report outputs are disposable. Real
   or derived sheets and screenshots stay local, ignored, and uncommitted.
 

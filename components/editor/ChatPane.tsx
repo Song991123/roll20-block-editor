@@ -185,6 +185,20 @@ function parseTranslations(raw: string): Record<string, string> {
 }
 
 const roll20ChatShellCss = `
+@font-face {
+  font-family: "Proxima Nova";
+  src: url("https://use.typekit.net/af/efe4a5/00000000000000007735e609/30/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3") format("woff2");
+  font-display: auto;
+  font-style: normal;
+  font-weight: 400;
+}
+@font-face {
+  font-family: "Proxima Nova";
+  src: url("https://use.typekit.net/af/2555e1/00000000000000007735e603/30/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n7&v=3") format("woff2");
+  font-display: auto;
+  font-style: normal;
+  font-weight: 700;
+}
 .r20-chat-pane,
 .r20-chat-pane .textchatcontainer {
   /* Match the Roll20 chat shell's measured default typography. */
@@ -192,6 +206,8 @@ const roll20ChatShellCss = `
   font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
   font-size: 13px;
   line-height: 18.5714px;
+  letter-spacing: normal;
+  -webkit-font-smoothing: auto;
 }
 .r20-chat-pane .textchatcontainer {
   font-synthesis: style;
@@ -344,9 +360,6 @@ const roll20ChatShellCss = `
   padding-right: 16px;
   padding-bottom: 7px;
   background: #f1f1f1;
-  color: #333;
-  font-size: 13px;
-  line-height: 18.5714px;
 }
 .r20-chat-pane .textchatcontainer.withoutavatars .message {
   padding-left: 15px;
@@ -417,6 +430,7 @@ const roll20ChatShellCss = `
   font-weight: 300;
   font-size: 1.1em;
   padding: 5px;
+  text-align: left;
 }
 .r20-chat-pane .sheet-rolltemplate-default td {
   padding: 5px;
@@ -530,11 +544,7 @@ function CardRolltemplate({
     : defaultRolltemplateBody(result);
   const rolltemplateClassName = customBody
     ? safeRolltemplateClass(result.templateName)
-    : [
-        'rt-card text-xs',
-        safeRolltemplateClass(result.templateName),
-        'rounded border border-[#c8c8c8] bg-white p-2 text-[#222]',
-      ].join(' ');
+    : 'sheet-rolltemplate-default';
 
   return (
     <div>
@@ -691,24 +701,26 @@ export default function ChatPane() {
           className="textchatcontainer flex flex-col"
           data-testid="chat-list"
         >
-          {rolls.length === 0 ? (
-            <div className="px-4 py-10 text-center text-sm leading-relaxed text-muted-foreground">
-              아직 굴린 기록이 없어요.
-              <br />
-              미리보기 화면에서 시트의 굴림 버튼을 누르면
-              <br />
-              결과 말풍선이 여기에 차곡차곡 쌓여요.
-            </div>
-          ) : (
-            rolls.map((card) => (
-              <RollCard
-                key={card.id}
-                card={card}
-                emittedHtml={emittedHtml}
-                translations={translations}
-              />
-            ))
-          )}
+          <div className="content">
+            {rolls.length === 0 ? (
+              <div className="px-4 py-10 text-center text-sm leading-relaxed text-muted-foreground">
+                아직 굴린 기록이 없어요.
+                <br />
+                미리보기 화면에서 시트의 굴림 버튼을 누르면
+                <br />
+                결과 말풍선이 여기에 차곡차곡 쌓여요.
+              </div>
+            ) : (
+              rolls.map((card) => (
+                <RollCard
+                  key={card.id}
+                  card={card}
+                  emittedHtml={emittedHtml}
+                  translations={translations}
+                />
+              ))
+            )}
+          </div>
         </div>
       </ScrollArea>
     </div>

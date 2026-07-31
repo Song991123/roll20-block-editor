@@ -1,3 +1,29 @@
+# 2026-08-01 Actual default-rolltemplate parity fix
+
+- `VERIFIED EXTERNAL`: the dedicated modern Sandbox showed a fresh visible
+  exactly-one-member state. A roll from the existing anonymous sheet produced
+  a real Roll20 default-template chat card. Its DOM uses `name` as a table
+  caption, excludes `name` from body rows, emits remaining labels in `td`
+  cells, and wraps dice totals in `.inlinerollresult`.
+- `DONE LOCAL`: the fallback chat renderer now follows that measured DOM,
+  removes the app-only fallback border/padding, restores Roll20's `.content`
+  inheritance, left-aligns the caption, and loads the same two Proxima Nova
+  weights already referenced by the Roll20 baseline.
+- `VERIFIED LOCAL`: focused unit test, roll-button browser smoke, lint,
+  production build, and full `ci:verify` pass. The post-fix card measures
+  `268 x 59.172` locally versus `267.8 x 58.575` in Roll20. This raw residual
+  includes different capture scales (`devicePixelRatio 1.0` local versus
+  `1.25` Roll20) and is not promoted to an exact pixel-parity claim.
+- `DIAGNOSTIC ONLY`: local Preview/Edit are byte-identical for the anonymous
+  synthetic payload. The existing Sandbox root comparison measured `1.3095%`
+  RGB mismatch above threshold 60, but the Sandbox source was not freshly
+  uploaded in this run, so it is not accepted as generated same-payload proof.
+- `BLOCKED EXTERNAL`: the supported visible HTML chooser still returns `Not
+  allowed` before transmission. Fresh HTML/CSS/translation upload, generated
+  root proof, and legacy-room proof remain open. Enable Chrome extension file
+  URL access, then rerun modern upload; do not use hidden-input or endpoint
+  workarounds.
+
 # 2026-08-01 Four-zone harness and context budget refresh
 
 - `DONE LOCAL`: confirmed the parent workspace already has the four ownership

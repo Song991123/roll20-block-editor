@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {
+  defaultRolltemplateBody,
   extractRolltemplateBody,
   renderTemplateBody,
 } from '../rolltemplateRender';
@@ -60,5 +61,36 @@ const hiddenCritical = renderTemplateBody(
   { anyCrit: false, anyFumble: false },
 );
 assert.doesNotMatch(hiddenCritical, /Critical/);
+
+const defaultBody = defaultRolltemplateBody({
+  kind: 'rolltemplate',
+  templateName: 'default',
+  fields: [
+    { key: 'name', raw: 'Sandbox proof', detail: null, text: 'Sandbox proof' },
+    {
+      key: 'result',
+      raw: '[[1d20]]',
+      detail: {
+        kind: 'expr',
+        expression: '1d20',
+        dice: [{ count: 1, sides: 20, raw: [12], kept: [12] }],
+        total: 12,
+        isCrit: false,
+        isFumble: false,
+        resolvedAttrs: {},
+        queries: [],
+      },
+      text: '12',
+    },
+  ],
+  anyCrit: false,
+  anyFumble: false,
+});
+
+assert.match(defaultBody, /^<table><caption>Sandbox proof<\/caption>/);
+assert.match(defaultBody, /<tr><td>Result<\/td><td>/);
+assert.match(defaultBody, /class="inlinerollresult showtip tipsy-n-right"/);
+assert.match(defaultBody, />12<\/span>/);
+assert.doesNotMatch(defaultBody, /<th>|\[12\]|<td>name<\/td>/i);
 
 console.log('rolltemplate render test PASS');

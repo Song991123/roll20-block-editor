@@ -1,3 +1,22 @@
+# 2026-08-01 - Actual default-rolltemplate parity fix
+
+- Rechecked the dedicated modern Sandbox with exactly one visible member and
+  captured an actual anonymous default-template roll result.
+- Measured the real Roll20 DOM and computed styles, then corrected the local
+  fallback renderer: caption/header semantics, row cells, inline-roll markup,
+  chat `.content` wrapper, inherited typography, caption alignment, and
+  Proxima Nova 400/700 font loading now follow the observed runtime.
+- Local roll-button smoke now produces the same visible card structure. Raw
+  geometry is `268 x 59.172` local and `267.8 x 58.575` actual; local and
+  actual captures used DPR `1.0` and `1.25`, so the residual remains a
+  normalization item rather than an exact-pixel claim.
+- `test:rolltemplate-render`, browser chat smoke, lint, build, and full
+  `ci:verify` pass. No project/CDP listener remains after the run.
+- Fresh supported Sandbox file upload remains blocked before transmission by
+  `fileChooser.setFiles: Not allowed`. Existing anonymous-root evidence is
+  diagnostic only; modern generated same-payload and legacy-room parity remain
+  open.
+
 # 2026-08-01 - Four-zone harness and context budget refresh
 
 - Confirmed the existing four-zone parent harness without moving the

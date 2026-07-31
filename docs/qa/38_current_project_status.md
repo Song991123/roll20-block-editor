@@ -22,6 +22,21 @@ local output and is deleted after the verification batch.
   generic wrapper/runtime behavior only; they do not override this current
   payload gate or prove visual parity.
 
+## Current Gate Override - 2026-08-01
+
+- `VERIFIED EXTERNAL`: a fresh exactly-one-member gate preceded an anonymous
+  default-template roll in the dedicated modern Sandbox. Actual DOM and
+  computed styles establish the built-in chat card contract.
+- `VERIFIED LOCAL`: the fallback renderer now matches that contract and passes
+  focused unit/browser tests, lint, build, and full `ci:verify`.
+- `CURRENT`: this narrow runtime result does not change the generated
+  same-payload gate. Fresh root/chat captures remain `0/4`,
+  `rendererReady=NO`, because the current HTML/CSS/translation files were not
+  uploaded in this run.
+- `BLOCKED EXTERNAL`: the supported visible file chooser returned `Not
+  allowed` before transmission. Modern generated-sheet and separate legacy
+  room parity remain open.
+
 ## Local Payload Fidelity Gate - 2026-07-31
 
 - DONE LOCAL: Added a content-addressed gate for editor emit -> payload files

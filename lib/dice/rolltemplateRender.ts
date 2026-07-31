@@ -209,20 +209,45 @@ function evalRolltemplateSection(
   }
 }
 
-/**
- * 기본 카드 body — 사용자가 rolltemplate 정의를 안 두었거나 매치 못 한 경우.
- * 모든 fields 를 key=value 표로.
- */
+function defaultFieldLabel(key: string): string {
+  const trimmed = key.trim();
+  if (!trimmed) return '';
+  return `${trimmed.charAt(0).toUpperCase()}${trimmed.slice(1)}`;
+}
+
+function defaultFieldValue(field: RolltemplateFieldResult): string {
+  if (!field.detail) return escapeHtml(field.text);
+
+  const classes = [
+    'inlinerollresult',
+    'showtip',
+    'tipsy-n-right',
+    field.detail.isCrit ? 'fullcrit' : '',
+    field.detail.isFumble ? 'fullfail' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const rolls = field.detail.dice.map((die) => die.raw.join(',')).join(' / ');
+  const tooltip = rolls
+    ? `Rolling ${field.detail.expression} = (${rolls})`
+    : `Rolling ${field.detail.expression}`;
+
+  return `<span class="${classes}" title="${escapeHtml(tooltip)}">${escapeHtml(
+    String(field.detail.total),
+  )}</span>`;
+}
+
+/** Roll20 built-in default template fallback. */
 export function defaultRolltemplateBody(result: RolltemplateResult): string {
+  const caption = result.fields.find((field) => field.key.trim().toLowerCase() === 'name');
   const rows = result.fields
-    .map((f) => {
-      const right = f.detail
-        ? `<strong>${escapeHtml(String(f.detail.total))}</strong> <span class="muted">[${escapeHtml(
-            f.detail.dice.map((d) => d.raw.join(',')).join(' / '),
-          )}]</span>`
-        : escapeHtml(f.text);
-      return `<tr><th>${escapeHtml(f.key)}</th><td>${right}</td></tr>`;
-    })
+    .filter((field) => field.key.trim().toLowerCase() !== 'name')
+    .map(
+      (field) =>
+        `<tr><td>${escapeHtml(defaultFieldLabel(field.key))}</td><td>${defaultFieldValue(
+          field,
+        )}</td></tr>`,
+    )
     .join('');
-  return `<table class="rt-default"><tbody>${rows}</tbody></table>`;
+  return `<table><caption>${escapeHtml(caption?.text ?? '')}</caption><tbody>${rows}</tbody></table>`;
 }
