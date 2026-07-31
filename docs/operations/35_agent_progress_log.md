@@ -1,3 +1,14 @@
+# 2026-07-31 - Roll20 pre-upload payload refresh
+
+- `VERIFIED LOCAL`: the fresh anonymous modern payload passed local baseline,
+  payload hygiene, sandbox sanitization, cleaned-payload roundtrip,
+  default-state selector, asset/resource, and evidence-guard checks.
+- `BLOCKED EXTERNAL`: the supported browser connection timed out while
+  claiming the dedicated Sandbox tab, before any file chooser or transmission.
+  No ordinary room was opened or changed.
+- `NEXT P0`: recover the supported browser handoff, recheck exactly one visible
+  participant, and upload only the anonymous payload in the dedicated Sandbox.
+
 # 2026-07-31 - Local edit surface recheck
 
 - `VERIFIED LOCAL`: the canonical edit-flow browser smoke passed. It covered

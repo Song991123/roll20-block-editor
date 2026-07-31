@@ -1,5 +1,16 @@
 # 34. Requirements Gap Matrix
 
+## Roll20 Pre-upload Payload Refresh - 2026-07-31
+
+- `DONE LOCAL`: a fresh anonymous modern payload passed all seven pre-upload
+  gates: baseline generation, payload audit, sandbox sanitize audit,
+  cleaned-payload roundtrip, state selectors, assets, and evidence guard.
+- `BLOCKED EXTERNAL`: supported Chrome control timed out while claiming the
+  dedicated Sandbox tab. No file was transmitted and no ordinary room was
+  changed.
+- `OPEN P0`: complete the same-payload Sandbox upload and capture actual
+  Roll20 render/chat evidence before claiming L4 parity.
+
 ## Modern Sandbox Supported Upload Reconnect - 2026-07-31
 
 - `DONE OBSERVATION`: the dedicated Sandbox surface and exactly-one
