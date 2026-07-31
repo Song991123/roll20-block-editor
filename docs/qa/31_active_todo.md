@@ -1,3 +1,14 @@
+## 2026-07-31 Roll20 browser handoff retry
+
+- `VERIFY / BLOCKED EXTERNAL`: the current Chrome tab listing still exposed
+  the dedicated modern and legacy verification tabs, but claiming either tab
+  timed out before a fresh DOM/capture could be collected.
+- `PRESERVED`: no upload, save, chat send, setting change, or ordinary-room
+  interaction occurred; the browser connection was released safely.
+- `TODO P0`: restore responsive tab handoff and the documented file-selection
+  permission, then capture current-payload root and chat evidence separately
+  for modern Sandbox and legacy test destination.
+
 ## 2026-07-31 Export evidence stability
 
 - `DONE LOCAL`: export-dialog browser smoke waits for an open, fully opaque

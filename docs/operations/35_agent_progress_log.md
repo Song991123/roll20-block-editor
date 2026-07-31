@@ -1,3 +1,14 @@
+## 2026-07-31 - Roll20 browser handoff retry
+
+- OBSERVED: the current Chrome listing contained the dedicated modern and
+  legacy verification tabs, but tab claiming timed out before fresh DOM or
+  screenshot evidence was available.
+- SAFETY: no upload, save, chat send, settings change, or ordinary-room
+  interaction occurred; the browser connection was released without keeping
+  control of any tab.
+- NEXT: restore responsive tab handoff and file-selection permission before
+  attempting the current-payload modern/legacy capture gate again.
+
 ## 2026-07-31 - Current gate reconciliation and screenshot stability
 
 - IMPLEMENTED: export-dialog browser smoke now waits for the dialog to be
