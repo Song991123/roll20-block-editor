@@ -283,6 +283,27 @@ async function main() {
     );
     assert(result.tests.layerGrouping.emittedNested, 'layer grouping did not update emitted HTML');
 
+    const canvasFirst = frame.locator(`[data-r20-block-id="${ids.groupOneId}"]`);
+    const canvasSecond = frame.locator(`[data-r20-block-id="${ids.groupTwoId}"]`);
+    assert(
+      await canvasFirst.count() === 1 && await canvasSecond.count() === 1,
+      'canvas multi-selection targets are missing',
+    );
+    await canvasFirst.click();
+    await canvasSecond.click({ modifiers: ['Control'] });
+    await page.waitForTimeout(120);
+    result.tests.canvasMultiSelection = await frame.evaluate(({ firstId, secondId }) => ({
+      selectedIds: [...document.querySelectorAll('[data-r20-selected="1"]')]
+        .map((node) => node.getAttribute('data-r20-block-id'))
+        .filter(Boolean),
+      firstVisible: Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(firstId)}"][data-r20-selected="1"]`)),
+      secondVisible: Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(secondId)}"][data-r20-selected="1"]`)),
+    }), { firstId: ids.groupOneId, secondId: ids.groupTwoId });
+    assert(
+      result.tests.canvasMultiSelection.firstVisible && result.tests.canvasMultiSelection.secondVisible,
+      `canvas multi-selection is not visible: ${JSON.stringify(result.tests.canvasMultiSelection)}`,
+    );
+
     // This is the user-facing path: move a real rendered node over another
     // rendered node, let the iframe show the optimistic order immediately,
     // then confirm the emitted/live-patched order stays authoritative.

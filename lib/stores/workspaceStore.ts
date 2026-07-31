@@ -310,7 +310,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
         ? current.filter((selectedId) => selectedId !== id)
         : [...current, id];
       return {
-        selectedBlockId: next[0] ?? null,
+        selectedBlockId: current.includes(id) ? (next[0] ?? null) : id,
         selectedBlockIds: next,
         selectionOrigin: origin,
       };

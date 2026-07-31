@@ -9,6 +9,13 @@ export type IframeEditRect = {
   height: number;
 };
 
+export type IframeEditModifiers = {
+  altKey: boolean;
+  ctrlKey: boolean;
+  metaKey: boolean;
+  shiftKey: boolean;
+};
+
 export type IframeEditNodeGeometry = {
   blockId: string;
   rect: IframeEditRect;
@@ -40,6 +47,7 @@ export type IframeEditHitMessage = {
   pointerId: number;
   button: number;
   buttons: number;
+  modifiers?: IframeEditModifiers;
   subject: IframeEditNodeGeometry;
   hitPath: IframeEditNodeGeometry[];
 };
@@ -150,6 +158,14 @@ function isNodeGeometry(value: unknown): value is IframeEditNodeGeometry {
       || (typeof value.offsetParentBlockId === 'string' && value.offsetParentBlockId.length <= 256))
     && typeof value.offsetParentPosition === 'string'
     && value.offsetParentPosition.length <= 64;
+}
+
+function isModifiers(value: unknown): value is IframeEditModifiers {
+  if (!isRecord(value)) return false;
+  return typeof value.altKey === 'boolean'
+    && typeof value.ctrlKey === 'boolean'
+    && typeof value.metaKey === 'boolean'
+    && typeof value.shiftKey === 'boolean';
 }
 
 export function parseIframeEditBridgeMessage(value: unknown): IframeEditBridgeMessage | null {
@@ -297,11 +313,12 @@ export function parseIframeEditBridgeMessage(value: unknown): IframeEditBridgeMe
   if (!Number.isInteger(value.pointerId) || !isFiniteCoordinate(value.pointerId)) return null;
   if (!Number.isInteger(value.button) || !isFiniteCoordinate(value.button)) return null;
   if (!Number.isInteger(value.buttons) || !isFiniteCoordinate(value.buttons)) return null;
+  if (value.modifiers !== undefined && !isModifiers(value.modifiers)) return null;
   if (!isNodeGeometry(value.subject) || value.subject.blockId !== value.blockId) return null;
   if (!Array.isArray(value.hitPath) || value.hitPath.length > 64 || !value.hitPath.every(isNodeGeometry)) {
     return null;
   }
-  return {
+  const parsed: IframeEditHitMessage = {
     type: 'r20:edit-hit',
     protocol: R20_IFRAME_EDIT_PROTOCOL,
     bridgeId: value.bridgeId,
@@ -315,6 +332,8 @@ export function parseIframeEditBridgeMessage(value: unknown): IframeEditBridgeMe
     subject: value.subject,
     hitPath: value.hitPath,
   };
+  if (value.modifiers !== undefined) parsed.modifiers = value.modifiers;
+  return parsed;
 }
 
 export function isTrustedIframeMessage(

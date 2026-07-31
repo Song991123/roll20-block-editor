@@ -221,6 +221,12 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
         pointerId: Number.isInteger(pointer.pointerId) ? pointer.pointerId : -1,
         button: Number.isInteger(pointer.button) ? pointer.button : -1,
         buttons: Number.isInteger(pointer.buttons) ? pointer.buttons : 0,
+        modifiers: {
+          altKey: pointer.altKey === true,
+          ctrlKey: pointer.ctrlKey === true,
+          metaKey: pointer.metaKey === true,
+          shiftKey: pointer.shiftKey === true,
+        },
         subject: subject,
         hitPath: hitPathOf(hitNode)
       }, '*');
@@ -1299,7 +1305,11 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       y: e.clientY,
       pointerId: e.pointerId,
       button: e.button,
-      buttons: e.buttons
+      buttons: e.buttons,
+      altKey: e.altKey,
+      ctrlKey: e.ctrlKey,
+      metaKey: e.metaKey,
+      shiftKey: e.shiftKey,
     });
     try { e.preventDefault(); } catch (_) {}
     try { e.stopImmediatePropagation(); } catch (_) {}
@@ -1317,7 +1327,11 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       y: e.clientY,
       pointerId: e.pointerId,
       button: e.button,
-      buttons: e.buttons
+      buttons: e.buttons,
+      altKey: e.altKey,
+      ctrlKey: e.ctrlKey,
+      metaKey: e.metaKey,
+      shiftKey: e.shiftKey,
     });
     if (
       flowTarget

@@ -700,7 +700,18 @@ export default function PreviewMain() {
           iframeEditDropTargetRef.current = null;
           iframeEditDragOriginRef.current = editMessage;
           setIframeEditDragOrigin(editMessage);
-          setSelected(editMessage.blockId, 'preview');
+          const store = useWorkspaceStore.getState();
+          const additiveSelection = Boolean(
+            editMessage.modifiers?.ctrlKey || editMessage.modifiers?.metaKey,
+          );
+          if (additiveSelection) {
+            store.setSelectedBlockIds([
+              editMessage.blockId,
+              ...store.selectedBlockIds.filter((id) => id !== editMessage.blockId),
+            ], 'preview');
+          } else {
+            setSelected(editMessage.blockId, 'preview');
+          }
         } else if (editMessage.phase === 'pointercancel') {
           iframeEditDropTargetRef.current = null;
           iframeEditDragOriginRef.current = null;

@@ -1,3 +1,18 @@
+# 2026-07-31 Canvas modifier multi-selection
+
+- DONE LOCAL: iframe pointer hits now carry modifier state. Ctrl/Cmd-clicking
+  rendered layers keeps an ordered multi-selection in the workspace store and
+  highlights all selected objects on the canonical iframe surface; a plain
+  click still resets selection to one object.
+- VERIFIED LOCAL: bridge parser rejects malformed modifiers, build-doc tests
+  pass, and `smoke:edit-flow` proves layer-panel selection, canvas Ctrl
+  selection, grouping, flow drag, and emitted HTML together with zero console
+  or page errors. Build and lint pass.
+- CLAIM BOUNDARY: canvas selection is local synthetic evidence; multi-object
+  transform, arbitrary-sheet semantics, and actual Roll20 parity remain open.
+- TODO P0: resume current-payload modern Sandbox capture after Chrome file-URL
+  permission is enabled; keep legacy verification in its separate destination.
+
 # 2026-07-31 Current Roll20 Sandbox chooser retry
 
 - `VERIFY / BLOCKED EXTERNAL`: the dedicated Custom Sheet Sandbox was

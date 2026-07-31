@@ -30,6 +30,7 @@ const hit = {
   pointerId: 7,
   button: 0,
   buttons: 1,
+  modifiers: { altKey: false, ctrlKey: true, metaKey: false, shiftKey: false },
   subject,
   hitPath: [subject, {
     blockId: 'frame-1',
@@ -117,6 +118,7 @@ assert.equal(parseIframeEditBridgeMessage({
   type: 'r20:edit-applied', protocol: 1, bridgeId, revision: 0, blockCount: 1,
 }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...hit, pointerId: 1.5 }), null);
+assert.equal(parseIframeEditBridgeMessage({ ...hit, modifiers: { ctrlKey: 'yes' } }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...hit, hitPath: new Array(65).fill(subject) }), null);
 assert.equal(parseIframeEditBridgeMessage({
   ...hit,

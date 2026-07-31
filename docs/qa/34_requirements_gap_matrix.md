@@ -1,5 +1,16 @@
 # 34. Requirements Gap Matrix
 
+## Canvas Modifier Multi-Selection - 2026-07-31
+
+| Area | Current evidence | Status | Boundary |
+| --- | --- | --- | --- |
+| Modifier transport | iframe edit-hit validates optional Alt/Ctrl/Meta/Shift flags | DONE LOCAL | No external renderer evidence |
+| Canvas selection | Plain click resets to one; Ctrl/Cmd-click adds the rendered layer to the workspace selection list | DONE LOCAL | Synthetic browser smoke only |
+| Shared visual state | The same selection list highlights both canvas objects and layer rows before grouping | DONE LOCAL | Multi-object transform remains open |
+
+This selection state remains transient and does not alter exported HTML/CSS
+until a structural edit is explicitly committed.
+
 ## Current Roll20 Sandbox Chooser Retry - 2026-07-31
 
 | Area | Current evidence | Status | Boundary |

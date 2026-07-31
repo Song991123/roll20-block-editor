@@ -1,3 +1,17 @@
+# 2026-07-31 - Canvas modifier multi-selection
+
+- Extended the iframe edit-hit contract with optional validated modifier
+  flags. The generated bridge preserves Ctrl/Cmd state on pointer hits while
+  leaving older messages valid.
+- A plain canvas click selects one layer; a Ctrl/Cmd canvas click promotes the
+  clicked layer into the ordered selection list and keeps the primary layer
+  first for inspector/geometry behavior. The persistent iframe receives the
+  same list as the layer panel.
+- The browser smoke now proves layer-panel selection, canvas modifier
+  selection, iframe highlights, grouping, flow reorder, emitted HTML, and
+  zero console/page errors. Bridge tests, build, and lint pass.
+- This does not claim multi-object transform or actual Roll20 parity.
+
 # 2026-07-31 - Current Roll20 Sandbox chooser retry
 
 - Reconnected the dedicated Custom Sheet Sandbox and confirmed the visible

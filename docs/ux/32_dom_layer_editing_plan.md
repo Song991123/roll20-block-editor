@@ -62,6 +62,10 @@ invent separate DOM models.
     selection is sent as a list to that iframe, so every selected object is
     highlighted on the same rendered sheet while the primary selection alone
     drives measurement and inspector focus.
+11. A plain click on the rendered sheet selects one layer. Ctrl/Cmd-click adds
+    the clicked layer to the transient selection list and makes it primary;
+    the list is shared with the layer panel before any grouping or structural
+    operation.
 
 ## Visual Language
 
