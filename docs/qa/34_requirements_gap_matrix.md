@@ -1,5 +1,18 @@
 # 34. Requirements Gap Matrix
 
+# Local shared-surface and performance recheck - 2026-07-31
+
+- `DONE LOCAL`: server hygiene found no project listener or CDP listener;
+  modern/legacy persistent preview surface passed with zero iframe reloads,
+  edit-flow passed, and strict imported edit sync passed for all three
+  anonymous synthetic families.
+- `MEASURED LOCAL`: the 5,200-item synthetic workspace reached `5,205` blocks,
+  `100%` match, `284.7ms` total import, zero warnings, and zero console/page
+  errors. One persistent iframe remained the edit owner and nested reparenting
+  emitted the expected nested structure.
+- `CLAIM BOUNDARY`: local synthetic performance and synchronization do not
+  promote actual modern/legacy Roll20 visual parity.
+
 # Roll20 participant preflight retry - 2026-07-31
 
 - `VERIFIED EXTERNAL READ-ONLY`: both retained verification tabs were checked

@@ -1,5 +1,17 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Local shared-surface and performance recheck
+
+- `VERIFIED LOCAL`: server hygiene found no project dev/smoke listener or CDP
+  listener. Persistent preview/edit surface passed both modern and legacy
+  modes with `loads=0`; edit-flow and strict imported edit sync also passed.
+- `VERIFIED LOCAL`: the synthetic 5,200-item workspace imported with
+  `matchPct=100`, `blockCount=5,205`, `total=284.7ms`, zero warnings, and zero
+  console/page errors. The edit owner remained one persistent iframe; nested
+  reparenting emitted the expected nested HTML.
+- `CLAIM BOUNDARY`: these are local synthetic and interaction contracts only;
+  they do not prove arbitrary-sheet or actual Roll20 screenshot parity.
+
 # 2026-07-31 Roll20 participant preflight retry
 
 - `VERIFIED EXTERNAL READ-ONLY`: the two retained Roll20 verification tabs

@@ -10658,6 +10658,16 @@ same-hash modern/legacy comparison.
   partial, not full parity. Full-height root stitching, normalized diff, and
   independent fixture-A smoke are still required.
 
+# 2026-07-31 - Local shared-surface and performance recheck
+
+- `SERVER`: hygiene check found no project dev/smoke or CDP listener.
+- `VERIFIED LOCAL`: modern/legacy persistent preview passed with zero reloads;
+  edit-flow and strict imported edit synchronization passed. The 5,200-item
+  synthetic workspace reached `5,205` blocks in `284.7ms` total with `100%`
+  match, zero warnings, and zero console/page errors.
+- `BOUNDARY`: this confirms local interaction/performance contracts only; it
+  does not substitute for actual Roll20 Sandbox or legacy-room captures.
+
 # 2026-07-31 - Roll20 participant preflight retry
 
 - `READ-ONLY`: inspected both retained verification tabs and did not navigate,
