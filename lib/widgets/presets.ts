@@ -257,7 +257,7 @@ export function appendFriendlyWidgetPreset(
       containingBlockId,
       containingBlockNeedsRelative: Boolean(containingBlockId) && !hasPositionDeclaration(parentStyle),
     });
-    if (committed.cssBlockCreated) {
+    if (committed.reason === 'managed-css') {
       state.bumpStructure('css', adapter.countBlocks('css'));
     }
   }

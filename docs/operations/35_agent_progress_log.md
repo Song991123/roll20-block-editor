@@ -10376,3 +10376,18 @@ same-hash modern/legacy comparison.
   also pass with zero browser errors.
 - CLAIM BOUNDARY: this is a local UI/render-surface result. Actual Roll20
   screenshot parity remains unproven and stays at the current external gate.
+
+## 2026-07-31 - Emit cache correctness and edit-commit latency
+
+- FIXED LOCAL: the live emit pipeline now reuses unchanged CSS, i18n, page-JS,
+  and worker workspace results while composing the same final Roll20 output
+  contract. HTML is still re-emitted when its structure version changes.
+- FIXED REGRESSION: free-placement and layer/group placement now invalidate
+  the CSS workspace version whenever managed CSS content changes, even when
+  the existing managed CSS block is updated instead of newly created. This
+  keeps parent-relative and subject-absolute rules visible after a cached
+  edit commit.
+- VERIFIED LOCAL: a fresh static build passes modern and legacy persistent
+  preview smoke, including flow/free placement, parent-relative CSS,
+  zero iframe reloads, imported edit-sync strict smoke, and the emit contract
+  test. No verification claim is extended to actual Roll20 parity.

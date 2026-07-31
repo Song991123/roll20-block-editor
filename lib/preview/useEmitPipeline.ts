@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * useEmitPipeline — workspace XML 변경 → 500ms 디바운스 후 emitAll →
+ * useEmitPipeline — workspace XML 변경 → 120ms 디바운스 후 emitAll →
  * workspaceStore.emitCache + emitWarnings 갱신.
  *
  * Anchor:
@@ -22,18 +22,50 @@
 
 import { useEffect } from 'react';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
-import { useWorkspaceStore, WORKSPACE_KEYS } from '@/lib/stores/workspaceStore';
+import { useWorkspaceStore, WORKSPACE_KEYS, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { markEditorTiming } from '@/lib/perf/editorTiming';
-import { emitAll } from './emit';
+import { composeEmittedWorkspaces, emitWorkspace, type EmitResult } from './emit';
 
 let flushVersion = 0;
 let immediateFlushSignature: string | null = null;
+
+type CachedWorkspaceEmit = {
+  workspace: unknown;
+  signature: string;
+  result: EmitResult;
+};
+
+// A pointer move usually changes only HTML. Re-emitting five large Blockly
+// workspaces for every committed drag made imported sheets pay an avoidable
+// cost, especially when CSS/i18n/worker trees were large but unchanged.
+const emittedWorkspaceCache = new Map<WorkspaceKey, CachedWorkspaceEmit>();
 
 function workspaceSignature(state: ReturnType<typeof useWorkspaceStore.getState>): string {
   return WORKSPACE_KEYS.map((key) => {
     const workspace = state.workspaces[key];
     return `${key}:${workspace.structureVersion}:${workspace.blockCount}`;
   }).join('|');
+}
+
+function emitCachedWorkspaces(
+  adapter: ReturnType<typeof getBlocklyAdapter>,
+  state: ReturnType<typeof useWorkspaceStore.getState>,
+) {
+  const results: Partial<Record<WorkspaceKey, EmitResult>> = {};
+  for (const key of WORKSPACE_KEYS) {
+    const workspace = adapter.getWorkspace(key);
+    const meta = state.workspaces[key];
+    const signature = `${meta.structureVersion}:${meta.blockCount}`;
+    const cached = emittedWorkspaceCache.get(key);
+    if (cached && cached.workspace === workspace && cached.signature === signature) {
+      results[key] = cached.result;
+      continue;
+    }
+    const result = emitWorkspace(workspace, key);
+    emittedWorkspaceCache.set(key, { workspace, signature, result });
+    results[key] = result;
+  }
+  return composeEmittedWorkspaces(results);
 }
 
 /**
@@ -48,6 +80,7 @@ export function flushEmitPipeline(): void {
   immediateFlushSignature = workspaceSignature(state);
   const counts = WORKSPACE_KEYS.map((key) => state.workspaces[key].blockCount);
   if (counts.every((count) => count === 0)) {
+    emittedWorkspaceCache.clear();
     state.setEmitCache({ html: '', css: '', i18n: '', js: '', worker: '' });
     state.setEmitWarnings([]);
     return;
@@ -55,13 +88,7 @@ export function flushEmitPipeline(): void {
 
   const adapter = getBlocklyAdapter();
   markEditorTiming('emit-immediate-start');
-  const result = emitAll({
-    html: adapter.getWorkspace('html'),
-    css: adapter.getWorkspace('css'),
-    i18n: adapter.getWorkspace('i18n'),
-    js: adapter.getWorkspace('js'),
-    worker: adapter.getWorkspace('worker'),
-  });
+  const result = emitCachedWorkspaces(adapter, state);
   markEditorTiming('emit-immediate-end');
   state.setEmitCache({ html: result.html, css: result.css, i18n: result.i18n, js: result.js, worker: result.worker });
   state.setEmitWarnings(result.warnings);
@@ -113,19 +140,14 @@ export function useEmitPipeline(): void {
         adapter.countBlocks('js') +
         adapter.countBlocks('worker');
       if (liveTotal === 0) {
+        emittedWorkspaceCache.clear();
         setEmitCache({ html: '', css: '', i18n: '', js: '', worker: '' });
         setEmitWarnings([]);
         return;
       }
 
       markEditorTiming('emit-delayed-start');
-      const result = emitAll({
-        html: adapter.getWorkspace('html'),
-        css: adapter.getWorkspace('css'),
-        i18n: adapter.getWorkspace('i18n'),
-        js: adapter.getWorkspace('js'),
-        worker: adapter.getWorkspace('worker'),
-      });
+      const result = emitCachedWorkspaces(adapter, useWorkspaceStore.getState());
       markEditorTiming('emit-delayed-end');
       setEmitCache({ html: result.html, css: result.css, i18n: result.i18n, js: result.js, worker: result.worker });
       setEmitWarnings(result.warnings);

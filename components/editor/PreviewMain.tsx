@@ -865,7 +865,7 @@ export default function PreviewMain() {
                 (endSelected) => endSelected.geometry.blockId === selected.geometry.blockId,
               ));
             if (canMoveAsGroup && origin) {
-              let cssBlockCreated = false;
+              let managedCssChanged = false;
               const placements = originSelection.map((selected) => {
                 const endSelected = endSelection.find(
                   (candidate) => candidate.geometry.blockId === selected.geometry.blockId,
@@ -894,10 +894,10 @@ export default function PreviewMain() {
                     containingBlockNeedsRelative: placement.containingBlockNeedsRelative,
                   });
                   moved = committed.moved || moved;
-                  cssBlockCreated = committed.cssBlockCreated || cssBlockCreated;
+                  managedCssChanged = committed.reason === 'managed-css' || managedCssChanged;
                 });
               }
-              if (cssBlockCreated) {
+              if (managedCssChanged) {
                 useWorkspaceStore.getState().bumpStructure('css', adapter.countBlocks('css'));
               }
             } else {
@@ -927,7 +927,7 @@ export default function PreviewMain() {
                     containingBlockNeedsRelative: placement.containingBlockNeedsRelative,
                   });
                   moved = committed.moved;
-                  if (committed.cssBlockCreated) {
+                  if (committed.reason === 'managed-css') {
                     useWorkspaceStore.getState().bumpStructure('css', adapter.countBlocks('css'));
                   }
                 }
@@ -1135,7 +1135,7 @@ export default function PreviewMain() {
                 : false,
             });
             moved = committed.moved;
-            if (committed.cssBlockCreated) {
+            if (committed.reason === 'managed-css') {
               useWorkspaceStore.getState().bumpStructure('css', adapter.countBlocks('css'));
             }
           }
@@ -1226,7 +1226,7 @@ export default function PreviewMain() {
                 containingBlockNeedsRelative: freePlacement.containingBlockNeedsRelative,
               });
               moved = committed.moved;
-              if (committed.cssBlockCreated) {
+              if (committed.reason === 'managed-css') {
                 useWorkspaceStore.getState().bumpStructure('css', adapter.countBlocks('css'));
               }
             }
@@ -1655,7 +1655,7 @@ export default function PreviewMain() {
                 toast.error('이 위치에는 해당 블록을 놓을 수 없어요', { duration: 2200 });
                 return;
               }
-              if (committed.cssBlockCreated) {
+              if (committed.reason === 'managed-css') {
                 useWorkspaceStore.getState().bumpStructure('css', adapter.countBlocks('css'));
               }
               useWorkspaceStore.getState().bumpStructure('html', adapter.countBlocks('html'));

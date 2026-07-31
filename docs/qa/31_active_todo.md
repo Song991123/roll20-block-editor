@@ -9775,3 +9775,17 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `CLAIM BOUNDARY`: this proves the local preview/edit UI boundary only. It
   does not change the current actual Roll20 evidence gate (`0/4` screenshots,
   `0/2` chat metrics) or establish arbitrary-sheet pixel parity.
+
+## 2026-07-31 Emit Cache Revalidation
+
+- `DONE LOCAL`: unchanged workspace emit results are reused by the live
+  pipeline, while final HTML/CSS/worker composition remains unchanged.
+- `DONE LOCAL`: all managed-CSS placement paths now bump the CSS structure
+  version when an existing managed rule is edited, preventing stale parent
+  relative-position rules in the persistent iframe.
+- `VERIFIED LOCAL`: fresh build, `smoke:persistent-preview-surface` in modern
+  and legacy modes, `smoke:imported-edit-sync:strict`, and the emit contract
+  test pass with zero browser errors in the persistent smoke.
+- `VERIFY / BLOCKED EXTERNAL`: actual Roll20 screenshot/diff and chat evidence
+  remain `0/4` and `0/2`; this local cache fix does not establish Roll20
+  visual parity.

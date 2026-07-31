@@ -1,6 +1,6 @@
 import * as Blockly from 'blockly';
 import { registerAllBlocks } from '@/lib/blocks/registry';
-import { emitAll, emitWorkspace, normalizeEmittedRoll20Pair } from '../emit';
+import { composeEmittedWorkspaces, emitAll, emitWorkspace, normalizeEmittedRoll20Pair } from '../emit';
 import { isRoll20WorkerScript } from '@/lib/import/worker_source';
 import { importSheet } from '@/lib/import/index';
 
@@ -67,6 +67,22 @@ function testGeneratedPositionCss(): void {
   assert(pair.css.includes('.sheet-r20-position-'), 'generated position CSS is part of CSS output');
   assert(pair.css.includes('left: 32px'), 'generated position left is preserved');
   workspace.dispose();
+}
+
+function testComposedWorkspaceCacheResultsKeepTheOutputContract(): void {
+  const result = composeEmittedWorkspaces({
+    html: { code: '<div class="panel">ok</div>', warnings: [], generatedCss: '.panel { position: absolute; }' },
+    css: { code: '.panel { color: red; }', warnings: [], generatedCss: '' },
+    i18n: { code: '{"panel":"Panel"}', warnings: [], generatedCss: '' },
+    js: { code: 'window.pageReady = true;', warnings: [], generatedCss: '' },
+    worker: { code: 'on("sheet:opened", function () {});', warnings: [], generatedCss: '' },
+  });
+  assert(result.html.includes('class="sheet-panel"'), 'cached HTML result is normalized');
+  assert(result.css.includes('position: absolute'), 'cached generated CSS is composed');
+  assert(result.css.includes('color: red'), 'cached authored CSS is composed');
+  assert(result.i18n.includes('panel'), 'cached i18n result is preserved');
+  assert(result.js.includes('pageReady'), 'cached page JS result is preserved');
+  assert(result.worker.includes('sheet:opened'), 'cached worker result is preserved');
 }
 
 function testBuilderLayoutCssIsEmittedWithItsBlock(): void {
@@ -412,6 +428,7 @@ testRawFallbackPair();
 testAlreadyCanonicalPair();
 testInlineStylePair();
 testGeneratedPositionCss();
+testComposedWorkspaceCacheResultsKeepTheOutputContract();
 testBuilderLayoutCssIsEmittedWithItsBlock();
 testSemanticContainerEmit();
 testGenericElementEmit();

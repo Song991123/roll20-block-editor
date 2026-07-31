@@ -42,6 +42,15 @@ export interface EmitResult {
   generatedCss: string;
 }
 
+export interface EmitAllResult {
+  html: string;
+  css: string;
+  i18n: string;
+  js: string;
+  worker: string;
+  warnings: EmitWarning[];
+}
+
 /** generator 의 반환값 정규화. reporter = [code, order], stack = string. */
 function normalizeGen(
   ret: string | [string, number] | undefined,
@@ -263,16 +272,20 @@ export function emitWorkspace(
 }
 
 /**
- * 모든 워크스페이스를 한 번에 emit. PreviewMain 이 호출.
+ * Already emitted workspace results into one Roll20 output bundle.
+ *
+ * Keeping this composition step separate lets the live pipeline reuse the
+ * unchanged workspace results while a user is dragging one HTML layer. The
+ * final HTML/CSS/worker contract remains identical to `emitAll`.
  */
-export function emitAll(
-  workspaces: Partial<Record<WorkspaceKey, Blockly.Workspace | null>>,
-): { html: string; css: string; i18n: string; js: string; worker: string; warnings: EmitWarning[] } {
-  const html = emitWorkspace(workspaces.html ?? null, 'html');
-  const css = emitWorkspace(workspaces.css ?? null, 'css');
-  const i18n = emitWorkspace(workspaces.i18n ?? null, 'i18n');
-  const pageJs = emitWorkspace(workspaces.js ?? null, 'js');
-  const worker = emitWorkspace(workspaces.worker ?? null, 'worker');
+export function composeEmittedWorkspaces(
+  workspaces: Partial<Record<WorkspaceKey, EmitResult>>,
+): EmitAllResult {
+  const html = workspaces.html ?? { code: '', warnings: [], generatedCss: '' };
+  const css = workspaces.css ?? { code: '', warnings: [], generatedCss: '' };
+  const i18n = workspaces.i18n ?? { code: '', warnings: [], generatedCss: '' };
+  const pageJs = workspaces.js ?? { code: '', warnings: [], generatedCss: '' };
+  const worker = workspaces.worker ?? { code: '', warnings: [], generatedCss: '' };
   const workerBody = normalizeWorkerBody(worker.code);
   const htmlCode = stripWorkerScriptsFromHtml(html.code);
   const pageJsCode = pageJs.code.trim();
@@ -292,6 +305,21 @@ export function emitAll(
     worker: workerBody,
     warnings: [...html.warnings, ...css.warnings, ...i18n.warnings, ...pageJs.warnings, ...worker.warnings],
   };
+}
+
+/**
+ * 모든 워크스페이스를 한 번에 emit. PreviewMain 이 호출.
+ */
+export function emitAll(
+  workspaces: Partial<Record<WorkspaceKey, Blockly.Workspace | null>>,
+): EmitAllResult {
+  return composeEmittedWorkspaces({
+    html: emitWorkspace(workspaces.html ?? null, 'html'),
+    css: emitWorkspace(workspaces.css ?? null, 'css'),
+    i18n: emitWorkspace(workspaces.i18n ?? null, 'i18n'),
+    js: emitWorkspace(workspaces.js ?? null, 'js'),
+    worker: emitWorkspace(workspaces.worker ?? null, 'worker'),
+  });
 }
 
 /**
