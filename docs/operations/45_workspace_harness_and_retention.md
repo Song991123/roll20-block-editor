@@ -562,3 +562,18 @@ external material remain preserved.
 - The host rejected the boundary-checked recursive deletion request before
   PowerShell executed it. The targets remain in place; no deletion bypass was
   attempted.
+
+## 2026-07-31 latest retry after explicit user approval
+
+- The only present approved targets were the active-worktree generated
+  `.next/`, `out/`, and `.tmp/` directories. Their roots were verified inside
+  the workspace and were not reparse points; two nested links in `.next/` were
+  treated as links for the safety check. No project listener was active.
+- A boundary-checked native PowerShell recursive deletion was requested for
+  those exact paths after the user explicitly approved the retry.
+- The host rejected the destructive invocation before PowerShell execution.
+  No alternate shell, native API, per-file deletion loop, or safety bypass was
+  used.
+- **NOT DELETED:** all three paths remain. Active dependencies, product source,
+  Git worktrees, report policy, four-zone markers, and protected source roots
+  remain preserved.

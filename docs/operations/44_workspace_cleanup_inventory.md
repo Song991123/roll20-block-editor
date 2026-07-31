@@ -1353,3 +1353,21 @@ directories that had been recreated by the local build.
 - NOT DELETED: zero targets changed; `.next`, `out`, `.tmp`, and the generated
   report directories remain. No alternate shell, native API, per-file
   workaround, or safety bypass was used.
+
+## 2026-07-31 latest retry after explicit user approval
+
+- RECHECKED: only the canonical worktree's generated `.next/`, `out/`, and
+  `.tmp/` directories remained in the approved deletion set. All three were
+  inside `web-push-main/`, untracked/recreatable, and outside protected source
+  roots, Git worktree roots, active dependencies, and the tracked report
+  policy. No project listener was active.
+- ATTEMPTED: a boundary-checked native PowerShell `Remove-Item -LiteralPath
+  ... -Recurse -Force` request was issued for those three exact targets after
+  explicit user approval.
+- BLOCKED HOST: the execution boundary rejected the destructive invocation
+  before PowerShell ran. User approval cannot override this session-level
+  restriction; no alternate shell, native API, per-file workaround, or safety
+  bypass was used.
+- NOT DELETED: `.next/`, `out/`, and `.tmp/` remain. Product source,
+  dependencies, worktrees, report policy, four-zone markers, and protected
+  external sheet roots were unchanged.

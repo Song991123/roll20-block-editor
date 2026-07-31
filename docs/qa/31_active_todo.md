@@ -9737,3 +9737,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   report directories remain. No alternate deletion path was used.
 - `PRESERVED`: tracked report policy, source, dependencies, Git worktrees,
   protected sheet roots, and the uncommitted `buildDoc.ts` fix remain intact.
+
+## 2026-07-31 Escaped Edit-Drag Recovery
+
+- `DONE LOCAL`: parent-level pointer release forwarding and iframe abort
+  handling now clear optimistic transforms when the pointer leaves the canvas.
+  New pointer starts also clean any previous active drag state before capturing
+  authored styles.
+- `VERIFIED LOCAL`: fresh build plus modern/legacy persistent preview smoke
+  pass; the regression confirms transform, transition, and will-change are
+  restored and iframe reload count remains `0`.
+- `VERIFY / BLOCKED EXTERNAL`: actual Roll20 screenshot/diff remains at
+  `0/4` because supported Chrome tab control is still unavailable. No external
+  upload, save, chat, or room mutation occurred.

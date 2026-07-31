@@ -665,9 +665,9 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       return false;
     }
   }
-  function clearOptimisticEditMove() {
-    var move = optimisticEditMove;
-    optimisticEditMove = null;
+  function clearOptimisticEditMove(moveOverride) {
+    var move = moveOverride || optimisticEditMove;
+    if (move === optimisticEditMove) optimisticEditMove = null;
     if (!move || !move.selectedNodes || !move.selectedNodes.length) return false;
     for (var i = 0; i < move.selectedNodes.length; i += 1) {
       var selected = move.selectedNodes[i];
@@ -686,6 +686,10 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     for (var i = 0; i < move.selectedNodes.length; i += 1) {
       var selected = move.selectedNodes[i];
       if (!selected.node || !selected.node.isConnected) continue;
+      if (dx === 0 && dy === 0) {
+        selected.node.style.transform = selected.originTransform;
+        continue;
+      }
       var base = selected.originTransform && selected.originTransform !== 'none'
         ? selected.originTransform + ' '
         : '';
@@ -928,7 +932,9 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     // style-only patch must leave it alone while the pointer is still down,
     // but it must be cleared after pointer-up so the committed CSS left/top
     // becomes the only source of geometry.
-    if (htmlChanged || !activeEditPointer) clearOptimisticEditMove();
+    if (htmlChanged || !activeEditPointer || activeEditPointer.ending) {
+      clearOptimisticEditMove();
+    }
     document.body.setAttribute(
       'data-r20-last-apply-mode',
       htmlChanged ? (usedOptimisticFlowPatch || usedStructuralPatch ? 'patch' : 'replace') : 'styles'
@@ -1437,6 +1443,11 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (e.button !== 0) return;
     var subjectNode = blockNodeOf(e.target);
     if (!subjectNode) return;
+    if (activeEditPointer) {
+      cancelActiveEditPointer(activeEditPointer.lastX, activeEditPointer.lastY, activeEditPointer.subjectNode);
+    } else if (optimisticEditMove) {
+      clearOptimisticEditMove();
+    }
     rollbackOptimisticFlowMove();
     clearValidatedFlowTarget();
     var selectedNodes = selectedEditNodes(subjectNode).map(function (node) {
@@ -1516,44 +1527,37 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     try { e.preventDefault(); } catch (_) {}
     try { e.stopImmediatePropagation(); } catch (_) {}
   }, true);
-  document.addEventListener('lostpointercapture', function (e) {
-    if (!editBridgeEnabled || !activeEditPointer) return;
-    if (activeEditPointer.ending || e.target !== activeEditPointer.subjectNode) return;
+  function cancelActiveEditPointer(x, y, hitNode) {
+    if (!editBridgeEnabled || !activeEditPointer) return false;
     var interrupted = activeEditPointer;
     if (editMoveFrame) window.cancelAnimationFrame(editMoveFrame);
     editMoveFrame = 0;
     pendingEditMove = null;
     rollbackOptimisticFlowMove();
-    clearOptimisticEditMove();
+    clearOptimisticEditMove(interrupted);
     clearValidatedFlowTarget();
-    postEditHit('pointercancel', interrupted.subjectNode, interrupted.subjectNode, {
-      x: Number.isFinite(interrupted.lastX) ? interrupted.lastX : interrupted.originX,
-      y: Number.isFinite(interrupted.lastY) ? interrupted.lastY : interrupted.originY,
+    var nextX = Number.isFinite(x) ? x : interrupted.lastX;
+    var nextY = Number.isFinite(y) ? y : interrupted.lastY;
+    postEditHit('pointercancel', interrupted.subjectNode, hitNode || interrupted.subjectNode, {
+      x: Number.isFinite(nextX) ? nextX : interrupted.originX,
+      y: Number.isFinite(nextY) ? nextY : interrupted.originY,
       pointerId: interrupted.pointerId,
       button: 0,
       buttons: 0,
     });
+    try { interrupted.subjectNode.releasePointerCapture(interrupted.pointerId); } catch (_) {}
     activeEditPointer = null;
+    return true;
+  }
+  document.addEventListener('lostpointercapture', function (e) {
+    if (!editBridgeEnabled || !activeEditPointer) return;
+    if (activeEditPointer.ending || e.target !== activeEditPointer.subjectNode) return;
+    cancelActiveEditPointer(activeEditPointer.lastX, activeEditPointer.lastY, e.target);
   }, true);
   document.addEventListener('pointercancel', function (e) {
     if (!editBridgeEnabled) return;
     if (!activeEditPointer || activeEditPointer.pointerId !== e.pointerId) return;
-    var subjectNode = activeEditPointer.subjectNode;
-    if (editMoveFrame) window.cancelAnimationFrame(editMoveFrame);
-    editMoveFrame = 0;
-    pendingEditMove = null;
-    rollbackOptimisticFlowMove();
-    clearOptimisticEditMove();
-    clearValidatedFlowTarget();
-    postEditHit('pointercancel', subjectNode, hitNodeAt(e.clientX, e.clientY, e.target), {
-      x: e.clientX,
-      y: e.clientY,
-      pointerId: e.pointerId,
-      button: e.button,
-      buttons: e.buttons
-    });
-    try { subjectNode.releasePointerCapture(e.pointerId); } catch (_) {}
-    activeEditPointer = null;
+    cancelActiveEditPointer(e.clientX, e.clientY, hitNodeAt(e.clientX, e.clientY, e.target));
     try { e.preventDefault(); } catch (_) {}
     try { e.stopImmediatePropagation(); } catch (_) {}
   }, true);
@@ -1700,6 +1704,21 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       && e.data.bridgeId === editBridgeId
     ) {
       rememberValidatedFlowTarget(e.data);
+      return;
+    }
+    if (
+      e.data.type === 'r20:edit-abort'
+      && e.data.protocol === 1
+      && e.data.bridgeId === editBridgeId
+    ) {
+      var abortPointerId = Number(e.data.pointerId);
+      if (activeEditPointer && abortPointerId === activeEditPointer.pointerId) {
+        cancelActiveEditPointer(
+          activeEditPointer.lastX,
+          activeEditPointer.lastY,
+          activeEditPointer.subjectNode,
+        );
+      }
       return;
     }
     if (

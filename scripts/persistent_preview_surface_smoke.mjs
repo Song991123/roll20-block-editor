@@ -800,6 +800,14 @@ async function runMode(browser, mode) {
         overlayHeight: Number.parseFloat(overlay?.style.height || '0'),
       };
     });
+    result.duringEdit.subjectStyle = await frame.evaluate(() => {
+      const subject = document.querySelector('.sheet-probe-card');
+      return {
+        transform: subject?.style.transform ?? '',
+        transition: subject?.style.transition ?? '',
+        willChange: subject?.style.willChange ?? '',
+      };
+    });
     result.flowCommit = await page.evaluate(() => {
       window.__r20PerfTimings = {};
       window.__r20SmokeFlowStartedAt = performance.now();
@@ -915,12 +923,28 @@ async function runMode(browser, mode) {
       }),
     });
     result.flowCommit.stats = await readApplyStats(frame);
+    result.flowCommit.afterStyle = await frame.evaluate(() => {
+      const subject = document.querySelector('.sheet-probe-card');
+      return {
+        transform: subject?.style.transform ?? '',
+        transition: subject?.style.transition ?? '',
+        willChange: subject?.style.willChange ?? '',
+      };
+    });
     await page.locator('[data-testid="edit-placement-free"]').evaluate((button) => button.click());
     result.freeCommit = await page.evaluate(() => ({
       beforeAck: Number(document
         .querySelector('[data-r20-apply-acked]')
         ?.getAttribute('data-r20-apply-acked')),
     }));
+    result.freeCommit.preStyle = await frame.evaluate(() => {
+      const subject = document.querySelector('.sheet-probe-card');
+      return {
+        transform: subject?.style.transform ?? '',
+        transition: subject?.style.transition ?? '',
+        willChange: subject?.style.willChange ?? '',
+      };
+    });
     Object.assign(result.freeCommit, await frame.evaluate(() => {
       const subject = document.querySelector('.sheet-probe-card');
       const container = document.querySelector('.sheet-probe-drop');
@@ -1013,6 +1037,14 @@ async function runMode(browser, mode) {
       runtimeToken: await frame.evaluate(() => window.__persistentPreviewRuntimeToken),
     });
     result.freeCommit.stats = await readApplyStats(frame);
+    result.freeCommit.afterStyle = await frame.evaluate(() => {
+      const subject = document.querySelector('.sheet-probe-card');
+      return {
+        transform: subject?.style.transform ?? '',
+        transition: subject?.style.transition ?? '',
+        willChange: subject?.style.willChange ?? '',
+      };
+    });
     result.freeRecommit = await page.evaluate(() => {
       window.__r20SmokeFreeStartedAt = performance.now();
       return {
@@ -1069,6 +1101,114 @@ async function runMode(browser, mode) {
       () => performance.now() - window.__r20SmokeFreeStartedAt,
     );
     result.freeRecommit.stats = await readApplyStats(frame);
+    result.freeRecommit.afterStyle = await frame.evaluate(() => {
+      const subject = document.querySelector('.sheet-probe-card');
+      return {
+        transform: subject?.style.transform ?? '',
+        transition: subject?.style.transition ?? '',
+        willChange: subject?.style.willChange ?? '',
+      };
+    });
+    result.escapedDrag = await page.evaluate(() => ({
+      beforeAck: Number(document
+        .querySelector('[data-r20-apply-acked]')
+        ?.getAttribute('data-r20-apply-acked')),
+    }));
+    await page.evaluate(() => {
+      window.__r20EscapedParentEvents = [];
+      for (const type of ['pointerdown', 'pointerup', 'pointercancel', 'mouseup', 'blur']) {
+        window.addEventListener(type, (event) => {
+          window.__r20EscapedParentEvents.push({
+            type,
+            pointerId: 'pointerId' in event ? event.pointerId : null,
+            x: 'clientX' in event ? event.clientX : null,
+            y: 'clientY' in event ? event.clientY : null,
+          });
+        }, { capture: true, once: false });
+      }
+    });
+    const escapedSubjectBox = await frame.locator('.sheet-probe-card').boundingBox();
+    const escapedIframeBox = await iframe.boundingBox();
+    if (!escapedSubjectBox || !escapedIframeBox) throw new Error('escaped-drag geometry unavailable');
+    const escapedStart = {
+      x: escapedSubjectBox.x + escapedSubjectBox.width / 2,
+      y: escapedSubjectBox.y + escapedSubjectBox.height / 2,
+    };
+    const escapedEnd = {
+      x: Math.min(escapedIframeBox.x + escapedIframeBox.width - 8, escapedStart.x + 80),
+      y: escapedIframeBox.y + escapedIframeBox.height + 120,
+    };
+    const escapedPointerId = 77;
+    await frame.evaluate(({ start, pointerId }) => {
+      const subject = document.querySelector('.sheet-probe-card');
+      if (!subject) return;
+      subject.dispatchEvent(new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        pointerId,
+        button: 0,
+        buttons: 1,
+        clientX: start.x,
+        clientY: start.y,
+      }));
+      subject.dispatchEvent(new PointerEvent('pointermove', {
+        bubbles: true,
+        cancelable: true,
+        pointerId,
+        button: 0,
+        buttons: 1,
+        clientX: start.x + 40,
+        clientY: start.y + 24,
+      }));
+    }, { start: escapedStart, pointerId: escapedPointerId });
+    await page.waitForFunction(
+      (pointerId) => document.querySelector('[data-testid="iframe-edit-overlay"]')
+        ?.getAttribute('data-r20-pointer-id') === String(pointerId),
+      escapedPointerId,
+      { timeout: 30000 },
+    );
+    const escapedTransformDuringDrag = await frame.evaluate(() => (
+      document.querySelector('.sheet-probe-card')?.style.transform ?? ''
+    ));
+    await page.evaluate(({ end, pointerId }) => {
+      window.dispatchEvent(new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        pointerId,
+        button: 0,
+        buttons: 0,
+        clientX: end.x,
+        clientY: end.y,
+      }));
+    }, { end: escapedEnd, pointerId: escapedPointerId });
+    await page.waitForTimeout(100);
+    Object.assign(result.escapedDrag, await frame.evaluate(
+      ({ start, end, transformDuringDrag }) => {
+        const subject = document.querySelector('.sheet-probe-card');
+        const style = subject ? getComputedStyle(subject) : null;
+        return {
+          dispatched: true,
+        start,
+        end,
+        transformDuringDrag,
+          inlineTransformAfterRelease: subject?.style.transform ?? '',
+          computedTransformAfterRelease: style?.transform ?? '',
+          transitionAfterRelease: subject?.style.transition ?? '',
+          willChangeAfterRelease: subject?.style.willChange ?? '',
+          editPhase: document.querySelector('[data-r20-edit-phase]')
+            ?.getAttribute('data-r20-edit-phase') ?? '',
+          afterAck: Number(document
+            .querySelector('[data-r20-apply-acked]')
+            ?.getAttribute('data-r20-apply-acked')),
+        };
+      },
+      { start: escapedStart, end: escapedEnd, transformDuringDrag: escapedTransformDuringDrag },
+    ));
+    result.escapedDrag.parentEvents = await page.evaluate(
+      () => window.__r20EscapedParentEvents ?? [],
+    );
+    result.escapedDrag.subjectBox = escapedSubjectBox;
+    result.escapedDrag.iframeBox = escapedIframeBox;
     await page.locator('[data-testid="edit-placement-flow"]').evaluate((button) => button.click());
     result.widgetDrop = await page.evaluate(() => ({
       beforeAck: Number(document
@@ -1411,6 +1551,12 @@ async function runMode(browser, mode) {
       && result.freeRecommit.stats.mode === 'styles'
       && result.freeRecommit.stats.rootReplacements === result.freeCommit.stats.rootReplacements
       && result.freeRecommit.stats.styleOnlyApplies > result.freeCommit.stats.styleOnlyApplies
+      && result.escapedDrag.dispatched === true
+      && result.escapedDrag.transformDuringDrag.includes('translate3d(')
+      && isIdentityTransform(result.escapedDrag.computedTransformAfterRelease)
+      && result.escapedDrag.inlineTransformAfterRelease === ''
+      && result.escapedDrag.transitionAfterRelease === ''
+      && result.escapedDrag.willChangeAfterRelease === ''
       && result.widgetDrop.dispatched === true
       && result.widgetDrop.dragOverAccepted === true
       && result.widgetDrop.dropAccepted === true

@@ -10338,3 +10338,15 @@ same-hash modern/legacy comparison.
   host rejected the exact native recursive PowerShell request before it ran.
   Nothing was deleted and no alternate shell, native API, or per-file bypass
   was used.
+
+## 2026-07-31 - Escaped edit-drag recovery
+
+- FIXED LOCAL: parent-document pointer release is forwarded to the persistent
+  iframe when a drag ends outside the canvas. The iframe cancels the active
+  pointer, restores authored transform/transition/will-change values, and
+  rejects stale overlapping pointer starts.
+- VERIFIED LOCAL: the modern and legacy persistent preview smoke now includes
+  a parent outside-release regression. Both modes pass with zero iframe
+  reloads, zero browser errors, and no temporary drag style left behind.
+- CLAIM BOUNDARY: this proves the local shared-surface interaction contract,
+  not actual Roll20 pixel parity or live worker execution.

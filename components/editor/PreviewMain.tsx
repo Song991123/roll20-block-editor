@@ -176,6 +176,7 @@ export default function PreviewMain() {
   const iframeEditDropTargetRef = useRef<IframeEditDropTarget | null>(null);
   const [iframeEditDragOrigin, setIframeEditDragOrigin] = useState<IframeEditHitMessage | null>(null);
   const iframeEditDragOriginRef = useRef<IframeEditHitMessage | null>(null);
+  const parentIframePointerIdRef = useRef<number | null>(null);
   const applyRevisionRef = useRef(0);
   const applySourcesRef = useRef(new Map<number, string>());
   const lastAppliedSourceRef = useRef<string | null>(null);
@@ -230,6 +231,67 @@ export default function PreviewMain() {
     }
     pendingIframeEditStateRef.current = null;
   }, []);
+
+  // Pointer capture belongs to the iframe document. When the pointer is
+  // released outside the iframe, some browsers deliver the final event only
+  // to the parent document, leaving the iframe's optimistic transform alive.
+  // Forward that outside release so the canonical render surface can cancel
+  // and restore its temporary drag state.
+  useEffect(() => {
+    if (mainMode !== 'edit' || !iframeEditBridgeId) return undefined;
+    const isInsideIframe = (event: MouseEvent) => {
+      const rect = iframeRef.current?.getBoundingClientRect();
+      return Boolean(rect
+        && event.clientX >= rect.left
+        && event.clientX <= rect.right
+        && event.clientY >= rect.top
+        && event.clientY <= rect.bottom);
+    };
+    const rememberParentPointer = (event: PointerEvent) => {
+      if (isInsideIframe(event)) parentIframePointerIdRef.current = event.pointerId;
+    };
+    const sendAbort = (pointerId: number) => {
+      iframeRef.current?.contentWindow?.postMessage({
+        type: 'r20:edit-abort',
+        protocol: R20_IFRAME_EDIT_PROTOCOL,
+        bridgeId: iframeEditBridgeId,
+        pointerId,
+      }, '*');
+    };
+    const forwardOutsideRelease = (event: MouseEvent) => {
+      const origin = iframeEditDragOriginRef.current;
+      const eventPointerId = 'pointerId' in event
+        ? Number((event as PointerEvent).pointerId)
+        : parentIframePointerIdRef.current ?? origin?.pointerId;
+      const activePointerId = origin?.pointerId ?? parentIframePointerIdRef.current;
+      if (activePointerId == null || activePointerId !== eventPointerId) return;
+      if (isInsideIframe(event)) {
+        parentIframePointerIdRef.current = null;
+        return;
+      }
+      sendAbort(activePointerId);
+      parentIframePointerIdRef.current = null;
+    };
+    const cancelOnWindowBlur = () => {
+      const origin = iframeEditDragOriginRef.current;
+      const pointerId = origin?.pointerId ?? parentIframePointerIdRef.current;
+      if (pointerId != null) sendAbort(pointerId);
+      parentIframePointerIdRef.current = null;
+    };
+    window.addEventListener('pointerdown', rememberParentPointer, true);
+    window.addEventListener('pointerup', forwardOutsideRelease, true);
+    window.addEventListener('pointercancel', forwardOutsideRelease, true);
+    window.addEventListener('mouseup', forwardOutsideRelease, true);
+    window.addEventListener('blur', cancelOnWindowBlur, true);
+    return () => {
+      window.removeEventListener('pointerdown', rememberParentPointer, true);
+      window.removeEventListener('pointerup', forwardOutsideRelease, true);
+      window.removeEventListener('pointercancel', forwardOutsideRelease, true);
+      window.removeEventListener('mouseup', forwardOutsideRelease, true);
+      window.removeEventListener('blur', cancelOnWindowBlur, true);
+      parentIframePointerIdRef.current = null;
+    };
+  }, [iframeEditBridgeId, mainMode]);
 
   const total = htmlCount + cssCount + i18nCount;
   const isEmpty = total === 0;
