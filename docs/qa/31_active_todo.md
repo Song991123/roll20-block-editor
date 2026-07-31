@@ -1,3 +1,19 @@
+# 2026-07-31 Current Roll20 Sandbox chooser retry
+
+- `VERIFY / BLOCKED EXTERNAL`: the dedicated Custom Sheet Sandbox was
+  reconnected with a visible member count of exactly one and the expected
+  Sheet Sandbox Tools dialog. The supported Playwright file chooser reached
+  the HTML input, but `setFiles` returned `Not allowed` before transmission.
+- `PRESERVED`: no payload was uploaded, no settings were saved, no chat was
+  sent, and no ordinary room was touched. Hidden-input, endpoint, and direct
+  DOM injection workarounds were not used.
+- `VERIFIED CURRENT STATUS`: `status:roll20-actual` for the current anonymous
+  run remains `PREUPLOAD_READY_MISSING_GENERATED_ACTUAL`; generated actual
+  screenshots `0/4`, chat metrics `0/2`, renderer readiness `NO`.
+- `TODO P0`: enable the Chrome file-URL permission, then retry the modern
+  current-payload upload and capture root/chat evidence before the separate
+  legacy test-room gate.
+
 # 2026-07-31 Iframe multi-selection bridge
 
 - DONE LOCAL: additive layer selection now sends the full `selectedBlockIds`

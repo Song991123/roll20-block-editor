@@ -1,5 +1,15 @@
 # 34. Requirements Gap Matrix
 
+## Current Roll20 Sandbox Chooser Retry - 2026-07-31
+
+| Area | Current evidence | Status | Boundary |
+| --- | --- | --- | --- |
+| Modern Sandbox access | Dedicated tab, Sheet Sandbox Tools dialog, and visible member count exactly one | READY EXTERNAL | No payload changed |
+| Supported file upload | Official file chooser event reached the HTML input; `setFiles` returned `Not allowed` | BLOCKED EXTERNAL | Chrome file-URL permission remains missing |
+| Actual current-payload evidence | Status gate reports generated screenshots `0/4`, chat metrics `0/2`, renderer readiness `NO` | OPEN | No parity claim |
+
+The retry did not use hidden-input, endpoint, or direct-DOM upload workarounds.
+
 ## Iframe Multi-Selection Bridge - 2026-07-31
 
 | Area | Current evidence | Status | Boundary |

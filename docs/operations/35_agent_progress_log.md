@@ -1,3 +1,18 @@
+# 2026-07-31 - Current Roll20 Sandbox chooser retry
+
+- Reconnected the dedicated Custom Sheet Sandbox and confirmed the visible
+  participant state is exactly one. The Sheet Sandbox Tools dialog exposes
+  the expected HTML, CSS, and Translation inputs.
+- Used the supported browser file-chooser path with the current anonymous
+  HTML payload. Chrome accepted the chooser event but rejected `setFiles`
+  with `Not allowed` before any payload left the machine.
+- No hidden-input mutation, endpoint request, direct DOM file injection,
+  settings save, chat send, or ordinary-room interaction was used.
+- Current gate remains `PREUPLOAD_READY_MISSING_GENERATED_ACTUAL` with
+  generated actual screenshots `0/4`, chat metrics `0/2`, and
+  `rendererReady=NO`. Next external action is Chrome file-URL permission,
+  followed by fresh modern root/chat evidence and separate legacy-room proof.
+
 # 2026-07-31 - Iframe multi-selection bridge
 
 - Added the optional `selectedBlockIds` field to the iframe edit-mode
