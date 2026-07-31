@@ -10496,3 +10496,15 @@ same-hash modern/legacy comparison.
   nodes, and zero console/page errors.
 - `NOTE`: a first parallel launch saw a transient `4198` address-in-use error;
   no listener remained on inspection and all three checks passed sequentially.
+
+## 2026-07-31 - Pages deployment drift check
+
+- `VERIFIED DEPLOYMENT`: GitHub Pages returned HTTP `200`, and the deployed SHA
+  matched `origin/main` at `98d4b496`.
+- `MEASURED`: the active work branch is `4ae261aa`; it is `385` commits ahead
+  and `2` commits behind `origin/main`, so the current product work is not the
+  deployed surface.
+- `SAFETY`: no automatic merge or main-branch push was performed. The branch
+  contains a large unreviewed delta and Pages health is not release approval.
+- `NEXT P1`: review and intentionally promote a release slice to `main` only
+  after the external Roll20 gate and product review support it.

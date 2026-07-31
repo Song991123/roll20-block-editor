@@ -63,6 +63,19 @@
   error; no listener remained on inspection and all three checks passed when
   rerun sequentially.
 
+# 2026-07-31 Pages deployment drift check
+
+- `VERIFIED DEPLOYMENT`: GitHub Pages responds with HTTP `200`, and the
+  deployed SHA matches `origin/main` at `98d4b496`.
+- `MEASURED`: the active work branch is `4ae261aa`; it is `385` commits ahead
+  and `2` commits behind `origin/main`. The active branch is therefore not the
+  deployed product surface.
+- `SAFETY`: no automatic merge or main-branch push was performed. The design
+  reset branch contains a large unreviewed delta and must not be promoted just
+  because Pages is healthy.
+- `TODO P1`: review and intentionally promote a release slice to `main` only
+  after the external Roll20 gate and product review support it.
+
 # 2026-07-31 Local imported edit-sync recheck
 
 - VERIFIED LOCAL: after rebuilding the deleted static `out` directory, the
