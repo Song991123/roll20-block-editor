@@ -1,5 +1,14 @@
 # 2026-07-31 - Actual-status and renderer-action gate refresh
 
+# 2026-07-31 - Roll20 participant gate recheck
+
+- Re-read two dedicated Roll20 verification tabs in observation-only mode.
+- One tab had no readable participant count. The other showed `1 구성원`, but
+  the participant box was outside the viewport at `y=-305.1px`.
+- Did not upload, save, send chat, change settings, or touch an existing room.
+- Kept the external gate open: fresh visible exactly-one evidence and all
+  generated modern/legacy root/chat captures are still missing.
+
 # 2026-07-31 - Current branch baseline recheck
 
 - Re-ran the persistent Preview/Edit smoke: modern and legacy both passed with

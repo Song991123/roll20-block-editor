@@ -1,5 +1,15 @@
 # 34. Requirements Gap Matrix
 
+## Roll20 participant gate recheck - 2026-07-31
+
+- `VERIFIED OBSERVATION`: two dedicated verification tabs were read without
+  any write action. One had no readable participant count; the other reported
+  `1 구성원` but its participant box was outside the viewport at `y=-305.1px`.
+- `OPEN EXTERNAL`: this is not fresh visible exactly-one evidence, so no modern
+  or legacy upload/capture is counted and generated actual evidence remains
+  `0/4`.
+- `PRESERVED`: no existing room, sheet, chat, or setting was modified.
+
 ## Current branch baseline recheck - 2026-07-31
 
 - `DONE LOCAL`: persistent Preview/Edit surface remains a single iframe owner

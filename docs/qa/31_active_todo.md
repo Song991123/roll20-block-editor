@@ -1,5 +1,19 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Roll20 participant gate recheck
+
+- `VERIFIED EXTERNAL READ-ONLY`: two retained dedicated verification tabs were
+  inspected without navigating, uploading, saving, sending chat, or changing
+  room settings.
+- `BLOCKED EXTERNAL`: one tab exposed no readable participant count. The other
+  exposed exactly `1 구성원`, but its visible box was at `y=-305.1px`, outside
+  the viewport. This does not satisfy the fresh visible exactly-one gate.
+- `PRESERVED`: no payload, sheet source, chat content, or room state changed.
+- `TODO P0`: obtain a fresh dedicated Sandbox/test-room state whose exactly-one
+  participant indicator is visibly on-screen, then upload only the anonymous
+  modern payload and capture root/chat evidence before starting the separate
+  legacy-room run.
+
 # 2026-07-31 Current branch baseline recheck
 
 - `VERIFIED LOCAL`: `smoke:persistent-preview-surface` passed in modern and
