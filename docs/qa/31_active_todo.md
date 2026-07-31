@@ -10372,3 +10372,23 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   after this batch.
 - `VERIFY / OPEN EXTERNAL`: this is a generic local mapping fix. It does not
   increase the actual Roll20 screenshot/diff or legacy-room evidence counters.
+
+## 2026-07-31 Fresh Sandbox Iframe Recheck
+
+- `VERIFIED EXTERNAL READ-ONLY`: the dedicated Sandbox still showed exactly
+  one visible member (`마렌`). An existing anonymous character viewer opened
+  through a real Roll20 iframe; the iframe measured `900px` wide and its
+  authored `.sheetform` measured `860x200px`. The visible controls included
+  `attr_name` and one `type=roll` control.
+- `VERIFY / NOT PROMOTED`: this viewer was an older anonymous state, not the
+  newly generated layout payload, so the observation proves only the Roll20
+  wrapper/runtime smoke. It is not a same-payload visual comparison.
+- `VERIFY / BLOCKED EXTERNAL`: the Sandbox tools dialog showed a translation
+  parsing warning. The supported chooser path did not accept the generated
+  local payload: direct input click timed out, the visible-label chooser
+  rejected `fileChooser.setFiles` with `Not allowed`, and a temp-path retry
+  timed out. No upload, save, endpoint call, room change, or hidden-input
+  workaround was performed.
+- `NEXT P0`: recover a user-visible supported file selection for the anonymous
+  synthetic payload, then capture fresh modern and independent legacy root
+  evidence with matching payload hashes. Keep screenshot parity open.

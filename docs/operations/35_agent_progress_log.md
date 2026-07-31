@@ -10955,3 +10955,21 @@ same-hash modern/legacy comparison.
 - `CLAIM BOUNDARY`: this closes a local mapping loss, not actual Roll20 visual
   parity. Modern/legacy screenshot diff and same-payload external evidence
   remain the separate open gate.
+
+## 2026-07-31 - Fresh Sandbox iframe recheck
+
+- `OBSERVED READ-ONLY`: the dedicated Custom Sheet Sandbox passed the fresh
+  visible-member check with exactly one member. An existing anonymous
+  character viewer opened in a real Roll20 iframe; the iframe was `900px`
+  wide, the authored `.sheetform` was `860x200px`, and `attr_name` plus a
+  roll control were visible.
+- `NOT PROMOTED`: the viewer was not proven to contain the newly generated
+  layout payload, so this is wrapper/runtime evidence only, not same-payload
+  visual parity.
+- `BLOCKED EXTERNAL`: the Sandbox tools dialog displayed a translation parse
+  warning. The supported file chooser did not accept the anonymous local
+  payload (`Not allowed` on the workspace path and timeout on the temp-path
+  retry). No upload/save/endpoint or hidden-input workaround was attempted.
+- `NEXT`: restore a supported user-visible file handoff, bind the payload hash
+  to the modern Sandbox capture, then repeat independently in the legacy test
+  room before changing renderer CSS.

@@ -1478,3 +1478,18 @@ not close the external Roll20 parity rows above.
   same-payload modern/legacy parity remain unproven. Historical `0/4` entries
   above are retained as audit history; the latest current status is the
   partial `2/4` evidence recorded here.
+
+## Latest Sandbox Iframe Recheck - 2026-07-31
+
+- `VERIFIED EXTERNAL READ-ONLY`: the dedicated Sandbox participant preflight
+  returned exactly one visible member. A real Roll20 viewer iframe exposed an
+  anonymous sheet root with `900px` iframe width, `860x200px` authored
+  `.sheetform`, `attr_name`, and a roll control.
+- `VERIFY / OPEN`: the visible viewer was an older anonymous payload rather
+  than the newly generated layout payload. It cannot prove the current
+  product's same-payload visual parity.
+- `VERIFY / BLOCKED EXTERNAL`: the current supported chooser did not transmit
+  the generated payload. The workspace path returned `Not allowed` and a
+  temp-path retry timed out. The Sandbox tools dialog also showed a
+  translation parsing warning. No endpoint, hidden-input, or ordinary-room
+  workaround was used.
