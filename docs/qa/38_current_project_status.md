@@ -7,6 +7,21 @@ creator names, source URLs, screenshots, private room identifiers, or
 source-derived measurements. Private evidence, when needed, stays in ignored
 local output and is deleted after the verification batch.
 
+## Current Gate Override - 2026-07-31
+
+- `CURRENT`: the latest actual-status for the current anonymous payload is
+  `PREUPLOAD_READY_MISSING_GENERATED_ACTUAL`: generated root/chat captures
+  `0/4`, `chatParity=MISSING`, and `rendererReady=NO`.
+- `VERIFIED EXTERNAL READ-ONLY`: the modern Sandbox showed a visible
+  exactly-one participant panel and `Sheet Sandbox Tools` immediately before
+  the retry.
+- `BLOCKED EXTERNAL`: the supported HTML chooser returned `Not allowed` before
+  transmission. No current HTML/CSS/translation payload was applied, saved, or
+  used to produce a current Roll20 parity claim.
+- Earlier anonymous runtime observations below are historical evidence for
+  generic wrapper/runtime behavior only; they do not override this current
+  payload gate or prove visual parity.
+
 ## Local Payload Fidelity Gate - 2026-07-31
 
 - DONE LOCAL: Added a content-addressed gate for editor emit -> payload files
