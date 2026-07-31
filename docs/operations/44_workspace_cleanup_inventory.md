@@ -1244,3 +1244,25 @@ directories that had been recreated by the local build.
 - NOT DELETED: zero targets were removed. No alternate shell, native API,
   per-file workaround, or safety bypass was used; source, worktrees,
   dependencies, reports policy, and protected sheet roots are unchanged.
+
+## 2026-07-31 third explicit retry after user approval
+
+- RECHECKED: five remaining broad generated targets were present and inside
+  the workspace: old `web/node_modules/`, `web/.next/`, `web/out/`, and the
+  active-worktree `.next/` and `out/`. The active
+  `web-push-main/node_modules/` was excluded. The transient `.tmp/`, build
+  metadata, and retained report tree were not included in this retry because
+  they need a separate evidence-retention decision.
+- SAFETY CHECK: every requested target resolved inside the workspace, was not
+  a reparse point at its root, and no project listener was active on the
+  checked ports.
+- ATTEMPTED: after the user explicitly authorized the retry, one native
+  PowerShell `Remove-Item -LiteralPath ... -Recurse -Force` request was issued
+  with absolute-path and protected-target checks.
+- BLOCKED: the host rejected the destructive invocation before PowerShell
+  executed it. User approval does not override this session execution
+  boundary.
+- NOT DELETED: zero targets changed. No alternate shell, native API,
+  per-file workaround, or safety bypass was used; source, worktrees, active
+  dependencies, reports policy, and protected external sheet roots remain
+  preserved.
