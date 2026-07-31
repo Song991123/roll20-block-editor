@@ -49,6 +49,15 @@ source sheet, room identifier, or public fixture.
 | Local visual equality | Four synthetic preview/edit cases passed at `0%` mismatch with zero page/console errors | DONE LOCAL | Synthetic contracts, not Roll20 screenshot parity |
 | Actual Roll20 parity | Still requires same-payload Sandbox upload, full-root crop normalization, and current roll/chat evidence | OPEN | Keep external status partial |
 
+## Wide Custom-Sheet Canvas Policy - 2026-07-31
+
+| Area | Current evidence | Status | Boundary |
+| --- | --- | --- | --- |
+| Default sheet width | Shared policy keeps the documented default at `850px` | DONE LOCAL | Local product default only |
+| User-authored sheet width | UI input, auto-measurement, and iframe bridge preserve `320px` to `10000px` | DONE LOCAL | Safety ceiling remains; destination limits are separate |
+| Rolltemplate width | Separate `200px` to `600px` bounds remain unchanged | DONE LOCAL | Applies only to chat-template editing |
+| Width regression coverage | Unit test, build-doc test, edit-flow, fresh-sheet, lint/build, and CI pass | DONE LOCAL | Does not prove external Roll20 acceptance |
+
 ## Local Imported Edit-Sync Recheck - 2026-07-31
 
 | Area | Current evidence | Status | Boundary |

@@ -1,3 +1,16 @@
+# 2026-07-31 - Wide custom-sheet canvas policy
+
+- `FIXED LOCAL`: centralized canvas dimensions keep the default sheet width at
+  `850px` while preserving authored sheet widths through `10000px`. The former
+  repeated `2000px` cap was removed from the UI store, width input, auto-size
+  bridge, and iframe measurement script.
+- `FIXED LOCAL`: rolltemplate editing keeps its independent `200px` to `600px`
+  range.
+- `VERIFIED LOCAL`: canvas unit/build-doc tests, edit-flow, fresh-sheet,
+  synthetic preview/edit, lint/build, and remote CI pass after the change.
+- `CLAIM BOUNDARY`: this removes a local product limitation; actual Roll20
+  destination width acceptance remains an external verification item.
+
 # 2026-07-31 - Latest local render regression gate
 
 - `VERIFIED LOCAL`: `ci:verify` passed end to end, including import mapping,
