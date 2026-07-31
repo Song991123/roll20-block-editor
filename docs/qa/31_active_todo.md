@@ -10668,3 +10668,13 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `CLAIM BOUNDARY`: this strengthens local editor and process hygiene only;
   current-payload Roll20 visual parity remains blocked at the supported file
   chooser permission gate.
+
+## 2026-07-31 Chrome Permission Retry
+
+- `VERIFIED EXTERNAL READ-ONLY`: the retained dedicated destination showed a
+  fresh visible participant count of exactly `1` before the retry.
+- `BLOCKED EXTERNAL`: the official visible HTML chooser again returned
+  `Not allowed` from the supported file assignment before transmission.
+- `PRESERVED`: no HTML/CSS/translation file was accepted, no character or
+  room setting changed, and no chat was sent. Current-payload modern parity
+  and the separate legacy-room gate remain open.

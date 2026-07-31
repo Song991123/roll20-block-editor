@@ -11216,3 +11216,13 @@ same-hash modern/legacy comparison.
   tests passed. No local project listener remained after the run.
 - This is local process/editor evidence only; the same-payload Roll20 upload
   and modern/legacy actual visual gates are still open.
+
+## 2026-07-31 - Chrome permission retry
+
+- The dedicated destination passed the fresh visible participant gate with
+  exactly one member.
+- The official visible HTML chooser still returned `Not allowed` before any
+  transmission. No sheet, room setting, or chat state changed.
+- Current-payload modern evidence and the independent legacy-room evidence
+  remain open; no hidden input, endpoint, CDP upload, or ordinary room was
+  used.
