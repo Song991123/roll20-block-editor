@@ -1467,3 +1467,21 @@ directories that had been recreated by the local build.
   session-level restriction. No alternate shell, native API, per-file
   workaround, or safety bypass was used.
 - NOT DELETED: `.next/` and `out/` remain; no source or Git state changed.
+
+## 2026-07-31 complete generated-output cleanup after explicit approval
+
+- RECHECKED: the approved targets were the active worktree's `.next/`,
+  `out/`, `.tmp/`, and ignored child directories under `reports/`.
+  The tracked `reports/README.md`, active `node_modules/`, source,
+  worktrees, fixed reference roots, and protected external sheet folders were
+  excluded.
+- DELETED: all files and directories under those exact generated targets.
+  The first repository cleanup removed files but left read-only empty
+  directories; clearing the read-only attribute only inside the same targets
+  allowed the exact cleanup to finish.
+- PRESERVED: `reports/README.md`, active dependencies, product source, Git
+  metadata/worktrees, four-zone markers, fixed compatibility roots, and all
+  protected external source folders.
+- VERIFIED: `.next/`, `out/`, and `.tmp/` are absent; `reports/`
+  contains only its policy README; Git is clean; and no project listener is
+  active.

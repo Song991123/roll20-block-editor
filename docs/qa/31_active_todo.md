@@ -10347,3 +10347,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   MCP upload surface lacks a supported file-input handoff. Full-height root
   stitching, fixture-A modern/legacy upload, normalized screenshot diff, and
   actual parity remain open.
+
+## 2026-07-31 Generated Output Cleanup Completion
+
+- `DONE LOCAL`: the approved ignored `.next/`, `out/`, `.tmp/`, and
+  generated report directories were deleted after an exact dry-run and
+  boundary check.
+- `PRESERVED`: active dependencies, source, worktrees, `reports/README.md`,
+  four-zone markers, fixed reference roots, and protected sheet sources.
+- `VERIFIED LOCAL`: the generated roots are absent, Git is clean, and no
+  project listener remains. This maintenance change does not alter the open
+  actual Roll20 evidence gate.

@@ -10927,3 +10927,16 @@ same-hash modern/legacy comparison.
   contains a large unreviewed delta and Pages health is not release approval.
 - `NEXT P1`: review and intentionally promote a release slice to `main` only
   after the external Roll20 gate and product review support it.
+
+## 2026-07-31 - Generated-output cleanup completed
+
+- `DONE LOCAL`: after the user explicitly approved the retry, the exact
+  ignored `.next/`, `out/`, `.tmp/`, and generated `reports/` children
+  were removed. The repository dry run listed only those approved targets
+  before deletion.
+- `PRESERVED`: tracked `reports/README.md`, active dependencies, product
+  source, Git worktrees, four-zone markers, fixed reference roots, and
+  protected external sheet sources.
+- `VERIFIED LOCAL`: the generated roots are absent, Git is clean, and no
+  project listener remains. This cleanup does not change the actual Roll20
+  parity gate or its current evidence status.

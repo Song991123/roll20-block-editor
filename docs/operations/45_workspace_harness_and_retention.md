@@ -616,3 +616,17 @@ external material remain preserved.
 - **NOT DELETED:** all three paths remain. Active dependencies, product source,
   Git worktrees, report policy, four-zone markers, and protected source roots
   remain preserved.
+
+## 2026-07-31 generated-output cleanup completed
+
+- The user explicitly approved deletion of the reproducible generated output.
+- A dry run listed only the exact approved paths before
+  `git clean -fdX -d -- .next out .tmp reports` was run. Read-only
+  attributes were cleared only within those paths after the first pass left
+  empty directories.
+- DELETED: active `.next/`, `out/`, `.tmp/`, and every ignored child
+  under `reports/`.
+- PRESERVED: tracked `reports/README.md`, active `node_modules/`, source,
+  worktrees, reference/archive zones, and protected external sheet sources.
+- VERIFIED: the three generated roots are absent, `reports/` contains only
+  the policy README, Git is clean, and project server hygiene is clear.
