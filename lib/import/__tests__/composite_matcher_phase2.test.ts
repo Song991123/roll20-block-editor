@@ -223,7 +223,8 @@ function testSkillRowKeepsInputStyleAtomic(): void {
     td('', [withAttrs(textInput('hp', '', '0'), { type: 'text', name: 'attr_hp', style: 'width: 40px' })]),
   ]);
   const packed = packComposites([trBlock]);
-  assert(packed[0].blockType === 'r20_tr', 'input style must block lossy skill-row packing');
+  assert(packed[0].blockType === 'r20_skill_row', 'input style can be packed when preserved');
+  assert(fieldOf(packed[0], 'INPUT_ATTRS').includes('style'), 'input style preserved');
 }
 
 function testSkillRowKeepsUnknownInputAttributeAtomic(): void {
@@ -232,7 +233,28 @@ function testSkillRowKeepsUnknownInputAttributeAtomic(): void {
     td('', [withAttrs(textInput('hp', '', '0'), { type: 'text', name: 'attr_hp', 'data-hook': 'field' })]),
   ]);
   const packed = packComposites([trBlock]);
-  assert(packed[0].blockType === 'r20_tr', 'unknown input attributes must survive atomically');
+  assert(packed[0].blockType === 'r20_skill_row', 'unknown safe attrs can be packed when preserved');
+  assert(fieldOf(packed[0], 'INPUT_ATTRS').includes('data-hook'), 'unknown safe attr preserved');
+}
+
+function testDirectI18nCellAndTableAttrsPack(): void {
+  const label = withAttrs(i18nText('name', 'Name', 'td'), {
+    class: 'label-cell',
+    'data-i18n': 'name',
+  });
+  const input = withAttrs(textInput('name', '', ''), {
+    type: 'text',
+    name: 'attr_name',
+    style: 'width:90%',
+  });
+  const trBlock = tr('', [
+    label,
+    withAttrs(td('', [input]), { colspan: '3' }),
+  ]);
+  const packed = packComposites([trBlock]);
+  assert(packed[0].blockType === 'r20_skill_row', 'direct td i18n row packs');
+  assert(fieldOf(packed[0], 'CELL_TD_ATTRS').includes('colspan'), 'td attrs preserved');
+  assert(fieldOf(packed[0], 'INPUT_ATTRS').includes('style'), 'input attrs preserved');
 }
 
 // ---------- Repeating section wrapper tests ----------
@@ -316,8 +338,9 @@ const tests = [
   ['skill_row multiple', testMultipleSkillRows],
   ['skill_row unknown child → atomic', testUnknownChildDoesNotPack],
   ['skill_row number input', testNumberInput],
-  ['skill_row input style stays atomic', testSkillRowKeepsInputStyleAtomic],
-  ['skill_row unknown input attr stays atomic', testSkillRowKeepsUnknownInputAttributeAtomic],
+  ['skill_row input style preserved', testSkillRowKeepsInputStyleAtomic],
+  ['skill_row unknown input attr preserved', testSkillRowKeepsUnknownInputAttributeAtomic],
+  ['skill_row direct i18n cell attrs', testDirectI18nCellAndTableAttrsPack],
   ['repeating wrapper with header', testRepeatingWrapperWithHeader],
   ['repeating wrapper no header', testRepeatingWrapperNoHeader],
   ['repeating wrapper invalid name → atomic', testRepeatingWrapperInvalidName],

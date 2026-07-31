@@ -412,19 +412,35 @@ function tryMatchSkillRow(b: MatchedBlock): MatchedBlock | null {
   const tds = b.children?.CONTENT ?? [];
   // 일반 패턴 — 1~8 cell. (8 = 안전 상한, 한 row 너무 큰 건 일반 chain 으로 둠.)
   if (tds.length < 2 || tds.length > 8) return null;
-  if (!tds.every((c) => c.blockType === 'r20_td')) return null;
+  if (!tds.every((c) =>
+    c.blockType === 'r20_td' ||
+    (c.blockType === 'r20_i18n_text' && c.fields?.TAG === 'td'),
+  )) return null;
 
   // 각 td 의 자식 — 0 (empty) 또는 1 만 허용.
   // empty td 는 LABEL 자리 또는 spacer 로 본다 (round-trip 시 empty <td></td>
   // emit). 2 개 이상 자식이면 패턴 안에 못 들어감 — atomic 유지.
-  type Cell = { kind: 'empty' | 'inner'; inner: MatchedBlock | null; td: MatchedBlock };
+  type Cell = { kind: 'empty' | 'inner'; inner: MatchedBlock | null; td: MatchedBlock; text: string };
   const cells: Cell[] = [];
   for (const td of tds) {
+    // A direct data-i18n cell is matched before the generic td container.
+    // Treat the i18n block itself as both the cell shell and its label child so
+    // composite packing can preserve the original `<td>` attributes.
+    if (td.blockType === 'r20_i18n_text' && td.fields?.TAG === 'td') {
+      cells.push({ kind: 'inner', inner: td, td, text: '' });
+      continue;
+    }
     const kids = (td.children?.CONTENT ?? []).filter((c) => !!c);
     if (kids.length === 0) {
-      cells.push({ kind: 'empty', inner: null, td });
+      cells.push({ kind: 'empty', inner: null, td, text: '' });
     } else if (kids.length === 1) {
-      cells.push({ kind: 'inner', inner: kids[0], td });
+      const inner = kids[0];
+      const text = inner.blockType === 'r20_text_node' ? inner.fields?.TEXT ?? '' : '';
+      if (inner.blockType === 'r20_text_node' && !text.trim()) {
+        cells.push({ kind: 'empty', inner: null, td, text });
+      } else {
+        cells.push({ kind: 'inner', inner, td, text: '' });
+      }
     } else {
       return null;
     }
@@ -513,6 +529,7 @@ function tryMatchSkillRow(b: MatchedBlock): MatchedBlock | null {
   const fields: Record<string, string> = { ...emptySkillRowFields() };
   fields.TR_CLASS = b.fields?.CLASS ?? '';
   fields.TR_STYLE = b.fields?.STYLE ?? '';
+  fields.TR_ATTRS = b.fields?.[PRESERVED_ATTRS_FIELD] ?? '';
 
   // ── cells layout — 매처가 인식한 cell index 를 fields 에 직렬화 ──
   // (round-trip 시 empty td 도 보존하려면 layout 자체를 알아야 함.)
@@ -533,6 +550,10 @@ function tryMatchSkillRow(b: MatchedBlock): MatchedBlock | null {
   // 구분자는 탭 — \u0001 은 XML 1.0 불법 문자라 workspace XML 직렬화
   // (autosave/export/hydrate) 를 깨뜨린다.
   fields.CELL_TD_CLASSES = cells.map((c) => c.td.fields?.CLASS ?? '').join('\t');
+  fields.CELL_TD_ATTRS = cells
+    .map((c) => c.td.fields?.[PRESERVED_ATTRS_FIELD] ?? '')
+    .join('\t');
+  fields.CELL_TD_TEXTS = cells.map((c) => c.text).join('\t');
 
   if (checkboxIdx >= 0) {
     const cb = cells[checkboxIdx].inner!;
@@ -542,6 +563,7 @@ function tryMatchSkillRow(b: MatchedBlock): MatchedBlock | null {
     fields.CHECKBOX_CLASS = cb.fields?.CLASS ?? '';
     fields.CHECKBOX_VALUE = cb.fields?.VALUE ?? '';
     fields.CHECKBOX_CHECKED = cb.fields?.CHECKED === 'TRUE' ? 'TRUE' : 'FALSE';
+    fields.CHECKBOX_ATTRS = cb.fields?.[PRESERVED_ATTRS_FIELD] ?? '';
   }
   if (labelIdx >= 0) {
     const lb = cells[labelIdx].inner!;
@@ -551,7 +573,7 @@ function tryMatchSkillRow(b: MatchedBlock): MatchedBlock | null {
       fields.I18N_KEY = lb.fields?.KEY ?? '';
       fields.LABEL_TEXT = lb.fields?.DEFAULT ?? '';
       fields.LABEL_TAG = lb.fields?.TAG ?? '';
-      fields.LABEL_CLASS = lb.fields?.CLASS ?? '';
+      fields.LABEL_CLASS = lb.fields?.TAG === 'td' ? '' : lb.fields?.CLASS ?? '';
     } else if (lb.blockType === 'r20_inline_bold') {
       fields.LABEL_TEXT = lb.fields?.TEXT ?? '';
       fields.LABEL_TAG = 'strong';
@@ -561,6 +583,7 @@ function tryMatchSkillRow(b: MatchedBlock): MatchedBlock | null {
       fields.LABEL_TAG = '';
       fields.LABEL_CLASS = '';
     }
+    fields.LABEL_ATTRS = lb.fields?.[PRESERVED_ATTRS_FIELD] ?? '';
   }
   if (inputIdx >= 0) {
     const ip = cells[inputIdx].inner!;
@@ -570,6 +593,7 @@ function tryMatchSkillRow(b: MatchedBlock): MatchedBlock | null {
     fields.INPUT_NAME = ip.fields?.NAME ?? '';
     fields.INPUT_CLASS = ip.fields?.CLASS ?? '';
     fields.INPUT_VALUE = ip.fields?.DEFAULT ?? '';
+    fields.INPUT_ATTRS = ip.fields?.[PRESERVED_ATTRS_FIELD] ?? '';
   }
   if (inputIdx2 >= 0) {
     const ip = cells[inputIdx2].inner!;
@@ -579,6 +603,7 @@ function tryMatchSkillRow(b: MatchedBlock): MatchedBlock | null {
     fields.INPUT2_NAME = ip.fields?.NAME ?? '';
     fields.INPUT2_CLASS = ip.fields?.CLASS ?? '';
     fields.INPUT2_VALUE = ip.fields?.DEFAULT ?? '';
+    fields.INPUT2_ATTRS = ip.fields?.[PRESERVED_ATTRS_FIELD] ?? '';
   }
   const rollIdxArr = [rollIdx, rollIdx2, rollIdx3];
   const rollPrefixes = ['ROLL', 'ROLL2', 'ROLL3'];
@@ -592,6 +617,7 @@ function tryMatchSkillRow(b: MatchedBlock): MatchedBlock | null {
     fields[`${pfx}_NAME`] = rb.fields?.NAME ?? '';
     fields[`${pfx}_LABEL`] = rb.fields?.LABEL ?? '';
     fields[`${pfx}_CLASS`] = rb.fields?.CLASS ?? '';
+    fields[`${pfx}_ATTRS`] = rb.fields?.[PRESERVED_ATTRS_FIELD] ?? '';
     const exprBlock = rb.valueInputs?.EXPR;
     if (exprBlock) {
       if (exprBlock.blockType === 'r20_literal_string') {
@@ -782,7 +808,6 @@ function tryMatchRepeatingSectionWrapper(
   return { pack, absorbed };
 }
 
-const SKILL_TR_ATTRS = new Set(['class', 'style']);
 const SKILL_TD_ATTRS = new Set(['class']);
 const SKILL_INPUT_ATTRS = new Set(['type', 'name', 'class', 'value', 'checked']);
 const SKILL_LABEL_ATTRS = new Set(['data-i18n', 'class']);
@@ -802,22 +827,12 @@ function hasUnrepresentableSkillRowAttrs(
   row: MatchedBlock,
   cells: Array<{ td: MatchedBlock; inner: MatchedBlock | null }>,
 ): boolean {
-  if (hasUnsupportedBlockAttributes(row, SKILL_TR_ATTRS)) return true;
-  for (const { td, inner } of cells) {
-    if (hasUnsupportedBlockAttributes(td, SKILL_TD_ATTRS)) return true;
-    if (!inner) continue;
-    const supported =
-      inner.blockType === 'r20_checkbox' ||
-      inner.blockType === 'r20_text_input' ||
-      inner.blockType === 'r20_number_input'
-        ? SKILL_INPUT_ATTRS
-        : inner.blockType === 'r20_i18n_text' || inner.blockType === 'r20_inline_bold'
-          ? SKILL_LABEL_ATTRS
-          : inner.blockType === 'r20_roll_button'
-            ? SKILL_ROLL_ATTRS
-            : new Set<string>();
-    if (hasUnsupportedBlockAttributes(inner, supported)) return true;
-  }
+  // Every known row/cell/slot block now carries its own preserved safe
+  // attribute payload. Packing must therefore not reject a row merely because
+  // it has colspan, style, data-* or another attribute without a visible
+  // composite field; the emitter reinjects that payload on the same element.
+  void row;
+  void cells;
   return false;
 }
 

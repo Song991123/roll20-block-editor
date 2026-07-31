@@ -15,11 +15,14 @@
  * 자식 배치를 byte-identical 로 복원하기 위해.
  */
 
+import { injectPreservedAttributes } from './preservedAttributes';
+
 export interface SkillRowFields {
   /** `<tr>` 자체의 class. */
   TR_CLASS: string;
   /** `<tr>` 자체의 style. */
   TR_STYLE: string;
+  TR_ATTRS: string;
 
   /** cell 총 갯수 (string 으로 직렬화). */
   CELL_COUNT: string;
@@ -35,6 +38,8 @@ export interface SkillRowFields {
    * length === CELL_COUNT.
    */
   CELL_TD_CLASSES: string;
+  CELL_TD_ATTRS: string;
+  CELL_TD_TEXTS: string;
 
   /** checkbox slot — HAS_CHECKBOX === 'TRUE' 면 출력. */
   HAS_CHECKBOX: string;
@@ -43,6 +48,7 @@ export interface SkillRowFields {
   CHECKBOX_CLASS: string;
   CHECKBOX_VALUE: string;
   CHECKBOX_CHECKED: string;
+  CHECKBOX_ATTRS: string;
 
   /** label slot. */
   HAS_LABEL: string;
@@ -51,6 +57,7 @@ export interface SkillRowFields {
   LABEL_TEXT: string;
   LABEL_TAG: string;
   LABEL_CLASS: string;
+  LABEL_ATTRS: string;
 
   /** primary input. */
   HAS_INPUT: string;
@@ -59,6 +66,7 @@ export interface SkillRowFields {
   INPUT_NAME: string;
   INPUT_CLASS: string;
   INPUT_VALUE: string;
+  INPUT_ATTRS: string;
 
   /** 2nd input (optional). */
   HAS_INPUT2: string;
@@ -67,6 +75,7 @@ export interface SkillRowFields {
   INPUT2_NAME: string;
   INPUT2_CLASS: string;
   INPUT2_VALUE: string;
+  INPUT2_ATTRS: string;
 
   /** primary roll. */
   HAS_ROLL: string;
@@ -75,6 +84,7 @@ export interface SkillRowFields {
   ROLL_LABEL: string;
   ROLL_CLASS: string;
   ROLL_EXPR: string;
+  ROLL_ATTRS: string;
 
   /** 2nd roll (roll20-sheet-builder dual-roll, CoC critical 등). */
   HAS_ROLL2: string;
@@ -83,6 +93,7 @@ export interface SkillRowFields {
   ROLL2_LABEL: string;
   ROLL2_CLASS: string;
   ROLL2_EXPR: string;
+  ROLL2_ATTRS: string;
 
   /** 3rd roll. */
   HAS_ROLL3: string;
@@ -91,56 +102,67 @@ export interface SkillRowFields {
   ROLL3_LABEL: string;
   ROLL3_CLASS: string;
   ROLL3_EXPR: string;
+  ROLL3_ATTRS: string;
 }
 
 export const EMPTY_SKILL_ROW_FIELDS: SkillRowFields = {
   TR_CLASS: '',
   TR_STYLE: '',
+  TR_ATTRS: '',
   CELL_COUNT: '0',
   CELL_LAYOUT: '',
   CELL_TD_CLASSES: '',
+  CELL_TD_ATTRS: '',
+  CELL_TD_TEXTS: '',
   HAS_CHECKBOX: 'FALSE',
   CHECKBOX_TD_CLASS: '',
   CHECKBOX_NAME: '',
   CHECKBOX_CLASS: '',
   CHECKBOX_VALUE: '',
   CHECKBOX_CHECKED: 'FALSE',
+  CHECKBOX_ATTRS: '',
   HAS_LABEL: 'FALSE',
   LABEL_TD_CLASS: '',
   I18N_KEY: '',
   LABEL_TEXT: '',
   LABEL_TAG: '',
   LABEL_CLASS: '',
+  LABEL_ATTRS: '',
   HAS_INPUT: 'FALSE',
   INPUT_TD_CLASS: '',
   INPUT_TYPE: 'text',
   INPUT_NAME: '',
   INPUT_CLASS: '',
   INPUT_VALUE: '',
+  INPUT_ATTRS: '',
   HAS_INPUT2: 'FALSE',
   INPUT2_TD_CLASS: '',
   INPUT2_TYPE: 'text',
   INPUT2_NAME: '',
   INPUT2_CLASS: '',
   INPUT2_VALUE: '',
+  INPUT2_ATTRS: '',
   HAS_ROLL: 'FALSE',
   ROLL_TD_CLASS: '',
   ROLL_NAME: '',
   ROLL_LABEL: '',
   ROLL_CLASS: '',
   ROLL_EXPR: '',
+  ROLL_ATTRS: '',
   HAS_ROLL2: 'FALSE',
   ROLL2_TD_CLASS: '',
   ROLL2_NAME: '',
   ROLL2_LABEL: '',
   ROLL2_CLASS: '',
   ROLL2_EXPR: '',
+  ROLL2_ATTRS: '',
   HAS_ROLL3: 'FALSE',
   ROLL3_TD_CLASS: '',
   ROLL3_NAME: '',
   ROLL3_LABEL: '',
   ROLL3_CLASS: '',
   ROLL3_EXPR: '',
+  ROLL3_ATTRS: '',
 };
 
 export type CompositeWarn = (
@@ -174,9 +196,14 @@ function isTrue(value: string): boolean {
   return String(value ?? '').toUpperCase() === 'TRUE';
 }
 
-function tdOpen(cls: string): string {
+function withPreservedAttributes(code: string, raw: string): string {
+  return injectPreservedAttributes(code, String(raw ?? ''));
+}
+
+function tdOpen(cls: string, rawAttrs = ''): string {
   const c = String(cls ?? '').trim();
-  return c ? `<td class="${escapeAttr(c)}">` : `<td>`;
+  const base = c ? `<td class="${escapeAttr(c)}">` : `<td>`;
+  return withPreservedAttributes(base, rawAttrs);
 }
 
 // ---------- cell renderers ----------
@@ -196,7 +223,10 @@ function renderCheckboxInner(f: SkillRowFields, warn: CompositeWarn): string | n
   const value = String(f.CHECKBOX_VALUE ?? '');
   const valueAttr = value ? ` value="${escapeAttr(value)}"` : '';
   const checkedAttr = isTrue(f.CHECKBOX_CHECKED) ? ' checked="checked"' : '';
-  return `<input type="checkbox" name="${escapeAttr('attr_' + rawName)}"${clsAttr}${valueAttr}${checkedAttr}>`;
+  return withPreservedAttributes(
+    `<input type="checkbox" name="${escapeAttr('attr_' + rawName)}"${clsAttr}${valueAttr}${checkedAttr}>`,
+    f.CHECKBOX_ATTRS,
+  );
 }
 
 function renderLabelInner(f: SkillRowFields, _warn: CompositeWarn): string {
@@ -207,7 +237,10 @@ function renderLabelInner(f: SkillRowFields, _warn: CompositeWarn): string {
 
   if (i18nKey && labelTag && labelTag !== 'td') {
     const clsAttr = labelCls ? ` class="${escapeAttr(labelCls)}"` : '';
-    return `<${labelTag}${clsAttr} data-i18n="${escapeAttr(i18nKey)}">${labelText}</${labelTag}>`;
+    return withPreservedAttributes(
+      `<${labelTag}${clsAttr} data-i18n="${escapeAttr(i18nKey)}">${labelText}</${labelTag}>`,
+      f.LABEL_ATTRS,
+    );
   }
   if (i18nKey) {
     // td-direct i18n marker — handled at td level.
@@ -215,9 +248,22 @@ function renderLabelInner(f: SkillRowFields, _warn: CompositeWarn): string {
   }
   if (labelTag && labelTag !== 'td') {
     const clsAttr = labelCls ? ` class="${escapeAttr(labelCls)}"` : '';
-    return `<${labelTag}${clsAttr}>${labelText}</${labelTag}>`;
+    return withPreservedAttributes(
+      `<${labelTag}${clsAttr}>${labelText}</${labelTag}>`,
+      f.LABEL_ATTRS,
+    );
   }
-  return labelText;
+  // Imported static labels are represented as text fields in the composite
+  // contract, but their original inline element still matters for styles and
+  // data attributes. Restore the generic span when that metadata is present.
+  if (String(f.LABEL_ATTRS ?? '').trim()) {
+    const clsAttr = labelCls ? ` class="${escapeAttr(labelCls)}"` : '';
+    return withPreservedAttributes(
+      `<span${clsAttr}>${labelText}</span>`,
+      f.LABEL_ATTRS,
+    );
+  }
+  return withPreservedAttributes(labelText, f.LABEL_ATTRS);
 }
 
 function renderInputInner(
@@ -297,12 +343,18 @@ export function renderSkillRowHtml(
 
   const layoutStr = String(f.CELL_LAYOUT ?? '').trim();
   const tdClassesStr = String(f.CELL_TD_CLASSES ?? '');
+  const tdAttrsStr = String(f.CELL_TD_ATTRS ?? '');
+  const tdTextsStr = String(f.CELL_TD_TEXTS ?? '');
   let layout: string[];
   let tdClasses: string[];
+  let tdAttrs: string[];
+  let tdTexts: string[];
   if (layoutStr) {
     layout = layoutStr.split(',');
     // \u0001 는 구버전 구분자 호환 (XML 불법 문자라 탭으로 교체됨).
     tdClasses = tdClassesStr.split(/[\t\u0001]/);
+    tdAttrs = tdAttrsStr.split(/[\t\u0001]/);
+    tdTexts = tdTextsStr.split(/[\t\u0001]/);
   } else {
     // Default order — new-block UI fallback. spacer 안 넣음.
     layout = [];
@@ -325,19 +377,24 @@ export function renderSkillRowHtml(
         default: return '';
       }
     });
+    tdAttrs = layout.map(() => '');
+    tdTexts = layout.map(() => '');
   }
   // padding so tdClasses[i] always defined.
   while (tdClasses.length < layout.length) tdClasses.push('');
+  while (tdAttrs.length < layout.length) tdAttrs.push('');
+  while (tdTexts.length < layout.length) tdTexts.push('');
 
   const cells: string[] = [];
   for (let i = 0; i < layout.length; i++) {
     const slot = layout[i];
     const tdCls = tdClasses[i] ?? '';
+    const tdRawAttrs = tdAttrs[i] ?? '';
     switch (slot) {
       case 'checkbox': {
         const inner = renderCheckboxInner(f, warn);
-        if (inner == null) cells.push(`${tdOpen(tdCls)}</td>`);
-        else cells.push(`${tdOpen(tdCls)}${inner}</td>`);
+        if (inner == null) cells.push(`${tdOpen(tdCls, tdRawAttrs)}</td>`);
+        else cells.push(`${tdOpen(tdCls, tdRawAttrs)}${inner}</td>`);
         break;
       }
       case 'label': {
@@ -349,9 +406,15 @@ export function renderSkillRowHtml(
           const labelCls = m[3].trim();
           const fullCls = [labelTdCls, labelCls].filter((s) => s).join(' ');
           const clsAttr = fullCls ? ` class="${escapeAttr(fullCls)}"` : '';
-          cells.push(`<td${clsAttr} data-i18n="${escapeAttr(m[1])}">${m[2]}</td>`);
+          cells.push(withPreservedAttributes(
+            withPreservedAttributes(
+              `<td${clsAttr} data-i18n="${escapeAttr(m[1])}">${m[2]}</td>`,
+              f.LABEL_ATTRS,
+            ),
+            tdRawAttrs,
+          ));
         } else {
-          cells.push(`${tdOpen(tdCls)}${inner}</td>`);
+          cells.push(`${tdOpen(tdCls, tdRawAttrs)}${inner}</td>`);
         }
         break;
       }
@@ -365,7 +428,7 @@ export function renderSkillRowHtml(
           'COMPOSITE_SKILL_ROW_INPUT_NAME_MISSING',
           warn,
         );
-        cells.push(`${tdOpen(tdCls)}${inner ?? ''}</td>`);
+        cells.push(`${tdOpen(tdCls, tdRawAttrs)}${withPreservedAttributes(inner ?? '', f.INPUT_ATTRS)}</td>`);
         break;
       }
       case 'input2': {
@@ -378,7 +441,7 @@ export function renderSkillRowHtml(
           'COMPOSITE_SKILL_ROW_INPUT2_NAME_MISSING',
           warn,
         );
-        cells.push(`${tdOpen(tdCls)}${inner ?? ''}</td>`);
+        cells.push(`${tdOpen(tdCls, tdRawAttrs)}${withPreservedAttributes(inner ?? '', f.INPUT2_ATTRS)}</td>`);
         break;
       }
       case 'roll': {
@@ -391,7 +454,7 @@ export function renderSkillRowHtml(
           'COMPOSITE_SKILL_ROW_ROLL_NAME_MISSING',
           warn,
         );
-        cells.push(`${tdOpen(tdCls)}${inner ?? ''}</td>`);
+        cells.push(`${tdOpen(tdCls, tdRawAttrs)}${withPreservedAttributes(inner ?? '', f.ROLL_ATTRS)}</td>`);
         break;
       }
       case 'roll2': {
@@ -404,7 +467,7 @@ export function renderSkillRowHtml(
           'COMPOSITE_SKILL_ROW_ROLL2_NAME_MISSING',
           warn,
         );
-        cells.push(`${tdOpen(tdCls)}${inner ?? ''}</td>`);
+        cells.push(`${tdOpen(tdCls, tdRawAttrs)}${withPreservedAttributes(inner ?? '', f.ROLL2_ATTRS)}</td>`);
         break;
       }
       case 'roll3': {
@@ -417,12 +480,12 @@ export function renderSkillRowHtml(
           'COMPOSITE_SKILL_ROW_ROLL3_NAME_MISSING',
           warn,
         );
-        cells.push(`${tdOpen(tdCls)}${inner ?? ''}</td>`);
+        cells.push(`${tdOpen(tdCls, tdRawAttrs)}${withPreservedAttributes(inner ?? '', f.ROLL3_ATTRS)}</td>`);
         break;
       }
       default:
         // spacer — empty td (class 만 보존).
-        cells.push(`${tdOpen(tdCls)}</td>`);
+        cells.push(`${tdOpen(tdCls, tdRawAttrs)}${escapeText(tdTexts[i] ?? '')}</td>`);
         break;
     }
   }
@@ -435,5 +498,5 @@ function wrapTr(inner: string, f: SkillRowFields): string {
   const style = String(f.TR_STYLE ?? '').trim();
   const clsAttr = cls ? ` class="${escapeAttr(cls)}"` : '';
   const styleAttr = style ? ` style="${escapeAttr(style)}"` : '';
-  return `<tr${clsAttr}${styleAttr}>${inner}</tr>`;
+  return withPreservedAttributes(`<tr${clsAttr}${styleAttr}>${inner}</tr>`, f.TR_ATTRS);
 }

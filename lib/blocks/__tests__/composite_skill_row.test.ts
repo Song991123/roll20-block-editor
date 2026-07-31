@@ -12,6 +12,7 @@ import {
   renderSkillRowHtml,
   EMPTY_SKILL_ROW_FIELDS,
 } from '../composite_skill_row_emit.ts';
+import { serializePreservedAttributes } from '../preservedAttributes.ts';
 
 function assert(cond: unknown, msg: string): void {
   if (!cond) throw new Error(`Assertion failed: ${msg}`);
@@ -157,6 +158,52 @@ function testInvalidNameDropsCheckbox(): void {
   );
 }
 
+function testPreservedAttributesReenterEmittedElements(): void {
+  const html = renderSkillRowHtml({
+    ...EMPTY_SKILL_ROW_FIELDS,
+    TR_ATTRS: serializePreservedAttributes({ 'data-row-kind': 'skill', 'aria-label': 'Skill row' }),
+    CELL_LAYOUT: 'label,input,roll',
+    CELL_TD_ATTRS: [
+      serializePreservedAttributes({ colspan: '2' }),
+      serializePreservedAttributes({ 'data-cell': 'value' }),
+      serializePreservedAttributes({ 'data-cell': 'roll' }),
+    ].join('\t'),
+    HAS_LABEL: 'TRUE',
+    I18N_KEY: 'skill-name',
+    LABEL_TEXT: 'Name',
+    LABEL_ATTRS: serializePreservedAttributes({ 'data-label-kind': 'translated' }),
+    HAS_INPUT: 'TRUE',
+    INPUT_NAME: 'skill_name',
+    INPUT_ATTRS: serializePreservedAttributes({ style: 'width:90%', 'data-hook': 'value' }),
+    HAS_ROLL: 'TRUE',
+    ROLL_NAME: 'skill_name',
+    ROLL_EXPR: '/r 1d100',
+    ROLL_ATTRS: serializePreservedAttributes({ 'data-roll-kind': 'skill' }),
+  });
+  expectIncludes(html, 'data-row-kind="skill"', 'tr attrs emitted');
+  expectIncludes(html, 'colspan="2"', 'label td attrs emitted');
+  expectIncludes(html, 'data-label-kind="translated"', 'label attrs emitted');
+  expectIncludes(html, 'style="width:90%"', 'input attrs emitted');
+  expectIncludes(html, 'data-hook="value"', 'input data attr emitted');
+  expectIncludes(html, 'data-roll-kind="skill"', 'roll attrs emitted');
+}
+
+function testStaticLabelElementSurvivesPacking(): void {
+  const html = renderSkillRowHtml({
+    ...EMPTY_SKILL_ROW_FIELDS,
+    CELL_LAYOUT: 'label,input',
+    CELL_TD_ATTRS: '\t',
+    HAS_LABEL: 'TRUE',
+    LABEL_TEXT: 'Static label',
+    LABEL_ATTRS: serializePreservedAttributes({ style: 'font-weight:bold', 'data-label': 'static' }),
+    HAS_INPUT: 'TRUE',
+    INPUT_NAME: 'value',
+  });
+  expectIncludes(html, '<span', 'static label element restored');
+  expectIncludes(html, 'style="font-weight:bold"', 'static label style preserved');
+  expectIncludes(html, 'data-label="static"', 'static label data attr preserved');
+}
+
 const tests = [
   ['standard skill row', testStandardSkillRow],
   ['input-only minimal', testInputOnlyMinimal],
@@ -166,6 +213,8 @@ const tests = [
   ['empty fields → warning + empty', testEmptySkipsEmit],
   ['HTML escape', testEscape],
   ['invalid checkbox NAME stripped → skip + warn', testInvalidNameDropsCheckbox],
+  ['preserved attrs reenter emitted elements', testPreservedAttributesReenterEmittedElements],
+  ['static label element survives packing', testStaticLabelElementSurvivesPacking],
 ] as const;
 
 let passed = 0;

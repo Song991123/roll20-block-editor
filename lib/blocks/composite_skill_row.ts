@@ -52,51 +52,61 @@ function emitSkillRow(block: unknown, ctx: GeneratorContext): string {
   const f: SkillRowFields = {
     TR_CLASS: readField(block, 'TR_CLASS').trim(),
     TR_STYLE: readField(block, 'TR_STYLE').trim(),
+    TR_ATTRS: readField(block, 'TR_ATTRS'),
     CELL_COUNT: readField(block, 'CELL_COUNT', '0'),
     CELL_LAYOUT: readField(block, 'CELL_LAYOUT'),
     CELL_TD_CLASSES: readField(block, 'CELL_TD_CLASSES'),
+    CELL_TD_ATTRS: readField(block, 'CELL_TD_ATTRS'),
+    CELL_TD_TEXTS: readField(block, 'CELL_TD_TEXTS'),
     HAS_CHECKBOX: readField(block, 'HAS_CHECKBOX', 'FALSE'),
     CHECKBOX_TD_CLASS: readField(block, 'CHECKBOX_TD_CLASS').trim(),
     CHECKBOX_NAME: readField(block, 'CHECKBOX_NAME').trim(),
     CHECKBOX_CLASS: readField(block, 'CHECKBOX_CLASS').trim(),
     CHECKBOX_VALUE: readField(block, 'CHECKBOX_VALUE'),
     CHECKBOX_CHECKED: readField(block, 'CHECKBOX_CHECKED', 'FALSE'),
+    CHECKBOX_ATTRS: readField(block, 'CHECKBOX_ATTRS'),
     HAS_LABEL: readField(block, 'HAS_LABEL', 'FALSE'),
     LABEL_TD_CLASS: readField(block, 'LABEL_TD_CLASS').trim(),
     I18N_KEY: readField(block, 'I18N_KEY').trim(),
     LABEL_TEXT: readField(block, 'LABEL_TEXT'),
     LABEL_TAG: readField(block, 'LABEL_TAG').trim(),
     LABEL_CLASS: readField(block, 'LABEL_CLASS').trim(),
+    LABEL_ATTRS: readField(block, 'LABEL_ATTRS'),
     HAS_INPUT: readField(block, 'HAS_INPUT', 'FALSE'),
     INPUT_TD_CLASS: readField(block, 'INPUT_TD_CLASS').trim(),
     INPUT_TYPE: readField(block, 'INPUT_TYPE', 'text').trim() || 'text',
     INPUT_NAME: readField(block, 'INPUT_NAME').trim(),
     INPUT_CLASS: readField(block, 'INPUT_CLASS').trim(),
     INPUT_VALUE: readField(block, 'INPUT_VALUE'),
+    INPUT_ATTRS: readField(block, 'INPUT_ATTRS'),
     HAS_INPUT2: readField(block, 'HAS_INPUT2', 'FALSE'),
     INPUT2_TD_CLASS: readField(block, 'INPUT2_TD_CLASS').trim(),
     INPUT2_TYPE: readField(block, 'INPUT2_TYPE', 'text').trim() || 'text',
     INPUT2_NAME: readField(block, 'INPUT2_NAME').trim(),
     INPUT2_CLASS: readField(block, 'INPUT2_CLASS').trim(),
     INPUT2_VALUE: readField(block, 'INPUT2_VALUE'),
+    INPUT2_ATTRS: readField(block, 'INPUT2_ATTRS'),
     HAS_ROLL: readField(block, 'HAS_ROLL', 'FALSE'),
     ROLL_TD_CLASS: readField(block, 'ROLL_TD_CLASS').trim(),
     ROLL_NAME: readField(block, 'ROLL_NAME').trim(),
     ROLL_LABEL: readField(block, 'ROLL_LABEL'),
     ROLL_CLASS: readField(block, 'ROLL_CLASS').trim(),
     ROLL_EXPR: readField(block, 'ROLL_EXPR'),
+    ROLL_ATTRS: readField(block, 'ROLL_ATTRS'),
     HAS_ROLL2: readField(block, 'HAS_ROLL2', 'FALSE'),
     ROLL2_TD_CLASS: readField(block, 'ROLL2_TD_CLASS').trim(),
     ROLL2_NAME: readField(block, 'ROLL2_NAME').trim(),
     ROLL2_LABEL: readField(block, 'ROLL2_LABEL'),
     ROLL2_CLASS: readField(block, 'ROLL2_CLASS').trim(),
     ROLL2_EXPR: readField(block, 'ROLL2_EXPR'),
+    ROLL2_ATTRS: readField(block, 'ROLL2_ATTRS'),
     HAS_ROLL3: readField(block, 'HAS_ROLL3', 'FALSE'),
     ROLL3_TD_CLASS: readField(block, 'ROLL3_TD_CLASS').trim(),
     ROLL3_NAME: readField(block, 'ROLL3_NAME').trim(),
     ROLL3_LABEL: readField(block, 'ROLL3_LABEL'),
     ROLL3_CLASS: readField(block, 'ROLL3_CLASS').trim(),
     ROLL3_EXPR: readField(block, 'ROLL3_EXPR'),
+    ROLL3_ATTRS: readField(block, 'ROLL3_ATTRS'),
   };
   return renderSkillRowHtml(f, (code, sev, msg) => {
     const b = block as Blockly.Block;
@@ -317,6 +327,16 @@ export const COMPOSITE_SKILL_ROW: BlockDef = {
     b.appendDummyInput()
       .appendField('칸 td class 목록')
       .appendField(new Blockly.FieldTextInput(''), 'CELL_TD_CLASSES');
+    const preserved = b.appendDummyInput('__r20_skill_row_preserved');
+    for (const name of [
+      'TR_ATTRS', 'CELL_TD_ATTRS', 'CELL_TD_TEXTS',
+      'CHECKBOX_ATTRS', 'LABEL_ATTRS',
+      'INPUT_ATTRS', 'INPUT2_ATTRS',
+      'ROLL_ATTRS', 'ROLL2_ATTRS', 'ROLL3_ATTRS',
+    ]) {
+      preserved.appendField(new Blockly.FieldTextInput(''), name);
+    }
+    preserved.setVisible(false);
     setStatementHooks(b);
   }),
   generator: (block, ctx) => emitSkillRow(block, ctx),

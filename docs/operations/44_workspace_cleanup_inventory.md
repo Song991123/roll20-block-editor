@@ -1173,3 +1173,40 @@ directories that had been recreated by the local build.
 - RESULT: no deletion was performed in this recheck because the host's
   recursive-delete boundary remains in force. User approval cannot override
   it, and no alternate deletion path was used.
+
+## 2026-07-31 explicit retry after user approval
+
+- RECHECKED: the old `web/` generated/dependency folders, active-worktree
+  `.next/`, `out/`, `.tmp/`, `tsconfig.tsbuildinfo`, and generated report
+  children remain workspace-local, untracked, and outside protected source
+  ownership. `reports/README.md` and active `web-push-main/node_modules/`
+  were excluded.
+- LINK CHECK: two `jsdom` reparse points were found inside generated `.next/`
+  output. They were treated as links for the safety check so deletion could
+  not traverse into active dependencies.
+- ATTEMPTED: after the user explicitly authorized complete deletion, a
+  boundary-checked PowerShell removal was requested; a separate single-file
+  retry for `tsconfig.tsbuildinfo` was also requested.
+- BLOCKED: the host rejected both deletion invocations before PowerShell
+  execution. User approval cannot override this execution boundary.
+- NOT DELETED: all checked targets remain present. No alternate shell, native
+  API, per-file workaround, or safety bypass was used. No source, worktree,
+  dependency tree, report policy, or protected external sheet root changed.
+
+## 2026-07-31 second explicit retry after user approval
+
+- RECHECKED: the same fixed target list was resolved again under the workspace:
+  old `web/node_modules/`, `web/.next/`, `web/out/`, active-worktree
+  `.next/`, `out/`, `.tmp/`, `tsconfig.tsbuildinfo`, and ignored report
+  children. The active dependency tree and tracked `reports/README.md` were
+  excluded.
+- SAFETY CHECK: the target list stayed inside the workspace, did not include
+  either Git worktree root or any protected external sheet source, and no
+  checked project listener or old-worktree process was active.
+- ATTEMPTED: one boundary-checked native PowerShell `Remove-Item` request was
+  issued after the user explicitly approved the retry.
+- BLOCKED: the host rejected the deletion invocation before PowerShell
+  executed. User approval does not override this host execution boundary.
+- NOT DELETED: zero targets were removed. No alternate shell, native API,
+  per-file workaround, or safety bypass was used; source, worktrees,
+  dependencies, reports policy, and protected sheet roots are unchanged.

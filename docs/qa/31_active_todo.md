@@ -1,3 +1,24 @@
+## 2026-07-31 Generic composite attribute preservation refresh
+
+- DONE LOCAL: `r20_skill_row` now carries row, cell, control, roll, and label
+  safe-attribute payloads through hidden fields and reinjects them on emit.
+  Direct `td[data-i18n]`, table attributes, input styles, and unknown safe
+  attributes no longer force an avoidable atomic fallback.
+- DONE LOCAL: Static label elements with preserved metadata are restored as
+  inline spans instead of being flattened into bare text inside a composite.
+- VERIFIED LOCAL: composite matcher/emitter, import structure, high-priority
+  mapping, full `ci:verify`, lint, and production build pass.
+- VERIFIED LOCAL: the anonymous compatibility fixture completed browser
+  import -> emit -> re-import -> emit with stable output; preview/edit shared
+  crop mismatch was `0%` in both modern and legacy local contracts, with no
+  console/page errors.
+- CLAIM BOUNDARY: this is generic local mapping and shared-surface evidence;
+  it does not prove all-sheet coverage, live Roll20 screenshot parity, exact
+  attachment readback, or worker mutation in Roll20.
+- NEXT P0: recover a responsive authenticated Sandbox handoff, capture fresh
+  same-payload modern evidence, then repeat independently in the dedicated
+  legacy destination.
+
 ## 2026-07-31 Local payload fidelity gate
 
 - DONE LOCAL: Added `roll20_payload_fidelity_gate.mjs` and wired its self-test

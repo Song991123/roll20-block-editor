@@ -1,3 +1,18 @@
+## 2026-07-31 - Generic composite attribute preservation refresh
+
+- Added generic hidden fields to the skill-row composite for row/cell/label,
+  input, checkbox, and Roll-control attributes. The emitter reinjects these
+  values without adding sheet-specific branches.
+- Preserved direct translated table cells and static label inline elements so
+  composite packing does not silently flatten their authored structure.
+- Verified focused mapping tests, full `ci:verify`, lint, production build,
+  browser roundtrip, and modern/legacy local preview-edit exact parity for the
+  anonymous compatibility fixture.
+- Kept the evidence boundary explicit: actual Roll20 screenshot parity,
+  attachment byte readback, worker mutation, and universal corpus coverage
+  remain open. No source identity or copyrighted sheet material was added to
+  the repository.
+
 ## 2026-07-31 - Payload fidelity gate
 
 - Added the local-only payload fidelity gate and CI self-test. It compares the

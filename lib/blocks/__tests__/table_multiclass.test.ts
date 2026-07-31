@@ -134,11 +134,25 @@ function testTableRoundtripStructurePreserved(): void {
   assert(r.html.includes('r20_table'), 'r20_table');
   assert(r.html.includes('r20_thead'), 'r20_thead');
   assert(r.html.includes('r20_tbody'), 'r20_tbody');
-  assert((r.html.match(/r20_tr/g) || []).length >= 2, 'r20_tr ≥ 2');
+  const rowBlocks =
+    (r.html.match(/type="r20_tr"/g) || []).length +
+    (r.html.match(/type="r20_skill_row"/g) || []).length;
+  assert(rowBlocks >= 2, 'table row structure is represented by r20_tr or r20_skill_row');
   assert((r.html.match(/r20_th/g) || []).length >= 2, 'r20_th ≥ 2');
-  assert((r.html.match(/r20_td/g) || []).length >= 1, 'r20_td ≥ 1 (data-i18n 없는 td)');
-  assert(r.html.includes('r20_i18n_text'), 'i18n text');
-  assert(r.html.includes('r20_text_input'), 'input 보존');
+  const packedRow = r.html.includes('type="r20_skill_row"');
+  assert(
+    (r.html.match(/type="r20_td"/g) || []).length >= 1 ||
+      (packedRow && r.html.includes('name="CELL_TD_ATTRS"')),
+    'td structure is represented by r20_td or skill-row cell fields',
+  );
+  assert(
+    r.html.includes('r20_i18n_text') || (packedRow && r.html.includes('name="I18N_KEY"')),
+    'i18n text is represented by an atomic or composite field',
+  );
+  assert(
+    r.html.includes('r20_text_input') || (packedRow && r.html.includes('name="INPUT_NAME"')),
+    'input is represented by an atomic or composite field',
+  );
 }
 
 // --- runner ----------------------------------------------------------------
