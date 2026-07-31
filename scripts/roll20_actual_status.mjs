@@ -283,7 +283,10 @@ function safePathLabel(value) {
 
 async function findLatestPreuploadRun() {
   if (!existsSync(RUN_ROOT)) {
-    throw new Error(`missing Roll20 actual-compare report root: ${RUN_ROOT}`);
+    throw new Error(
+      `no local Roll20 actual-screen run is available under ${RUN_ROOT}; `
+      + 'run the supported pre-upload flow first or pass an explicit run folder',
+    );
   }
   const entries = await fs.readdir(RUN_ROOT, { withFileTypes: true });
   const candidates = [];
@@ -1306,6 +1309,8 @@ function firstPositionalArg() {
 }
 
 main().catch((error) => {
-  console.error(error);
+  const message = error?.message ?? String(error);
+  console.error(`ROLL20 ACTUAL STATUS OPEN\n${message}`);
+  console.error('No actual-screen parity is promoted when the evidence run is missing.');
   process.exitCode = 1;
 });

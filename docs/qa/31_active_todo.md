@@ -10423,3 +10423,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `VERIFY / OPEN EXTERNAL`: the recovered output has not yet been applied to
   Roll20 through the supported chooser, so translation parity and same-payload
   modern/legacy screenshots remain open.
+
+## 2026-07-31 Actual Status Reporting Hardening
+
+- `DONE LOCAL`: `status:roll20-actual` now reports a readable `OPEN` state
+  with exit code `1` when the ignored actual-evidence run is absent, instead
+  of emitting an unstructured stack trace.
+- `VERIFIED LOCAL`: current browser smoke still passes for the fresh-sheet
+  contract and three synthetic imported-edit cases; the canonical iframe is
+  preserved, edit/preview geometry sync is true, visual sync is below the
+  local diagnostic limit, re-import is stable, and resource issues are zero.
+- `VERIFY / OPEN EXTERNAL`: no actual Roll20 evidence is promoted by this
+  change. Supported three-file selection and modern/legacy same-payload
+  screenshots remain open.

@@ -11000,3 +11000,15 @@ same-hash modern/legacy comparison.
 - `CLAIM BOUNDARY`: this improves import/export resilience only. Roll20
   translation application and modern/legacy visual parity still require the
   supported external upload and fresh matching-runtime evidence.
+
+## 2026-07-31 - Actual status reporting hardening
+
+- `IMPLEMENTED`: when the ignored Roll20 actual-compare root is absent,
+  `scripts/roll20_actual_status.mjs` now emits an explicit `OPEN` message and
+  keeps exit code `1`; it no longer looks like an unexpected runtime crash.
+- `VERIFIED LOCAL`: fresh-sheet smoke passed with one persistent iframe and an
+  850px default canvas. Imported-edit sync passed for three synthetic cases:
+  pointer interaction, preview synchronization, visual synchronization,
+  re-import stability, and resource checks all passed.
+- `CLAIM BOUNDARY`: these are local browser-contract results only. They do not
+  replace supported Roll20 Sandbox upload or independent legacy-room evidence.
