@@ -9718,3 +9718,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `VERIFY / BLOCKED EXTERNAL`: dedicated tab control still times out. No new
   upload or external state change occurred; actual screenshot parity and
   independent legacy evidence remain open.
+
+## 2026-07-31 Final Generated-Output Cleanup Retry
+
+- `MEASURED`: no project listener was active, and active-worktree `.next/`,
+  `out/`, and `.tmp/` remained untracked generated output.
+- `VERIFY / BLOCKED CLEANUP`: the user-authorized recursive deletion was
+  rejected by the host before PowerShell execution. No alternate deletion
+  path was used; protected sources and worktrees remain unchanged.

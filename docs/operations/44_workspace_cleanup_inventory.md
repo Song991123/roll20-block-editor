@@ -1323,3 +1323,16 @@ directories that had been recreated by the local build.
   per-file workaround, or safety bypass was used; source, worktrees, active
   dependencies, reports policy, and protected external sheet roots remain
   preserved.
+
+## 2026-07-31 final retry after latest user approval
+
+- RECHECKED: the active worktree `.next/`, `out/`, and `.tmp/` paths were
+  present, untracked generated output under the active worktree. No project
+  listener was active; source roots, dependencies, worktrees, and protected
+  sheet roots were excluded.
+- ATTEMPTED: a boundary-checked native PowerShell recursive deletion request
+  was issued after the user explicitly authorized retrying.
+- BLOCKED: the host rejected the destructive command before PowerShell
+  execution. User approval cannot override this execution boundary.
+- NOT DELETED: all three targets remain. No alternate shell, native API,
+  per-file workaround, or safety bypass was used.

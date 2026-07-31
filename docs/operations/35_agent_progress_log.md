@@ -10318,3 +10318,12 @@ same-hash modern/legacy comparison.
   control times out. No new upload, screenshot, settings save, chat action, or
   ordinary-room mutation occurred. Historical partial observations do not
   promote this current gate to PASS.
+
+## 2026-07-31 - Final generated-output cleanup retry
+
+- RECHECKED LOCAL: no project listener was active; active-worktree `.next/`,
+  `out/`, and `.tmp/` were confirmed as untracked generated targets.
+- `VERIFY / BLOCKED CLEANUP`: the user-authorized boundary-checked recursive
+  deletion was rejected by the host before PowerShell execution. No source,
+  worktree, dependency, report-policy, or protected sheet path was touched,
+  and no bypass was attempted.

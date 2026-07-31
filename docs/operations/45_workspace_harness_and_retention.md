@@ -553,3 +553,12 @@ external material remain preserved.
   executed. User approval cannot override this host execution boundary.
 - NOT DELETED: all three targets remain. No alternate shell, native API,
   per-file workaround, or safety bypass was used.
+
+## 2026-07-31 final retry after latest user approval
+
+- The active worktree generated targets were rechecked after local and CI
+  verification. No project listener was active, and the paths remained inside
+  the active worktree and outside protected sources and Git worktree roots.
+- The host rejected the boundary-checked recursive deletion request before
+  PowerShell executed it. The targets remain in place; no deletion bypass was
+  attempted.
