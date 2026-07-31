@@ -160,6 +160,7 @@ export function resolveIframeWidgetDropTarget(
   message: IframeWidgetDragMessage | IframeBlockTypeDragMessage,
   lookup: IframeDropTargetLookup,
   movingType = '',
+  placement: IframePlacementMode = 'flow',
 ): IframeEditDropTarget | null {
   if (message.phase !== 'dragover' && message.phase !== 'drop') return null;
   for (const geometry of message.hitPath) {
@@ -168,6 +169,10 @@ export function resolveIframeWidgetDropTarget(
     const canDropInside = canPlaceInside('', block.id, lookup, movingType);
     const mode = pickDropMode(geometry, message.pointer.y, canDropInside);
     if (mode !== 'inside' && !canPlaceAdjacent('', block.id, lookup, movingType)) continue;
+    // Free placement must prefer a containing frame. If the pointer is over
+    // an existing child, its before/after slot is a flow target and would
+    // otherwise make the new absolute widget escape the intended frame.
+    if (placement === 'free' && mode !== 'inside') continue;
     return {
       blockId: block.id,
       label: block.label || block.type,

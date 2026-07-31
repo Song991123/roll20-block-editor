@@ -127,6 +127,18 @@ const widgetTarget = resolveIframeWidgetDropTarget({
 assert.equal(widgetTarget?.blockId, 'frame');
 assert.equal(widgetTarget?.mode, 'inside');
 
+const freeNestedWidgetTarget = resolveIframeWidgetDropTarget({
+  type: 'r20:widget-drag',
+  protocol: 1,
+  bridgeId: 'r20-drop-target-test',
+  phase: 'dragover',
+  payload: '{"id":"number-input"}',
+  pointer: { x: 40, y: 100 },
+  hitPath: [geometry('subject', 20, 40), geometry('frame', 0, 200)],
+}, lookup, 'r20_text_input', 'free');
+assert.equal(freeNestedWidgetTarget?.blockId, 'frame');
+assert.equal(freeNestedWidgetTarget?.mode, 'inside');
+
 const widgetTableBlocks = new Map<string, BlockSnapshot>([
   ['table', {
     id: 'table', type: 'r20_table', depth: 0, childCount: 1,

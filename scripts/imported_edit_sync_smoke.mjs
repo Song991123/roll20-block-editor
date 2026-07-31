@@ -1700,6 +1700,242 @@ async function runImportedNonLeafLayerReorder(page, fixtureId) {
   };
 }
 
+const CANONICAL_DROP_CONTAINER_TYPES = new Set([
+  'r20_div',
+  'r20_element_container',
+  'r20_attr_with_txt_helper',
+  'r20_form',
+  'r20_section',
+  'r20_fieldset',
+  'r20_table',
+  'r20_thead',
+  'r20_tbody',
+  'r20_tfoot',
+  'r20_tr',
+  'r20_td',
+  'r20_th',
+  'r20_list',
+  'r20_list_item',
+  'r20_toggle_wrap',
+  'r20_toggle_on_area',
+  'r20_toggle_off_area',
+  'r20_value_switch_panel',
+  'r20_value_case',
+]);
+
+async function getCanonicalDropContainerIds(page) {
+  return page.evaluate((allowedTypes) => {
+    const allowed = new Set(allowedTypes);
+    return (window.__perfHook.getLayerSnapshot('html') || [])
+      .filter((block) => allowed.has(String(block.type).toLowerCase()))
+      .map((block) => block.id)
+      .filter(Boolean);
+  }, [...CANONICAL_DROP_CONTAINER_TYPES]);
+}
+
+async function runCanonicalImportedCanvasInsert(page) {
+  await page.evaluate(() => {
+    window.__perfHook.setPreviewZoom(1);
+    window.__perfHook.setMainMode('edit');
+  });
+  const frame = await waitForPreviewSheetFrame(page);
+  await page.click('[data-testid="edit-placement-flow"]');
+  const candidateIds = await getCanonicalDropContainerIds(page);
+  const result = await frame.evaluate(async (candidateIds) => {
+    const root = document.querySelector('.charactersheet.charsheet');
+    if (!root) return { pass: false, reason: 'missing persistent iframe sheet root' };
+    const beforeIds = new Set(
+      Array.from(root.querySelectorAll('[data-r20-block-id]'))
+        .map((el) => el.getAttribute('data-r20-block-id'))
+        .filter(Boolean),
+    );
+    const candidates = candidateIds.map((blockId) => root.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`))
+      .filter(Boolean)
+      .map((el) => {
+        const rect = el.getBoundingClientRect();
+        const style = getComputedStyle(el);
+        return {
+          el,
+          blockId: el.getAttribute('data-r20-block-id') || '',
+          role: el.getAttribute('data-r20-layer-role') || 'container',
+          rect,
+          visible: style.display !== 'none' && style.visibility !== 'hidden'
+            && rect.width >= 40 && rect.height >= 24,
+          nestedCount: el.querySelectorAll('[data-r20-block-id]').length,
+        };
+      })
+      .filter((item) => item.visible)
+      .sort((a, b) => a.nestedCount - b.nestedCount || a.rect.width * a.rect.height - b.rect.width * b.rect.height);
+    if (candidates.length === 0) {
+      return { pass: false, skipped: true, reason: 'no visible imported frame/flow flow-placement target' };
+    }
+
+    const target = candidates[0];
+    const dataTransfer = new DataTransfer();
+    dataTransfer.setData('application/x-r20-friendly-widget', JSON.stringify({ id: 'text-input' }));
+    const rect = target.rect;
+    const init = {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      clientX: Math.round(rect.left + rect.width / 2),
+      clientY: Math.round(rect.top + Math.min(rect.height - 2, Math.max(2, rect.height / 2))),
+    };
+    const dragover = new DragEvent('dragover', init);
+    Object.defineProperty(dragover, 'dataTransfer', { value: dataTransfer });
+    target.el.dispatchEvent(dragover);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const drop = new DragEvent('drop', init);
+    Object.defineProperty(drop, 'dataTransfer', { value: dataTransfer });
+    target.el.dispatchEvent(drop);
+    await new Promise((resolve) => setTimeout(resolve, 700));
+
+    const newInput = Array.from(root.querySelectorAll('input[data-r20-block-id]'))
+      .find((el) => !beforeIds.has(el.getAttribute('data-r20-block-id') || ''));
+    const newId = newInput?.getAttribute('data-r20-block-id') || null;
+    const block = newInput?.closest('[data-r20-block-id]') || newInput;
+    const parent = newInput?.parentElement?.closest('[data-r20-block-id]');
+    const blockStyle = block ? getComputedStyle(block) : null;
+    return {
+      pass: dragover.defaultPrevented && drop.defaultPrevented && Boolean(newId)
+        && parent?.getAttribute('data-r20-block-id') === target.blockId
+        && blockStyle?.position !== 'absolute',
+      skipped: false,
+      target: { blockId: target.blockId, role: target.role, width: Math.round(rect.width), height: Math.round(rect.height) },
+      dragoverPrevented: dragover.defaultPrevented,
+      dropPrevented: drop.defaultPrevented,
+      newId,
+      parentId: parent?.getAttribute('data-r20-block-id') || null,
+      position: blockStyle?.position || null,
+    };
+  }, candidateIds);
+  if (result?.skipped || !result?.newId) return result;
+  const emitted = await page.evaluate(({ newId, parentId }) => {
+    const html = window.__perfHook.getEmitContent().html || '';
+    const newIndex = html.indexOf(`data-r20-block-id="${newId}"`);
+    const parentIndex = html.indexOf(`data-r20-block-id="${parentId}"`);
+    const start = html.lastIndexOf('<', newIndex);
+    const end = html.indexOf('>', newIndex);
+    const tag = newIndex >= 0 && start >= 0 && end >= start ? html.slice(start, end + 1) : '';
+    const inlineStyle = tag.match(/\sstyle=(['"])([\s\S]*?)\1/i)?.[2] || '';
+    return {
+      nested: parentIndex >= 0 && newIndex > parentIndex,
+      hasAbsolute: /position\s*:\s*absolute/i.test(inlineStyle),
+      tag,
+    };
+  }, { newId: result.newId, parentId: result.parentId });
+  return { ...result, emitted, pass: result.pass && emitted.nested && !emitted.hasAbsolute };
+}
+
+async function runCanonicalImportedFreeCanvasInsert(page) {
+  await page.evaluate(() => {
+    window.__perfHook.setPreviewZoom(1);
+    window.__perfHook.setMainMode('edit');
+  });
+  const frame = await waitForPreviewSheetFrame(page);
+  await page.click('[data-testid="edit-placement-free"]');
+  const candidateIds = await getCanonicalDropContainerIds(page);
+  const result = await frame.evaluate(async (candidateIds) => {
+    const root = document.querySelector('.charactersheet.charsheet');
+    if (!root) return { pass: false, reason: 'missing persistent iframe sheet root' };
+    const beforeIds = new Set(
+      Array.from(root.querySelectorAll('[data-r20-block-id]'))
+        .map((el) => el.getAttribute('data-r20-block-id'))
+        .filter(Boolean),
+    );
+    const candidates = candidateIds.map((blockId) => root.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`))
+      .filter(Boolean)
+      .map((el) => {
+        const rect = el.getBoundingClientRect();
+        const style = getComputedStyle(el);
+        return {
+          el,
+          blockId: el.getAttribute('data-r20-block-id') || '',
+          role: el.getAttribute('data-r20-layer-role') || 'container',
+          rect,
+          visible: style.display !== 'none' && style.visibility !== 'hidden'
+            && rect.width >= 56 && rect.height >= 32,
+          nestedCount: el.querySelectorAll('[data-r20-block-id]').length,
+        };
+      })
+      .filter((item) => item.visible)
+      .sort((a, b) => a.nestedCount - b.nestedCount || a.rect.width * a.rect.height - b.rect.width * b.rect.height);
+    if (candidates.length === 0) {
+      return { pass: false, skipped: true, reason: 'no visible imported frame/flow free-placement target' };
+    }
+
+    const target = candidates[0];
+    const dataTransfer = new DataTransfer();
+    dataTransfer.setData('application/x-r20-friendly-widget', JSON.stringify({ id: 'text-input' }));
+    const rect = target.rect;
+    const init = {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      clientX: Math.round(rect.left + rect.width * 0.72),
+      clientY: Math.round(rect.top + rect.height * 0.72),
+    };
+    const dragover = new DragEvent('dragover', init);
+    Object.defineProperty(dragover, 'dataTransfer', { value: dataTransfer });
+    target.el.dispatchEvent(dragover);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const drop = new DragEvent('drop', init);
+    Object.defineProperty(drop, 'dataTransfer', { value: dataTransfer });
+    target.el.dispatchEvent(drop);
+    await new Promise((resolve) => setTimeout(resolve, 700));
+
+    const newInput = Array.from(root.querySelectorAll('input[data-r20-block-id]'))
+      .find((el) => !beforeIds.has(el.getAttribute('data-r20-block-id') || ''));
+    const newId = newInput?.getAttribute('data-r20-block-id') || null;
+    const block = newInput?.closest('[data-r20-block-id]') || newInput;
+    const parent = newInput?.parentElement?.closest('[data-r20-block-id]');
+    const blockStyle = block ? getComputedStyle(block) : null;
+    const parentStyle = parent ? getComputedStyle(parent) : null;
+    return {
+      pass: dragover.defaultPrevented && drop.defaultPrevented && Boolean(newId)
+        && parent?.getAttribute('data-r20-block-id') === target.blockId
+        && blockStyle?.position === 'absolute'
+        && ['relative', 'absolute', 'fixed', 'sticky'].includes(parentStyle?.position || '')
+        && Number.isFinite(Number.parseFloat(blockStyle.left))
+        && Number.isFinite(Number.parseFloat(blockStyle.top)),
+      skipped: false,
+      target: { blockId: target.blockId, role: target.role, width: Math.round(rect.width), height: Math.round(rect.height) },
+      dragoverPrevented: dragover.defaultPrevented,
+      dropPrevented: drop.defaultPrevented,
+      newId,
+      parentId: parent?.getAttribute('data-r20-block-id') || null,
+      position: blockStyle?.position || null,
+      parentPosition: parentStyle?.position || null,
+      left: blockStyle ? Number.parseFloat(blockStyle.left) : null,
+      top: blockStyle ? Number.parseFloat(blockStyle.top) : null,
+    };
+  }, candidateIds);
+  if (result?.skipped || !result?.newId) return result;
+  const emitted = await page.evaluate(({ newId, parentId }) => {
+    const emit = window.__perfHook.getEmitContent();
+    const html = emit.html || '';
+    const css = emit.css || '';
+    const newIndex = html.indexOf(`data-r20-block-id="${newId}"`);
+    const parentIndex = html.indexOf(`data-r20-block-id="${parentId}"`);
+    const start = html.lastIndexOf('<', newIndex);
+    const end = html.indexOf('>', newIndex);
+    const tag = newIndex >= 0 && start >= 0 && end >= start ? html.slice(start, end + 1) : '';
+    const classAttr = tag.match(/\sclass=(['"])([\s\S]*?)\1/i)?.[2] || '';
+    const hasAbsolute = classAttr.split(/\s+/).filter(Boolean).some((className) => {
+      const escaped = className.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp(`\\.${escaped}[^{}]*\\{[^}]*position\\s*:\\s*absolute`, 'i').test(css);
+    }) || /position\s*:\s*absolute/i.test(tag);
+    return { nested: parentIndex >= 0 && newIndex > parentIndex, hasAbsolute, tag };
+  }, { newId: result.newId, parentId: result.parentId });
+  return {
+    ...result,
+    emitted,
+    emittedLeft: result.left,
+    emittedTop: result.top,
+    pass: result.pass && emitted.nested && emitted.hasAbsolute,
+  };
+}
+
 async function runImportedCanvasInsert(page) {
   await page.evaluate(() => {
     window.__perfHook.setPreviewZoom(1);
@@ -2930,7 +3166,15 @@ async function main() {
           await page.waitForTimeout(1300);
           entry.layerReorder = await runImportedLayerReorder(page);
           entry.nonLeafLayerReorder = await runImportedNonLeafLayerReorder(page, fixture.id);
+          entry.canvasInsert = await runCanonicalImportedCanvasInsert(page);
+          entry.freeInsert = await runCanonicalImportedFreeCanvasInsert(page);
           entry.canonicalEditSync = await runCanonicalIframeEditSync(page);
+          entry.sheetVisualSync = await captureSheetRootVisualSync(page, fixture.id);
+          entry.sheetVisualSync.classification = classifySheetVisualSync(
+            entry.sheetVisualSync,
+            null,
+            null,
+          );
           // The canonical iframe path is the production preview/edit surface.
           // Keep its round-trip claim honest too: an edit is not fully synced
           // until the emitted payload can be imported and emitted again
@@ -2940,7 +3184,10 @@ async function main() {
           entry.interactionPass = entry.interactionPass && isStableReimport(entry.reimport);
           entry.interactionPass = entry.interactionPass
             && (entry.layerReorder?.pass === true || entry.layerReorder?.skipped === true)
-            && (entry.nonLeafLayerReorder?.pass === true || entry.nonLeafLayerReorder?.skipped === true);
+            && (entry.nonLeafLayerReorder?.pass === true || entry.nonLeafLayerReorder?.skipped === true)
+            && (entry.canvasInsert?.pass === true || entry.canvasInsert?.skipped === true)
+            && (entry.freeInsert?.pass === true || entry.freeInsert?.skipped === true)
+            && (!REQUIRE_SHEET_VISUAL_SYNC || entry.sheetVisualSync?.pass === true);
           entry.pass = entry.interactionPass;
         } else {
         await page.waitForTimeout(1300);

@@ -814,6 +814,7 @@ export default function PreviewMain() {
         const adapter = getBlocklyAdapter();
         if (!editMessage.hitPath.every((item) => htmlLayerMap.has(item.blockId))) return;
         const preset = editMessage.payload ? decodeFriendlyWidgetDrag(editMessage.payload) : null;
+        const placement = useUiStore.getState().editPlacementMode;
         const nextDropTarget = resolveIframeWidgetDropTarget(editMessage, {
           getBlock: (blockId) => htmlLayerMap.get(blockId) ?? null,
           canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
@@ -827,8 +828,7 @@ export default function PreviewMain() {
             movingBlockId,
             targetBlockId,
           ),
-        }, preset?.blockType ?? '');
-        const placement = useUiStore.getState().editPlacementMode;
+        }, preset?.blockType ?? '', placement);
         const visibleDropTarget = filterDropTargetForPlacement(nextDropTarget, placement);
         setIframeEditDropTarget(visibleDropTarget);
         if (editMessage.phase !== 'drop' || !editMessage.payload) return;
@@ -886,6 +886,7 @@ export default function PreviewMain() {
         setDragOver(editMessage.phase === 'dragover');
         const adapter = getBlocklyAdapter();
         if (!editMessage.hitPath.every((item) => htmlLayerMap.has(item.blockId))) return;
+        const placement = useUiStore.getState().editPlacementMode;
         const nextDropTarget = resolveIframeWidgetDropTarget(editMessage, {
           getBlock: (blockId) => htmlLayerMap.get(blockId) ?? null,
           canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
@@ -899,8 +900,7 @@ export default function PreviewMain() {
             movingBlockId,
             targetBlockId,
           ),
-        }, blockType);
-        const placement = useUiStore.getState().editPlacementMode;
+        }, blockType, placement);
         const visibleDropTarget = filterDropTargetForPlacement(nextDropTarget, placement);
         setIframeEditDropTarget(visibleDropTarget);
         if (editMessage.phase !== 'drop') return;

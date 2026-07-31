@@ -2,12 +2,24 @@
 
 Date: 2026-07-31
 
+## Canonical Free-Placement Containment Regression - 2026-07-31
+
+- FIXED LOCAL: free-mode widget target resolution no longer commits a root
+  absolute placement merely because the pointer is over a child whose local
+  candidate is `before/after`; an eligible ancestor container is preferred.
+- VERIFIED LOCAL: canonical imported-edit smoke passed anonymous generic,
+  sibling, and non-leaf fixtures. Flow insertion `3/3`, free absolute
+  insertion `3/3`, canonical edit/preview sync `3/3`, sheet-root mismatch
+  `0%` for `3/3`, stable re-import `3/3`, and console/page errors `0/0`.
+- OPEN: this strengthens local editor behavior only. Actual Roll20 modern
+  Sandbox/legacy destination screenshot, chat, worker, asset, and arbitrary
+  sheet parity remain unverified.
+
 ## Current Gate Reconciliation - 2026-07-31
 
-- `VERIFIED LOCAL`: current branch is `claude/design-reset` at `e865198`;
-  the export-dialog smoke now waits for an opaque, open dialog before taking
-  its screenshot, preventing a transition frame from being treated as UI
-  evidence.
+- `VERIFIED LOCAL`: current branch is `claude/design-reset`; the export-dialog
+  smoke now waits for an opaque, open dialog before taking its screenshot,
+  preventing a transition frame from being treated as UI evidence.
 - `VERIFIED CURRENT STATUS`: `status:roll20-actual` reports the anonymous
   local pre-upload run as `PASS`, but current generated actual screenshots are
   `0/4`, diffed actual screenshots are `0/4`, and current chat metrics are

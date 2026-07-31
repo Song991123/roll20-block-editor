@@ -1,3 +1,19 @@
+## 2026-07-31 Canonical free-placement containment regression
+
+- DONE LOCAL: free-mode widget drops now continue past a child `before/after`
+  hit and choose an eligible ancestor `inside` container. This prevents an
+  absolute widget from escaping the frame when the pointer is over an
+  existing child.
+- VERIFIED LOCAL: canonical imported-edit smoke report
+  `reports/imported-edit-sync-current5/` passed all three anonymous fixture
+  families with flow insertion `3/3`, free absolute-in-container insertion
+  `3/3`, sheet-root edit/preview mismatch `0%` for `3/3`, stable re-import
+  `3/3`, and zero console/page errors.
+- CLAIM BOUNDARY: this is local anonymous evidence only. Actual Roll20
+  screenshot/chat/worker/assets parity remains the separate external gate.
+- TODO P0: recover responsive authenticated Sandbox handoff and capture the
+  current payload in the dedicated modern and legacy destinations.
+
 ## 2026-07-31 Roll20 browser handoff retry
 
 - `VERIFY / BLOCKED EXTERNAL`: the current Chrome tab listing still exposed

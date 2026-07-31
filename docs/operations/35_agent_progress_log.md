@@ -1,3 +1,18 @@
+## 2026-07-31 - Canonical free-placement containment regression
+
+- IMPLEMENTED: `resolveIframeWidgetDropTarget` now accepts the active
+  placement mode. Free placement skips unsuitable child `before/after`
+  candidates and keeps searching for an ancestor `inside` container.
+- VERIFIED: `test:iframe-drop-target`, production build, and the rebuilt
+  canonical imported-edit smoke passed. The three anonymous fixtures each
+  passed flow insertion, free absolute-in-container insertion, canonical
+  edit/preview sync, stable re-import, and `0%` sheet-root mismatch; console
+  and page errors were `0`.
+- EVIDENCE: local-only report is under the ignored
+  `reports/imported-edit-sync-current5/` path.
+- BOUNDARY: no claim is made for live Roll20 normalized screenshot parity,
+  worker mutation, asset parity, or arbitrary-sheet coverage.
+
 ## 2026-07-31 - Roll20 browser handoff retry
 
 - OBSERVED: the current Chrome listing contained the dedicated modern and
