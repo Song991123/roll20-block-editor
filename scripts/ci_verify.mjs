@@ -53,6 +53,7 @@ const tasks = [
   'test:roll20-payload-fidelity',
   'test:roll20-upload-cdp',
   'test:roll20-geometry',
+  'test:roll20-capture-quality',
   'test:roll20-computed-style-context',
   'test:roll20-room-members',
   'test:roll20-runtime-evidence',

@@ -91,6 +91,9 @@ async function main() {
   const generatedTargetCount = generatedTargets.length;
   const generatedPresentCount = generatedTargets.filter((target) => target.exists).length;
   const generatedDiffedCount = generatedTargets.filter((target) => target.diffStatus === 'DIFFED').length;
+  const generatedUntrustedCaptureCount = generatedTargets.filter(
+    (target) => target.diffStatus === 'DIFFED' && target.pixelEvidenceAuthoritative !== true,
+  ).length;
   const observationTargetCount = observationTargets.length;
   const observationPresentCount = observationTargets.filter((target) => target.exists).length;
   const observationDiffedCount = observationTargets.filter((target) => target.diffStatus === 'DIFFED').length;
@@ -105,7 +108,10 @@ async function main() {
     chatParity.actualCropGeometrySuspect +
     chatParity.actualTemplatePixelSuspect +
     chatParity.actualCaptureScaleSuspect;
-  const generatedEvidenceAuthoritative = generatedEvidenceComplete && chatCaptureSuspectCount === 0;
+  const generatedEvidenceAuthoritative =
+    generatedEvidenceComplete &&
+    generatedUntrustedCaptureCount === 0 &&
+    chatCaptureSuspectCount === 0;
   const trustedFullRootComplete =
     rootStitchAudit.fixtureCount > 0 &&
     rootStitchAudit.trustedFullRootCount === rootStitchAudit.fixtureCount;
@@ -138,6 +144,7 @@ async function main() {
     generatedPresentCount,
     generatedTargetCount,
     generatedDiffedCount,
+    generatedUntrustedCaptureCount,
   });
 
   const report = {
@@ -162,6 +169,7 @@ async function main() {
       generatedPresentCount,
       generatedMissingCount: generatedTargetCount - generatedPresentCount,
       generatedDiffedCount,
+      generatedUntrustedCaptureCount,
       generatedEvidenceAuthoritative,
       chatCaptureSuspectCount,
       observationTargetCount,
@@ -222,6 +230,7 @@ async function main() {
       generatedPresentCount,
       generatedTargetCount,
       generatedDiffedCount,
+      generatedUntrustedCaptureCount,
       generatedEvidenceAuthoritative,
       chatCaptureSuspectCount,
       observationPresentCount,
@@ -773,6 +782,10 @@ async function inspectTarget(fixtureId, screenshots, target, diffReport) {
     diffStatus: exists ? (diffItem?.status ?? 'NOT_RUN') : (rawExists ? 'SUSPECT' : 'NOT_RUN'),
     requiredForGeneratedSheetCheck: Boolean(target.requiredForGeneratedSheetCheck),
     bestMismatchRatio: exists ? (diffItem?.result?.best?.mismatchRatio ?? null) : null,
+    pixelEvidenceAuthoritative: exists
+      ? diffItem?.result?.authoritativePixelEvidence === true
+      : false,
+    captureQuality: exists ? (diffItem?.result?.captureQuality ?? null) : null,
     note: validation.ok
       ? (diffItem?.note ?? (rawExists ? 'screenshot present; diff not run yet' : 'missing actual Roll20 screenshot'))
       : validation.note,
@@ -950,6 +963,7 @@ function buildNextAction({
   generatedPresentCount,
   generatedTargetCount,
   generatedDiffedCount,
+  generatedUntrustedCaptureCount,
   observationPresentCount,
   observationTargetCount,
   blockerEvidence,
@@ -1000,6 +1014,12 @@ function buildNextAction({
   }
   if (generatedDiffedCount < generatedTargetCount) {
     return 'Actual screenshots exist. Run node scripts/roll20_actual_screenshot_diff.mjs for this run, then classify differences.';
+  }
+  if (generatedUntrustedCaptureCount > 0) {
+    const untrusted = generatedUntrustedCaptureTargets(fixtures)
+      .map((target) => `${target.fixtureId}/${target.targetId} (${target.captureStatus})`)
+      .join(', ');
+    return `Generated screenshot diffs use lossy or unclassified capture sources for ${untrusted}. Recapture true PNG source screenshots, rerun screenshot diff, and only then use pixel mismatch to justify renderer CSS.`;
   }
   if (chatParity?.exists && chatParity.needsNormalizedCapture > 0) {
     return 'Roll20 chat evidence exists but is not normalized for every fixture. Recapture roll20-chat.png with fresh DOM sidecars that include rolltemplate rect/clip metadata, then rerun diagnose:roll20-chat-parity.';
@@ -1069,6 +1089,23 @@ function generatedMissingTargets(fixtures = []) {
   );
 }
 
+function generatedUntrustedCaptureTargets(fixtures = []) {
+  return fixtures.flatMap((fixture) =>
+    fixture.actualTargets
+      .filter(
+        (target) =>
+          target.requiredForGeneratedSheetCheck &&
+          target.diffStatus === 'DIFFED' &&
+          target.pixelEvidenceAuthoritative !== true,
+      )
+      .map((target) => ({
+        fixtureId: fixture.fixtureId,
+        targetId: target.id,
+        captureStatus: target.captureQuality?.status ?? 'capture quality missing',
+      })),
+  );
+}
+
 function runDirFromReport(reportFile) {
   const absolute = path.resolve(reportFile);
   const marker = `${path.sep}root-stitch-audit${path.sep}`;
@@ -1083,8 +1120,12 @@ function statusOf({
   generatedPresentCount,
   generatedTargetCount,
   generatedDiffedCount,
+  generatedUntrustedCaptureCount,
 }) {
   if (!localReady) return 'LOCAL_PREUPLOAD_NOT_READY';
+  if (generatedEvidenceComplete && generatedUntrustedCaptureCount > 0) {
+    return 'GENERATED_ACTUAL_SCREENSHOTS_DIFFED_WITH_UNTRUSTED_CAPTURE';
+  }
   if (generatedEvidenceComplete && !generatedEvidenceAuthoritative) return 'GENERATED_ACTUAL_SCREENSHOTS_DIFFED_WITH_SUSPECT_CHAT';
   if (generatedEvidenceComplete) return 'GENERATED_ACTUAL_SCREENSHOTS_DIFFED';
   if (generatedPresentCount === 0) return 'PREUPLOAD_READY_MISSING_GENERATED_ACTUAL';
@@ -1108,7 +1149,7 @@ function renderMarkdown(report) {
     `- Fixtures: ${report.summary.fixtures}`,
     `- Generated-sheet screenshots: ${report.summary.generatedPresentCount}/${report.summary.generatedTargetCount}`,
     `- Generated-sheet diffs: ${report.summary.generatedDiffedCount}/${report.summary.generatedTargetCount}`,
-    `- Generated-sheet authoritative evidence: ${report.summary.generatedEvidenceAuthoritative ? 'yes' : 'NO'} (chat capture suspects: ${report.summary.chatCaptureSuspectCount})`,
+    `- Generated-sheet authoritative evidence: ${report.summary.generatedEvidenceAuthoritative ? 'yes' : 'NO'} (untrusted screenshot captures: ${report.summary.generatedUntrustedCaptureCount}, chat capture suspects: ${report.summary.chatCaptureSuspectCount})`,
     `- Solo-room observation screenshots: ${report.summary.observationPresentCount}/${report.summary.observationTargetCount}`,
     `- Solo-room observation diffs: ${report.summary.observationDiffedCount}/${report.summary.observationTargetCount}`,
     `- Trusted full-root evidence: ${report.summary.trustedFullRootCount}/${report.summary.trustedFullRootTotal}`,
@@ -1140,7 +1181,14 @@ function renderMarkdown(report) {
 
   for (const fixture of report.fixtures) {
     const targetStatus = Object.fromEntries(
-      fixture.actualTargets.map((target) => [target.id, target.exists ? target.diffStatus : (target.rawExists ? 'SUSPECT' : 'MISSING')]),
+      fixture.actualTargets.map((target) => [
+        target.id,
+        target.exists
+          ? (target.diffStatus === 'DIFFED' && target.pixelEvidenceAuthoritative !== true
+            ? 'DIFFED_UNTRUSTED_CAPTURE'
+            : target.diffStatus)
+          : (target.rawExists ? 'SUSPECT' : 'MISSING'),
+      ]),
     );
     lines.push(
       `| \`${fixture.fixtureId}\` | ${fixture.localBaselineReady ? 'ready' : 'missing'} | ${fixture.payloadReady ? 'ready' : 'missing'} | ${targetStatus.sandbox} | ${targetStatus.chat} | ${targetStatus.room} |`,
@@ -1240,6 +1288,7 @@ function renderConsoleSummary(report, outDir) {
     `generatedActualScreenshots=${report.summary.generatedPresentCount}/${report.summary.generatedTargetCount}`,
     `generatedDiffed=${report.summary.generatedDiffedCount}/${report.summary.generatedTargetCount}`,
     `generatedAuthoritative=${report.summary.generatedEvidenceAuthoritative ? 'YES' : 'NO'}`,
+    `generatedUntrustedCaptures=${report.summary.generatedUntrustedCaptureCount}`,
     `chatCaptureSuspects=${report.summary.chatCaptureSuspectCount}`,
     `roomObservationScreenshots=${report.summary.observationPresentCount}/${report.summary.observationTargetCount}`,
     `roomObservationDiffed=${report.summary.observationDiffedCount}/${report.summary.observationTargetCount}`,

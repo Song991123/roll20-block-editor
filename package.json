@@ -68,6 +68,7 @@
     "test:roll20-payload-fidelity": "node scripts/roll20_payload_fidelity_gate.mjs --self-test",
     "test:roll20-upload-cdp": "node scripts/roll20_upload_cdp_apply.mjs --self-test",
     "test:roll20-geometry": "node scripts/lib/roll20Geometry.test.mjs",
+    "test:roll20-capture-quality": "node scripts/lib/roll20CaptureQuality.test.mjs",
     "test:roll20-computed-style-context": "node scripts/roll20_computed_style_context_diagnostics.mjs --self-test",
     "test:roll20-runtime-evidence": "node scripts/roll20_runtime_evidence_compare.mjs --self-test",
     "test:roll20-actual-geometry": "node scripts/roll20_actual_geometry_gate.mjs --self-test",

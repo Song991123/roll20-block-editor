@@ -24,14 +24,23 @@
   compatibility modes.
 - `MEASURED NOT PARITY`: normalized root comparison still has `1.6638%`
   mismatch above RGB-sum threshold `90` at best alignment (`dx=1`, `dy=0`).
-  Residuals cluster around text glyphs and control/border edges. This one
-  synthetic fixture is not universal visual parity.
+  Residuals cluster around text glyphs and control/border edges. The actual
+  viewport capture is JPEG by magic bytes despite a `.png` filename, so this
+  lossy-source metric cannot justify renderer CSS. This one synthetic fixture
+  is not universal visual parity.
+- `DONE LOCAL EVIDENCE GUARD`: screenshot diff now classifies image magic bytes
+  and crop source lineage. JPEG/WebP inputs and PNG crops derived from them are
+  marked non-authoritative; actual-status cannot promote generated evidence
+  while any required target has untrusted capture quality.
+- `VERIFIED REGRESSION`: capture-quality unit tests, lint, production build,
+  and full `ci:verify` pass with the new gate included.
 - `BLOCKED MODERN`: fresh modern Sandbox file selection remains blocked before
   transmission by the visible chooser permission boundary. Modern generated
   same-payload proof remains open.
-- `TODO P0`: isolate the remaining root text/control raster difference without
-  adding fixture-specific CSS, then retry the modern destination through the
-  supported visible file flow. Keep broad arbitrary-sheet coverage open.
+- `TODO P0`: obtain a true lossless actual root capture before isolating any
+  remaining text/control raster difference, then retry the modern destination
+  through the supported visible file flow. Keep broad arbitrary-sheet coverage
+  open.
 
 # 2026-08-01 Actual default-rolltemplate parity fix
 

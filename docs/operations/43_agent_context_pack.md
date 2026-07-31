@@ -21,7 +21,9 @@ the entire history and generated evidence tree.
   room. HTML/CSS readback is byte-identical; Translation is semantically
   identical after Roll20 formatting. Authored-relative geometry matches the
   DPR-`1.25` local baseline, but the best root pixel residual is `1.6638%`
-  above threshold `90`, so arbitrary-sheet visual parity remains open.
+  above threshold `90`. The source viewport is JPEG by magic bytes despite its
+  `.png` name, so the residual is non-authoritative and arbitrary-sheet visual
+  parity remains open.
 - Modern generated same-payload evidence remains `0/4`. Its visible upload
   route is blocked before transmission until Chrome extension file-URL access
   is enabled; do not use hidden-input or endpoint workarounds.

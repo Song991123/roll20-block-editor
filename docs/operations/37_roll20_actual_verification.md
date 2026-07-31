@@ -23,7 +23,10 @@ Date: 2026-06-18
   and default-chat geometry matches actual Roll20 for this fixture.
 - `MEASURED NOT PARITY`: normalized root pixels retain `1.6638%` mismatch above
   RGB-sum threshold `90` at best alignment (`dx=1`, `dy=0`), concentrated near
-  text and control/border edges. Do not generalize this fixture to all sheets.
+  text and control/border edges. The browser viewport capture's magic bytes are
+  JPEG despite its `.png` filename, so this metric is lossy-source diagnostic
+  evidence and cannot justify renderer CSS. Do not generalize this fixture to
+  all sheets.
 - `BLOCKED MODERN`: fresh modern Sandbox upload remains blocked before
   transmission by the supported visible file chooser. Modern generated
   same-payload root/chat evidence remains `0/4`.
@@ -467,6 +470,12 @@ template-scope gate. Candidate-specific smoke still needs explicit
 | `local-baseline/<fixture>/payload/sheet.json` | Minimal local verification manifest. |
 | `local-baseline/<fixture>/upload.zip` | Convenience zip containing the payload files. |
 | `actual-screenshot-diff/actual-screenshot-diff-results.md` / `.json` | Local-only screenshot comparison report generated after Roll20 screenshots are placed beside local baseline screenshots. Missing Roll20 screenshots are SKIP, not PASS. |
+
+Screenshot authority follows file bytes and lineage, not the filename. A JPEG
+or WebP capture is non-authoritative for pixel parity. Converting or cropping
+that source into PNG does not restore lost pixels; the crop sidecar's
+`sourceMimeType` must remain part of the gate. Recapture a true lossless PNG
+before using mismatch percentages to justify production renderer CSS.
 | `payload-audit/roll20-payload-audit-results.md` / `.json` | Local-only upload payload hygiene report. Must pass before Custom Sheet Sandbox/test-room upload. |
 | `payload-roundtrip-visual/payload-roundtrip-visual-results.md` / `.json` | Local-only cleaned-payload re-import visual report. Must pass before Custom Sheet Sandbox/test-room upload. |
 | evidence guard command output | Console-only safety result from `corepack pnpm run guard:roll20-evidence -- <run-dir>`. It must be PASS before upload/commit, but does not prove Roll20 visual parity. |

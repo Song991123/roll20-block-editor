@@ -29,7 +29,9 @@ local output and is deleted after the verification batch.
   local Preview/Edit mismatch remains `0%` for all four captures.
 - `MEASURED NOT PARITY`: best-aligned root pixel mismatch is `1.6638%` above
   RGB-sum threshold `90`, concentrated around glyph and control/border raster.
-  This does not prove arbitrary-sheet or reference-image parity.
+  The source viewport is JPEG by magic bytes despite its `.png` filename, so
+  the metric is non-authoritative until a true PNG source is recaptured. This
+  does not prove arbitrary-sheet or reference-image parity.
 - `BLOCKED MODERN`: the modern Sandbox still rejects the supported visible
   file selection before transmission; modern generated same-payload root/chat
   evidence remains `0/4`.

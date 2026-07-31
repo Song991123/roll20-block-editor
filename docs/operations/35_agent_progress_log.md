@@ -19,7 +19,13 @@
   modes.
 - The normalized root pixel comparison remains `MEASURED_NOT_PARITY`: best
   alignment leaves `1.6638%` mismatch above RGB-sum threshold `90`, mainly at
-  text and control/border edges. Arbitrary-sheet parity remains open.
+  text and control/border edges. The actual viewport is JPEG by magic bytes
+  despite its `.png` name, so this lossy-source metric cannot justify renderer
+  CSS. Arbitrary-sheet parity remains open.
+- Added a shared capture-quality classifier and CI self-test. Screenshot diff
+  records file-byte MIME plus crop source lineage, and actual-status now blocks
+  authoritative generated evidence when a required target is lossy or lacks
+  the new trust metadata. Lint, build, and full `ci:verify` pass.
 - Modern fresh-payload upload is still blocked before transmission by the
   visible file chooser permission boundary.
 

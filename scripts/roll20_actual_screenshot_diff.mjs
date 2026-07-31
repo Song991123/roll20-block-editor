@@ -24,6 +24,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
+import { classifyCaptureQuality, mimeTypeForBytes } from './lib/roll20CaptureQuality.mjs';
 
 const args = process.argv.slice(2);
 const RUN_DIR = path.resolve(args[0] ?? 'reports/roll20-actual-compare/latest');
@@ -41,13 +42,6 @@ function argOf(name, fallback) {
 async function imageDataUrl(file) {
   const bytes = await readFile(file);
   return `data:${mimeTypeForBytes(bytes, file)};base64,${bytes.toString('base64')}`;
-}
-
-function mimeTypeForBytes(bytes, file = '') {
-  if (bytes[0] === 0xff && bytes[1] === 0xd8) return 'image/jpeg';
-  if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return 'image/png';
-  const ext = path.extname(file).toLowerCase();
-  return ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'image/png';
 }
 
 async function listFixtureDirs() {
@@ -202,7 +196,13 @@ function validateSidecarFreshness(screenshot, sidecar) {
 async function comparePair(page, pair) {
   const [localUrl, actualUrl] = await Promise.all([imageDataUrl(pair.local), imageDataUrl(pair.actual)]);
   const actualMeta = pair.actualMeta ? JSON.parse(await readFile(pair.actualMeta, 'utf8')) : null;
-  return page.evaluate(
+  const actualBytes = await readFile(pair.actual);
+  const captureQuality = classifyCaptureQuality({
+    actualBytes,
+    actualFile: pair.actual,
+    actualMeta,
+  });
+  const browserResult = await page.evaluate(
     async ({ localUrl, actualUrl, actualMeta, threshold, searchStep }) => {
       function loadImage(src) {
         return new Promise((resolve, reject) => {
@@ -332,6 +332,14 @@ async function comparePair(page, pair) {
       searchStep: SEARCH_STEP,
     },
   );
+  return {
+    ...browserResult,
+    captureQuality,
+    authoritativePixelEvidence: captureQuality.authoritativePixelEvidence,
+    note: captureQuality.authoritativePixelEvidence
+      ? browserResult.note
+      : `${browserResult.note} ${captureQuality.reason}; pixel metrics are non-authoritative until a lossless source is recaptured.`,
+  };
 }
 
 function renderMarkdown(report) {
@@ -345,11 +353,12 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('## Summary');
   lines.push('');
-  lines.push('| Fixture | Target | Status | Local size | Actual size | Best mismatch | Best crop | Notes |');
-  lines.push('| --- | --- | --- | --- | --- | ---: | --- | --- |');
+  lines.push('| Fixture | Target | Status | Capture | Local size | Actual size | Best mismatch | Best crop | Notes |');
+  lines.push('| --- | --- | --- | --- | --- | --- | ---: | --- | --- |');
   for (const item of report.items) {
     const best = item.result?.best;
-    lines.push(`| \`${item.fixtureId}\` | ${item.target} | ${item.status} | ${fmtSize(item.result?.localSize)} | ${fmtSize(item.result?.actualSize)} | ${best ? pct(best.mismatchRatio) : ''} | ${best ? best.crop.join(',') : ''} | ${item.note ?? ''} |`);
+    const capture = item.result?.captureQuality?.status ?? '';
+    lines.push(`| \`${item.fixtureId}\` | ${item.target} | ${item.status} | ${capture} | ${fmtSize(item.result?.localSize)} | ${fmtSize(item.result?.actualSize)} | ${best ? pct(best.mismatchRatio) : ''} | ${best ? best.crop.join(',') : ''} | ${item.note ?? ''} |`);
   }
   lines.push('');
   lines.push('## How To Add Evidence');
@@ -369,6 +378,7 @@ function renderMarkdown(report) {
   lines.push('## Scope');
   lines.push('');
   lines.push('- This compares screenshots only. It does not log into Roll20 or mutate rooms.');
+  lines.push('- JPEG/WebP screenshots and PNG crops derived from lossy sources are diagnostic only. Recapture a true PNG source before using pixel mismatch to justify renderer CSS.');
   lines.push('- High mismatch must be classified by wrapper/context, base CSS, default state, translation, worker JS, rolltemplate/chat, asset loading, viewport/crop, or edit overlay.');
   lines.push('- A low mismatch is still not a Roll20 visual parity claim until default state and crop are reviewed.');
   return `${lines.join('\n')}\n`;
@@ -433,6 +443,9 @@ async function main() {
 
   report.summary = {
     diffed: report.items.filter((item) => item.status === 'DIFFED').length,
+    untrustedCaptureDiffed: report.items.filter(
+      (item) => item.status === 'DIFFED' && item.result?.authoritativePixelEvidence !== true,
+    ).length,
     suspect: report.items.filter((item) => item.status === 'SUSPECT').length,
     skipped: report.items.filter((item) => item.status === 'SKIP').length,
     failed: report.items.filter((item) => item.status === 'FAIL').length,
