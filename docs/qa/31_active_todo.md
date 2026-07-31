@@ -39,6 +39,16 @@
   current Sandbox state, then capture positive `fixture-A` HTML/CSS/translation
   identity and root/chat evidence before updating parity metrics.
 
+# 2026-07-31 Dedicated tab handle recheck
+
+- `MEASURED EXTERNAL`: Chrome tab listing still exposes both dedicated modern
+  and legacy verification tabs at the expected Roll20 editor URL.
+- `VERIFY / BLOCKED EXTERNAL`: opening the dedicated modern tab handle times out
+  before DOM observation. This is a control-plane timeout, not evidence that
+  the tab is missing or that a payload was applied.
+- `SAFETY`: no file chooser, upload, room setting, chat, or ordinary-room
+  operation was attempted during this read-only recheck.
+
 # 2026-07-31 Local imported edit-sync recheck
 
 - VERIFIED LOCAL: after rebuilding the deleted static `out` directory, the

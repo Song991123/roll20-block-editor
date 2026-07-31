@@ -10473,3 +10473,13 @@ same-hash modern/legacy comparison.
 - `NEXT P0`: recover a responsive supported browser handoff, observe the current
   Sandbox state, and only then capture positive anonymous `fixture-A` identity
   and root/chat evidence.
+
+## 2026-07-31 - Dedicated tab handle recheck
+
+- `MEASURED EXTERNAL`: Chrome's tab list still exposed both dedicated modern and
+  legacy verification tabs at the expected Roll20 editor URL.
+- `VERIFY / BLOCKED EXTERNAL`: opening the dedicated modern tab handle timed out
+  before DOM observation. This distinguishes a control-plane timeout from a
+  missing tab or a successful payload application.
+- `SAFETY`: no chooser, upload, room setting, chat, or ordinary-room operation
+  was attempted during this read-only recheck.
