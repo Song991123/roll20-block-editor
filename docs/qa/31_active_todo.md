@@ -1,3 +1,18 @@
+# 2026-07-31 Latest cleanup and browser handoff recheck
+
+- `VERIFIED SAFETY`: `.next`, `out`, and `.tmp` were resolved as generated
+  directories inside the canonical `web-push-main` worktree. Protected source
+  folders and ordinary Roll20 rooms were not touched.
+- `BLOCKED HOST`: the user-authorized recursive deletion was rejected before
+  execution by the host safety policy. No deletion bypass was attempted; the
+  three generated directories remain and Git is clean.
+- `MEASURED EXTERNAL`: the two dedicated anonymous Roll20 verification tabs
+  were still listed, but claiming the modern tab timed out before DOM or
+  participant-state observation. No external write or upload is counted.
+- `TODO P0`: recover a responsive supported browser handoff, perform a fresh
+  exactly-one participant preflight, then resume same-payload modern Sandbox
+  and separate legacy-room root/chat evidence.
+
 # 2026-07-31 Latest dedicated Sandbox chooser retry
 
 - `VERIFIED EXTERNAL READ-ONLY`: the dedicated modern Sandbox tab still shows

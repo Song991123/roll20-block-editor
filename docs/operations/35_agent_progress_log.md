@@ -1,3 +1,21 @@
+# 2026-07-31 - Generated-output deletion and Roll20 handoff recheck
+
+- `VERIFIED SAFETY`: the only requested cleanup targets remain the generated
+  directories `.next`, `out`, and `.tmp` inside the canonical worktree. Their
+  resolved paths stayed under `web-push-main`; protected sheet sources and Git
+  worktrees were not touched.
+- `BLOCKED HOST`: the user-authorized recursive PowerShell deletion was
+  rejected before execution by the host safety policy. No alternate deletion
+  path was used, so the three generated directories remain and the Git tree is
+  still clean.
+- `MEASURED EXTERNAL`: Chrome still listed the two dedicated anonymous Roll20
+  verification tabs. Claiming the modern tab timed out before DOM or
+  participant-state observation; no upload, save, chat, room setting, or
+  ordinary-room action occurred.
+- `VERIFY`: actual modern/legacy Roll20 parity remains at the previously
+  recorded partial evidence boundary. Resume only from a responsive supported
+  browser handoff and a fresh exactly-one participant check.
+
 # 2026-07-31 - Local imported edit-sync recheck
 
 - Rebuilt the static output after the approved generated-output cleanup. The
