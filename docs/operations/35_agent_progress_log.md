@@ -1,5 +1,18 @@
 # 2026-07-31 - Actual-status and renderer-action gate refresh
 
+# 2026-07-31 - Current branch baseline recheck
+
+- Re-ran the persistent Preview/Edit smoke: modern and legacy both passed with
+  zero iframe reloads.
+- Re-ran strict imported edit synchronization: generic elements, sibling
+  layers, and non-leaf flow containers all passed interaction and resource
+  checks.
+- Re-ran `ci:verify`: parser `32/32`, high-priority mapping `27/27`, evidence
+  privacy guard, and UI copy guard all passed.
+- Kept the external boundary explicit: generated Roll20 root/chat evidence is
+  still `0/4`, and the authorized generated-output deletion is still blocked
+  before PowerShell execution by the host.
+
 # 2026-07-31 - Post-sanitizer browser recheck
 
 - Persistent Preview/Edit remained at zero iframe reloads in modern and legacy

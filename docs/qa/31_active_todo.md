@@ -1,5 +1,22 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Current branch baseline recheck
+
+- `VERIFIED LOCAL`: `smoke:persistent-preview-surface` passed in modern and
+  legacy modes with `loads=0`, so Preview and Edit still share one persistent
+  iframe render owner.
+- `VERIFIED LOCAL`: `smoke:imported-edit-sync:strict` passed for generic
+  elements, sibling layers, and non-leaf flow containers with interaction and
+  resource checks passing.
+- `VERIFIED LOCAL`: `ci:verify` passed, including worker parser `32/32`,
+  high-priority mapping `27/27`, privacy/evidence guard, and UI copy guard.
+- `CLAIM BOUNDARY`: this is current local evidence only. Generated Roll20
+  root/chat evidence remains `0/4`; actual modern/legacy visual, worker, asset,
+  and chat parity are still open.
+- `BLOCKED HOST`: the explicitly authorized generated-output deletion retry was
+  rejected before PowerShell execution. No source, worktree, or protected
+  external sheet root was changed; no deletion workaround is permitted.
+
 # 2026-07-31 Post-sanitizer browser recheck
 
 - `VERIFIED LOCAL`: persistent Preview/Edit remained `loads=0` in modern and

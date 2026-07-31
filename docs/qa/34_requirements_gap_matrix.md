@@ -1,5 +1,20 @@
 # 34. Requirements Gap Matrix
 
+## Current branch baseline recheck - 2026-07-31
+
+- `DONE LOCAL`: persistent Preview/Edit surface remains a single iframe owner
+  with `loads=0` in both modern and legacy modes.
+- `DONE LOCAL`: strict imported edit synchronization passes generic, sibling,
+  and non-leaf flow cases with resource checks enabled.
+- `VERIFIED LOCAL`: `ci:verify` passes the current branch, including worker
+  parser `32/32`, high-priority mapping `27/27`, public evidence guard, and UI
+  copy guard.
+- `OPEN EXTERNAL`: generated Roll20 root/chat evidence remains `0/4`; no local
+  result is promoted to actual modern/legacy visual, worker, asset, or chat
+  parity.
+- `BLOCKED HOST`: authorized generated-output deletion remains blocked before
+  PowerShell execution; no alternate deletion path is used.
+
 ## Current state - 2026-07-31
 
 - `DONE LOCAL`: common worker `Math.floor`, `Math.ceil`, `Math.round`,
