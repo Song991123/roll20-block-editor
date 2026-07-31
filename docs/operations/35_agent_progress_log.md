@@ -9908,3 +9908,48 @@ same-hash modern/legacy comparison.
 - Result: all 55 targets remain present. The active
   `web-push-main/node_modules`, report policy README, source, worktrees,
   protected roots, and user-authored material were preserved.
+
+## 2026-07-31 - Local render-surface verification refresh
+
+- Local production browser smoke passed the import dialog with an anonymous
+  HTML input: three HTML blocks were created, CSS/page-JS/worker-JS boundaries
+  were retained, runtime nodes stayed hidden, and console/page error counts
+  were zero.
+- Local anonymous visual smoke passed `fixture-A` and `fixture-B` in both
+  modern and legacy modes. Preview/edit shared-crop mismatch was `0%` for all
+  four runs, with translation checks `1/1` and `5/5`.
+- Local imported-edit-sync passed the generic, layer-sibling, and
+  non-leaf-flow scenarios. Persistent preview-surface smoke passed for both
+  modes with zero iframe reloads.
+- This batch changed no product source. Actual Roll20 screenshot parity,
+  universal source coverage, worker mutation in Roll20, and independent
+  legacy same-payload evidence remain open and are not promoted to DONE.
+
+## 2026-07-31 - Dedicated modern/legacy live DOM recheck
+
+- Both the dedicated modern Sandbox and dedicated legacy test room passed a
+  fresh visible participant preflight with exactly one member. Existing
+  ordinary rooms were not used or changed.
+- The current live character iframes in both generations exposed the same
+  anonymous semantic markers: authored panel, translated `Name`, named input,
+  `roll_check`, and the default Roll20 rolltemplate expression.
+- A roll smoke produced a chat result in each dedicated destination. This is
+  live Roll20 behavior evidence, not a screenshot-parity claim.
+- The modern/legacy DOM probe found generation-specific serialization and
+  native CSS/font differences. The retained legacy visual diagnostic is still
+  `MEASURED_NOT_PARITY` at `6.167%` mismatch, or `4.187%` after translation.
+- No source identity, room identifier, screenshot, or payload was added to
+  public Git. Fresh legacy browser File SHA-256 and worker mutation remain
+  unverified; visual crop classification is the next P0.
+
+## 2026-07-31 - CI and cleanup boundary refresh
+
+- `corepack pnpm run ci:verify` passed all configured unit, import/export,
+  legacy/modern contract, Roll20 evidence, and safety guards.
+- The checked project ports had no active listener after verification.
+- The user-authorized generated-output cleanup was rechecked but not executed:
+  the host rejects recursive deletion before PowerShell runs it. No alternate
+  shell, native API, per-file workaround, or safety bypass was used.
+- This keeps the deletion state explicit: generated build/tmp/report output
+  remains local and ignored; product source, active dependencies, worktrees,
+  protected sheet roots, and the report policy remain preserved.

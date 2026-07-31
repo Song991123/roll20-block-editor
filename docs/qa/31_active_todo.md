@@ -9281,3 +9281,58 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: capture the lossless modern crop/sidecar and run the same-payload
   legacy test in a separately approved legacy destination. Keep both rooms
   outside public Git evidence.
+
+## 2026-07-31 Local render-surface verification refresh
+
+- `VERIFIED LOCAL`: the production import-dialog browser smoke created three
+  HTML blocks from an anonymous input, preserved CSS, page JS, and worker JS,
+  kept runtime nodes hidden, and reported zero console/page errors.
+- `VERIFIED LOCAL`: anonymous `fixture-A` and `fixture-B` preview/edit visual
+  smoke passed in both modern and legacy contracts with exact shared-crop
+  parity (`0%` mismatch; i18n `1/1` and `5/5`).
+- `VERIFIED LOCAL`: imported-edit-sync passed the generic, layer-sibling, and
+  non-leaf-flow interaction cases. Persistent preview-surface smoke passed in
+  both contracts with zero iframe reloads.
+- `VERIFY / OPEN`: these results prove the local render surface and import
+  flow only. They do not expand actual Roll20 screenshot parity, universal
+  source coverage, worker mutation parity, or dedicated legacy same-payload
+  evidence.
+- `NEXT P0`: capture a lossless crop/sidecar for the already verified modern
+  payload, then independently bind and verify the same anonymous payload in a
+  dedicated legacy destination.
+
+## 2026-07-31 Dedicated modern/legacy live DOM recheck
+
+- `VERIFIED EXTERNAL`: the dedicated modern Sandbox and dedicated legacy test
+  room both passed a fresh visible participant preflight with exactly one
+  member. No ordinary room was used.
+- `VERIFIED EXTERNAL`: both live character iframes exposed the anonymous
+  authored panel, translated `Name` label, `attr_name` input, `roll_check`
+  button, and the default rolltemplate expression. The semantic markers were
+  present in both generations.
+- `VERIFIED EXTERNAL`: the roll button produced a Roll20 chat result in both
+  the modern Sandbox and the dedicated legacy room.
+- `MEASURED / HOLD`: modern and legacy native CSS differ as expected. The
+  current side-by-side DOM probe showed the same semantic controls but not
+  byte-identical whitespace/style serialization; the existing legacy crop
+  diagnostic remains `MEASURED_NOT_PARITY` at `6.167%` mismatch, or `4.187%`
+  after the best translation.
+- `VERIFY / OPEN`: this recheck did not recapture browser File SHA-256 for the
+  legacy upload, did not exercise worker mutation, and did not prove pixel
+  parity. Keep the visual parity and worker gates open.
+- `NEXT P0`: capture a lossless modern/legacy crop pair from the same current
+  anonymous payload and classify the remaining generation-specific CSS,
+  wrapper, font, and native-control differences before changing renderer CSS.
+
+## 2026-07-31 CI and cleanup boundary refresh
+
+- `VERIFIED`: `corepack pnpm run ci:verify` passed all configured unit,
+  import/export, legacy/modern contract, Roll20 evidence, and safety guards.
+- `VERIFIED`: no product listener was active on the checked local ports after
+  the verification run.
+- `BLOCKED / LOCAL MAINTENANCE`: the explicitly approved generated-output
+  cleanup remains unexecuted because the host rejected recursive deletion
+  before PowerShell ran it. No alternate deletion path was used.
+- `OPEN`: `web-push-main/.next/`, `out/`, `.tmp/`, ignored report outputs, and
+  the old worktree's generated/dependency output still need a permitted
+  maintenance operation. They are not product-source changes.

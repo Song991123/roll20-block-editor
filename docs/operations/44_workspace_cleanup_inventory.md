@@ -1163,3 +1163,13 @@ directories that had been recreated by the local build.
   workaround, or safety bypass was used.
 - NOT DELETED: all 55 targets remain. Source, worktrees, protected external
   sheet roots, active dependencies, and the report policy remain preserved.
+
+## 2026-07-31 current-session cleanup recheck
+
+- RECHECKED: the approved disposable paths remain workspace-local generated or
+  stale output. No checked project listener was active, and the active
+  `web-push-main/node_modules/`, source, worktrees, protected sheet roots, and
+  tracked report policy were excluded.
+- RESULT: no deletion was performed in this recheck because the host's
+  recursive-delete boundary remains in force. User approval cannot override
+  it, and no alternate deletion path was used.
