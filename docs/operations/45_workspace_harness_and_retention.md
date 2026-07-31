@@ -1,5 +1,17 @@
 # 45. Workspace Harness and Retention Policy
 
+## 2026-07-31 repeated explicit-approval retry
+
+- Rechecked the exact generated `.next/`, `out/`, and `.tmp/` targets under
+  the canonical worktree; they remained eligible for cleanup.
+- Issued another boundary-checked native PowerShell recursive deletion
+  request after explicit user approval.
+- The host rejected the destructive invocation before PowerShell execution.
+  No alternate shell, native API, per-file workaround, or safety bypass was
+  used.
+- **NOT DELETED:** all three targets remain present and all protected/source
+  boundaries were preserved.
+
 ## 2026-07-31 latest explicit-approval retry
 
 - The seven exact generated/stale targets were re-resolved after the user

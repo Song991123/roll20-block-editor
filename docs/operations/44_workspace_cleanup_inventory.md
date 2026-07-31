@@ -1380,6 +1380,18 @@ directories that had been recreated by the local build.
   report directories remain. No alternate shell, native API, per-file
   workaround, or safety bypass was used.
 
+## 2026-07-31 repeated explicit-approval retry
+
+- Rechecked the canonical worktree's generated `.next/`, `out/`, and `.tmp/`
+  directories as the only approved deletion targets; no project listener was
+  active and no protected source was included.
+- Issued one more boundary-checked native PowerShell recursive deletion
+  request after explicit user approval.
+- The host rejected the destructive invocation before PowerShell ran. No
+  alternate shell, native API, per-file workaround, or safety bypass was used.
+- **NOT DELETED:** all three directories remain; source, dependencies,
+  worktrees, reports policy, and protected external sheet roots are unchanged.
+
 ## 2026-07-31 latest retry after explicit user approval
 
 - RECHECKED: only the canonical worktree's generated `.next/`, `out/`, and
