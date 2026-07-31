@@ -22,7 +22,7 @@ history and must not be read as newer evidence than this block.
 | Current generated-sheet actual gate | `status:roll20-actual` reports `generatedActualScreenshots=0/4`, `generatedDiffed=0/4`, `rendererReady=NO` | VERIFY / BLOCKED EXTERNAL | Supported file chooser stops with `Not allowed` before upload |
 | Legacy-room visual parity | No fresh dedicated legacy-room capture | VERIFY | Modern Sandbox evidence cannot satisfy the legacy contract |
 | Public copyright boundary | No tracked real sheet, fixture, screenshot, report, or public example | VERIFIED LOCAL | Recheck before every public release |
-| CI/CD | Feature branch commit `c5333d3`; GitHub Actions run `30635027004` passed | VERIFIED REMOTE | This branch has not been promoted to production |
+| CI/CD | Feature branch commit `04c8b28`; GitHub Actions run `30636459748` passed | VERIFIED REMOTE | Production Pages still serves the separate `main` SHA; this branch has not been promoted |
 
 Local-only live observation files remain under ignored
 `reports/roll20-actual-compare/.../live-sandbox-observation/`. They are runtime
