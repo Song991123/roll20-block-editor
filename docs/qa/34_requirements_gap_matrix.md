@@ -1,5 +1,14 @@
 # 34. Requirements Gap Matrix
 
+# Local full-gate recheck - 2026-07-31
+
+- `DONE LOCAL`: `ci:verify` passed the full import/export, layer, iframe,
+  worker, legacy/modern, payload-safety, evidence, and UI-copy checks.
+- `DONE LOCAL`: edit-flow and persistent preview surface passed with one
+  shared iframe and `loads=0` in both compatibility modes.
+- `OPEN EXTERNAL`: current generated Roll20 evidence remains `0/4`; no local
+  green check is promoted to actual visual parity or chat parity.
+
 # Visible Sandbox gate and chooser retry - 2026-07-31
 
 - `DONE OBSERVATION`: the modern Sandbox showed a visible exactly-one

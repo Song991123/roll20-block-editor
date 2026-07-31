@@ -1,5 +1,16 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Local full-gate recheck while external upload is blocked
+
+- `VERIFIED LOCAL`: `corepack pnpm run ci:verify` passed all importer,
+  preserved-attribute, worker, modern/legacy sanitize, payload-safety,
+  evidence-guard, and UI-copy checks.
+- `VERIFIED LOCAL`: `smoke:edit-flow` passed; persistent preview/edit retained
+  one iframe with `loads=0` in both modern and legacy modes.
+- `CLAIM BOUNDARY`: these results do not create current Roll20 root/chat
+  evidence. `status:roll20-actual` remains `0/4`, `chatParity=MISSING`, and
+  `rendererReady=NO` because the supported chooser is still blocked.
+
 # 2026-07-31 Visible Sandbox gate and chooser retry
 
 - `VERIFIED EXTERNAL READ-ONLY`: the modern Sandbox surface showed a visible

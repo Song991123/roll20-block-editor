@@ -10495,6 +10495,15 @@ same-hash modern/legacy comparison.
 
 ## 2026-07-31 - Visible Sandbox gate and chooser retry
 
+## 2026-07-31 - Local full-gate recheck
+
+- `VERIFIED LOCAL`: `ci:verify` passed all current importer, renderer,
+  modern/legacy, worker, payload, privacy, and UI-copy checks.
+- `VERIFIED LOCAL`: edit-flow and persistent preview surface passed with one
+  shared iframe and zero reloads in both compatibility modes.
+- `BOUNDARY`: this does not replace missing current Roll20 root/chat evidence;
+  the chooser permission blocker remains external.
+
 - `VERIFY / BLOCKED EXTERNAL`: the modern Sandbox had a fresh visible
   exactly-one participant panel and the supported HTML chooser was invoked.
   `fileChooser.setFiles` still returned `Not allowed` before transmission.
