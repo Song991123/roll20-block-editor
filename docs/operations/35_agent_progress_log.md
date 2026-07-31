@@ -11023,3 +11023,19 @@ same-hash modern/legacy comparison.
   open for visible user selection.
 - `NEXT`: after selection, verify payload markers and capture the modern
   same-payload root/chat evidence, then perform the separate legacy run.
+
+## 2026-07-31 - Imported layer subtree reorder coverage
+
+- `IMPLEMENTED`: expanded the anonymous synthetic layer fixture from one
+  frame to two sibling frames, each containing visible inputs. The fixture is
+  generic and contains no external sheet identity or source artifact.
+- `VERIFIED LOCAL`: the full imported-edit browser smoke passed all three
+  cases. The layer fixture now proves both a leaf sibling reorder and a
+  non-leaf subtree reorder through the layer panel's real drag path; child
+  parent IDs remained stable and the moved subtree had `0%` edit/preview
+  visual mismatch.
+- `VERIFIED LOCAL`: Blockly layer operations, lint, `ci:verify`, and the
+  production build passed after the change.
+- `CLAIM BOUNDARY`: this is local interaction coverage. The actual Roll20
+  Sandbox upload, modern/legacy same-payload screenshot parity, worker
+  mutation parity, and chat parity remain open external gates.

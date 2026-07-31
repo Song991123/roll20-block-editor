@@ -108,6 +108,9 @@ const BUILTIN_FIXTURES = [
       '  <div class="sheet-layer-frame" style="display: block; width: 320px; min-height: 96px; padding: 10px; border: 1px solid #69c">',
       '    <input type="text" name="attr_layer_first" value="First"><input type="text" name="attr_layer_second" value="Second">',
       '  </div>',
+      '  <div class="sheet-layer-frame" style="display: block; width: 320px; min-height: 96px; padding: 10px; border: 1px solid #c96">',
+      '    <input type="text" name="attr_layer_third" value="Third"><input type="text" name="attr_layer_fourth" value="Fourth">',
+      '  </div>',
       '</div>',
     ].join('\n'),
     css: [

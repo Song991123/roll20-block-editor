@@ -10446,3 +10446,20 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: select the three anonymous handoff files in the visible official
   chooser, then confirm the generated markers and capture modern evidence
   before repeating the same payload in the independent legacy destination.
+
+## 2026-07-31 Imported Layer Reorder Coverage
+
+- `FIXED LOCAL`: the synthetic imported-layer fixture now contains two
+  sibling frames, each with visible children. This makes the non-leaf layer
+  reorder check exercise a real subtree move instead of silently skipping
+  because the fixture had only one frame.
+- `VERIFIED LOCAL`: `smoke:imported-edit-sync` passed all three synthetic
+  cases. The layer fixture passed both leaf-sibling reorder and non-leaf
+  sibling reorder; the latter preserved child parent IDs, matched the layer
+  relation/depth, prevented an invalid drop, and kept edit/preview subtree
+  visual diff at `0%`.
+- `VERIFIED LOCAL`: Blockly layer operations, lint, full `ci:verify`, and
+  production build passed after the fixture change.
+- `OPEN EXTERNAL`: this strengthens local Figma-style layer evidence only. It
+  does not prove same-payload Roll20 modern/legacy screenshot parity, worker
+  mutation parity, or chat parity.
