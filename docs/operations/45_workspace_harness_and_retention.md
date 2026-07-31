@@ -1,5 +1,19 @@
 # 45. Workspace Harness and Retention Policy
 
+## 2026-07-31 explicit complete-deletion retry (host blocked)
+
+- RECHECKED: the only present approved disposable targets were the active
+  worktree's `web-push-main/.next/`, `out/`, and `.tmp/` directories. Each
+  target resolved inside the workspace, was not a reparse-point root, was not
+  Git-tracked, and no project listener was active.
+- ATTEMPTED: one native PowerShell recursive deletion request was issued for
+  those three exact paths after the user explicitly authorized the retry.
+- BLOCKED HOST: the execution boundary rejected the `Remove-Item -Recurse`
+  invocation before PowerShell ran. No alternate shell, native API,
+  per-file workaround, or safety bypass was used.
+- NOT DELETED: all three targets remain present; source, dependencies,
+  worktrees, report policy, and protected external sheet roots are preserved.
+
 ## 2026-07-31 latest explicit-approval retry
 
 - The exact remaining generated targets were re-resolved: active
