@@ -1545,3 +1545,29 @@ directories that had been recreated by the local build.
 - `DELETE STATUS`: these generated targets remain because the host rejected
   the user-authorized recursive deletion before PowerShell execution. No
   alternate shell, per-file workaround, or safety bypass was used.
+
+## 2026-07-31 latest explicit retry after user approval
+
+- RECHECKED: the active worktree `.next/`, `out/`, and `.tmp/` directories
+  were the only requested deletion targets. Each resolved inside the
+  canonical worktree, was untracked/recreatable, and was outside source,
+  dependencies, Git worktree metadata, reports policy, and protected external
+  sheet roots. No project listener was active.
+- ATTEMPTED: one boundary-checked native PowerShell recursive deletion request
+  was issued for those exact paths after the user explicitly approved it.
+- BLOCKED HOST: the session execution boundary rejected the destructive
+  `Remove-Item -Recurse` invocation before PowerShell executed. User approval
+  cannot override this host restriction.
+- NOT DELETED: `.next/`, `out/`, and `.tmp/` remain. No alternate shell,
+  native API, per-file workaround, or safety bypass was used.
+
+## 2026-07-31 generated-file deletion retry after user approval
+
+- RECHECKED: ignored `next-env.d.ts` was also present as a reproducible
+  Next-generated file inside the canonical worktree and was not Git-tracked.
+- ATTEMPTED: one boundary-checked native PowerShell `Remove-Item -Force`
+  request was issued for that exact file after explicit user approval.
+- BLOCKED HOST: the execution boundary rejected the command before PowerShell
+  executed, even without recursive deletion.
+- NOT DELETED: `next-env.d.ts` remains. No alternate shell, API, per-file
+  workaround, or safety bypass was used.
