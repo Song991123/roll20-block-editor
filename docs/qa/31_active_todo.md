@@ -5,6 +5,8 @@
   from restoring a previous layer position after a newer edit commit.
 - `DONE LOCAL`: same-revision retries remain idempotent and resend the ACK, so
   a lost acknowledgement does not leave the editor waiting indefinitely.
+- `DONE LOCAL`: the parent now discards superseded source records and ignores
+  older ACKs without clearing the current render-ready state.
 - `VERIFIED LOCAL`: focused build-doc test, lint, production build,
   persistent-preview surface, strict imported-edit sync, and edit-flow smoke
   all pass after the bridge change. Modern/legacy local runs still use one

@@ -168,6 +168,7 @@ export default function PreviewMain() {
   const [iframeReadySourceKey, setIframeReadySourceKey] = useState<string | null>(null);
   const [iframeLoadRevision, setIframeLoadRevision] = useState(0);
   const iframeEditBridgeIdRef = useRef<string | null>(null);
+  const lastAppliedAckRevisionRef = useRef(0);
   const [iframeEditOverlay, setIframeEditOverlay] = useState<IframeEditHitMessage | null>(null);
   const [iframeEditDropTarget, setIframeEditDropTarget] = useState<IframeEditDropTarget | null>(null);
   const iframeEditOverlayFrameRef = useRef<number | null>(null);
@@ -723,6 +724,7 @@ export default function PreviewMain() {
           flushIframeEditState(null, null);
           setIframeEditDragOrigin(null);
           iframeEditDragOriginRef.current = null;
+          lastAppliedAckRevisionRef.current = 0;
         }
         iframeEditBridgeIdRef.current = editMessage.bridgeId;
         setIframeReadySourceKey(null);
@@ -734,9 +736,15 @@ export default function PreviewMain() {
       }
       if (editMessage?.type === 'r20:edit-applied') {
         if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
-        setIframeReadySourceKey(null);
         const appliedSource = applySourcesRef.current.get(editMessage.revision);
         if (!appliedSource) return;
+        // A delayed ACK from an older source must not invalidate the current
+        // render-ready state or clear the newer pending source.
+        if (editMessage.revision < lastAppliedAckRevisionRef.current) {
+          applySourcesRef.current.delete(editMessage.revision);
+          return;
+        }
+        setIframeReadySourceKey(null);
         markEditorTiming('apply-acked-parent');
         lastAppliedSourceRef.current = appliedSource;
         applySourcesRef.current.delete(editMessage.revision);
@@ -751,6 +759,7 @@ export default function PreviewMain() {
         setIframeEditDragOrigin(null);
         iframeEditDragOriginRef.current = null;
         setIframeEditDropTarget(null);
+        lastAppliedAckRevisionRef.current = editMessage.revision;
         setLastApplyAck(editMessage.revision);
         const target = iframeRef.current?.contentWindow;
         target?.postMessage({
@@ -1437,6 +1446,11 @@ export default function PreviewMain() {
     if (!iframeRef.current?.contentWindow) return;
     const revision = applyRevisionRef.current + 1;
     applyRevisionRef.current = revision;
+    // Only the newest source can still be pending. Drop superseded entries so
+    // delayed stale ACKs cannot accumulate or affect later readiness state.
+    applySourcesRef.current.forEach((_source, sourceRevision) => {
+      if (sourceRevision < revision) applySourcesRef.current.delete(sourceRevision);
+    });
     applySourcesRef.current.set(revision, renderSourceKey);
     pendingApplySourceRef.current = renderSourceKey;
     // A persistent iframe first reports the empty/default document width. Let

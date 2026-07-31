@@ -58,6 +58,8 @@
 - Implemented a monotonic revision guard in the persistent iframe bridge.
   Delayed older HTML/CSS patches and stale chunk completions are dropped, while
   same-revision retries resend an ACK for transport recovery.
+- The parent bridge now also drops superseded source records and ignores older
+  ACKs without clearing the current render-ready state.
 - Focused build-doc test, lint, production build, persistent-preview surface,
   strict imported-edit sync, and edit-flow smoke passed. This is local
   synchronization evidence only; current external Roll20 evidence remains
