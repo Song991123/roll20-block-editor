@@ -107,6 +107,25 @@ function testDirectTextNodePreserved(): void {
   assert(r.stats.htmlRawFallback === 0, 'no raw fallback for direct text');
 }
 
+function testRolltemplateDirectMustacheTextPreserved(): void {
+  const html = [
+    '<rolltemplate class="sheet-rolltemplate-demo">',
+    '{{#title}}',
+    '<div class="sheet-title">{{title}}</div>',
+    '{{/title}}',
+    '<div class="sheet-row">{{label}}: {{value}}</div>',
+    'tail',
+    '</rolltemplate>',
+  ].join('');
+  const r = importSheet({ html });
+  assert(r.html.includes('r20_rolltemplate_define'), 'rolltemplate wrapper is structured');
+  assert((r.html.match(/r20_text_node/g) || []).length >= 3, 'direct Mustache/text nodes are mapped');
+  assert(r.html.includes('{{#title}}'), 'opening Mustache token is preserved');
+  assert(r.html.includes('{{/title}}'), 'closing Mustache token is preserved');
+  assert(r.html.includes('>tail<'), 'direct trailing text is preserved');
+  assert(r.stats.htmlRawFallback === 0, 'rolltemplate uses no raw fallback');
+}
+
 function testWhitespaceOnlyTextDoesNotInflate(): void {
   const html = `<div>\n  <label> Name <input name="attr_name"> </label>\n</div>`;
   const r = importSheet({ html });
@@ -504,6 +523,7 @@ const tests = [
   ['structural label container', testStructuralLabelContainer],
   ['list containers', testListContainers],
   ['direct text node', testDirectTextNodePreserved],
+  ['rolltemplate direct Mustache text', testRolltemplateDirectMustacheTextPreserved],
   ['whitespace-only text', testWhitespaceOnlyTextDoesNotInflate],
   ['inline sibling whitespace', testInlineWhitespaceBetweenSiblingsPreserved],
   ['stable formatted text', testFormattedDirectTextHasStableWhitespace],

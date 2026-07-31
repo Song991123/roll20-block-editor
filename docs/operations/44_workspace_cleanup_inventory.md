@@ -1485,3 +1485,12 @@ directories that had been recreated by the local build.
 - VERIFIED: `.next/`, `out/`, and `.tmp/` are absent; `reports/`
   contains only its policy README; Git is clean; and no project listener is
   active.
+
+## 2026-07-31 post-verification output purge
+
+- The full CI/build verification recreated only `.next/`, `out/`, and the
+  ignored `reports/legacy-export-audit/` directory.
+- DELETED: those exact regenerated targets after a fresh dry run and listener
+  check. No source, dependency, worktree, or protected reference was included.
+- VERIFIED: all generated roots are absent again and `reports/README.md` is
+  retained.

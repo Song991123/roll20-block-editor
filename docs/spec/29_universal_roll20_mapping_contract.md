@@ -41,7 +41,7 @@ Every source artifact must become blocks, not opaque app-only state.
 | `class=""` attr | Token-preserving class field. Never collapse multi-class strings. |
 | CSS rule | CSS selector block with declaration child blocks or raw CSS fallback with parser diagnostics. |
 | CSS at-rule | At-rule block or raw CSS fallback. `@media`, `@keyframes`, `@import`, common block at-rules such as `@supports`, `@container`, and `@layer`, and Roll20-unsafe rules must be represented before sanitization. Safe nested block at-rules use the editable `r20_css_at_rule` container; malformed or semicolon-only forms stay lossless raw CSS. |
-| Rolltemplate | Hidden from sheet canvas preview, represented as rolltemplate blocks, rendered in chat simulation when a roll invokes it. |
+| Rolltemplate | Hidden from sheet canvas preview, represented as rolltemplate blocks, rendered in chat simulation when a roll invokes it. Direct text/Mustache tokens between child elements must remain ordered and lossless; they may not be dropped just because they are not elements. |
 | Sheet worker JS | Hidden from sheet canvas preview, represented as worker/event blocks or raw worker blocks, executed in the preview sandbox simulator when supported. |
 | Translation file | i18n key/value blocks or translation table. The preview must apply translations before visual comparison. Locale metadata must accept the user's valid BCP-47-like tag; do not limit custom sheets to a fixed language list. Roll20 export remains a flat `translation.json` string map. |
 | Roll button value | Expression tree when parseable. Raw expression fallback only with explicit diagnostics. |
@@ -164,6 +164,13 @@ Required:
 - Sheet workers and rolltemplates are simulated through the preview runtime/chat pane, not by displaying their source text.
 
 ## Chat and Rolltemplate Contract
+
+Rolltemplate source mapping has one extra ordering rule: the direct children of
+`<rolltemplate>` are walked with the same text/comment/element walker as normal
+containers. This preserves root-level `{{#section}}`, `{{field}}`,
+`{{/section}}`, whitespace boundaries, and trailing literal text in the block
+workspace before chat simulation. The rule is generic and does not depend on a
+sheet name or a particular template style.
 
 Roll buttons must flow through the same path a Roll20 user expects:
 

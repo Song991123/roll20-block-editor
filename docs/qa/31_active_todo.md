@@ -10358,3 +10358,17 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `VERIFIED LOCAL`: the generated roots are absent, Git is clean, and no
   project listener remains. This maintenance change does not alter the open
   actual Roll20 evidence gate.
+
+## 2026-07-31 Rolltemplate Direct-Text Mapping
+
+- `DONE LOCAL`: rolltemplate children now use the shared text/comment/element
+  walker, so root-level Mustache tokens and literal text are not silently
+  discarded during import.
+- `VERIFIED LOCAL`: import structure `45/45`, emit-contract roundtrip,
+  high-priority mapping, rolltemplate renderer, Sandbox sanitizer, and lint
+  pass.
+- `VERIFIED LOCAL`: full `ci:verify` and production `build` also pass. The
+  verification run recreated only ignored local output, which is removed
+  after this batch.
+- `VERIFY / OPEN EXTERNAL`: this is a generic local mapping fix. It does not
+  increase the actual Roll20 screenshot/diff or legacy-room evidence counters.

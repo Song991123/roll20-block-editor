@@ -426,13 +426,10 @@ function matchDice(node: DomNode, _ctx: MatchContext): MatchedBlock | null {
     const cls = (a.class || '').trim();
     const m = /sheet-rolltemplate-(\S+)/.exec(cls);
     const name = m ? m[1] : 'default';
-    const rows: MatchedBlock[] = [];
-    for (const c of node.children) {
-      if (c.type === 'element') {
-        const m2 = matchElement(c, _ctx);
-        if (m2) rows.push(m2);
-      }
-    }
+    // Rolltemplate Mustache tokens often sit directly beside their element
+    // siblings (`{{#field}}`, `{{field}}`, `{{/field}}`). Use the same child
+    // walker as ordinary containers so direct text/comments are not dropped.
+    const rows = matchChildren(node, _ctx);
     return {
       blockType: 'r20_rolltemplate_define',
       fields: { NAME: name, STYLE: a.style || '' },

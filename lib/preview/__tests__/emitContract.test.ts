@@ -188,6 +188,29 @@ function testInlineFlowDoesNotGainWhitespace(): void {
   workspace.dispose();
 }
 
+function testRolltemplateDirectMustacheTokensRoundTrip(): void {
+  registerAllBlocks();
+  const source = [
+    '<rolltemplate class="sheet-rolltemplate-demo">',
+    '{{#title}}',
+    '<div class="sheet-title">{{title}}</div>',
+    '{{/title}}',
+    '<div class="sheet-row">{{label}}: {{value}}</div>',
+    'tail',
+    '</rolltemplate>',
+  ].join('');
+  const imported = importSheet({ html: source });
+  const workspace = new Blockly.Workspace();
+  Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(imported.html), workspace);
+  const emitted = emitAll({ html: workspace }).html;
+  assert(emitted.includes('<rolltemplate'), 'rolltemplate wrapper survives workspace hydration');
+  assert(emitted.includes('{{#title}}'), 'opening Mustache token survives emit');
+  assert(emitted.includes('{{title}}'), 'field Mustache token survives emit');
+  assert(emitted.includes('{{/title}}'), 'closing Mustache token survives emit');
+  assert(emitted.includes('tail'), 'direct trailing text survives emit');
+  workspace.dispose();
+}
+
 function testGenericCssTagEmit(): void {
   registerAllBlocks();
   const workspace = new Blockly.Workspace();
@@ -456,6 +479,7 @@ testGenericElementEmit();
 testInlineBreakClassEmit();
 testTopLevelWhitespaceTextRoundTrip();
 testInlineFlowDoesNotGainWhitespace();
+testRolltemplateDirectMustacheTokensRoundTrip();
 testGenericCssTagEmit();
 testI18nAriaLabelTagEmit();
 testI18nTitleAndHtmlTagEmit();

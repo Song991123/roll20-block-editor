@@ -10940,3 +10940,18 @@ same-hash modern/legacy comparison.
 - `VERIFIED LOCAL`: the generated roots are absent, Git is clean, and no
   project listener remains. This cleanup does not change the actual Roll20
   parity gate or its current evidence status.
+
+## 2026-07-31 - Rolltemplate direct-text mapping fix
+
+- `IMPLEMENTED`: `matchDice` now sends `<rolltemplate>` children through the
+  common child walker instead of iterating elements only. Root-level Mustache
+  sections, field tokens, comments, whitespace boundaries, and literal text
+  therefore remain in the editable `ROWS` chain.
+- `VERIFIED LOCAL`: import structure `45/45`, emit-contract workspace
+  roundtrip, high-priority mapping, rolltemplate renderer, Sandbox sanitizer,
+  and lint all pass.
+- `VERIFIED LOCAL`: full `ci:verify` and production `build` pass. Their
+  ignored reports/build output are disposable and are purged after the batch.
+- `CLAIM BOUNDARY`: this closes a local mapping loss, not actual Roll20 visual
+  parity. Modern/legacy screenshot diff and same-payload external evidence
+  remain the separate open gate.

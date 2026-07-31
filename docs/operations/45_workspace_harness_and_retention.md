@@ -630,3 +630,11 @@ external material remain preserved.
   worktrees, reference/archive zones, and protected external sheet sources.
 - VERIFIED: the three generated roots are absent, `reports/` contains only
   the policy README, Git is clean, and project server hygiene is clear.
+
+## 2026-07-31 post-verification output purge
+
+- `ci:verify` and production `build` recreated only ignored generated output.
+- DELETED: the exact `.next/`, `out/`, and `reports/legacy-export-audit/`
+  targets after a new dry run; `.tmp/` was already absent.
+- PRESERVED: active dependencies, source, worktrees, report policy, and
+  protected external sheet roots. The generated roots are absent again.
