@@ -10656,3 +10656,15 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   visible file selection manually, then retry the anonymous modern payload.
   Only after that succeeds can current-payload root/chat evidence be captured;
   the separate legacy-room check remains independent.
+
+## 2026-07-31 Server Hygiene and Edit Smoke Recheck
+
+- `DONE LOCAL`: expanded the server hygiene default from only the production
+  and high smoke range to all project dev/smoke defaults: `3000-3002`,
+  `4173-4211`, and `4300-4499`. Roll20 CDP `9222` remains preserved.
+- `VERIFIED LOCAL`: server-hygiene self-test, production build, lint,
+  `ci:verify`, iframe edit bridge/drop/layer tests, and the static
+  `smoke:edit-flow` all pass. The smoke server stopped cleanly afterward.
+- `CLAIM BOUNDARY`: this strengthens local editor and process hygiene only;
+  current-payload Roll20 visual parity remains blocked at the supported file
+  chooser permission gate.

@@ -10,6 +10,8 @@
 import { execFileSync } from 'node:child_process';
 import process from 'node:process';
 
+const DEFAULT_PROJECT_PORT_SPEC = '3000-3002,4173-4211,4300-4499';
+
 const args = process.argv.slice(2);
 
 function hasFlag(name) {
@@ -164,18 +166,20 @@ function printSummary(summary) {
 function selfTest() {
   const netstat = `
   TCP    127.0.0.1:3000         0.0.0.0:0              LISTENING       111
+  TCP    127.0.0.1:4173         0.0.0.0:0              LISTENING       444
   TCP    127.0.0.1:9222         0.0.0.0:0              LISTENING       222
   TCP    [::1]:4414             [::]:0                 LISTENING       333
 `;
   const tasklist = `"node.exe","111","Console","1","10,000 K"
+"node.exe","444","Console","1","10,000 K"
 "chrome.exe","222","Console","1","10,000 K"
 "node.exe","333","Console","1","10,000 K"`;
   const listeners = parseNetstat(netstat).map((row) => ({
     ...row,
     processName: parseTasklist(tasklist).get(row.pid)?.imageName ?? 'unknown',
   }));
-  const result = classify(listeners, parsePortSet('3000,4300-4499'), parsePortSet('9222'));
-  if (result.project.length !== 2) throw new Error('expected two project listeners');
+  const result = classify(listeners, parsePortSet(DEFAULT_PROJECT_PORT_SPEC), parsePortSet('9222'));
+  if (result.project.length !== 3) throw new Error('expected three project listeners');
   if (result.cdp.length !== 1) throw new Error('expected one cdp listener');
   if (result.cdp[0].processName !== 'chrome.exe') throw new Error('expected chrome cdp process');
   console.log('server_hygiene_check self-test passed');
@@ -186,7 +190,7 @@ if (hasFlag('--self-test')) {
   process.exit(0);
 }
 
-const projectPortSpec = readOption('--project-ports', '3000,3001,3002,4300-4499');
+const projectPortSpec = readOption('--project-ports', DEFAULT_PROJECT_PORT_SPEC);
 const cdpPortSpec = readOption('--cdp-ports', '9222');
 const projectPorts = parsePortSet(projectPortSpec);
 const cdpPorts = parsePortSet(cdpPortSpec);

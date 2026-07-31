@@ -11204,3 +11204,15 @@ same-hash modern/legacy comparison.
 - `NEXT`: obtain the supported browser file-URL permission or a user-mediated
   visible file selection, then capture current-payload modern root/chat proof;
   legacy still requires a separate dedicated legacy-enabled room.
+
+## 2026-07-31 - Server hygiene and edit smoke recheck
+
+- Updated the default hygiene range to cover the actual local dev/smoke ports:
+  `3000-3002`, `4173-4211`, and `4300-4499`; Roll20 CDP `9222` remains an
+  explicitly preserved listener.
+- A post-build static `smoke:edit-flow` passed after an earlier no-build run
+  timed out because the deleted `out/` directory had not yet been recreated.
+- Server-hygiene self-test, `ci:verify`, lint, build, and edit bridge/drop/layer
+  tests passed. No local project listener remained after the run.
+- This is local process/editor evidence only; the same-payload Roll20 upload
+  and modern/legacy actual visual gates are still open.
