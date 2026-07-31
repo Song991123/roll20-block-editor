@@ -36,7 +36,7 @@
  *      - block-id stripped SHA256 (의도된 차이 제거 후)
  *      - first-diff 위치 + 100-char window
  *
- * 시스템 specific token 0 — D&D 5e/roll20-sheet-builder/임의 시트 모두 같은 procedure.
+ * 시스템 specific token 0 — D&D 5e/legacy-sheet-corpus/임의 시트 모두 같은 procedure.
  */
 
 import { chromium } from 'playwright';

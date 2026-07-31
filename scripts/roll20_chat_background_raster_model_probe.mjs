@@ -94,7 +94,7 @@ function summarizeFixture(fixtureId, reports) {
   const rowRaster = findFixture(reports.rowRaster?.fixtures, fixtureId);
   const width = findFixture(reports.widthReconciliation?.fixtures, fixtureId);
   const backgroundSize = candidateByName(reports.rowRasterCandidates, 'coc-background-size-actual');
-  const fixtureCBackgroundSize = fixtureId === 'fixtureC-commission-1bu' ? backgroundSize : null;
+  const fixtureCBackgroundSize = fixtureId === 'fixtureC' ? backgroundSize : null;
   const priority = backgroundSource?.priority ?? rowRaster?.priority ?? compositing?.priority ?? 'P2';
   const compositingSummary = summarizeCompositing(compositing);
   const decision = decide({

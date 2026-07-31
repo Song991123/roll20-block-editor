@@ -250,7 +250,7 @@ Roll20 expected-render path must not blindly assume CSS selector prefixing until
 the actual character iframe behavior is modeled and rechecked.
 
 2026-06-19 update: the dedicated sandbox endpoint/settings-form fallback also
-rendered fixture-C 1BU in the actual Roll20 character iframe. Fresh local-only
+rendered fixtureC in the actual Roll20 character iframe. Fresh local-only
 computed-style evidence found a `.charactersheet` root at `850px` width with
 `1049` inputs, `808` roll buttons, `88` tables, and `9` scripts. The active
 computed-style diagnostic now compares `3/3` fixtures with

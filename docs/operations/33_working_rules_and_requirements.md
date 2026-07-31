@@ -28,11 +28,7 @@ Every agent must do this before changing code or claiming status. `AGENTS.md` is
 
 Never mutate external source corpus folders directly. If a sheet is needed for verification, copy it into workspace-owned fixture folders first.
 
-Protected source folders:
-
-- `D:\훙냥냥\마렌상\roll20-character-sheets-master`
-- `D:\훙냥냥\마렌상\티알[중요]커스텀시트`
-- `D:\훙냥냥\마렌상\티알\0 CoC\roll20-sheet-builder\user-owned 커미션\시트`
+Protected source folders are external and read-only. Their concrete paths are intentionally omitted from repository records.
 
 Allowed workspace-owned places for copied evidence:
 

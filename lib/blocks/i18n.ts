@@ -107,7 +107,7 @@ function sanitizeKey(raw: string): string {
   if (!s) return '';
   // 과거: [^A-Za-z0-9_.\-] 전부 제거 → "fighting(brawl)-u" 가 "fightingbrawl-u" 로,
   // "Move rate-u" 가 "Moverate-u" 로 망가져 사용자의 translation.json 과 키가
-  // 어긋남 (Roll20 은 키에 공백/괄호/슬래시/한글 허용 — roll20-sheet-builder 원본이 실증).
+  // 어긋남 (Roll20 은 키에 공백/괄호/슬래시/한글 허용 — legacy-sheet-corpus 원본이 실증).
   // attribute escape 는 attr()/escapeAttr 가 담당하므로 여기서는 제어문자만 제거.
   return s.replace(/[\u0000-\u001F\u007F]/g, '');
 }

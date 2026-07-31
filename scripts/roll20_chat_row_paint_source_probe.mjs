@@ -371,7 +371,7 @@ function fixtureDelta(candidate, key) {
 function fixtureKeyForId(fixtureId) {
   if (fixtureId === 'fixtureA') return 'fixtureA';
   if (fixtureId === 'fixtureB') return 'lesOublies';
-  if (fixtureId === 'fixtureC-commission-1bu') return 'fixtureC';
+  if (fixtureId === 'fixtureC') return 'fixtureC';
   return fixtureId;
 }
 

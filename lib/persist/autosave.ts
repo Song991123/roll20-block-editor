@@ -14,7 +14,7 @@
  * SSR safe — installAutosave 는 client effect 안에서만 호출 (EditorShell).
  *
  * 안전장치
- *   - roll20-sheet-builder / 특정 시트 종류 hardcoding 없음 (XML 그대로 저장).
+ *   - legacy-sheet-corpus / 특정 시트 종류 hardcoding 없음 (XML 그대로 저장).
  *   - 10MB 초과 시 skip + 토스트 1회.
  *   - quota 초과 시 토스트 1회 (rate-limited 30s).
  *   - 같은 structureVersion 으로 중복 호출 방지 (subscribe selector 가 처리).

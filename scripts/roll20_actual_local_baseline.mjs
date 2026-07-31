@@ -133,7 +133,7 @@ async function resolveLegacyMode(dir, fixtureManifest) {
     path.join(dir, 'sheet.json'),
     sourceDir ? path.join(sourceDir, 'sheet.json') : '',
   ];
-  if (fixtureManifest?.corpus === 'official-roll20' && fixtureManifest?.relDir) {
+  if (fixtureManifest?.corpus === 'reference-corpus' && fixtureManifest?.relDir) {
     candidates.push(path.join(OFFICIAL_SHEETS_ROOT, fixtureManifest.relDir, 'sheet.json'));
   }
 

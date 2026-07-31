@@ -7,9 +7,9 @@
  * 렌더링 로직은 `composite_skill_row_emit.ts` (pure module, Blockly 의존 0)
  * 에 분리. 단위 테스트도 emit 모듈만 호출.
  *
- * 일반화 — roll20-sheet-builder / CoC / DnD 5e / PbtA / 인세인 어떤 시트도 같은 schema:
+ * 일반화 — legacy-sheet-corpus / CoC / DnD 5e / PbtA / 인세인 어떤 시트도 같은 schema:
  *   `<tr>` 한 행 = (체크박스?) + (label, 보통 i18n) + (input) + (roll button?).
- *   각 부분은 선택적. 시스템 specific 토큰 0. roll20-sheet-builder hardcoding 0.
+ *   각 부분은 선택적. 시스템 specific 토큰 0. legacy-sheet-corpus hardcoding 0.
  */
 
 import * as Blockly from 'blockly';
@@ -240,7 +240,7 @@ export const COMPOSITE_SKILL_ROW: BlockDef = {
     b.appendDummyInput()
       .appendField('굴림 td class')
       .appendField(new Blockly.FieldTextInput(''), 'ROLL_TD_CLASS');
-    // ── 둘째 값 input (roll20-sheet-builder 커스텀 스킬 행: 이름 input + 값 input) ────
+    // ── 둘째 값 input (legacy-sheet-corpus 커스텀 스킬 행: 이름 input + 값 input) ────
     // 주의: composite_matcher 가 이 필드들을 쓰는데 블록 정의에 없으면
     // Blockly 가 hydrate 때 "Ignoring non-existent field" 로 조용히 버려서
     // 스킬 % 입력칸/둘째 굴림 버튼이 통째로 소실된다 (fixtureC 49행 사고).

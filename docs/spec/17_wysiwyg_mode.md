@@ -408,7 +408,7 @@ Shadow DOM 안 element 를 pointer drag → `LEFT_PX/TOP_PX` field 가 있는 �
 
 - typecheck/lint: pending (다음 step).
 - live e2e: pending — 본 sandbox disk/네트워크 제한으로 다음 환경에서 측정.
-- 라이브 측정 안 한 항목: roll20-sheet-builder 1부 헤더 라벨 더블클릭 → 입력 → blur → 코드 패널 emit 새 값 verify. screenshot 미수집.
+- 라이브 측정 안 한 항목: legacy-sheet-corpus legacy corpus 헤더 라벨 더블클릭 → 입력 → blur → 코드 패널 emit 새 값 verify. screenshot 미수집.
 
 #### 알려진 caveat / 후속
 
@@ -587,7 +587,7 @@ emit HTML 문자열에 `data-r20-block-id="<blockId>"` 가 추가되는 element 
 
 #### 회귀 영향
 
-- roll20-sheet-builder 1부 매칭: emit 변경은 import (matchHtml / matchCss / i18n) 와 격리. 매칭 6134/6134 유지.
+- legacy-sheet-corpus legacy corpus 매칭: emit 변경은 import (matchHtml / matchCss / i18n) 와 격리. 매칭 6134/6134 유지.
 - 기존 import 라운드트립 테스트 (basic / i18n_text / i18n_placeholder / inline_bold / conditional_view) — emit 의존 X (import 측 helper 단위 테스트).
 - export 묶음 / sanitize 단위 — sanitize 가 `data-r20-block-id` 를 strip 하므로 export ZIP 안 sheet.html 은 변동 X.
 

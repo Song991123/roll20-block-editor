@@ -16,7 +16,7 @@ This repo may be public while the product is still stabilizing. Treat the public
 
 ## Copyright and Source Safety
 
-- Do not commit real Roll20 official sheets, community sheets, commissioned sheets, user custom sheets, translations, reference images, fixture copies, or generated HTML built from them.
+- Do not commit real Roll20 reference sheets, community sheets, commissioned sheets, user custom sheets, translations, reference images, fixture copies, or generated HTML built from them.
 - Do not commit generated verification reports that contain real sheet names, source snippets, screenshots, external asset URLs, or token inventories.
 - Real sheet verification belongs in ignored local folders only:
   - `test-fixtures/`

@@ -855,7 +855,7 @@ function AssetReplacementPanel({
             <input
               value={profileName}
               onChange={(event) => setProfileName(event.target.value)}
-              placeholder="예: roll20-sheet-builder 1부 이미지"
+              placeholder="예: legacy-sheet-corpus legacy corpus 이미지"
               className="h-8 rounded border border-border bg-[var(--bg-elevated)] px-2 text-sm"
               data-testid="export-asset-profile-name"
             />

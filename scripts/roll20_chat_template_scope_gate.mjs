@@ -236,7 +236,7 @@ function requiredScopeFor(fixtureId, strategy, nextExperiment) {
   if (fixtureId === 'fixtureA' || strategy.includes('fixtureA') || nextExperiment === 'CHAT_MESSAGE_CONTENT_WIDTH') {
     return '.sheet-rolltemplate-aw';
   }
-  if (fixtureId === 'fixtureC-commission-1bu' || strategy.includes('COC') || nextExperiment === 'TABLE_SCROLL_INTRINSIC') {
+  if (fixtureId === 'fixtureC' || strategy.includes('COC') || nextExperiment === 'TABLE_SCROLL_INTRINSIC') {
     return '.sheet-rolltemplate-coc';
   }
   if (strategy === 'KEEP_DEFAULT' || nextExperiment === 'KEEP_DEFAULT') return 'default';
@@ -501,7 +501,7 @@ function sourceIntrinsicHoldReason(sourceIntrinsic) {
 
 function rowRasterPrefixForFixture(fixtureId) {
   if (fixtureId === 'fixtureA') return 'fixtureA';
-  if (fixtureId === 'fixtureC-commission-1bu') return 'fixtureC';
+  if (fixtureId === 'fixtureC') return 'fixtureC';
   return fixtureKeyForId(fixtureId);
 }
 
@@ -642,9 +642,9 @@ function normalizeReportOverrides(overrides) {
 function fixtureKeyForId(fixtureId) {
   if (fixtureId === 'fixtureA') return 'fixtureA';
   if (fixtureId === 'fixtureB') return 'lesOublies';
-  if (fixtureId === 'fixtureC-commission-1bu') return 'fixtureC';
+  if (fixtureId === 'fixtureC') return 'fixtureC';
   return fixtureId
-    .replace(/^official-roll20-/, '')
+    .replace(/^reference-corpus-/, '')
     .replace(/-([a-z])/g, (_, char) => char.toUpperCase())
     .replace(/[^a-zA-Z0-9_]/g, '');
 }
@@ -679,14 +679,14 @@ function selfTest() {
     plan: {
       fixtures: [
         { fixtureId: 'fixtureA', priority: 'P0', alignedMismatchRatio: 0.18, strategy: 'fixtureA_TEMPLATE_SCOPED_TEXT_METRICS' },
-        { fixtureId: 'fixtureC-commission-1bu', priority: 'P0', alignedMismatchRatio: 0.2, strategy: 'COC_TABLE_INTRINSIC_AND_SANITIZE_MODEL' },
+        { fixtureId: 'fixtureC', priority: 'P0', alignedMismatchRatio: 0.2, strategy: 'COC_TABLE_INTRINSIC_AND_SANITIZE_MODEL' },
         { fixtureId: 'fixtureB', priority: 'P1', alignedMismatchRatio: 0.06, strategy: 'KEEP_DEFAULT' },
       ],
     },
     reconciliation: {
       fixtures: [
         { fixtureId: 'fixtureA', signals: { tableWidthDelta: 15.75, tableTextResidual: 0.148, tableScrollWidthDelta: 16 } },
-        { fixtureId: 'fixtureC-commission-1bu', signals: { tableWidthDelta: -24.531, tableTextResidual: 30.415, tableScrollWidthDelta: -25 } },
+        { fixtureId: 'fixtureC', signals: { tableWidthDelta: -24.531, tableTextResidual: 30.415, tableScrollWidthDelta: -25 } },
       ],
     },
     policy: { summary: { globalSafeCandidates: 0 } },
@@ -756,7 +756,7 @@ function selfTest() {
           tableContext: { decision: 'TABLE_INTRINSIC_SOURCE_CONTEXT_REQUIRED', tableWidthDelta: 15.75 },
         },
         {
-          fixtureId: 'fixtureC-commission-1bu',
+          fixtureId: 'fixtureC',
           decision: 'SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED',
           cssEvidence: { classification: 'EXPECTED_RULE_PRESENT', expectedRulePresent: true },
           fontActivation: { decision: 'FONT_FACE_ACTIVATION_DIFFERS', changedFonts: [{ spec: '12px BookkMyungjo-Bd' }] },
@@ -781,7 +781,7 @@ function selfTest() {
           },
         },
         {
-          fixtureId: 'fixtureC-commission-1bu',
+          fixtureId: 'fixtureC',
           decision: 'SANITIZE_INTRINSIC_CROP_MODEL_REQUIRED',
           promotionBlocker: true,
           source: { tableMaxWidthPx: 280 },
@@ -813,9 +813,9 @@ function selfTest() {
   assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'fixtureA').sourceContextBlocksPromotion, true);
   assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'fixtureA').sourceIntrinsicBlocksPromotion, true);
   assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'fixtureA').promotionReady, false);
-  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'fixtureC-commission-1bu').requiredModel, 'TABLE_INTRINSIC_SANITIZE_FONT');
-  assert.ok(report.fixtures.find((fixture) => fixture.fixtureId === 'fixtureC-commission-1bu').requiredProofChecklist.includes('font-face-rule-order-sanitize-source-context'));
-  assert.ok(report.fixtures.find((fixture) => fixture.fixtureId === 'fixtureC-commission-1bu').requiredProofChecklist.includes('source-intrinsic-matrix-promotion-blocker-cleared'));
-  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'fixtureC-commission-1bu').sourceIntrinsicBlocksPromotion, true);
+  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'fixtureC').requiredModel, 'TABLE_INTRINSIC_SANITIZE_FONT');
+  assert.ok(report.fixtures.find((fixture) => fixture.fixtureId === 'fixtureC').requiredProofChecklist.includes('font-face-rule-order-sanitize-source-context'));
+  assert.ok(report.fixtures.find((fixture) => fixture.fixtureId === 'fixtureC').requiredProofChecklist.includes('source-intrinsic-matrix-promotion-blocker-cleared'));
+  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'fixtureC').sourceIntrinsicBlocksPromotion, true);
   console.log('roll20_chat_template_scope_gate self-test PASS');
 }

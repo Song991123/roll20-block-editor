@@ -2,7 +2,7 @@
  * style_field_preservation — 모든 블록에 STYLE 필드 round-trip 보존 검증.
  *
  * 회귀 배경 (docs/validation/verify/fixtureC_1bu_structural.md §4.3):
- *   roll20-sheet-builder 1부 측정 결과 inline `style` 속성 607 건 전부 (100%) drop —
+ *   legacy-sheet-corpus legacy corpus 측정 결과 inline `style` 속성 607 건 전부 (100%) drop —
  *   표 셀 폭/색, display:none 토글 컨트롤, font-weight 등 시각 정보 손실.
  *
  * Fix (P0 #2): 모든 visual block 에 STYLE field 추가 + matcher 캡쳐 + generator

@@ -1,7 +1,7 @@
 /**
  * roll20_base_inline.ts — Roll20 sandbox CSS 의 사용자 큐레이션 ground truth.
  *
- * 출처: D:\\훙냥냥\\마렌상\\roll20-sheet-builder 시트 고치기\\roll20-base\\
+ * 출처: D:\\훙냥냥\\마렌상\\legacy-sheet-corpus 시트 고치기\\roll20-base\\
  *   - base.css (449KB) — Bootstrap + normalize + Roll20 grimoire color tokens
  *   - charactersheet.css (14KB) — .ui-dialog .charsheet / .characterdialog
  *   - jquery.css (43KB) — jQuery UI Bootstrap (dialog chrome)

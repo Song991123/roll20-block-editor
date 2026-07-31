@@ -304,7 +304,7 @@ function decide({ priority, cssEvidence, fontActivation, tableContext, sanitizeR
 }
 
 function nextAction(decision, fixtureId = '') {
-  const isCoc = fixtureId === 'fixtureC-commission-1bu';
+  const isCoc = fixtureId === 'fixtureC';
   switch (decision) {
     case 'SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED':
       return 'do not replay observed sanitized typography as local CSS; inspect actual Roll20 rule order, font activation, and table intrinsic context together';

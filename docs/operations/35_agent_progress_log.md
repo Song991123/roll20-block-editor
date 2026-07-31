@@ -1,3 +1,17 @@
+# 2026-08-01 - Public-tree privacy audit and deletion boundary
+
+## 2026-08-01 - Anonymization and cleanup retry
+
+- Audited tracked/public paths: only `reports/README.md` is tracked under the
+  local evidence roots; no public examples, real/derived sheet payloads,
+  screenshots, or fixtures are tracked.
+- Removed stale per-file `.gitignore` exceptions for public XML examples and
+  anonymized source-specific identifiers in 31 diagnostic files.
+- The user-authorized deletion of generated `.next/`, `out/`, `.tmp/`,
+  `next-env.d.ts`, generated report folders, and empty `help/local-baseline/`
+  was rejected by the host before PowerShell executed. No alternate deletion
+  route was used; those local-only targets remain pending a permitted cleanup.
+
 # 2026-08-01 - Sandbox file-transfer boundary recheck
 
 ## 2026-08-01 - Temp-path retry
@@ -1994,7 +2008,7 @@ unproven.
 
 - VERIFIED LOCAL: Strict imported edit-sync smoke passed for all four ignored
   fixtures. Structural import reported `100%` for fixture-A (`2,004` HTML blocks),
-  fixture-B (`837`), fixture-C 1bu (`7,290`, `8` composite collapses), and the
+  fixture-B (`837`), fixtureC (`7,290`, `8` composite collapses), and the
   synthetic non-leaf case (`7`). Every fixture preserved the edited block in
   preview, re-imported stably, loaded resources without issues, and produced
   zero console/page errors.
@@ -2002,7 +2016,7 @@ unproven.
   screenshots, and reports remain ignored; no public sample was added.
 
 - VERIFIED LOCAL: Paired `preview/edit` visual smoke passed `EXACT` with zero
-  mismatched pixels for fixture-A, fixture-B, and fixture-C 1bu under both modern and
+  mismatched pixels for fixture-A, fixture-B, and fixtureC under both modern and
   legacy contracts. Translation probes also passed for the fixtures that carry
   them (`60/60` and `93/93`). This verifies the shared local render surface,
   not actual Roll20 screenshot parity.
@@ -2538,14 +2552,14 @@ live Roll20 parity and all-sheet coverage remain open.
 
 ## 2026-07-13 Strict Sheet-Frame Evidence and Temp Capture Routing
 
-- Root cause refinement: the live Roll20 page was capture-ready, but the currently opened character sheet was only weakly matching `fixture-c-commission-1bu` through generic `attr_str`/`attr_int` markers. That is not enough to trust a fixture-C chat capture.
+- Root cause refinement: the live Roll20 page was capture-ready, but the currently opened character sheet was only weakly matching `fixtureC` through generic `attr_str`/`attr_int` markers. That is not enough to trust a fixture-C chat capture.
 - Added `--out-dir` support to `scripts/roll20_sheet_frame_probe.mjs` and `scripts/roll20_chat_cdp_capture.mjs` so fresh actual Roll20 evidence can be written under ignored temp directories instead of rewriting locked canonical screenshots.
 - Added `--sheet-frame-evidence` to chat capture, and `--actual-sidecar <fixture-id>=<json>` to `scripts/roll20_chat_table_layout_constraint_probe.mjs`, allowing temp sheet-frame/chat evidence to flow into diagnostics without copying private evidence into canonical reports.
 - Tightened sheet-frame proof: `VISIBLE_MATCH` now requires an expected roll button marker, expected visible text marker, or at least five expected attr markers. Weak matches such as only `attr_str`/`attr_int` now return `NOT_PROVEN`.
-- Live evidence: `probe:roll20-sheet-frame` for Witrav Upijek against `fixture-c-commission-1bu` now blocks with `activationMatch=weak marker match: rollButtons=0, attrs=2, text=0`.
+- Live evidence: `probe:roll20-sheet-frame` for Witrav Upijek against `fixtureC` now blocks with `activationMatch=weak marker match: rollButtons=0, attrs=2, text=0`.
 - Live evidence: a no-click chat capture wrote temp files, but selected `sheet-rolltemplate-classic-roll`; it is not fixture-C `sheet-rolltemplate-coc` evidence and was not fed into the fixture-C table-layout probe.
 - Verification: `test:roll20-sheet-frame-probe`, `test:roll20-chat-cdp-readiness`, and syntax checks for `roll20_sheet_frame_probe.mjs`, `roll20_chat_cdp_capture.mjs`, and `roll20_chat_table_layout_constraint_probe.mjs` passed.
-- Current evidence: before the fixture-C max-width/min-width recapture can continue, the dedicated Roll20 Sandbox/test room must be reloaded/applied with the correct `fixture-c-commission-1bu` payload and must pass strict sheet-frame proof. This is an activation/setup blocker, not a renderer parity pass.
+- Current evidence: before the fixture-C max-width/min-width recapture can continue, the dedicated Roll20 Sandbox/test room must be reloaded/applied with the correct `fixtureC` payload and must pass strict sheet-frame proof. This is an activation/setup blocker, not a renderer parity pass.
 
 ## 2026-07-13 Table Layout Constraint Probe
 
@@ -3116,7 +3130,7 @@ live Roll20 parity and all-sheet coverage remain open.
 - Root cause: `scripts/roll20_asset_relink_verification_plan.mjs` supported the current asset relink policy, but it still wrote `asset-relink-verification-plan-results.*` and `asset-relink-map-template.txt` only into the canonical actual-run folder. That broke the safe rerun workflow when the canonical generated files were locked.
 - Added `--out-dir <writable-report-dir>` to the script. The selected run directory remains the evidence source, while refreshed JSON/Markdown/template output can go to ignored temp folders.
 - Added self-test coverage for both option orders: `--out-dir <dir> <run-dir>` and `<run-dir> --out-dir <dir>`.
-- Live verification against `reports\roll20-actual-compare\2026-06-18-state-map-v1` now succeeds in both argument orders and reports the unchanged current blocker state: `RELINK_MAP_REQUIRED`, with `fixture-A` and `fixture-c-commission-1bu` still `MISSING_RELINK`.
+- Live verification against `reports\roll20-actual-compare\2026-06-18-state-map-v1` now succeeds in both argument orders and reports the unchanged current blocker state: `RELINK_MAP_REQUIRED`, with `fixture-A` and `fixtureC` still `MISSING_RELINK`.
 - Verification: `node --check scripts\roll20_asset_relink_verification_plan.mjs`, `corepack pnpm run test:roll20-asset-relink`, and both live temp-output commands passed.
 - Server hygiene: no Next/smoke server was started. The only project-relevant listener is the existing Roll20 CDP Chrome on port `9222`, which was preserved.
 - Claim boundary: diagnostic output isolation only. No asset was copied, relinked, uploaded, embedded, or committed; production renderer and Roll20 parity remain gated by asset relink and chat renderer evidence.
@@ -3205,8 +3219,8 @@ live Roll20 parity and all-sheet coverage remain open.
 - Root cause: `status:roll20-actual` and `preflight:roll20-cdp` always rewrote their summaries inside the canonical Roll20 run folder. When Windows locked those generated files, agents could still read the source evidence but could not refresh status or CDP readiness.
 - Added `--out-dir <writable-report-dir>` to both scripts. The run directory remains the evidence source, while JSON/Markdown output can go to a temporary ignored folder.
 - Live verification with the locked run succeeded through temp output folders:
-  - `status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\_tmp_codex_smoke\actual-status-outdir`
-  - `preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\_tmp_codex_smoke\cdp-preflight-outdir`
+  - `status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir D:\훙냥냥\마렌상\legacy-sheet-corpus 시트 고치기\_tmp_codex_smoke\actual-status-outdir`
+  - `preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir D:\훙냥냥\마렌상\legacy-sheet-corpus 시트 고치기\_tmp_codex_smoke\cdp-preflight-outdir`
 - Current evidence boundary from those runs: renderer remains `HOLD_PRODUCTION_RENDERER_PATCH`, `rendererReady=NO`, same-structure chat high mismatch is `2/3`, max aligned mismatch is `20.68%`, and CDP is `READY` with `plannedFixtures=0`.
 - Verification: `node --check` for both changed scripts, `test:roll20-cdp-preflight`, two `--out-dir` live command shapes for both scripts, `corepack pnpm run lint`, `corepack pnpm run build`, and `git diff --check` passed.
 - Server hygiene: no Next/smoke server was started. Port `9222` remains the existing Roll20 CDP listener; `3000` was not listening.
@@ -3217,7 +3231,7 @@ live Roll20 parity and all-sheet coverage remain open.
 - Root cause: the adapter already exposed `layerParentId`, but the edit layer panel did not render a selected object's ancestry path. Selecting a nested input could highlight the row/canvas object without showing which frame/container it belonged to.
 - Added `buildLayerPath()` in `components/editor/EditCanvas.tsx` and rendered a compact `선택 위치` breadcrumb in the layer panel. Each breadcrumb item carries block id, role kind, and current-selection attributes, and clicking an ancestor selects that layer.
 - Extended `scripts/edit_flow_browser_smoke.mjs` with `layerSelectionPath`, verifying a nested input selection renders a two-item path from the section/frame to the input.
-- Verification: `node --check scripts\edit_flow_browser_smoke.mjs`, `git diff --check`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run smoke:edit-flow -- --port 4406 --report-dir D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\_tmp_codex_smoke\edit-flow-selection-path`, and `corepack pnpm run guard:ui-copy` passed.
+- Verification: `node --check scripts\edit_flow_browser_smoke.mjs`, `git diff --check`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run smoke:edit-flow -- --port 4406 --report-dir D:\훙냥냥\마렌상\legacy-sheet-corpus 시트 고치기\_tmp_codex_smoke\edit-flow-selection-path`, and `corepack pnpm run guard:ui-copy` passed.
 - Server hygiene: `4406` had only `TIME_WAIT` entries after smoke, and `3000` was not listening. The remaining `9222` listener is the Roll20 CDP browser port from earlier actual-screen verification work.
 - Claim boundary: edit-layer context usability only. No Roll20 renderer CSS was promoted and no actual Roll20 parity evidence changed.
 
@@ -3225,7 +3239,7 @@ live Roll20 parity and all-sheet coverage remain open.
 
 - Added selection-driven auto-scroll to the edit layer panel. When the selected block changes, the virtualized layer panel now scrolls the selected row into view.
 - Extended `scripts/edit_flow_browser_smoke.mjs` with `layerAutoScroll`: it imports 80 synthetic div layers, clicks the 80th rendered Shadow object, and verifies the matching layer row is rendered and visible after the layer panel scrolls.
-- Verification: `node --check scripts\edit_flow_browser_smoke.mjs`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run smoke:edit-flow -- --port 4405 --report-dir D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\_tmp_codex_smoke\edit-flow-autoscroll`, `corepack pnpm run guard:ui-copy`, and `git diff --check` passed.
+- Verification: `node --check scripts\edit_flow_browser_smoke.mjs`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run smoke:edit-flow -- --port 4405 --report-dir D:\훙냥냥\마렌상\legacy-sheet-corpus 시트 고치기\_tmp_codex_smoke\edit-flow-autoscroll`, `corepack pnpm run guard:ui-copy`, and `git diff --check` passed.
 - Server hygiene: checked port `4405` after the smoke run; only `TIME_WAIT` entries remained, not a listening server.
 - Claim boundary: edit navigation UX only. No actual Roll20 renderer evidence changed.
 
@@ -3278,7 +3292,7 @@ live Roll20 parity and all-sheet coverage remain open.
 
 - Re-ran the current edit UX smoke after the browser-paint routing batch to prove the visual editor path still works.
 - `smoke:edit-flow -- --port 4384` passed. The smoke covered widget flow nesting, absolute placement, layer-panel drop modes, non-leaf group reorder, absolute placement inside frames, stable post-drop coordinates with zero drift, and sheet/rolltemplate canvas width controls.
-- `smoke:imported-edit-sync -- --port 4385` passed for fixture-A, fixture-B, fixture-C 1BU, and a synthetic non-leaf flow fixture. Each covered fixture reported edit/preview coordinate agreement for the moved imported block plus resource PASS.
+- `smoke:imported-edit-sync -- --port 4385` passed for fixture-A, fixture-B, fixtureC, and a synthetic non-leaf flow fixture. Each covered fixture reported edit/preview coordinate agreement for the moved imported block plus resource PASS.
 - `guard:ui-copy` passed; current edit-mode Korean copy is clean in the smoke sample.
 - Claim boundary: local edit/preview sync evidence only. Actual Roll20 visual parity and Sandbox upload parity remain held by the existing renderer/asset blockers.
 
@@ -3462,7 +3476,7 @@ live Roll20 parity and all-sheet coverage remain open.
 - Fresh split:
   - fixture-A: `CHAT_MESSAGE_CONTENT_WIDTH`, aligned mismatch `18.03%`.
   - fixture-B: `NEW_NARROW_MODEL_REQUIRED`, aligned mismatch `54.1%`; current CSS candidates are not safe enough and row/text structure needs a narrower probe.
-  - fixture-C 1BU: `TABLE_SCROLL_INTRINSIC`, aligned mismatch `20.68%`.
+  - fixtureC: `TABLE_SCROLL_INTRINSIC`, aligned mismatch `20.68%`.
 - Boundary: this is better truth maintenance and renderer triage, not a visual parity fix. The production renderer remains held.
 
 ## 2026-07-12 fixture-A Actual Roll20 Chat Recapture
@@ -3477,8 +3491,8 @@ live Roll20 parity and all-sheet coverage remain open.
 
 - Used the dedicated Roll20 Custom Sheet Sandbox/test-room editor only. No existing real rooms or private campaign settings were modified.
 - Opened the sandbox character through Roll20's internal `Campaign.characters` viewer path after ordinary visible journal clicking failed to expose the iframe.
-- `probe:roll20-sheet-frame -- --fixture fixture-c-commission-1bu` saved positive iframe DOM evidence: `VISIBLE_MATCH`, `sheetHitCount=65`, `rootCount=3`, `attrCount=1069`, and `rollButtonCount=808`.
-- The first chat capture attempt correctly failed as `FOREGROUND_SUSPECT` because the open character dialog overlapped the right-side chat panel. Closing the character dialog and rerunning `capture:roll20-chat-cdp -- --fixture fixture-c-commission-1bu --skip-click` saved fresh foreground `roll20-chat.png` and `roll20-chat-dom-evidence.json`.
+- `probe:roll20-sheet-frame -- --fixture fixtureC` saved positive iframe DOM evidence: `VISIBLE_MATCH`, `sheetHitCount=65`, `rootCount=3`, `attrCount=1069`, and `rollButtonCount=808`.
+- The first chat capture attempt correctly failed as `FOREGROUND_SUSPECT` because the open character dialog overlapped the right-side chat panel. Closing the character dialog and rerunning `capture:roll20-chat-cdp -- --fixture fixtureC --skip-click` saved fresh foreground `roll20-chat.png` and `roll20-chat-dom-evidence.json`.
 - Added `scripts/roll20_character_cdp_open.mjs` and package alias `open:roll20-character-cdp` to make the repeatable sequence explicit: open character -> probe sheet iframe -> click/capture chat -> close character if it overlaps chat.
 - Verification so far: screenshot diff now includes fixture-C chat (`42.73%` mismatch), chat parity compares 2/3 fixtures, and evidence guard passes. Overall actual status is now `generatedActualScreenshots=5/6`, `generatedDiffed=5/6`; fixture-A chat is still missing and renderer remains HOLD.
 
@@ -3635,9 +3649,9 @@ live Roll20 parity and all-sheet coverage remain open.
 - Added final rendered resource collection to `scripts/imported_edit_sync_smoke.mjs` after the edit/reimport path settles.
 - The smoke now checks visible `<img>` nodes and computed CSS background-image URLs in both edit Shadow DOM and preview iframe, then records final image/background failure counts.
 - Resource status now distinguishes raw request failures from final-render failures. Image requests that only fail as `net::ERR_ABORTED` can pass as `transient-aborted-images-final-rendered` only when final edit/preview resource state is clean.
-- Verification: full `smoke:imported-edit-sync:strict -- --port 4196` PASSed for fixture-A, fixture-B, synthetic-nonleaf-flow, and fixture-C 1BU.
-- Local result: fixture-A and synthetic are `clean`; fixture-B and fixture-C 1BU are `transient-aborted-images-final-rendered` with final edit/preview failures `0 img/0 bg`.
-- Budget result: `budget:imported-edit -- --port 4199` reports overall `PASS`; fixture-C 1BU import total is about `4992.1ms`, below the current warn budget.
+- Verification: full `smoke:imported-edit-sync:strict -- --port 4196` PASSed for fixture-A, fixture-B, synthetic-nonleaf-flow, and fixtureC.
+- Local result: fixture-A and synthetic are `clean`; fixture-B and fixtureC are `transient-aborted-images-final-rendered` with final edit/preview failures `0 img/0 bg`.
+- Budget result: `budget:imported-edit -- --port 4199` reports overall `PASS`; fixtureC import total is about `4992.1ms`, below the current warn budget.
 - Boundary: this clears a local imported edit smoke false failure. It does not prove actual Roll20 visual parity or renderer readiness.
 
 ## 2026-06-20 Browser Asset Diagnostics For Imported Edit Resources
@@ -3933,7 +3947,7 @@ live Roll20 parity and all-sheet coverage remain open.
 - Current result on `2026-06-18-state-map-v1`:
   - fixture-A: `ASSET_BYTES_MATCH_BUT_SOURCE_PLACEHOLDER`, local/actual/source all return `200 image/png`, `503b`, `161x81`, same hash, source final path includes `removed.png`.
   - fixture-B: `NO_BACKGROUND_IMAGE` for current table evidence.
-  - fixture-C 1BU: `ASSET_BYTES_MATCH_BUT_SOURCE_PLACEHOLDER`, local/actual/source all return `200 image/png`, `503b`, `161x81`, same hash, source final path includes `removed.png`.
+  - fixtureC: `ASSET_BYTES_MATCH_BUT_SOURCE_PLACEHOLDER`, local/actual/source all return `200 image/png`, `503b`, `161x81`, same hash, source final path includes `removed.png`.
 - Interpretation: the current local-vs-actual chat mismatch is not explained by local and Roll20 receiving different background image bytes. For original-sheet parity, affected missing assets must be preserved or rehosted; for local-vs-actual parity, the next work remains browser paint/context plus table/crop diagnostics.
 - `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
 - Claim boundary: diagnostic-only. No production renderer CSS, no visual parity claim, no private/generated evidence committed.
@@ -3946,7 +3960,7 @@ live Roll20 parity and all-sheet coverage remain open.
 - Current result on `2026-06-18-state-map-v1`:
   - fixture-A: `COLOR_ASSET_RASTER_MODEL_REQUIRED`, row `13.43%`, luma gain `+0.22%`, width axis `CHAT_MESSAGE_CONTENT_WIDTH`.
   - fixture-B: `DECLARATION_DIFF_BEFORE_RASTER_MODEL`, row `5.15%`, luma gain `+0.01%`, width axis `KEEP_DEFAULT`.
-  - fixture-C 1BU: `SOURCE_IMAGE_OR_BROWSER_PAINT_MODEL_REQUIRED`, row `23.15%`, luma gain `-0.58%`, `coc-background-size-actual` risk `reject-row-raster-regression`, width axis `TABLE_SCROLL_INTRINSIC`.
+  - fixtureC: `SOURCE_IMAGE_OR_BROWSER_PAINT_MODEL_REQUIRED`, row `23.15%`, luma gain `-0.58%`, `coc-background-size-actual` risk `reject-row-raster-regression`, width axis `TABLE_SCROLL_INTRINSIC`.
 - Interpretation: for fixture-C/CoC, the CSS declarations already match while flat pixels differ, and simple raster models are weak or rejected. The next P0 is image/proxy decode/browser paint comparison, not background-size, luma/filter, broad typography, or direct table-scale CSS.
 - `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
 - Claim boundary: diagnostic-only. No production renderer CSS, no visual parity claim, no private/generated evidence committed.
@@ -3959,7 +3973,7 @@ live Roll20 parity and all-sheet coverage remain open.
 - Current result on `2026-06-18-state-map-v1`:
   - fixture-A: `COLOR_ASSET_RASTER_CONTEXT_REQUIRED`, background image equivalent but style differs, width delta `15.744px`, luma gain `+0.22`.
   - fixture-B: `BACKGROUND_DECLARATION_DIFFERS`, background image equivalent but style differs, width delta `0.8px`, luma gain `+0.01`.
-  - fixture-C 1BU: `BACKGROUND_DECLARATION_MATCHES_BUT_RASTER_DIFFERS`, background declarations match, width delta `-24.309px`, luma gain `-0.58`, `coc-background-size-actual` row-raster risk `reject-row-raster-regression`.
+  - fixtureC: `BACKGROUND_DECLARATION_MATCHES_BUT_RASTER_DIFFERS`, background declarations match, width delta `-24.309px`, luma gain `-0.58`, `coc-background-size-actual` row-raster risk `reject-row-raster-regression`.
 - Interpretation: fixture-C/CoC should not retry background-size, broad typography, filters, or simple luma correction. The next useful diagnostic is rendered background raster/source context where Roll20 and local CSS declarations already appear equivalent but flat pixels differ.
 - `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
 - Claim boundary: diagnostic-only. No production renderer CSS, no visual parity claim, no private/generated evidence committed.
@@ -3972,7 +3986,7 @@ live Roll20 parity and all-sheet coverage remain open.
 - Current result on `2026-06-18-state-map-v1`:
   - fixture-A: `COLOR_ASSET_RASTER_MODEL_REQUIRED`, weighted `13.43%`, luma-corrected `13.65%`, edge `0%`, flat `100%`, local darker `37.25%`.
   - fixture-B: `LOCAL_BACKGROUND_TOO_DARK`, weighted `5.15%`, luma-corrected `5.16%`, edge `0%`, flat `100%`, local darker `62.22%`.
-  - fixture-C 1BU: `BACKGROUND_COMPOSITING_MODEL_REQUIRED`, weighted `23.15%`, luma-corrected `22.57%`, edge `0%`, flat `100%`, local darker `63.32%`.
+  - fixtureC: `BACKGROUND_COMPOSITING_MODEL_REQUIRED`, weighted `23.15%`, luma-corrected `22.57%`, edge `0%`, flat `100%`, local darker `63.32%`.
 - Interpretation: fixture-C/CoC should move to a row background compositing/source-context candidate, but not a simple luma/brightness/filter patch; virtual luma correction only improves fixture-C by `-0.58%p`. The evidence argues against another text antialiasing, table scale, background-size, broad typography, or filter CSS attempt.
 - `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
 - Claim boundary: diagnostic-only. No production renderer CSS, no visual parity claim, no private/generated evidence committed.
@@ -4014,7 +4028,7 @@ live Roll20 parity and all-sheet coverage remain open.
 - Current result on `2026-06-18-state-map-v1`:
   - fixture-A: `ROW_LUMA_RASTER_MODEL_REQUIRED`, row-weighted mismatch `13.43%`, worst row `1` mismatch `19.87%`, luma delta `+23.413`.
   - fixture-B: `RASTER_SECONDARY`.
-  - fixture-C 1BU: `COC_ROW_RASTER_MODEL_REQUIRED`, row-weighted mismatch `23.15%`, worst row `5` mismatch `30.89%`, luma delta `-27.232`.
+  - fixtureC: `COC_ROW_RASTER_MODEL_REQUIRED`, row-weighted mismatch `23.15%`, worst row `5` mismatch `30.89%`, luma delta `-27.232`.
 - Interpretation: fixture-C's current mismatch is not ready for product CSS. The next experiment should use row-level background/text raster evidence and still avoid filter-based fixes because actual Roll20 reports `filter: none`.
 - `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
 - Claim boundary: diagnostic-only. No production renderer CSS, no visual parity claim, no private/generated evidence committed.
@@ -4028,7 +4042,7 @@ live Roll20 parity and all-sheet coverage remain open.
 - Current result on `2026-06-18-state-map-v1`:
   - fixture-A: keeps its current axis. Still needs message/content width work, not fixture-C row-paint work.
   - fixture-B: keeps default axis for now. Its current Roll20 sidecar still lacks the newest row/typography/filter evidence.
-  - fixture-C 1BU: `ROW_BAND_RASTER_CONTEXT_REQUIRED`, aligned mismatch `22.33%`.
+  - fixtureC: `ROW_BAND_RASTER_CONTEXT_REQUIRED`, aligned mismatch `22.33%`.
 - Interpretation: `paint-dim-background` remains a useful diagnostic clue (`-2.48%` for fixture-C), but it is contradicted by actual Roll20 `filter: none`; `fixture-c-sanitize-typography` regresses fixture-C by `+14.13%`. The next useful work is a CoC/fixture-C row-band background/text rasterization plus source-order/capture-context probe, not production CSS.
 - `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
 - Claim boundary: diagnostic-only. No production renderer CSS, no visual parity claim, no private/generated evidence committed.
@@ -4061,7 +4075,7 @@ live Roll20 parity and all-sheet coverage remain open.
 - Current result on `2026-06-18-state-map-v1`:
   - fixture-A: `TEXT_METRIC_WIDTH_MODEL`, table delta `+15.744px`, measured text delta `+15.602px`, residual `+0.142px`, font availability unchanged. Continue fixture-A on exact text metric/message width work.
   - fixture-B: `WIDTH_SECONDARY`, table delta `+0.8px`.
-  - fixture-C 1BU: `FONT_FACE_INTRINSIC_MODEL_REQUIRED`, table delta `-24.309px`, measured text delta `-54.946px`, residual `+30.637px`, font availability changed, table font-family changed, width override candidates `NO_GAIN`.
+  - fixtureC: `FONT_FACE_INTRINSIC_MODEL_REQUIRED`, table delta `-24.309px`, measured text delta `-54.946px`, residual `+30.637px`, font availability changed, table font-family changed, width override candidates `NO_GAIN`.
 - Interpretation: fixture-C/CoC should not get another direct width/overflow CSS candidate first. The next useful diagnostic is to mirror Roll20 font-face availability/order and then measure table min-content/intrinsic sizing under that font context.
 - `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
 - Claim boundary: diagnostic-only. No production ChatPane CSS, no Roll20 visual parity claim, no private/generated evidence committed.
@@ -4086,7 +4100,7 @@ live Roll20 parity and all-sheet coverage remain open.
 - Current result on `2026-06-18-state-map-v1`:
   - fixture-A: `MESSAGE_WIDTH_MODEL`, table delta `+15.744px`, overflow delta `0px`, table-to-crop delta `+0.00105`, top offset `+184.178px`. This stays on message/content width.
   - fixture-B: `WIDTH_SECONDARY`, table delta `+0.8px`, overflow delta `0px`, table-to-crop delta `+0.003`.
-  - fixture-C 1BU: `TABLE_OVERFLOW_CROP_MODEL_REQUIRED`, table delta `-24.309px`, overflow delta `0px`, table-to-crop delta `-0.09104`, top offset `+125.884px`.
+  - fixtureC: `TABLE_OVERFLOW_CROP_MODEL_REQUIRED`, table delta `-24.309px`, overflow delta `0px`, table-to-crop delta `-0.09104`, top offset `+125.884px`.
 - Interpretation: fixture-C is not explained by paint filters, broad typography, transform, or raw overflow pixels. The next diagnostic candidate should model CoC/fixture-C table scroll/client width and rolltemplate crop origin together, while fixture-A remains a separate message-width track.
 - `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
 - Claim boundary: diagnostic-only. No production ChatPane CSS, no Roll20 visual parity claim, no private/generated evidence committed.
@@ -4147,7 +4161,7 @@ live Roll20 parity and all-sheet coverage remain open.
 - Current result on `2026-06-18-state-map-v1`:
   - fixture-A: `ROOT_OR_MESSAGE_WIDTH_CONTEXT`, root delta `+12px`, table delta `+15.744px`, scroll delta `+16px`. This keeps fixture-A on the message/content-width track.
   - fixture-B: `WIDTH_SECONDARY`, table delta `+0.8px`.
-  - fixture-C 1BU: `TABLE_WIDE_INTRINSIC_WITH_CROP_OFFSET`, root delta `0px`, table delta `-24.309px`, scroll delta `-24px`, row spread `0px`, max cell delta `+0.909px`, uniform top offset `+125.884px`.
+  - fixtureC: `TABLE_WIDE_INTRINSIC_WITH_CROP_OFFSET`, root delta `0px`, table delta `-24.309px`, scroll delta `-24px`, row spread `0px`, max cell delta `+0.909px`, uniform top offset `+125.884px`.
 - Interpretation: fixture-C is not a per-cell allocation problem and should not be handled with transform, global font, or spacing bundles. The next diagnostic candidate must combine CoC/fixture-C table intrinsic width with rolltemplate crop/top-origin context.
 - `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
 - Claim boundary: diagnostic-only. No production ChatPane CSS, no Roll20 visual parity claim, no private/generated evidence committed.
@@ -4159,7 +4173,7 @@ live Roll20 parity and all-sheet coverage remain open.
 - Current result on `2026-06-18-state-map-v1`:
   - fixture-A: `MESSAGE_CONTENT_WIDTH_BUDGET`, table delta `+15.744px`, measureText table delta `+15.602px`, residual `+0.142px`, best candidate `fixture-a-message-full-width`.
   - fixture-B: `WIDTH_SECONDARY`, table delta `+0.8px`.
-  - fixture-C 1BU: `LAYOUT_CONSTRAINT_AFTER_REJECTED_CSS`, table delta `-24.309px`, measureText table delta `-54.946px`, residual `+30.637px`.
+  - fixtureC: `LAYOUT_CONSTRAINT_AFTER_REJECTED_CSS`, table delta `-24.309px`, measureText table delta `-54.946px`, residual `+30.637px`.
 - Interpretation: fixture-C font/text metrics explain the direction but over-explain the width delta, so the remaining work is a table-layout/intrinsic constraint model. Broad font/typography candidates, spacing/letter candidates, and transform/scale candidates are already rejected or style-contradicted.
 - `gate:roll20-renderer-action` now surfaces this budget evidence while still returning `HOLD_PRODUCTION_RENDERER_PATCH`.
 - Verification: `node --check`, `diagnose:roll20-chat-table-width-budget`, and `gate:roll20-renderer-action`.
@@ -4195,7 +4209,7 @@ live Roll20 parity and all-sheet coverage remain open.
 - Current evidence on `2026-06-18-state-map-v1`:
   - fixture-A: `MESSAGE_CONTENT_WIDTH_MODEL_REQUIRED`, actual shell `FULL_CHAT_WIDTH_MESSAGE`, message delta `+12px`, content delta `+12px`, gutter delta `0px`.
   - fixture-B: `MESSAGE_SHELL_SECONDARY`, actual shell `INSET_CHAT_WIDTH_MESSAGE`, message delta `0px`.
-  - fixture-C 1BU: `MESSAGE_SHELL_SECONDARY`, actual shell `INSET_CHAT_WIDTH_MESSAGE`, message delta `0px`; width work remains table/intrinsic, not message shell.
+  - fixtureC: `MESSAGE_SHELL_SECONDARY`, actual shell `INSET_CHAT_WIDTH_MESSAGE`, message delta `0px`; width work remains table/intrinsic, not message shell.
 - Wired this report into `gate:roll20-renderer-action`. The gate still returns `HOLD_PRODUCTION_RENDERER_PATCH`, but now names fixture-A's next work as a per-template message/content-width model rather than a global chat shell width patch.
 - Verification: `node --check`, `build`, default `rolltemplate_chat_smoke`, `diagnose:roll20-chat-width`, `diagnose:roll20-chat-message-shell`, `diagnose:roll20-chat-width-reconciliation`, and `gate:roll20-renderer-action`.
 - Claim boundary: diagnostic-only. No product default ChatPane CSS changed, no visual parity claim, no private/generated evidence committed.
@@ -4208,7 +4222,7 @@ live Roll20 parity and all-sheet coverage remain open.
 - Current evidence:
   - fixture-A width model: `CHAT_MESSAGE_CONTENT_WIDTH_MODEL_REQUIRED`.
   - fixture-B width model: `WIDTH_SECONDARY_OR_ACCEPTABLE`.
-  - fixture-C 1BU width model: `TABLE_WIDTH_MODEL_REQUIRED` / still routed to table intrinsic/crop context.
+  - fixtureC width model: `TABLE_WIDTH_MODEL_REQUIRED` / still routed to table intrinsic/crop context.
 - Candidate evidence:
   - `roll20-chat-shell-width-340` smoke PASSed all fixtures but candidate comparison rejected it: mean delta `-2.07%`, regressions `2`, fixture-C aligned mismatch worsened by `+0.88%`.
   - This confirms that global shell widening is not safe, even though fixture-A's root-width issue is a message/content shell issue.
@@ -4243,7 +4257,7 @@ live Roll20 parity and all-sheet coverage remain open.
 - Current result on `2026-06-18-state-map-v1`:
   - fixture-A: `TEXT_METRIC_ALLOCATION`, P0. Table delta `+15.744px`, text residual `+0.142px`, scroll delta `+16px`. Next action is an fixture-A-scoped exact text/cell allocation candidate.
   - fixture-B: `KEEP_DEFAULT`, P1. Current aligned mismatch is `6.34%`; do not spend the next global renderer patch here.
-  - fixture-C 1BU: `TABLE_SCROLL_INTRINSIC`, P0. Table delta `-24.309px`, text residual `+30.637px`, scroll delta `-24px`. Next action is a CoC/fixture-C-scoped table intrinsic/scroll probe, not transform or broad font CSS.
+  - fixtureC: `TABLE_SCROLL_INTRINSIC`, P0. Table delta `-24.309px`, text residual `+30.637px`, scroll delta `-24px`. Next action is a CoC/fixture-C-scoped table intrinsic/scroll probe, not transform or broad font CSS.
 - `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`; the useful progress is that the next patches are now evidence-routed and fixture-scoped.
 - Verification: `node --check`, `diagnose:roll20-chat-width-reconciliation`, `gate:roll20-renderer-action`, and `status:roll20-actual`.
 - Claim boundary: no visual parity claim, no public UI, and no production ChatPane CSS change in this batch.
@@ -4286,7 +4300,7 @@ live Roll20 parity and all-sheet coverage remain open.
 
 - Fixed row-geometry comparison so actual Roll20 table style and cell evidence comes from `computedChildren` when current sidecars do not have the old `elements` array.
 - Added fixture-level row geometry models and surfaced them inside `gate:roll20-renderer-action`.
-- Latest split for `2026-06-18-state-map-v1`: fixture-A is `CELL_ALLOCATION_WITH_UNIFORM_OFFSET`, fixture-B is `UNIFORM_OFFSET_PAINT_OR_CROP`, and fixture-C 1BU is `TABLE_WIDE_WIDTH_WITH_UNIFORM_OFFSET`.
+- Latest split for `2026-06-18-state-map-v1`: fixture-A is `CELL_ALLOCATION_WITH_UNIFORM_OFFSET`, fixture-B is `UNIFORM_OFFSET_PAINT_OR_CROP`, and fixtureC is `TABLE_WIDE_WIDTH_WITH_UNIFORM_OFFSET`.
 - The renderer gate still returns `HOLD_PRODUCTION_RENDERER_PATCH`. The important progress is that future work now has concrete, fixture-specific next actions instead of another unsafe global ChatPane CSS guess.
 - Verification: `node --check` for both changed scripts, `diagnose:roll20-chat-rows`, `gate:roll20-renderer-action`, `lint`, and `build` all passed.
 - Claim boundary: this is diagnostic/gate progress only. It does not make actual Roll20 chat visual parity pass and does not authorize production renderer CSS.
@@ -4296,7 +4310,7 @@ live Roll20 parity and all-sheet coverage remain open.
 - Cleaned the user-facing mode/preview/layer role labels so the edit surface no longer exposes unclear translated wording for the main mode toolbar, preview toolbar, and layer role badges.
 - Changed editor-generated design CSS classes to `sheet-r20-node-*` instead of `r20-node-*`. This keeps moved-object position CSS stable across export/re-import instead of letting the importer prefix it later.
 - Verification: `lint`, `build`, `smoke:preview-edit-visual`, and `smoke:imported-edit-sync` all PASSed after rebuilding the static `out` bundle.
-- Current local preview/edit evidence: fixture-A mismatch `1.87%`, fixture-B `2.07%`, fixture-C 1BU `1.02%`; imported edit sync PASSes all three fixtures with re-import stability.
+- Current local preview/edit evidence: fixture-A mismatch `1.87%`, fixture-B `2.07%`, fixtureC `1.02%`; imported edit sync PASSes all three fixtures with re-import stability.
 - Claim boundary: this fixes a local edit-mode roundtrip/UX problem. It does not change the actual Roll20 renderer gate, which remains blocked by prior `HOLD_PRODUCTION_RENDERER_PATCH` evidence.
 
 ## 2026-06-20 fixture-C Sanitize Typography Candidate Rejected
@@ -4410,7 +4424,7 @@ live Roll20 parity and all-sheet coverage remain open.
 - Current result: `WIDTH_MODEL_REQUIRED`, actionable `2/3`.
 - `fixture-A`: `WIDTH_SECONDARY_OR_ACCEPTABLE`.
 - `fixture-B`: `CHAT_SHELL_WIDTH_MODEL_REQUIRED`, with table width nearly aligned but shell/message/crop width still needing a separate model.
-- `fixture-c-commission-1bu`: `TABLE_WIDTH_MODEL_REQUIRED`, actual table/crop ratio `4.607x`; this is an overflowed large-table crop case, not a generic narrow-card width patch.
+- `fixtureC`: `TABLE_WIDTH_MODEL_REQUIRED`, actual table/crop ratio `4.607x`; this is an overflowed large-table crop case, not a generic narrow-card width patch.
 - Renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH`; this is evidence routing, not Roll20 visual parity.
 - Next P0: create a targeted candidate for Les shell/message width and a separate fixture-C overflow/table intrinsic-width model. Do not merge them into one global ChatPane CSS patch.
 
@@ -4461,7 +4475,7 @@ live Roll20 parity and all-sheet coverage remain open.
 - The diagnostic reads existing local-only chat parity/residual/candidate reports and turns row-band, left-edge, luma, and mask evidence into a next renderer strategy.
 - Wired the strategy summary into `gate:roll20-renderer-action`.
 - Current result: `fixture-B` is `RECROP_OR_SHELL_CONTEXT_BEFORE_CSS`, so the next work should compare actual/local message shell padding, template crop x/y, and row-band masks before testing another CSS candidate.
-- Current result: `fixture-c-commission-1bu` is `MODEL_TEMPLATE_WIDTH_BEFORE_PAINT`, so paint candidates should wait until a per-template chat width model exists.
+- Current result: `fixtureC` is `MODEL_TEMPLATE_WIDTH_BEFORE_PAINT`, so paint candidates should wait until a per-template chat width model exists.
 - Current result: `fixture-A` stays `KEEP_DEFAULT_FOR_NOW` on the chat axis.
 - Claim boundary: this is strategy/gating progress only. It does not prove Roll20 chat parity and does not enable production ChatPane renderer CSS.
 
@@ -4826,7 +4840,7 @@ Status: PARTIAL. This closes a truthfulness gap in the next Roll20 recapture ste
 - Extended `scripts/roll20_chat_capture_plan.mjs` so existing actual Roll20 chat screenshots are inspected by file bytes and sidecar clip scale before they can be treated as usable pixel evidence.
 - The plan now flags non-PNG or non-1x screenshots as `SCALE_OR_FORMAT_SUSPECT` and keeps them in the recapture queue.
 - Verification before broader CI: `node --check scripts\roll20_chat_capture_plan.mjs` PASS; `corepack pnpm run test:roll20-chat-capture-plan` PASS; `corepack pnpm run plan:roll20-chat-capture -- reports\roll20-actual-compare\2026-06-18-state-map-v1` reports `plannedFixtures=2/3`.
-- Current recapture queue is exactly `fixture-A` and `fixture-c-commission-1bu`; `fixture-B` remains the only current true PNG 1x chat capture.
+- Current recapture queue is exactly `fixture-A` and `fixtureC`; `fixture-B` remains the only current true PNG 1x chat capture.
 - Claim boundary: this prevents agents from tuning local ChatPane CSS against invalid JPEG/0.8x evidence. Actual Roll20 parity remains unproven and currently failing.
 
 ## 2026-06-20 00:40 +09:00 - Roll20 chat capture scale gate
@@ -4916,7 +4930,7 @@ Status: PARTIAL. This improves truthfulness of Roll20 actual comparison, not par
 - Keep TODO open until actual Roll20 upload/capture proves whether chat CSS is active for correctly configured custom sheet sandbox/test room.
 ## 2026-06-19 Roll20 Chat Evidence Normalization Follow-up
 
-- Recaptured fixture-C 1BU actual Roll20 chat evidence from the dedicated sandbox after opening the chat tab, scrolling the target message fully into view, and clicking the same iframe `[name="roll_str_check"]` roll button used by local smoke. Evidence is local-only under ignored `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/fixture-c-commission-1bu/screenshots/`.
+- Recaptured fixtureC actual Roll20 chat evidence from the dedicated sandbox after opening the chat tab, scrolling the target message fully into view, and clicking the same iframe `[name="roll_str_check"]` roll button used by local smoke. Evidence is local-only under ignored `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/fixtureC/screenshots/`.
 - Fixed a rolltemplate lookup bug: `sheet-rolltemplate-coc` was matching the earlier `sheet-rolltemplate-coc-dice-roll` prefix because the old regex used a word boundary before `-`. Lookup now matches exact class tokens.
 - Added Roll20-style chat card shell normalization, local template wrapper crop screenshots, and normalized chat parity diagnostics so local/actual comparisons use rolltemplate wrapper rects instead of full chat panes or overflow table screenshots.
 - Added ChatPane translation application for rolltemplate field text and simple `data-i18n` labels via the existing Roll20 translation normalizer. Local fixture-C chat now renders Korean labels such as `근력`, `기준치`, and `굴림`.
@@ -4926,7 +4940,7 @@ Status: PARTIAL. This improves truthfulness of Roll20 actual comparison, not par
 ## 2026-06-19 Roll20 Chat Parity Gate Update
 
 - Refreshed actual Roll20 fixture-A chat evidence in the dedicated sandbox: `roll20-chat.png` + `roll20-chat-dom-evidence.json` now capture a visible `sheet-rolltemplate-aw` with `rolltemplateCount=1` and `messageCount=8`.
-- Re-ran local `rolltemplate_chat_smoke.mjs`: fixture-A, fixture-B, and fixture-C 1BU all PASS locally.
+- Re-ran local `rolltemplate_chat_smoke.mjs`: fixture-A, fixture-B, and fixtureC all PASS locally.
 - Added `scripts/roll20_chat_parity_diagnostics.mjs` and `diagnose:roll20-chat-parity` to compare local ChatPane screenshots against actual Roll20 chat screenshots. Latest result: compared 3/3, highMismatch 3/3; fixture-A 13.02%, fixture-B 27.95%, fixture-C 12.74%.
 - `roll20_renderer_action_gate.mjs` now treats chat parity high mismatch as a blocker. Renderer action remains `HOLD_PRODUCTION_RENDERER_PATCH`.
 
@@ -5044,18 +5058,18 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 
 - Used only the dedicated Roll20 Custom Sheet Sandbox campaign `21639681`; existing rooms were not modified.
 - Standard Chrome file chooser still fails at `fileChooser.setFiles` with `Not allowed`, but the visible input probe proved the chooser path itself opens once inputs are made visible.
-- Applied fixture-C 1BU through the observed endpoint/settings-form fallback: `/sheetsandbox/savesheetsettings` accepted HTML/CSS/translation and the full `#settingsform` save accepted wrapped `customcharsheet_json`.
+- Applied fixtureC through the observed endpoint/settings-form fallback: `/sheetsandbox/savesheetsettings` accepted HTML/CSS/translation and the full `#settingsform` save accepted wrapped `customcharsheet_json`.
 - Opened sandbox character `-OvSWvivVPTt2z_4goPF`; the actual Roll20 iframe rendered a live `.charactersheet` root at `850px` width with `1049` inputs, `808` roll buttons, `88` tables, `9` textareas, and `9` scripts.
-- Saved ignored local sidecar `reports/roll20-actual-compare/2026-06-18-state-map-v1/live-iframe-probe/fixture-c-commission-1bu-computed-styles.json`.
+- Saved ignored local sidecar `reports/roll20-actual-compare/2026-06-18-state-map-v1/live-iframe-probe/fixtureC-computed-styles.json`.
 - Latest diagnostics: `diagnose:roll20-computed-style-context => compared=3/3, missingActualStyle=0`, but still `DO_NOT_PROMOTE_DIRECTLY`; `status:roll20-actual => rendererReady=NO`, `rendererBlockers=2`.
 - Claim boundary: this proves fixture-C actual Roll20 iframe/style capture, not visual parity and not production renderer readiness.
 ## 2026-06-19 fixture-C Sandbox Upload Automation Blocker
 
 - Reclaimed the dedicated Roll20 Custom Sheet Sandbox editor/settings tabs only; no existing room was modified.
 - Confirmed the settings page has only `customcharsheet_json`, while the editor page exposes `#sheetHtml`, `#sheetCss`, and `#sheetTranslation`.
-- Attempted three upload automation paths for fixture-C 1BU: generated snippet/DataTransfer dispatch, CDP `DOM.setFileInputFiles`, and visible label/file-chooser activation. None applied files: the snippet reported `no-file-on-input`, CDP file setting is unsupported in this extension surface, and the file chooser timed out.
+- Attempted three upload automation paths for fixtureC: generated snippet/DataTransfer dispatch, CDP `DOM.setFileInputFiles`, and visible label/file-chooser activation. None applied files: the snippet reported `no-file-on-input`, CDP file setting is unsupported in this extension surface, and the file chooser timed out.
 - Latest diagnostics remain `diagnose:roll20-computed-style-context => compared=2/3, missingActualStyle=1` and `status:roll20-actual => rendererReady=NO`.
-- Claim boundary: this is a real blocker record, not a Roll20 visual-parity result. Next P0 is enabling a working manual/alternate fixture-C sandbox upload path, then capturing `live-iframe-probe/fixture-c-commission-1bu-computed-styles.json`.
+- Claim boundary: this is a real blocker record, not a Roll20 visual-parity result. Next P0 is enabling a working manual/alternate fixture-C sandbox upload path, then capturing `live-iframe-probe/fixtureC-computed-styles.json`.
 ## 2026-06-19 fixture-A Computed-Style Sidecar Capture
 
 - Claimed the dedicated `Codex Roll20 Verify | Roll20` editor tab in read-only mode; no existing room/settings were modified.
@@ -5145,7 +5159,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest local ignored report: `reports/preview-edit-visual/preview-edit-visual-results.md` PASS as a diagnostic pipeline with 0 console/page errors.
 - Removed persistent edit-only drop/container outlines from the normal Shadow DOM render. Drop affordances now appear while widget drag is active, so edit mode is less visually polluted at rest.
 - Added coarse mismatch bounds/quadrants and widened the browser capture viewport to 2200x1200 for fairer preview/edit screenshot comparison.
-- Current mismatch diagnostics after the outline fix: fixture-A 25.51% (bounds 0,10 850x1070), fixture-B 0%/10 px, fixture-C 1BU 4.03% (bounds 0,223 850x857). These numbers are not a parity gate yet; they identify the next visual-difference work.
+- Current mismatch diagnostics after the outline fix: fixture-A 25.51% (bounds 0,10 850x1070), fixture-B 0%/10 px, fixtureC 4.03% (bounds 0,223 850x857). These numbers are not a parity gate yet; they identify the next visual-difference work.
 - Added `window.__perfHook.setPreviewZoom` so visual smoke scripts can force 100% zoom and avoid fit-to-width artifacts.
 
 ## 2026-06-18 Shadow Font Alignment Slice
@@ -5153,7 +5167,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Fixed a major preview/edit visual divergence source: Shadow DOM edit render now registers Roll20 glyph font faces at document level, so dice/pictos pseudo-elements can resolve without leaking Roll20 selector rules into the app document.
 - The Shadow mount also extracts only user CSS `@import` and `@font-face` declarations from the sheet CSS chunk for document-level font registration. User selector rules remain scoped inside the Shadow render.
 - `scripts/preview_edit_visual_smoke.mjs` now records roll-button computed diagnostics and edit-toolbar occlusion metrics. The toolbar is hidden only while taking root screenshots, while the original overlap is still reported separately.
-- Latest local ignored report after `lint` and `build`: `reports/preview-edit-visual/preview-edit-visual-results.md` PASS with 0 console/page errors. Diagnostic mismatch: fixture-A 4.96% (bounds 0,404 850x676), fixture-B 0%/10 px, fixture-C 1BU 1.26% (bounds 0,17 851x1063). Roll button counts match preview/edit for all 3 fixtures.
+- Latest local ignored report after `lint` and `build`: `reports/preview-edit-visual/preview-edit-visual-results.md` PASS with 0 console/page errors. Diagnostic mismatch: fixture-A 4.96% (bounds 0,404 850x676), fixture-B 0%/10 px, fixtureC 1.26% (bounds 0,17 851x1063). Roll button counts match preview/edit for all 3 fixtures.
 - Scope note: this proves improved local preview/edit alignment only. Actual Roll20 sandbox/room visual comparison remains unverified.
 
 ## 2026-06-18 Roll20 Local Baseline Package Slice
@@ -5161,14 +5175,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Added `scripts/roll20_actual_local_baseline.mjs` to prepare the local-only baseline required before Roll20 sandbox/test-room checks.
 - The script imports ignored fixtures through the static app, captures local preview/edit screenshots, writes emitted `sheet.html`, `sheet.css`, `translation.json`, `sheet.json`, and creates `upload.zip` for Custom Sheet Sandbox/test-room use.
 - Restored `data-testid="preview-iframe"` on `PreviewMain` so browser verification scripts can reliably target the iframe render path without visual UI changes.
-- Latest local ignored report: `reports/roll20-actual-compare/2026-06-18-local-baseline-smoke/local-baseline-results.md` PASS for fixture-A, fixture-B, and fixture-C 1BU. All 3 generated payloads had no blocking export warnings and matching preview/edit roll button counts.
+- Latest local ignored report: `reports/roll20-actual-compare/2026-06-18-local-baseline-smoke/local-baseline-results.md` PASS for fixture-A, fixture-B, and fixtureC. All 3 generated payloads had no blocking export warnings and matching preview/edit roll button counts.
 - Scope note: this is the local baseline/payload preparation step only. It does not prove actual Roll20 visual parity until the payload is applied in Custom Sheet Sandbox or a new test room and compared.
 
 ## 2026-06-18 Rolltemplate Chat Smoke Slice
 
 - Added `scripts/rolltemplate_chat_smoke.mjs` for local preview iframe -> ChatPane rolltemplate smoke.
 - The script imports ignored fixtures through the static app, chooses a real roll button, clicks it, and verifies that a visible chat card appears.
-- Latest local ignored report: `reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.md` PASS for fixture-A, fixture-B, and fixture-C 1BU.
+- Latest local ignored report: `reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.md` PASS for fixture-A, fixture-B, and fixtureC.
 - Follow-up hardening removed the visible app-only `rolltemplate:name` helper line, constrains rolltemplate chat cards to 280px, and clears simulated chat between fixtures so screenshots/results cannot accidentally reuse a prior fixture's card.
 - Current smoke checks each fixture has exactly 1 resulting chat card, `Debug label=no`, and rolltemplate card width 280px.
 - Click-mode evidence: fixture-A, fixture-B, and fixture-C all use `user-click`.
@@ -5180,16 +5194,16 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Fixed `r20_hidden_input` import/export so hidden inputs preserve their `class` attribute as well as name, value, and style.
 - This matters for Roll20 sheets that use hidden attribute controls as CSS state switches. fixture-B uses `.sheet-tabstoggle[value="combat"] ~ div.sheet-combat`; without the class, the emitted sheet kept the value but lost the selector anchor, leaving the default screen falsely empty.
 - Latest local ignored validation after the fix:
-  - `scripts/rolltemplate_chat_smoke.mjs`: fixture-A, fixture-B, and fixture-C 1BU PASS with user-click, exactly 1 chat card, 280px card width, and no debug label.
+  - `scripts/rolltemplate_chat_smoke.mjs`: fixture-A, fixture-B, and fixtureC PASS with user-click, exactly 1 chat card, 280px card width, and no debug label.
   - `scripts/browser_roundtrip_smoke.mjs`: 3/3 PASS.
-  - `scripts/preview_edit_visual_smoke.mjs`: PASS with fixture-A 4.96%, fixture-B 4.76%, fixture-C 1BU 1.26%.
+  - `scripts/preview_edit_visual_smoke.mjs`: PASS with fixture-A 4.96%, fixture-B 4.76%, fixtureC 1.26%.
 - Scope note: this is local import/render/chat evidence only. Actual Roll20 sandbox/test-room visual and chat parity remain unverified.
 
 ## 2026-06-18 Roll20 Actual Screenshot Diff Helper Slice
 
 - Added `scripts/roll20_actual_screenshot_diff.mjs` so actual Roll20 screenshots can be compared against the local baseline run without committing private evidence.
 - Expected local-only screenshot names are `roll20-sandbox.png`, `roll20-room.png`, and `roll20-chat.png` under each fixture's ignored `screenshots/` folder.
-- Regenerated latest local baseline: `reports/roll20-actual-compare/2026-06-18-actual-diff-ready/local-baseline-results.md` PASS for fixture-A, fixture-B, and fixture-C 1BU.
+- Regenerated latest local baseline: `reports/roll20-actual-compare/2026-06-18-actual-diff-ready/local-baseline-results.md` PASS for fixture-A, fixture-B, and fixtureC.
 - Ran the new diff helper against that run. Result: all actual Roll20 targets are SKIP because no sandbox/room/chat screenshots have been captured yet. This is correct and must not be reported as Roll20 parity.
 - Scope note: the comparison pipeline is ready for captured evidence; authenticated Roll20 solo-room observation and Custom Sheet Sandbox/test-room upload remain TODO.
 
@@ -5200,8 +5214,8 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Fixed a Shadow edit vs iframe preview layout difference caused by hotlink-sensitive sheet images: Shadow edit images now use `referrerPolicy="no-referrer"`, matching iframe `srcdoc` behavior for the tested assets.
 - Shadow edit no longer adds an extra outer `body.charsheet`; the real `#charsheet-root.charsheet` from `buildSheetParts()` carries layer state, making the selector shape closer to iframe preview.
 - Latest local ignored validation after `lint` and `build`:
-  - `scripts/imported_edit_sync_smoke.mjs`: PASS for fixture-A, fixture-B, and fixture-C 1BU.
-  - `scripts/preview_edit_visual_smoke.mjs`: PASS, diagnostic mismatch fixture-A 4.96%, fixture-B 4.76%, fixture-C 1BU 1.25%.
+  - `scripts/imported_edit_sync_smoke.mjs`: PASS for fixture-A, fixture-B, and fixtureC.
+  - `scripts/preview_edit_visual_smoke.mjs`: PASS, diagnostic mismatch fixture-A 4.96%, fixture-B 4.76%, fixtureC 1.25%.
   - `scripts/edit_flow_browser_smoke.mjs`: PASS.
 - Scope note: this is local preview/edit sync evidence only. Actual Roll20 room/sandbox visual and chat parity remain unverified.
 
@@ -5220,14 +5234,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Hardened `scripts/imported_edit_sync_smoke.mjs` so the local imported edit smoke now checks the full edited emit -> re-import -> emit cycle after a real pointer drag.
 - Candidate selection now prefers leaf-like editable nodes (`control`, `action`, `media`, `text`) over structural frame/flow/table containers, with penalties for nested block containers. This avoids false failures where the smoke repeatedly dragged large wrapper nodes that are visible but not the user's likely direct-edit target.
 - Re-import CSS comparison is canonicalized for whitespace and the managed design-CSS marker while still recording raw CSS drift. Current raw drift is design CSS formatting around `r20-design-css:managed`; canonical selector/declaration content stays stable.
-- Latest local ignored validation after `lint` and `build`: `scripts/imported_edit_sync_smoke.mjs` PASS for fixture-A, fixture-B, and fixture-C 1BU. Each fixture moved an imported `input`, matched edit/preview coordinates, emitted absolute position data, and re-imported stably.
+- Latest local ignored validation after `lint` and `build`: `scripts/imported_edit_sync_smoke.mjs` PASS for fixture-A, fixture-B, and fixtureC. Each fixture moved an imported `input`, matched edit/preview coordinates, emitted absolute position data, and re-imported stably.
 - Console 403 resource errors remain on fixture-A/fixture-C external asset loads; there were no page errors. This is still local static-app evidence only, not actual Roll20 parity.
 
 ## 2026-06-18 Asset Referrer and Resource Diagnostics Slice
 
 - Added `<meta name="referrer" content="no-referrer">` to the iframe preview document generated by `buildSheetDoc`.
 - Added a Shadow edit document referrer policy helper in `mountSheetShadow()` so Shadow CSS/image requests use `no-referrer` as well as the existing per-`<img>` `referrerPolicy="no-referrer"`.
-- `scripts/preview_edit_visual_smoke.mjs` now records HTTP/resource failures by status, resource type, host, and example URL. Latest local ignored report PASS: fixture-A, fixture-B, and fixture-C 1BU have 0 resource issues in the preview/edit screenshot path.
+- `scripts/preview_edit_visual_smoke.mjs` now records HTTP/resource failures by status, resource type, host, and example URL. Latest local ignored report PASS: fixture-A, fixture-B, and fixtureC have 0 resource issues in the preview/edit screenshot path.
 - `scripts/imported_edit_sync_smoke.mjs` now records the same resource diagnostics. Latest local ignored report PASS for movement/re-import stability, but still classifies external image failures during edit/reimport: fixture-A 10, fixture-B 5, fixture-C 23. Top hosts are `i.imgur.com`, `imgur.com`, and `raw.githubusercontent.com`.
 - Scope note: resource failures are now visible and separated from cascade/edit-sync failures. This does not prove actual Roll20 asset parity; next work is to compare with Roll20 sandbox/test-room behavior and decide whether local verification should cache or rewrite these external assets.
 
@@ -5280,7 +5294,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Important test adjustment: imported canvas insertion waits past the `lastClearedAt` creation guard and only drops after a dragover indicator exists, preventing false background absolute drops in dense imported layouts.
 - Latest local ignored validation after `lint` and `build`:
   - `scripts/edit_flow_browser_smoke.mjs`: PASS.
-  - `scripts/imported_edit_sync_smoke.mjs`: PASS for fixture-A, fixture-B, and fixture-C 1BU.
+  - `scripts/imported_edit_sync_smoke.mjs`: PASS for fixture-A, fixture-B, and fixtureC.
 - Evidence: all 3 fixtures passed imported visible-node move sync, imported canvas insertion as non-absolute flow content, and edited emit -> re-import stability. fixture-B also passed imported layer leaf reorder; fixture-A/fixture-C recorded SKIP for that sub-check because no safe imported leaf sibling pair was found.
 - Scope note: this is still local static-app evidence. Actual Roll20 sandbox/room parity, non-leaf subtree movement, and broader corpus coverage remain TODO/VERIFY.
 
@@ -5327,7 +5341,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 ## 2026-06-18 Worker Roundtrip Guard Slice
 
 - Strengthened `scripts/browser_roundtrip_smoke.mjs` so L2 browser roundtrip now checks `worker` raw body equality, worker block-count stability, worker body length, and emitted worker script count in addition to HTML/CSS/i18n stability.
-- Latest local ignored validation: `node scripts/browser_roundtrip_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --report-dir reports/roundtrip-browser` PASS for fixture-A, fixture-B, and fixture-C 1BU.
+- Latest local ignored validation: `node scripts/browser_roundtrip_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --report-dir reports/roundtrip-browser` PASS for fixture-A, fixture-B, and fixtureC.
 - Scope note: this catches worker split drift in the local app bundle, but still does not prove actual Roll20 worker runtime parity.
 
 ## 2026-06-18 Worker Source Preservation Audit/Fix Slice
@@ -5336,7 +5350,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Fixed worker extraction for nested/raw `<script type="text/worker">` cases. Import now rebuilds the worker workspace directly from source worker script bodies, strips those scripts from visual HTML blocks, and final emit appends one Roll20 worker script so worker code is not displayed on the sheet canvas or duplicated on re-import.
 - Important scope: the emitted Roll20 sheet may canonicalize multiple source worker scripts into one final `<script type="text/worker">`; block counts are diagnostics, while exact worker source-body preservation is the gate for this slice.
 - Latest local ignored validation:
-  - `corepack pnpm run audit:worker -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/worker-source-audit`: PASS for fixture-A, fixture-B, and fixture-C 1BU with exact worker bodies.
+  - `corepack pnpm run audit:worker -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/worker-source-audit`: PASS for fixture-A, fixture-B, and fixtureC with exact worker bodies.
   - `node scripts/browser_roundtrip_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --report-dir reports/roundtrip-browser`: PASS for the same 3 fixtures.
   - `corepack pnpm run smoke:worker -- --out-dir ./out --base-path /roll20-block-editor --report-dir reports/worker-workspace-smoke`: PASS.
   - `node scripts/imported_edit_sync_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --report-dir reports/imported-edit-sync`: PASS.
@@ -5349,7 +5363,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Added `scripts/roll20_payload_audit.mjs` and package alias `corepack pnpm run audit:payload`.
 - Updated `scripts/roll20_actual_local_baseline.mjs` so generated Sandbox payload files and `upload.zip` use the same internal-id stripping and translation normalization.
 - Latest local ignored validation after `lint` and `build`:
-  - `node scripts/roll20_actual_local_baseline.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/roll20-actual-compare --run-label 2026-06-18-payload-clean-v2`: PASS for fixture-A, fixture-B, and fixture-C 1BU.
+  - `node scripts/roll20_actual_local_baseline.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/roll20-actual-compare --run-label 2026-06-18-payload-clean-v2`: PASS for fixture-A, fixture-B, and fixtureC.
   - `corepack pnpm run audit:payload -- reports/roll20-actual-compare/2026-06-18-payload-clean-v2`: PASS for the same 3 fixtures with 0 issues.
 - Scope note: this proves local upload payload hygiene only. Actual Roll20 sandbox/test-room upload and screenshot/chat parity remain unverified until Chrome file upload access is enabled.
 
@@ -5360,9 +5374,9 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - The first strict top-left diff flagged fixture-A and fixture-C due to tiny screenshot alignment/width differences, so the helper now records a small-offset crop-normalized best match. This keeps the check useful for real payload drift without failing on a one-pixel capture offset.
 - The first post-build smoke still failed fixture-A after offset normalization. Root cause was CSS pseudo-class loss: imported selectors such as `.sheet-lock:not(:checked)` were emitted as `.lock:hover(:checked)` because the CSS pseudo block dropdown did not allow `not`. Expanded the pseudo-class allowlist to include common Roll20/official-sheet selectors (`not`, child/type position pseudos, validity/state pseudos).
 - Latest local ignored validation:
-  - `node scripts/roll20_actual_local_baseline.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/roll20-actual-compare --run-label 2026-06-18-pseudo-fix-v1`: PASS for fixture-A, fixture-B, and fixture-C 1BU.
+  - `node scripts/roll20_actual_local_baseline.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/roll20-actual-compare --run-label 2026-06-18-pseudo-fix-v1`: PASS for fixture-A, fixture-B, and fixtureC.
   - `corepack pnpm run audit:payload -- reports/roll20-actual-compare/2026-06-18-pseudo-fix-v1`: PASS for all 3 fixtures with 0 issues.
-  - `corepack pnpm run smoke:payload-roundtrip -- reports/roll20-actual-compare/2026-06-18-pseudo-fix-v1 --out-dir ./out --base-path /roll20-block-editor`: PASS for fixture-A, fixture-B, and fixture-C 1BU with 0% cleaned-payload preview mismatch and no visible script/rolltemplate runtime nodes.
+  - `corepack pnpm run smoke:payload-roundtrip -- reports/roll20-actual-compare/2026-06-18-pseudo-fix-v1 --out-dir ./out --base-path /roll20-block-editor`: PASS for fixture-A, fixture-B, and fixtureC with 0% cleaned-payload preview mismatch and no visible script/rolltemplate runtime nodes.
 - Scope note: this proves cleaned upload payloads still roundtrip visually inside the local static app. It still does not prove actual Roll20 sandbox/test-room visual parity.
 
 ## 2026-06-18 Legacy Export Audit Slice
@@ -5387,8 +5401,8 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Added `window.__perfHook.setLegacyCssSanitize()` so browser verification scripts can toggle preview legacy mode without relying on localized toolbar text.
 - Added `scripts/roll20_legacy_fixture_visual_smoke.mjs` and package alias `corepack pnpm run smoke:legacy-fixture-visual`.
 - The smoke imports ignored fixtures through the static app, captures preview iframe screenshots with legacy CSS sanitize OFF and ON, reads the final `#r20-user` CSS chunk, and checks that legacy-risk declarations are reduced when present.
-- Latest local ignored validation after `lint` and `build`: `corepack pnpm run smoke:legacy-fixture-visual -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/legacy-fixture-visual` PASS for fixture-A, fixture-B, and fixture-C 1BU.
-- Fixture result summary: fixture-B reduced legacy-risk CSS `1 -> 0`; fixture-A and fixture-C 1BU were classified `no-risk-css`. All three had 0 console errors, 0 page errors, 0 resource issues, no visible script/rolltemplate runtime nodes, and 0% modern-vs-legacy screenshot mismatch for the tested preview state.
+- Latest local ignored validation after `lint` and `build`: `corepack pnpm run smoke:legacy-fixture-visual -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/legacy-fixture-visual` PASS for fixture-A, fixture-B, and fixtureC.
+- Fixture result summary: fixture-B reduced legacy-risk CSS `1 -> 0`; fixture-A and fixtureC were classified `no-risk-css`. All three had 0 console errors, 0 page errors, 0 resource issues, no visible script/rolltemplate runtime nodes, and 0% modern-vs-legacy screenshot mismatch for the tested preview state.
 - Scope note: this proves local imported-fixture preview toggle behavior only. Actual Roll20 legacy sandbox/test-room parity remains unverified until the Sandbox upload blocker is resolved and actual screenshots are captured.
 
 ## 2026-06-18 Automated Reference Diff Runner Slice
@@ -5434,13 +5448,13 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Added `scripts/roll20_state_selector_audit.mjs` and package alias `corepack pnpm run audit:state-selectors`.
 - The audit checks Roll20 CSS default-state anchors such as hidden inputs, `:checked`, `[value]`, and sibling selectors against source HTML controls and generated Roll20 upload payload controls.
 - It treats source-only dead/worker-driven selectors as diagnostics, but fails if export payloads introduce new missing-anchor regressions.
-- Latest local ignored validation: fixture-A, fixture-B, and fixture-C 1BU PASS against `reports/roll20-actual-compare/2026-06-18-pseudo-fix-v1`; fixture-C still records 7 source-only selector anchors that need actual Roll20/worker-state observation, but payload introduced 0 new state-anchor regressions.
+- Latest local ignored validation: fixture-A, fixture-B, and fixtureC PASS against `reports/roll20-actual-compare/2026-06-18-pseudo-fix-v1`; fixture-C still records 7 source-only selector anchors that need actual Roll20/worker-state observation, but payload introduced 0 new state-anchor regressions.
 - Scope note: this is semantic default-state preservation evidence only. It does not prove actual Roll20 visual parity.
 
 ## 2026-06-18 Roll20 Upload Handoff Slice
 
 - Reclaimed the kept `Codex Roll20 Verify | Roll20` Chrome tab and confirmed the Custom Sheet Sandbox file inputs still exist: `#sheetHtml`, `#sheetCss`, and `#sheetTranslation`.
-- Retried official fixture-B payload upload through the visible `label.btn.html` control. It still failed at `fileChooser.setFiles` with `Not allowed`, confirming the blocker is Chrome extension local file access rather than missing Roll20 controls.
+- Retried reference fixture-B payload upload through the visible `label.btn.html` control. It still failed at `fileChooser.setFiles` with `Not allowed`, confirming the blocker is Chrome extension local file access rather than missing Roll20 controls.
 - Added `scripts/roll20_upload_handoff.mjs` and package alias `corepack pnpm run handoff:roll20-upload`.
 - Generated an ignored handoff checklist for `fixture-B` under `reports/roll20-actual-compare/2026-06-18-pseudo-fix-v1/roll20-upload-handoff/`, listing payload files, screenshot destinations, and the diff command.
 - Scope note: this does not prove Roll20 visual parity. It keeps the actual upload path ready once Chrome allows file URL access for the Codex extension.
@@ -5449,7 +5463,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 
 - Added `scripts/roll20_asset_resource_audit.mjs` and package alias `corepack pnpm run audit:assets`.
 - The audit extracts asset references from copied fixture source HTML/CSS and generated Roll20 payload HTML/CSS, probes HTTP(S) resources with no referrer, and records missing local relative refs.
-- Latest local ignored validation against `reports/roll20-actual-compare/2026-06-18-pseudo-fix-v1`: fixture-A, fixture-B, and fixture-C 1BU PASS with 0 failed HTTP probes, 0 missing local relative refs, and 0 payload-introduced asset regressions.
+- Latest local ignored validation against `reports/roll20-actual-compare/2026-06-18-pseudo-fix-v1`: fixture-A, fixture-B, and fixtureC PASS with 0 failed HTTP probes, 0 missing local relative refs, and 0 payload-introduced asset regressions.
 - Scope note: this proves local source/payload asset URL reachability only. It does not prove Roll20 sandbox/test-room asset rendering until actual upload screenshots exist.
 
 ## 2026-06-18 Roll20 Pre-upload Gate Slice
@@ -5475,7 +5489,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 ## 2026-06-18 Roll20 Upload Recheck + Visual State Detail Slice
 
 - Rechecked the kept `Codex Roll20 Verify | Roll20` Chrome tab again. The Custom Sheet Sandbox still exposes `#sheetHtml`, `#sheetCss`, and `#sheetTranslation`.
-- A hidden input file chooser route did not produce a usable chooser. A visible `label.btn.html` upload attempt for the official fixture-B cleaned payload did reach the file chooser path but failed at `fileChooser.setFiles` with `Not allowed`.
+- A hidden input file chooser route did not produce a usable chooser. A visible `label.btn.html` upload attempt for the reference fixture-B cleaned payload did reach the file chooser path but failed at `fileChooser.setFiles` with `Not allowed`.
 - Current actual Roll20 blocker remains Chrome extension local file access, not missing Roll20 controls. Keep the actual-screen TODO open until Sandbox/test-room screenshots exist.
 - Enhanced `scripts/classify_visual_fixture_diffs.mjs` so `corepack pnpm run diff:visual-fixtures` now emits state selector samples, input/default samples, and reference/capture dimension clues in `reports/visual-fixture-diff/visual-fixture-diff-classification.md`.
 - Latest local ignored validation: `corepack pnpm run diff:visual-fixtures` PASS with 0 console/page errors. fixture-A remains 18.33% best mismatch with reference/capture `1240x761 -> 838x1377`, bestCropY `200`; fixture-B remains 13.51% with `824x799 -> 838x1491`, bestCropY `544`.
@@ -5534,7 +5548,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Export payload files, `upload.zip`, and the edit screenshot remain source-derived; the state hint only affects the local preview screenshot capture state.
 - Latest local validation:
   - `node --check scripts\roll20_actual_local_baseline.mjs`: PASS.
-  - `node scripts\roll20_actual_local_baseline.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/roll20-actual-compare --run-label 2026-06-18-state-map-v1 --state-map reports/visual-state-candidates/visual-state-candidates-state-map.json`: PASS for fixture-A, fixture-B, and fixture-C 1BU. fixture-B recorded `act_fullsheet APPLIED (sheetTabForBtn=fullsheet, sheetTab=fullsheet)`.
+  - `node scripts\roll20_actual_local_baseline.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/roll20-actual-compare --run-label 2026-06-18-state-map-v1 --state-map reports/visual-state-candidates/visual-state-candidates-state-map.json`: PASS for fixture-A, fixture-B, and fixtureC. fixture-B recorded `act_fullsheet APPLIED (sheetTabForBtn=fullsheet, sheetTab=fullsheet)`.
   - `corepack pnpm run guard:roll20-evidence`: PASS for commit-boundary checks.
   - `corepack pnpm run lint`: PASS.
   - `corepack pnpm run build`: PASS.
@@ -5547,7 +5561,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Extended `scripts/roll20_preupload_verification.mjs` so `--state-map` is forwarded to the cleaned-payload visual roundtrip check.
 - Latest local ignored validation:
   - `corepack pnpm run verify:roll20-preupload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --fixtures test-fixtures\visual --out-dir ./out --base-path /roll20-block-editor --state-map reports\visual-state-candidates\visual-state-candidates-state-map.json`: PASS.
-  - Payload roundtrip recorded 0% mismatch for fixture-A, fixture-B, and fixture-C 1BU; fixture-B recorded `act_fullsheet APPLIED (sheetTabForBtn=fullsheet, sheetTab=fullsheet)`.
+  - Payload roundtrip recorded 0% mismatch for fixture-A, fixture-B, and fixtureC; fixture-B recorded `act_fullsheet APPLIED (sheetTabForBtn=fullsheet, sheetTab=fullsheet)`.
   - Payload roundtrip also recorded 0 visible runtime nodes, 0 console/page errors, and 0 resource issues.
 - Scope note: this makes `2026-06-18-state-map-v1` locally upload-ready. It still does not prove actual Roll20 visual parity; the next step is Roll20 Custom Sheet Sandbox upload and actual screenshots once Chrome file URL access is available.
 
@@ -5568,8 +5582,8 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - The smoke now finds a visible imported container/subtree with direct children, drags that subtree through the real layer panel `before`/`after` drop path, and verifies both emitted order movement and direct child parent preservation.
 - Latest local ignored validation:
   - `node --check scripts\imported_edit_sync_smoke.mjs`: PASS.
-  - `node scripts\imported_edit_sync_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/imported-edit-sync`: PASS for fixture-A, fixture-B, and fixture-C 1BU.
-  - Non-leaf evidence: fixture-A moved `div before input` with 1 child preserved; fixture-B moved `div after div` with 1 child preserved; fixture-C 1BU moved `div after div` with 1 child preserved.
+  - `node scripts\imported_edit_sync_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/imported-edit-sync`: PASS for fixture-A, fixture-B, and fixtureC.
+  - Non-leaf evidence: fixture-A moved `div before input` with 1 child preserved; fixture-B moved `div after div` with 1 child preserved; fixtureC moved `div after div` with 1 child preserved.
   - Page errors stayed 0. fixture-C still reports external Imgur resource/console failures in the local ignored report; this is tracked as resource diagnostics, not Roll20 actual parity evidence.
 - Scope note: this closes the previous imported-sheet non-leaf coverage gap for the 3 prepared fixtures only. It does not prove broad corpus behavior, richer manual UX screenshots, or actual Roll20 sandbox/test-room parity.
 
@@ -5582,7 +5596,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - `node --check scripts\preview_edit_visual_smoke.mjs`: PASS.
   - `corepack pnpm run build`: PASS.
   - `node scripts\preview_edit_visual_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/preview-edit-visual`: PASS.
-  - Preview/edit mismatch improved from the previous 4.96% / 4.76% / 1.25% to fixture-A 1.76%, fixture-B 1.68%, and fixture-C 1BU 0.85%.
+  - Preview/edit mismatch improved from the previous 4.96% / 4.76% / 1.25% to fixture-A 1.76%, fixture-B 1.68%, and fixtureC 0.85%.
   - Edit host/content height delta is 0 for all 3 prepared fixtures, and preview/edit toolbar overlap is 0.
 - Scope note: this is stronger local preview/edit evidence only. Actual Roll20 sandbox/test-room parity remains unverified until the upload blocker is resolved and screenshots exist.
 
@@ -5610,7 +5624,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest local visual diagnostics:
   - `corepack pnpm run smoke:visual-state-candidates -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/visual-state-candidates`: PASS. fixture-A best local candidate is `control_attr_class_Hardholder` at 16.23%; fixture-B remains `act_fullsheet` at 8.84%.
   - `corepack pnpm run diff:visual-fixtures`: PASS and applies the same control/action state hints before diffing.
-  - `node scripts\roll20_actual_local_baseline.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures\visual --report-dir reports\roll20-actual-compare --run-label 2026-06-18-state-map-v1 --state-map reports\visual-state-candidates\visual-state-candidates-state-map.json`: PASS for fixture-A, fixture-B, and fixture-C 1BU.
+  - `node scripts\roll20_actual_local_baseline.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures\visual --report-dir reports\roll20-actual-compare --run-label 2026-06-18-state-map-v1 --state-map reports\visual-state-candidates\visual-state-candidates-state-map.json`: PASS for fixture-A, fixture-B, and fixtureC.
   - `corepack pnpm run verify:roll20-preupload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --fixtures test-fixtures\visual --out-dir ./out --base-path /roll20-block-editor --state-map reports\visual-state-candidates\visual-state-candidates-state-map.json`: PASS. Cleaned-payload visual roundtrip reports 0% mismatch for all 3 ignored fixtures.
 - Scope note: this is local preview/runtime and upload-readiness evidence only. fixture-A still needs reference crop/viewport normalization because its reference image includes a wider Roll20 screen/chat context, and actual Roll20 visual parity remains blocked until Custom Sheet Sandbox/test-room screenshots exist.
 
@@ -5649,7 +5663,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Added `--fail-on-resource-issues true` plus package script `corepack pnpm run smoke:imported-edit-sync:strict`.
 - Latest local validation:
   - `node --check scripts\imported_edit_sync_smoke.mjs`: PASS.
-  - `corepack pnpm run smoke:imported-edit-sync -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/imported-edit-sync --only fixture-c-commission-1bu --port 4296`: interaction PASS, resources WARN.
+  - `corepack pnpm run smoke:imported-edit-sync -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/imported-edit-sync --only fixtureC --port 4296`: interaction PASS, resources WARN.
   - `corepack pnpm run smoke:imported-edit-sync:strict -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/imported-edit-sync --only fixture-A --port 4298`: PASS, proving strict mode succeeds when resources load.
 - Scope note: this does not fix fixture-C's external asset failures yet. It prevents future visual-parity work from treating an edit-interaction PASS as a full visual readiness PASS.
 
@@ -5664,9 +5678,9 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest local validation:
   - `node --check scripts\capture_visual_fixture_previews.mjs`: PASS.
   - `corepack pnpm run build`: PASS.
-  - `corepack pnpm run capture:visual-fixtures -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/visual-fixture-render --state-map reports/visual-state-candidates/visual-state-candidates-state-map.json --only fixture-c-commission-1bu --port 4301`: PASS, resources PASS.
+  - `corepack pnpm run capture:visual-fixtures -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/visual-fixture-render --state-map reports/visual-state-candidates/visual-state-candidates-state-map.json --only fixtureC --port 4301`: PASS, resources PASS.
   - `corepack pnpm run capture:visual-fixtures:strict -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/visual-fixture-render --state-map reports/visual-state-candidates/visual-state-candidates-state-map.json --only fixture-A --port 4302`: PASS, resources PASS.
-  - `corepack pnpm run capture:visual-fixtures:strict -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/visual-fixture-render --state-map reports/visual-state-candidates/visual-state-candidates-state-map.json --only fixture-c-commission-1bu --port 4303`: PASS, resources PASS.
+  - `corepack pnpm run capture:visual-fixtures:strict -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/visual-fixture-render --state-map reports/visual-state-candidates/visual-state-candidates-state-map.json --only fixtureC --port 4303`: PASS, resources PASS.
   - `corepack pnpm run lint`: PASS.
   - `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`: PASS.
 - Scope note: this proves the local preview capture path is not hiding resource failures for the checked fixtures. It does not prove actual Roll20 visual parity, and it does not clear the imported edit/reimport resource WARN path.
@@ -5744,7 +5758,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest evidence from the ignored local report:
   - fixture-A: preview/edit nodes `1903/1903`, blocks `575/575`, sequence hash `41cc331a/41cc331a`, mismatch `1.76%`.
   - fixture-B: preview/edit nodes `664/664`, blocks `611/611`, sequence hash `d74453ad/d74453ad`, mismatch `1.68%`.
-  - fixture-C 1BU: preview/edit nodes `6336/6336`, blocks `5820/5820`, sequence hash `0e0258ca/0e0258ca`, mismatch `0.85%`.
+  - fixtureC: preview/edit nodes `6336/6336`, blocks `5820/5820`, sequence hash `0e0258ca/0e0258ca`, mismatch `0.85%`.
   - Visible runtime nodes are 0 for all 3 fixtures.
 - Scope note: this is stronger local evidence that edit mode uses the same rendered sheet structure with overlays outside the root capture. It still does not prove actual Roll20 visual parity.
 
@@ -5803,7 +5817,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Added `scripts/roll20_sandbox_sanitize_audit.mjs` and package script `audit:roll20-sandbox-sanitize`.
 - Wired the new audit into `scripts/roll20_preupload_verification.mjs` immediately after payload hygiene.
 - Latest ignored run `2026-06-18-state-map-v1` PASS: fixture-A, fixture-B, and fixture-C all produce `htmlChanged=true` and `cssChanged=true` under observed Roll20 sandbox sanitize rules, but none hit the fatal empty/rejected gate.
-- Diagnostic rewrite sizes from the local report: fixture-A HTML `94235 -> 92210`, CSS `12678 -> 14084`; fixture-B HTML `57358 -> 47217`, CSS `12922 -> 14603`; fixture-C 1BU HTML `598439 -> 497753`, CSS `26815 -> 29181`.
+- Diagnostic rewrite sizes from the local report: fixture-A HTML `94235 -> 92210`, CSS `12678 -> 14084`; fixture-B HTML `57358 -> 47217`, CSS `12922 -> 14603`; fixtureC HTML `598439 -> 497753`, CSS `26815 -> 29181`.
 - Full local pre-upload gate with the new audit PASS: `corepack pnpm run verify:roll20-preupload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --fixtures test-fixtures\visual --out-dir ./out --base-path /roll20-block-editor --state-map reports\visual-state-candidates\visual-state-candidates-state-map.json`.
 - Scope note: this proves local upload-readiness now includes a Roll20 sandbox sanitize diagnostic. It still does not prove actual Roll20 visual parity; generated sandbox/chat screenshots remain missing.
 
@@ -5853,7 +5867,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - `corepack pnpm run lint`: PASS.
   - `corepack pnpm run build`: PASS.
   - `corepack pnpm run test:roll20-sandbox-sanitize`: PASS, with the known Node module-type warning.
-  - `corepack pnpm run smoke:preview-edit-visual -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/preview-edit-visual --port 4332`: PASS for fixture-A, fixture-B, and fixture-C 1BU with the same mismatch bounds as before.
+  - `corepack pnpm run smoke:preview-edit-visual -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/preview-edit-visual --port 4332`: PASS for fixture-A, fixture-B, and fixtureC with the same mismatch bounds as before.
   - `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`: still `PREUPLOAD_READY_MISSING_GENERATED_ACTUAL`.
 - Scope note: this is a local Roll20 Sandbox expected-render diagnostic. It does not prove actual Roll20 visual parity; generated Roll20 Sandbox/chat screenshots remain missing until the Chrome upload permission blocker is resolved.
 
@@ -5870,7 +5884,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Fixture evidence from the ignored local report:
   - fixture-A: runtime nodes `2 -> 0`, sandbox bytes `115081`, page errors 0.
   - fixture-B: runtime nodes `4 -> 0`, sandbox bytes `69755`, page errors 0.
-  - fixture-C 1BU: runtime nodes `20 -> 0`, sandbox bytes `678830`, page errors 0.
+  - fixtureC: runtime nodes `20 -> 0`, sandbox bytes `678830`, page errors 0.
 - Console WARN reasons were Roll20 image-proxy font CORS and source sheet numeric-expression warnings; these remain diagnostics, not sanitizer render failures. Pass `--fail-on-console-issues` when a strict console gate is needed.
 - Scope note: this expands local expected-render coverage only. It still does not prove actual Roll20 visual parity until generated Roll20 Sandbox/chat screenshots are captured and diffed.
 
@@ -5942,7 +5956,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest result:
   - fixture-A: generated Roll20 sandbox screenshot missing.
   - fixture-B: actual iframe DOM/CSS is not readable in the current evidence; top blocker is the full-height evidence gap (`760x556` actual visible crop is `12.42%` of local `850x4477`), followed by visible CSS/state/asset mismatch (`21.67%`, crop gain `0.34%`), sandbox sanitize rewrite, unconfirmed actual default state, asset proxying, and missing chat screenshot.
-  - fixture-C 1BU: generated Roll20 sandbox screenshot missing.
+  - fixtureC: generated Roll20 sandbox screenshot missing.
 - Scope note: this is triage only. It helps choose the next probe and explicitly says not to change renderer CSS from this report alone.
 
 ## 2026-06-19 Roll20 Same-Context Visible Smoke Slice
@@ -5951,7 +5965,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - The script renders generated payloads locally through `buildSheetDoc`, applies the state hint when present, captures normal root, local Sandbox expected root, measured frame-inset, and fit-to-visible-width candidates, then compares each candidate against the existing actual Roll20 `roll20-sandbox-root.png`.
 - Latest command: `corepack pnpm run smoke:roll20-same-context-visible -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
 - Latest result:
-  - fixture-A/fixture-C 1BU: SKIP because generated Roll20 sandbox root screenshots are still missing.
+  - fixture-A/fixtureC: SKIP because generated Roll20 sandbox root screenshots are still missing.
   - fixture-B: previous actual visible mismatch `21.67%`; best local same-context candidate `normal-root-top-left` is `21.60%`; local Sandbox expected root is also `21.60%`; measured frame-inset and fit-visible-width candidates are worse (`24.09%`, `23.34%`).
 - Interpretation: local frame/inset/sandbox-width simulation does not materially explain the remaining fixture-B visible mismatch. Next P0 should collect actual computed-style/state/asset evidence when the iframe is readable and capture full-height/scroll-stitched Roll20 root evidence.
 - Scope note: this is still not Roll20 visual parity.
@@ -5982,7 +5996,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest command: `corepack pnpm run smoke:roll20-same-context-visible -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
 - Latest result: fixture-B best candidate is `normal-root-no-state` at `21.38%`, improved from the prior `21.60%`.
 - Local preview/edit regression command: `corepack pnpm run smoke:preview-edit-visual -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/preview-edit-visual --port 4336`.
-- Local preview/edit result: PASS with fixture-A `1.75%`, fixture-B `2.02%`, and fixture-C 1BU `1.01%`.
+- Local preview/edit result: PASS with fixture-A `1.75%`, fixture-B `2.02%`, and fixtureC `1.01%`.
 - Computed-style result: prior `html` diffs and input font/background/padding app-style diffs are gone. Remaining diffs include actual root context/width (`852` actual vs `900` local in this probe), full-sheet height, table count (`8` actual vs `11` local), input height, and roll-button background/geometry.
 - Scope note: this is real movement toward Roll20 actual parity, not completion. fixture-A/fixture-C actual screenshots and full-height Roll20 capture are still missing.
 
@@ -5993,7 +6007,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Expanded computed-style probes for `.sheet-2colrow`, `.sheet-col`, and `img`. Selector sample coordinates are normalized relative to the sheet root so the report focuses on layout differences instead of the Roll20 iframe's page offset.
 - Latest command: `corepack pnpm run smoke:roll20-same-context-visible -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
 - Latest result:
-  - fixture-A/fixture-C 1BU: SKIP because generated Roll20 sandbox root screenshots are still missing.
+  - fixture-A/fixtureC: SKIP because generated Roll20 sandbox root screenshots are still missing.
   - fixture-B: best candidate `sandbox-actual-root-width-no-state`, CSS mismatch `21.49%`, native mismatch `21.55%`, computed-style score `339`.
   - Root width can match actual (`852px`), but root height still differs: actual `4121.575px` vs local `4963.266px`.
   - The strongest new clue is flow/height behavior: first `.sheet-2colrow` is `310.6px` high in actual Roll20 and `554px` locally; `.sheet-col` samples show actual keeps the first columns side-by-side while local rendering wraps/extends the flow.
@@ -6255,8 +6269,8 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Reopened the sandbox character in the Roll20 editor. fixture-A and fixture-C both rendered in the character iframe; fixture-C was additionally confirmed by iframe text markers such as `?�름`, `?�레?�어`, `직업`, `?�이`, `?�성`, and `근력`.
 - Captured ignored local viewport evidence:
   - `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/fixture-A/screenshots/roll20-sandbox.png`
-  - `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/fixture-c-commission-1bu/screenshots/roll20-sandbox.png`
-  - `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/fixture-c-commission-1bu/screenshots/roll20-sandbox-dom-evidence.json`
+  - `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/fixtureC/screenshots/roll20-sandbox.png`
+  - `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/fixtureC/screenshots/roll20-sandbox-dom-evidence.json`
 - Latest actual screenshot diff:
   - fixture-A sandbox mismatch `14.90%` from viewport evidence.
   - fixture-B sandbox mismatch `6.57%` from DPR-corrected full-root evidence.
@@ -6276,7 +6290,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Found a real local-baseline defect: fixture-A's official source `sheet.json` declares `"legacy": true`, but `scripts/roll20_actual_local_baseline.mjs` had hard-coded every generated payload manifest to `"legacy": false`.
 - Updated the local baseline generator to resolve legacy mode from fixture metadata or, for official Roll20 fixtures, the source `sheet.json` under `roll20-character-sheets-master`. Regenerating fixture-A now writes payload `sheet.json` with `"legacy": true` and records the legacy source in the ignored local baseline report/readme.
 - Applied the regenerated fixture-A payload to the dedicated sandbox through the endpoint fallback. `/sheetsandbox/savesheetsettings` returned 200 for HTML/CSS/translation and `/campaigns/savesettings/21639681` returned 200 for `customcharsheet_json`, but reopening the sandbox character still produced an empty character iframe (`bodyLen=0`, no `.charactersheet`, no inputs/buttons).
-- Applied the official fixture-A source HTML/CSS/translation plus original official `sheet.json` through the same endpoint fallback. It also produced an empty character iframe.
+- Applied the reference fixture-A source HTML/CSS/translation plus original official `sheet.json` through the same endpoint fallback. It also produced an empty character iframe.
 - Attempted to restore the previously rendering fixture-C generated payload through the same endpoint fallback afterward. The endpoint returned 200 for HTML/CSS/translation/settings, but reopening the sandbox character also produced an empty iframe. This makes the endpoint fallback suspect as a sheet activation path, not just as an fixture-A-specific issue.
 - Current conclusion: fixture-A now proves the legacy manifest preservation bug, but live Roll20 evidence shows endpoint 200 responses are storage-only evidence unless a fresh iframe DOM/root check confirms rendering. Treat previous endpoint viewport evidence as suspect until the Roll20 file-input upload path, a full settings-form save path, or another sandbox activation condition is verified.
 - Verification run after the code change: `node scripts\roll20_actual_local_baseline.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/roll20-actual-compare --run-label 2026-06-18-state-map-v1 --state-map reports/visual-state-candidates/visual-state-candidates-state-map.json --only fixture-A --port 4392` PASS; `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1` remains `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`; `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1` PASS.
@@ -6349,7 +6363,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 
 - Re-ran actual-status and upload-handoff summaries for `reports\roll20-actual-compare\2026-06-18-state-map-v1`; Roll20 actual evidence remains partial at `generatedActualScreenshots=2/6`, with no room screenshots and missing trustworthy chat screenshots.
 - Re-ran local edit flow smoke on port 4421; it PASSed and confirmed readable Korean edit UI copy, no mojibake in the edit panel text sample, inside/before/after canvas indicators, layer role/drop affordances, nested reorder, absolute-inside-frame movement, and free placement inside a frame.
-- Re-ran preview/edit visual smoke on port 4422; fixture-A, fixture-B, and fixture-C 1BU PASSed with diagnostic mismatches of 1.87%, 2.07%, and 1.02%. This is local preview/edit evidence only.
+- Re-ran preview/edit visual smoke on port 4422; fixture-A, fixture-B, and fixtureC PASSed with diagnostic mismatches of 1.87%, 2.07%, and 1.02%. This is local preview/edit evidence only.
 - Hardened `scripts/imported_edit_sync_smoke.mjs`: non-leaf layer reorder candidates now require a true sibling target with the same parent/depth, preventing parent/child containers from masquerading as sibling reorder targets; free absolute-in-frame checks no longer rely on a naive first closing tag after DOM nesting is already proven.
 - Latest imported edit sync rerun on port 4424 PASSed all 3 prepared fixtures. fixture-A/fixture-C still have external-image resource WARNs, so visual parity remains unproven.
 ## 2026-06-19 Chat Page Screenshot Rejected As Chat Evidence
@@ -6530,7 +6544,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Found a real Roll20 settings fallback hazard: putting a `{ sheet, userOptions, jsoninfo }` wrapper into `customcharsheet_json` made `/editor` fail with an `unexpected token` JSON parse error. The sandbox was recovered through the settings page using the real `#save-changes-button`.
 - Updated `scripts/roll20_upload_snippet.mjs` so generated settings-page snippets fill `customcharsheet_json` with the plain exported `sheet.json` text and no longer wrap it. The snippet also avoids falling back to arbitrary `button[type=submit]` when `SUBMIT_SETTINGS_FORM` is enabled.
 - Recaptured ignored local actual Roll20 chat evidence for `fixture-B`: `roll20-chat-dom-evidence.json` now has `textMeasureEvidence.status=MEASURED`, `samples=12`, and latest template `sheet-rolltemplate-initiative-roll`; DPR-corrected `roll20-chat.png` is `267x82`.
-- Recaptured ignored local actual Roll20 chat evidence for `fixture-c-commission-1bu`: `roll20-chat-dom-evidence.json` now has `textMeasureEvidence.status=MEASURED`, `samples=19`, and latest template `sheet-rolltemplate-coc`; DPR-corrected `roll20-chat.png` is `267x586`.
+- Recaptured ignored local actual Roll20 chat evidence for `fixtureC`: `roll20-chat-dom-evidence.json` now has `textMeasureEvidence.status=MEASURED`, `samples=19`, and latest template `sheet-rolltemplate-coc`; DPR-corrected `roll20-chat.png` is `267x586`.
 - Latest diagnostics: `diagnose:roll20-chat-font-glyph` now compares all 3 fixtures and reports `TEXT_MEASUREMENT_DELTA_MODEL_REQUIRED` for fixture-A, fixture-B, and fixture-C. The prior fixture-C `TEXT_MEASURE_RECAPTURE_REQUIRED` blocker is cleared.
 - Latest renderer gate still returns `HOLD_PRODUCTION_RENDERER_PATCH`: chat PNG scale/foreground suspects remain, fixture-C normalized mismatch is still high, and no global-safe ChatPane renderer patch is proven.
 - Claim boundary: this is stronger actual Roll20 measurement evidence and a fixed upload helper contract. It is not Roll20 visual parity, not renderer readiness, and not approval for production ChatPane CSS.
@@ -6663,7 +6677,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Added an opt-in import speed path for very large sheets: `compactWideRows` compacts repeated large table-row subtrees into raw row bundles after the normal generic composite pass.
 - Added user-facing import dialog control `큰 표 행 빠르게 불러오기`; default remains off to preserve the normal “every HTML element is an editable block” expectation.
 - Added perf/smoke plumbing: `window.__perfHook.importSheet({ compactWideRows })`, `smoke:imported-edit-sync --compact-wide-rows true`, and budget columns for `wideRowBundles` / `wideRowCollapsed`.
-- Private fixture-C 1BU fixture evidence, ignored locally: `4` wide row bundles, `432` blocks collapsed, HTML blocks `6530 -> 6094`, import total about `5434.3ms`, inject about `5086.3ms`, emit about `221.8ms`.
+- Private fixtureC fixture evidence, ignored locally: `4` wide row bundles, `432` blocks collapsed, HTML blocks `6530 -> 6094`, import total about `5434.3ms`, inject about `5086.3ms`, emit about `221.8ms`.
 - Verification: compact private imported-edit smoke passed interaction/resource checks, edit/preview sync, canvas/free insert, reimport stability, console/page errors, and `0px` drag drift; `lint`, `build`, `node --check`, and `guard:roll20-evidence` passed.
 - Claim boundary: this is a speed option, not Roll20 visual parity. It preserves rendered row HTML as raw bundles, but internal controls inside bundled rows are not directly block-editable until an ungroup/lazy-materialization feature exists.
 
@@ -6906,14 +6920,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Rechecked CDP readiness: `preflight:roll20-cdp` reports `CDP_CLOSED`, so this batch did not capture new Roll20 pixels.
 - Updated `scripts/roll20_chat_cdp_capture.mjs` so `--plan-only` prints the sheet-frame evidence path, exact `probe:roll20-sheet-frame` command, and exact gated chat capture command before telling agents to rerun without `--plan-only`.
 - Updated `scripts/roll20_chat_current_handoff.mjs` so the generated current-metrics handoff table preserves the exact sheet-frame probe and gated chat capture commands from `roll20_chat_capture_plan.mjs`.
-- Verification: `node --check scripts\roll20_chat_cdp_capture.mjs`, `node --check scripts\roll20_chat_current_handoff.mjs`, `test:roll20-chat-cdp-readiness`, `test:roll20-chat-capture-plan`, `handoff:roll20-chat-current`, and `capture:roll20-chat-cdp --plan-only` for `fixture-A` and `fixture-c-commission-1bu`.
+- Verification: `node --check scripts\roll20_chat_cdp_capture.mjs`, `node --check scripts\roll20_chat_current_handoff.mjs`, `test:roll20-chat-cdp-readiness`, `test:roll20-chat-capture-plan`, `handoff:roll20-chat-current`, and `capture:roll20-chat-cdp --plan-only` for `fixture-A` and `fixtureC`.
 - Claim boundary: this reduces handoff mistakes for the next actual Roll20 recapture. It does not add visual evidence, does not change ChatPane CSS, and does not prove parity.
 
 ## 2026-07-12 CDP Preflight Probe Ordering
 
 - Updated `scripts/roll20_cdp_preflight.mjs` so the console output and Markdown report include sheet-frame probe commands before chat capture commands for each planned fixture.
 - Verified both the full planned fixture set and a single-fixture preflight path; both still report `CDP_CLOSED` but now print the correct probe -> capture order.
-- Verification: `node --check scripts\roll20_cdp_preflight.mjs`, `preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1 --fixture fixture-c-commission-1bu`.
+- Verification: `node --check scripts\roll20_cdp_preflight.mjs`, `preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1 --fixture fixtureC`.
 - Claim boundary: no Roll20 browser was captured. This is orchestration safety for the next live recapture only.
 
 ## 2026-07-12 Edit Canvas Width and Zoom Control
@@ -6990,7 +7004,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 
 - Navigated the CDP browser from Roll20 welcome to `https://app.roll20.net/editor` without editing any room/sheet settings.
 - Preflight then reported `READY`, but sheet-frame probe showed the important missing piece: `frames=1`, `sheetHitCount=0`, `rootCount=0`, `attrCount=0`, `rollButtonCount=0`.
-- Full probes for both `fixture-A` and `fixture-c-commission-1bu` returned `ROLL20 SHEET FRAME PROBE NOT_PROVEN`, so no positive DOM sidecar was written.
+- Full probes for both `fixture-A` and `fixtureC` returned `ROLL20 SHEET FRAME PROBE NOT_PROVEN`, so no positive DOM sidecar was written.
 - Updated `probe:roll20-sheet-frame --dry-run` to run a lightweight non-writing frame probe when the Roll20 URL is capture-ready.
 - Updated `capture:roll20-chat-cdp --dry-run` to warn when `/editor` is open but no character-sheet iframe is present, and to point back to the required sheet-frame probe command.
 - Verification: syntax checks plus live fixture-A dry-runs for probe and capture. The dry-runs now distinguish URL readiness from loaded-fixture readiness.
@@ -7120,7 +7134,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 ## 2026-07-13 fixture-C Roll20 Actual Payload Reapplied and Chat Metrics Refreshed
 
 - Server hygiene before live Roll20 work: no project dev/smoke listeners were running; only the approved CDP browser on `127.0.0.1:9222` remained open for Roll20 verification.
-- Re-applied `fixture-c-commission-1bu` to the dedicated Roll20 Sandbox/test campaign `21639681`. The settings page apply helper reported storage/save as not enough for visual proof, so the editor was reloaded and the character iframe was probed separately.
+- Re-applied `fixtureC` to the dedicated Roll20 Sandbox/test campaign `21639681`. The settings page apply helper reported storage/save as not enough for visual proof, so the editor was reloaded and the character iframe was probed separately.
 - Reopened sandbox character `Witrav Upijek` and captured strong sheet-frame evidence in ignored temp output: `sheetHitCount=65`, `rootCount=3`, `attrCount=1069`, `rollButtonCount=808`.
 - Added safe output routing for the live chat proof chain: `plan:roll20-chat-capture --out-dir` writes fresh snippets outside locked canonical `reports/`, and `capture:roll20-chat-cdp --snippet` can consume that temp snippet without copying private evidence into the repo.
 - Fresh Roll20 chat capture clicked `roll_str_check` and captured `sheet-rolltemplate-coc` with `rolltemplateCount=6`, paired `roll20-chat.png`, current row metrics, and computed style fields.
@@ -8286,7 +8300,7 @@ HTML directly.
 
 Verification: `smoke:edit-flow` now selects a real layer and asserts the block
 inspector role/context surface. `smoke:imported-edit-sync:strict` passed for
-fixture-A, fixture-B, a synthetic non-leaf case, and fixture-C 1BU. Modern and legacy
+fixture-A, fixture-B, a synthetic non-leaf case, and fixtureC. Modern and legacy
 preview/edit visual smoke passed all six cases at `0%` mismatch. This is local
 editor evidence; resize-handle UX, arbitrary DOM coverage, and actual Roll20
 Sandbox/legacy-room parity remain open.
@@ -8627,7 +8641,7 @@ visibility verification passed. No external room was opened or modified.
   non-important, allowing generic imported sheets to retain their own canvas
   width/height and overflow behavior.
 - Local browser evidence: the prepared anonymous fixture corpus (`fixture-A`,
-  `fixture-B`, and `fixture-c-commission-1bu`) passed preview/edit visual smoke in
+  `fixture-B`, and `fixtureC`) passed preview/edit visual smoke in
   both modern and legacy compatibility modes with `0` mismatch pixels. This
   is local evidence only; actual Roll20 Sandbox and dedicated legacy-room
   screenshots are still VERIFY.

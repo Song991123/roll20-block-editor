@@ -3,7 +3,7 @@
  *
  * Anchor: docs/spec/25_roll20_baseline.md
  *
- * 출처 (D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\roll20-base\):
+ * 출처 (D:\훙냥냥\마렌상\legacy-sheet-corpus 시트 고치기\roll20-base\):
  *   - base.css (Bootstrap 3.x + normalize.css v3.0.3 — Roll20 가 번들)
  *   - charactersheet.css (Roll20 의 `.ui-dialog .charsheet ...` 룰)
  *
@@ -14,8 +14,8 @@
  *   그 결과 라이브 미리보기와 실제 Roll20 환경의 시각이 크게 달라져 사용자가
  *   값 추적을 못 하는 상태.
  *
- * Ground truth 시각 — 사용자 share roll20-sheet-builder 실제 Roll20 렌더 (docs/spec/25 노트):
- *   - 1부 red moon era / 2부 waterfall era (03:30) / 3부 broken glass era (7402)
+ * Ground truth 시각 — 사용자 share legacy-sheet-corpus 실제 Roll20 렌더 (docs/spec/25 노트):
+ *   - legacy corpus reference visual variant A / modern corpus reference visual variant B (03:30) / later corpus reference visual variant C (7402)
  *   - dark bg + form-control 정렬 (좁은 numeric + 좌측 label) + 능력치 stack 격자
  *
  * 본 파일은 `roll20-base` 의 base.css / charactersheet.css 의 sheet 영역에
@@ -168,7 +168,7 @@
 
 /* charactersheet.css L279 `.ui-dialog .charsheet input[type=number] { width: 3.5em; }`
    ▶ 이게 핵심. 일반 number input 은 3.5em 좁은 박스. 사용자 CSS 가 의도적으로
-     width 늘리지 않으면 좁음. 우리 미리보기는 여태 이걸 안 박아서 실제 roll20-sheet-builder
+     width 늘리지 않으면 좁음. 우리 미리보기는 여태 이걸 안 박아서 실제 legacy-sheet-corpus
      의 능력치 numeric input 폭 (좁은 칸 + 좌측 label) 과 큰 차이가 있었음. */
 .charsheet input[type="number"] {
   width: 3.5em;

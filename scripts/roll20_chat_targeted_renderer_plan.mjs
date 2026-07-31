@@ -244,7 +244,7 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
     };
   }
   if (
-    fixtureId === 'fixtureC-commission-1bu' ||
+    fixtureId === 'fixtureC' ||
     signals.textWidthDecision === 'TEXT_WIDTH_OVERCONSTRAINED_BY_LAYOUT' ||
     Math.abs(signals.tableScrollWidthDelta ?? 0) >= 8
   ) {
@@ -591,7 +591,7 @@ function summarizeTriedCandidates(fixtureId, candidateByName) {
       'fixtureA-message-cell-font-context',
       'fixtureA-message-cell-wrap-context',
     ]
-    : fixtureId === 'fixtureC-commission-1bu'
+    : fixtureId === 'fixtureC'
       ? ['fixtureC-sanitize-typography', 'coc-table-intrinsic-clamp', 'paint-dim-background']
       : [];
   return candidateNames
@@ -612,7 +612,7 @@ function summarizeTriedCandidates(fixtureId, candidateByName) {
 function fixtureKeyForId(fixtureId) {
   if (fixtureId === 'fixtureA') return 'fixtureA';
   if (fixtureId === 'fixtureB') return 'lesOublies';
-  if (fixtureId === 'fixtureC-commission-1bu') return 'fixtureC';
+  if (fixtureId === 'fixtureC') return 'fixtureC';
   return fixtureId;
 }
 
@@ -677,7 +677,7 @@ function selfTest() {
   assert(fixtureA.evidence.some((item) => item.includes('weighted 17.93%')));
   assert(fixtureA.evidence.some((item) => item.includes('actual chat CSS EXPECTED_RULE_PRESENT')));
   assert(fixtureA.evidence.some((item) => item.includes('source/intrinsic CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED')));
-  const fixtureC = classifyFixture('fixtureC-commission-1bu', 0.2068, {
+  const fixtureC = classifyFixture('fixtureC', 0.2068, {
     textWidthDecision: 'TEXT_WIDTH_OVERCONSTRAINED_BY_LAYOUT',
     tableScrollWidthDelta: -25,
     tableTextResidual: 30.415,

@@ -6,7 +6,7 @@
 >            docs/audit/05_handoff_to_nextjs.md §3 (specificity 원칙).
 >
 > **작성일:** 2026-05-18.
-> **선언:** 시스템 specific 0. roll20-sheet-builder / D&D 5e / Pathfinder 어떤 시스템 시트에도
+> **선언:** 시스템 specific 0. legacy-sheet-corpus / D&D 5e / Pathfinder 어떤 시스템 시트에도
 > 동일 적용. 본 baseline 은 Roll20 *sandbox* 의 default look 근사이며 사용자
 > CSS workspace 의 영역과 분리된다.
 
@@ -49,7 +49,7 @@ Legacy verification destination.
 
 ## §1. Roll20 sandbox 의 실제 base CSS — 출처
 
-본 baseline 은 `D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\roll20-base\` 의 dump 파일
+본 baseline 은 `D:\훙냥냥\마렌상\legacy-sheet-corpus 시트 고치기\roll20-base\` 의 dump 파일
 에서 추출. dump 출처는 사용자가 Roll20 sandbox 페이지 dev tools 로 가져온
 원본:
 
@@ -143,47 +143,47 @@ const css = [
 
 ---
 
-## §4. Ground truth — roll20-sheet-builder 실제 Roll20 렌더 (사용자 share)
+## §4. Ground truth — legacy-sheet-corpus 실제 Roll20 렌더 (사용자 share)
 
-사용자가 2026-05-18 share 한 3개 era 의 실제 Roll20 렌더 screenshot (roll20-sheet-builder leak
+사용자가 2026-05-18 share 한 3개 era 의 실제 Roll20 렌더 screenshot (legacy-sheet-corpus leak
 보호를 위해 URL 기록 X, 사용자 환경의 file path 만 노트):
 
-- **1부 red moon era** — `agent/local_ditto_*/uploads/fc46a3b4-1______.png`.
-  dark bg + 빨간달 commission 배경, 헤더 큰 timer `00:00`, 좌측 능력치 grid (근력
+- **legacy corpus reference visual variant A** — `agent/local_ditto_*/uploads/fc46a3b4-1______.png`.
+  dark bg + 빨간달 source-specific 배경, 헤더 큰 timer `00:00`, 좌측 능력치 grid (근력
   / 민첩 / 건강 / 외모 / 교육 / 크기 / 지능 / 정신력 — 좁은 numeric input + 좌측
   label), 우측 SAN 카드 stack (빨강 border, 50/126/13 수치).
-- **2부 waterfall era** — `agent/local_ditto_*/uploads/8fc47c3a-2______.png`.
-  03:30 timer, waterfall era 배경.
-- **3부 broken glass / mansion era** — `agent/local_ditto_*/uploads/fe3d8868-3______.png`.
+- **modern corpus reference visual variant B** — `agent/local_ditto_*/uploads/8fc47c3a-2______.png`.
+  03:30 timer, reference visual variant B 배경.
+- **later corpus visual variant C / mansion era** — `agent/local_ditto_*/uploads/fe3d8868-3______.png`.
   7402 era 코드, 깨진 유리 + 저택 배경.
 
 본 baseline 의 핵심 시각 정합 점:
 
-1. **Numeric input 폭** — Roll20 의 `width: 3.5em` 박힘. roll20-sheet-builder 능력치 input
+1. **Numeric input 폭** — Roll20 의 `width: 3.5em` 박힘. legacy-sheet-corpus 능력치 input
    (50 같은 2자리) 이 좁은 박스에 박힘. 이전 우리 미리보기는 `width: 64px` 박혀
    더 넓었음.
 2. **Form-control 폰트** — `Helvetica Neue, Helvetica, Arial, sans-serif` 14px
-   1.428 line-height. roll20-sheet-builder 한국어 라벨은 `Helvetica Neue` 의 fallback (Arial /
+   1.428 line-height. legacy-sheet-corpus 한국어 라벨은 `Helvetica Neue` 의 fallback (Arial /
    sans-serif) 으로 렌더. Roll20 에서도 한국어는 fallback 폰트로 렌더되므로 정합.
    이전 우리는 `Pretendard` 13px → 한국어 더 예쁜 글자였지만 폭이 달랐음.
 3. **Button** — `.btn` 의 light-gray (#fff bg, #ccc border) + roll button (옅은
    회색 + d20 이모지). 이전 우리는 GitHub-blue (#0969da). 색조 명확히 다름.
 
-**커미션 배경 이미지 (red moon / waterfall / broken glass) 는 baseline 영역 X.**
+**source-specific 배경 이미지 (visual variant A / visual variant B / visual variant C) 는 baseline 영역 X.**
 이 이미지들은 사용자 시트 CSS 가 `background-image: url(...)` 로 박은 거고,
 사용자 CSS 가 우리 미리보기 안에 그대로 들어가 렌더된다 (autoPrefix 후 user CSS
 phase). baseline 은 폰트/폼/그리드 default 만 담당.
 
 **Roll20 채팅창 영역 (굴림 결과 출력 backdrop) 은 baseline 영역 X.** 우리 미리
 보기는 시트 영역 (`.charsheet`) 만 보여주고, 채팅창은 별도 컴포넌트 (`ChatPane`)
-가 처리. 사용자가 commission 으로 박은 채팅창 배경은 Roll20 의 채팅 패널에 박힌
+가 처리. 사용자가 source-specific 으로 박은 채팅창 배경은 Roll20 의 채팅 패널에 박힌
 것이고 우리 미리보기에 재현 X.
 
 ---
 
 ## §5. 사용자 CSS 가 baseline 을 override 하는 패턴
 
-roll20-sheet-builder 1부 CSS 의 능력치 input 룰 (예시):
+legacy-sheet-corpus legacy corpus CSS 의 능력치 input 룰 (예시):
 
 ```css
 .sheet-attribute-input {
@@ -209,7 +209,7 @@ roll20-sheet-builder 1부 CSS 의 능력치 input 룰 (예시):
 
 ## §6. 다음 phase — TODO
 
-1. **Visual diff 자동화** — roll20-sheet-builder example_004 import 후 미리보기 screenshot
+1. **Visual diff 자동화** — legacy-sheet-corpus example_004 import 후 미리보기 screenshot
    을 Roll20 ground truth 와 element bbox 단위 비교 (Playwright + image diff).
    현재는 수동.
 2. **`.ui-dialog` wrapper 옵션** — Roll20 sandbox 의 specificity 와 100% 정합
@@ -252,7 +252,7 @@ roll20-sheet-builder 1부 CSS 의 능력치 input 룰 (예시):
 되는것같다"). 사용자가 직접 큐레이션한 ground truth 폴더는:
 
 ```
-D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\roll20-base\
+D:\훙냥냥\마렌상\legacy-sheet-corpus 시트 고치기\roll20-base\
 ├── base.css            (449KB,  10272 line) — Bootstrap 3.x + normalize.css v3.0.3 + Grimoire color tokens
 ├── charactersheet.css  (14KB,   728  line)  — .ui-dialog .charsheet / .characterdialog 룰
 ├── jquery.css          (43KB,   890  line)  — jQuery UI Bootstrap (dialog chrome)
@@ -353,7 +353,7 @@ const css = [
 | `app.css` (124KB) | Element Plus / Vue admin UI (Refiner 폼 등). Roll20 의 sandbox 시트 영역 외. |
 | `index.scss / var.scss` | SCSS 소스 — `@use 'element-plus/...'` 의존성 컴파일 불가. base.css 가 이미 컴파일 결과 포함. |
 | `html input[disabled]` 등 `html DESC` selector (Shadow) | `:host DESC` 가 CSS spec 상 invalid. 단일 룰 손실 허용. |
-| `:root` 외부에서 cascade 의존하는 element-plus 변수 (e.g. `--el-*`) | element-plus 의 Vue runtime 이 박는 변수 — 우리 미리보기에 없음. fallback 값 (`var(--el-*, default)`) 에 의존하는 룰만 영향, roll20-sheet-builder 시트 자체엔 무관. |
+| `:root` 외부에서 cascade 의존하는 element-plus 변수 (e.g. `--el-*`) | element-plus 의 Vue runtime 이 박는 변수 — 우리 미리보기에 없음. fallback 값 (`var(--el-*, default)`) 에 의존하는 룰만 영향, legacy-sheet-corpus 시트 자체엔 무관. |
 
 ### §8.6 verify 가이드
 

@@ -48,7 +48,7 @@ export function parseHtml(html: string): DomNode {
  *
  * 이유: HTML5 native DOMParser 는 비-void 요소의 `/>` 를 무시하고 태그를
  * "연 채로" 둔다 → 뒤따르는 형제 input/button 들이 전부 그 요소의 자식으로
- * 삼켜진다. roll20-sheet-builder 1부처럼 `<button ... />` 표기를 쓰는 실전 시트에서
+ * 삼켜진다. legacy-sheet-corpus legacy corpus처럼 `<button ... />` 표기를 쓰는 실전 시트에서
  * 브라우저 import 만 입력칸 57개 + roll 버튼 49개가 소실되는 원인이었다
  * (Node fallback 파서와 Roll20 은 self-close 를 닫힘으로 처리).
  * 따옴표 안의 `/>`, `<` 는 건드리지 않도록 quote-aware 스캐너로 처리.

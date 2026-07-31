@@ -248,9 +248,9 @@ async function readOptionalJson(file) {
 function fixtureKeyForId(fixtureId) {
   if (fixtureId === 'fixtureA') return 'fixtureA';
   if (fixtureId === 'fixtureB') return 'lesOublies';
-  if (fixtureId === 'fixtureC-commission-1bu') return 'fixtureC';
+  if (fixtureId === 'fixtureC') return 'fixtureC';
   return fixtureId
-    .replace(/^official-roll20-/, '')
+    .replace(/^reference-corpus-/, '')
     .replace(/-([a-z])/g, (_, char) => char.toUpperCase())
     .replace(/[^a-zA-Z0-9_]/g, '');
 }

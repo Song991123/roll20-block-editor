@@ -178,7 +178,7 @@ function summarizeReport(name, screenshots, report) {
   const fixtureRows = {
     fixtureA: summarizeFixture(fixture('fixtureA')),
     lesOublies: summarizeFixture(fixture('fixtureB')),
-    fixtureC: summarizeFixture(fixture('fixtureC-commission-1bu')),
+    fixtureC: summarizeFixture(fixture('fixtureC')),
   };
   const comparedFixtures = Object.values(fixtureRows).filter((row) => row.status === 'DIFFED').length;
   return {

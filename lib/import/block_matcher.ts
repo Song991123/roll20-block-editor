@@ -10,7 +10,7 @@
  *
  * 매칭 안 되면 r20_raw_html escape hatch fallback. fallback 카운트로 coverage 측정.
  *
- * 일반화 원칙: roll20-sheet-builder / D&D 5e / PbtA 어느 시트도 동일 알고리즘으로 매칭.
+ * 일반화 원칙: legacy-sheet-corpus / D&D 5e / PbtA 어느 시트도 동일 알고리즘으로 매칭.
  * 한글 라벨 / class name hardcoding 0.
  */
 
@@ -724,7 +724,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   }
   // <b>, <strong> — bold emphasis → r20_inline_bold (시맨틱 보존).
   // hasOnlyTextOrInline 로 <b><i>x</i></b> / <b>mix <i>i</i></b> 같은 nested inline 도 매칭.
-  // (1부 RAW 419 <b> 중 109 만 매칭하던 버그 fix — nested 시 텍스트만 보존, 의미 손실 명시.)
+  // (legacy corpus RAW 419 <b> 중 109 만 매칭하던 버그 fix — nested 시 텍스트만 보존, 의미 손실 명시.)
   if ((tag === 'b' || tag === 'strong') && hasOnlyTextOrInline(node) && !a['data-i18n']) {
     return {
       blockType: 'r20_inline_bold',
@@ -1355,7 +1355,7 @@ function matchChildren(node: DomNode, ctx: MatchContext): MatchedBlock[] {
  * 위함. 의미적으로 nested element 구조는 잃지만 (TEXT 한 줄로 합쳐짐) 텍스트는
  * 보존. <a> 같은 non-emphasis inline 은 제외 (의미 손실 큼 → raw_html 로 fallback).
  *
- * 1부 검증: RAW 419 <b> 중 109 만 매칭하던 hasOnlyText 의 buggy 제약 fix.
+ * legacy corpus 검증: RAW 419 <b> 중 109 만 매칭하던 hasOnlyText 의 buggy 제약 fix.
  */
 const INLINE_TEXT_TAGS = new Set([
   'b', 'strong', 'em', 'small', 'u', 'i', 'br', 'span', 'sub', 'sup',
@@ -1397,7 +1397,7 @@ function hasOnlyTextOrInline(node: DomNode): boolean {
   });
 }
 
-/** `attr_foo` → `foo`. roll20-sheet-builder / Roll20 표준 prefix. */
+/** `attr_foo` → `foo`. legacy-sheet-corpus / Roll20 표준 prefix. */
 function stripAttrPrefix(name: string): string {
   return name.replace(/^attr_/, '');
 }

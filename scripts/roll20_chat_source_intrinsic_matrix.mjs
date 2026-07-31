@@ -460,10 +460,10 @@ function renderMarkdown(report) {
 
 function selfTest() {
   const report = buildReport('synthetic', {
-    parity: { fixtures: [{ fixtureId: 'fixtureC-commission-1bu', bestAlignedMismatchRatio: 0.2 }] },
+    parity: { fixtures: [{ fixtureId: 'fixtureC', bestAlignedMismatchRatio: 0.2 }] },
     sourceContext: {
       fixtures: [{
-        fixtureId: 'fixtureC-commission-1bu',
+        fixtureId: 'fixtureC',
         decision: 'SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED',
         tableContext: {
           decision: 'TABLE_INTRINSIC_SOURCE_CONTEXT_REQUIRED',
@@ -481,10 +481,10 @@ function selfTest() {
         fontActivation: { decision: 'FONT_FACE_ACTIVATION_DIFFERS', changedFonts: [{ spec: 'Bookk' }] },
       }],
     },
-    intrinsicWidth: { fixtures: [{ fixtureId: 'fixtureC-commission-1bu', intrinsicDecision: 'TABLE_SCROLL_INTRINSIC_MODEL_REQUIRED' }] },
-    tableIntrinsic: { fixtures: [{ fixtureId: 'fixtureC-commission-1bu', probeDecision: 'TABLE_WIDE_INTRINSIC_WITH_CROP_OFFSET', rowModel: { rowWidthDeltaSpread: 0, maxAbsCellDelta: 0.9, maxAbsTopDelta: 52.7 } }] },
-    tableLayout: { fixtures: [{ fixtureId: 'fixtureC-commission-1bu', decision: 'TABLE_AUTO_LAYOUT_MIN_CONTENT_MODEL_REQUIRED', deltas: { tableWidth: -24.5, tableScrollWidth: -25 } }] },
-    minContent: { fixtures: [{ fixtureId: 'fixtureC-commission-1bu', decision: 'TABLE_AUTO_LAYOUT_MIN_CONTENT_MODEL_REQUIRED', deltas: { tableWidth: -24.5, tableScrollWidth: -25, tableClientWidth: -25 }, constraints: { bothAutoLayout: true, actualExceedsComputedMax: true }, rowModel: { uniformRows: true, maxAbsCellDelta: 0.9, maxAbsTopDelta: 52.7 }, textMetrics: { tableTextDelta: -54.9, tableTextResidual: 30.4 } }] },
+    intrinsicWidth: { fixtures: [{ fixtureId: 'fixtureC', intrinsicDecision: 'TABLE_SCROLL_INTRINSIC_MODEL_REQUIRED' }] },
+    tableIntrinsic: { fixtures: [{ fixtureId: 'fixtureC', probeDecision: 'TABLE_WIDE_INTRINSIC_WITH_CROP_OFFSET', rowModel: { rowWidthDeltaSpread: 0, maxAbsCellDelta: 0.9, maxAbsTopDelta: 52.7 } }] },
+    tableLayout: { fixtures: [{ fixtureId: 'fixtureC', decision: 'TABLE_AUTO_LAYOUT_MIN_CONTENT_MODEL_REQUIRED', deltas: { tableWidth: -24.5, tableScrollWidth: -25 } }] },
+    minContent: { fixtures: [{ fixtureId: 'fixtureC', decision: 'TABLE_AUTO_LAYOUT_MIN_CONTENT_MODEL_REQUIRED', deltas: { tableWidth: -24.5, tableScrollWidth: -25, tableClientWidth: -25 }, constraints: { bothAutoLayout: true, actualExceedsComputedMax: true }, rowModel: { uniformRows: true, maxAbsCellDelta: 0.9, maxAbsTopDelta: 52.7 }, textMetrics: { tableTextDelta: -54.9, tableTextResidual: 30.4 } }] },
   });
   const fixture = report.fixtures[0];
   assert.equal(report.summary.status, 'SOURCE_INTRINSIC_MATRIX_ACTIONABLE');

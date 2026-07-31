@@ -144,7 +144,7 @@ function summarizeCandidate(name, smokeFile, screenshotsDir, candidateOutDir, re
     reportDir: path.relative(process.cwd(), candidateOutDir),
     fixtureA: summarizeFixture(fixture('fixtureA')),
     lesOublies: summarizeFixture(fixture('fixtureB')),
-    fixtureC: summarizeFixture(fixture('fixtureC-commission-1bu')),
+    fixtureC: summarizeFixture(fixture('fixtureC')),
     decisions: report.summary?.decisions ?? {},
   };
 }

@@ -14,7 +14,7 @@
  *   6) repeating_section 만 (thead 없음) → wrapper (HAS_HEADER=FALSE)
  *   7) 통계 (collapsed) 정확성
  *
- * roll20-sheet-builder hardcoding 0 — 모든 fixture 는 generic Roll20 idiom.
+ * legacy-sheet-corpus hardcoding 0 — 모든 fixture 는 generic Roll20 idiom.
  */
 
 import type { MatchedBlock } from '../block_matcher.ts';

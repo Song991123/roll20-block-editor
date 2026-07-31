@@ -7,7 +7,7 @@
  * Web Worker 안에서도 import 가능하도록 ?raw 같은 bundler 전용 import 를
  * 피하고 순수 string literal 로 박는다. CSS 파일 편집 시 양쪽 sync 필요.
  *
- * 출처 (D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\roll20-base\):
+ * 출처 (D:\훙냥냥\마렌상\legacy-sheet-corpus 시트 고치기\roll20-base\):
  *   - base.css (Bootstrap 3.x + normalize.css v3.0.3)
  *   - charactersheet.css (Roll20 `.ui-dialog .charsheet ...` 룰)
  *

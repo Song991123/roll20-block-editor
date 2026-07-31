@@ -1,10 +1,10 @@
 /**
  * inline_bold / inline_italic 매칭 — nested inline 허용 회귀 test.
  *
- * 1부 검증 보고서 (2부_spec.md §5) 잔여 버그:
+ * legacy corpus 검증 보고서 (modern corpus_spec.md §5) 잔여 버그:
  *   - block_matcher.ts hasOnlyText 는 <b><i>x</i></b> 같은 nested element 거부 →
  *     inline_bold (r20_inline_bold) 매칭 실패 → raw_html fallback / 부모 흡수.
- *   - 1부 RAW 419 <b> 중 109 만 매칭, 310 가 흡수됨.
+ *   - legacy corpus RAW 419 <b> 중 109 만 매칭, 310 가 흡수됨.
  *
  * 본 테스트는 fix 후 simple / nested / mix / span / label / br 케이스가
  * 모두 정상 매칭됨을 보장. anchor / icon / i18n-child 는 여전히 흡수 X (가드).

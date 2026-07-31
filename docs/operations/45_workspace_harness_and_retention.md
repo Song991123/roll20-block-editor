@@ -743,3 +743,23 @@ external material remain preserved.
   per-file workaround, or safety bypass was used.
 - NOT DELETED: all three exact targets remain present. Protected sheet roots,
   source, dependencies, worktrees, and tracked report policy were preserved.
+
+## 2026-08-01 user-authorized complete-deletion retry (host blocked)
+
+- RECHECKED: the exact disposable targets were the active worktree's generated
+  `.next/`, `out/`, `.tmp/`, `next-env.d.ts`, six generated child folders under
+  `reports/`, and the empty generated `help/local-baseline/` directory.
+  `reports/README.md`, active `node_modules/`, product source, both Git
+  worktrees, and protected external sheet roots were excluded.
+- SAFETY CHECK: every present target resolved inside `web-push-main/`, was
+  untracked and reproducible, had no reparse-point root, and no checked project
+  listener was active.
+- ATTEMPTED: one boundary-checked native PowerShell deletion request was
+  issued after the user's explicit approval.
+- BLOCKED HOST: the execution boundary rejected the destructive invocation
+  before PowerShell executed. User approval cannot override this
+  session-level restriction; no alternate shell, native API, per-file
+  workaround, or safety bypass was used.
+- NOT DELETED: all present generated targets remain. The payload and synthetic
+  fixtures must be regenerated after a future permitted cleanup; no current
+  Roll20 evidence is implied by their presence.

@@ -6,9 +6,9 @@
  *   - docs/spec/12_roll20_output_spec.md §2 (HTML emit contract — generic attr)
  *
  * 배경:
- *   roll20-sheet-builder 1부 측정 결과 inline `style` 속성 607 건이 100% drop — 표 셀 폭/색,
+ *   legacy-sheet-corpus legacy corpus 측정 결과 inline `style` 속성 607 건이 100% drop — 표 셀 폭/색,
  *   display:none 토글 컨트롤, font-weight 등 시각 정보 전건 손실. 모든 시트
- *   (D&D 5e / PbtA / roll20-sheet-builder) 공통 패턴이므로 시스템 specific 가 아닌 generic
+ *   (D&D 5e / PbtA / legacy-sheet-corpus) 공통 패턴이므로 시스템 specific 가 아닌 generic
  *   필드로 모든 visual 블록에 STYLE 필드 추가.
  *
  * 본 모듈은 두 함수만 노출 — 카탈로그 블록 generator 가 동일 규약으로 emit:
@@ -17,7 +17,7 @@
  *   2. `styleAttr(value)` — generator 가 받은 STYLE 값을 ` style="..."` 문자열로
  *      변환. 비면 빈 문자열 (no-op — `style=""` 출력 금지).
  *
- * 시스템 specific 토큰 0. roll20-sheet-builder hardcoding 0 — 모든 시트 호환 generic.
+ * 시스템 specific 토큰 0. legacy-sheet-corpus hardcoding 0 — 모든 시트 호환 generic.
  */
 
 import * as Blockly from 'blockly';

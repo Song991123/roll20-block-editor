@@ -6,7 +6,7 @@
  *   node scripts/prepare_visual_fixture.mjs <inventory_json> <out_root> <selector> [...]
  *
  * Selector formats:
- *   official-roll20:fixtureB
+ *   reference-corpus:fixtureB
  *   user-custom:CoC\\some-sheet
  *   --top=5
  *

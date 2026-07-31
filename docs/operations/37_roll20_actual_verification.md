@@ -799,7 +799,7 @@ POST a hand-built `FormData(settingsform)` as a shortcut; the real
 `#save-changes-button` path performs Roll20's page-side serialization and avoids
 corrupting the editor's advanced settings JSON.
 
-For legacy official sheets, preserve the source `sheet.json` legacy mode. A
+For legacy reference sheets, preserve the source `sheet.json` legacy mode. A
 fixture whose official manifest declares `"legacy": true` must not be uploaded
 with a generated `"legacy": false` manifest. Also note that endpoint `200`
 responses are not enough for legacy coverage: fixture-A returned `200` for generated

@@ -759,7 +759,7 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
   // Stage 22 §2 — LANG 필드 추가 (optional).
   //   - LANG 비면 (`''`) `getTranslationByKey('KEY')` emit (현재 언어).
   //   - LANG 채우면 `getTranslationByLang('LANG', 'KEY')` emit.
-  // roll20-sheet-builder 1부 등 LANG 비어 있는 케이스는 기존 출력 유지.
+  // legacy-sheet-corpus legacy corpus 등 LANG 비어 있는 케이스는 기존 출력 유지.
   {
     type: 'r20_worker_math_unary',
     shape: 'reporter',

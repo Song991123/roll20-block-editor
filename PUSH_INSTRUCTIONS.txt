@@ -1,6 +1,6 @@
 # Phase 1 push 안내 — Windows 셸에서 실행
 
-cd "D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\web"
+cd "D:\훙냥냥\마렌상\legacy-sheet-corpus 시트 고치기\web"
 
 # 1. node_modules 설치 (Windows 에선 pnpm 정상 동작)
 pnpm install

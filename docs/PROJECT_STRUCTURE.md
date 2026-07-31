@@ -68,9 +68,9 @@ This file explains where things should live. It is intentionally conservative: d
 | TODO | Remove or archive only proven-unused root byproducts after checking scripts, CI, and user workflows. |
 | HOLD | Do not rename or move protected source folders, active worktrees, or ignored reports during the product reset. |
 
-## Parent Folder Context (`roll20-sheet-builder 시트 고치기/`)
+## Parent Folder Context (`legacy-sheet-corpus 시트 고치기/`)
 
-This repository worktree lives inside the user's `roll20-sheet-builder 시트 고치기` folder, which also contains legacy and reference material. Added 2026-06-12.
+This repository worktree lives inside the user's `legacy-sheet-corpus 시트 고치기` folder, which also contains legacy and reference material. Added 2026-06-12.
 
 | Sibling | Category | Note |
 | --- | --- | --- |

@@ -101,19 +101,19 @@ async function summarizeFixture(fixtureId, reports) {
   const backgroundStyle = compareBackgroundStyle(localTable, actualTable);
   const cocBackgroundSize = candidateByName(reports.rasterCandidates, 'coc-background-size-actual');
   const backgroundSizeStyleProof = candidateByName(reports.styleProof, 'coc-background-size-actual');
-  const isYshyCoc = fixtureId === 'fixtureC-commission-1bu';
+  const isFixtureCCoc = fixtureId === 'fixtureC';
   const fixtureCandidate = candidateForFixture(cocBackgroundSize, fixtureId);
   const observedTableWidthDelta = rectDelta(localTable?.rect, actualTable?.rect, 'width');
   const contextTableWidthDelta = observedTableWidthDelta ?? style?.tableDelta?.width ?? null;
   const decision = decide({
     fixtureId,
-    isYshyCoc,
+    isFixtureCCoc,
     priority,
     backgroundStyle,
     compositing,
     tableWidthDelta: contextTableWidthDelta,
-    backgroundSizeCandidateRisk: isYshyCoc ? cocBackgroundSize?.rowRasterRisk ?? '' : '',
-    fixtureCRowWeightedDeltaPct: isYshyCoc ? cocBackgroundSize?.fixtureCRowWeightedDeltaPct ?? null : null,
+    backgroundSizeCandidateRisk: isFixtureCCoc ? cocBackgroundSize?.rowRasterRisk ?? '' : '',
+    fixtureCRowWeightedDeltaPct: isFixtureCCoc ? cocBackgroundSize?.fixtureCRowWeightedDeltaPct ?? null : null,
     lumaCorrectionGainPct: compositing?.summary?.lumaCorrectionGainPct ?? null,
   });
   return {
@@ -133,7 +133,7 @@ async function summarizeFixture(fixtureId, reports) {
     localDarkerMismatchSharePct: compositing?.summary?.localDarkerMismatchSharePct ?? '',
     backgroundStyleDecision: backgroundStyle.decision,
     backgroundStyle,
-    backgroundSizeCandidateRisk: isYshyCoc ? cocBackgroundSize?.rowRasterRisk ?? '' : '',
+    backgroundSizeCandidateRisk: isFixtureCCoc ? cocBackgroundSize?.rowRasterRisk ?? '' : '',
     backgroundSizeCandidateFixture: fixtureCandidate ? {
       rowWeightedMismatchPct: fixtureCandidate.rowWeightedMismatchPct ?? '',
       worstRowMismatchPct: fixtureCandidate.worstRowMismatchPct ?? '',
@@ -146,11 +146,11 @@ async function summarizeFixture(fixtureId, reports) {
         finding: fixture.finding,
       })) ?? [],
     } : null,
-    evidence: evidenceNotes({ fixtureId, isYshyCoc, backgroundStyle, compositing, style, cocBackgroundSize, backgroundSizeStyleProof }),
+    evidence: evidenceNotes({ fixtureId, isFixtureCCoc, backgroundStyle, compositing, style, cocBackgroundSize, backgroundSizeStyleProof }),
   };
 }
 
-function decide({ fixtureId, isYshyCoc, priority, backgroundStyle, compositing, tableWidthDelta, backgroundSizeCandidateRisk, fixtureCRowWeightedDeltaPct, lumaCorrectionGainPct }) {
+function decide({ fixtureId, isFixtureCCoc, priority, backgroundStyle, compositing, tableWidthDelta, backgroundSizeCandidateRisk, fixtureCRowWeightedDeltaPct, lumaCorrectionGainPct }) {
   if (priority === 'P2') return 'BACKGROUND_SOURCE_SECONDARY';
   if (!backgroundStyle.localPresent || !backgroundStyle.actualPresent) return 'BACKGROUND_STYLE_EVIDENCE_MISSING';
   if (!backgroundStyle.imageEquivalent) return 'BACKGROUND_ASSET_URL_OR_PROXY_MISMATCH';
@@ -160,11 +160,11 @@ function decide({ fixtureId, isYshyCoc, priority, backgroundStyle, compositing, 
   if (backgroundStyle.declarationMatches && Math.abs(Number(lumaCorrectionGainPct ?? 0)) < 1 && compositing?.summary?.flatPaintMismatchShare >= 0.45) {
     return 'BACKGROUND_DECLARATION_MATCHES_BUT_RASTER_DIFFERS';
   }
-  if (isYshyCoc && backgroundSizeCandidateRisk === 'reject-row-raster-regression') return 'BACKGROUND_SIZE_CANDIDATE_REJECTED';
+  if (isFixtureCCoc && backgroundSizeCandidateRisk === 'reject-row-raster-regression') return 'BACKGROUND_SIZE_CANDIDATE_REJECTED';
   if (Math.abs(Number(tableWidthDelta ?? 0)) > 8 && backgroundStyle.declarationMatches) {
     return 'TABLE_WIDTH_CONTEXT_BEFORE_BACKGROUND_CSS';
   }
-  if (isYshyCoc && typeof fixtureCRowWeightedDeltaPct === 'number' && fixtureCRowWeightedDeltaPct < -0.5) return 'BACKGROUND_SIZE_NEEDS_STYLE_PROOF';
+  if (isFixtureCCoc && typeof fixtureCRowWeightedDeltaPct === 'number' && fixtureCRowWeightedDeltaPct < -0.5) return 'BACKGROUND_SIZE_NEEDS_STYLE_PROOF';
   if (backgroundStyle.imageEquivalent && !backgroundStyle.declarationMatches) return 'BACKGROUND_DECLARATION_DIFFERS';
   return 'BACKGROUND_SOURCE_SECONDARY';
 }
@@ -225,7 +225,7 @@ function compareBackgroundStyle(localTable, actualTable) {
   };
 }
 
-function evidenceNotes({ fixtureId, isYshyCoc, backgroundStyle, compositing, style, cocBackgroundSize, backgroundSizeStyleProof }) {
+function evidenceNotes({ fixtureId, isFixtureCCoc, backgroundStyle, compositing, style, cocBackgroundSize, backgroundSizeStyleProof }) {
   const notes = [];
   notes.push(`background style ${backgroundStyle.decision}`);
   notes.push(`table width delta ${fmtPx(style?.tableDelta?.width)}`);
@@ -235,7 +235,7 @@ function evidenceNotes({ fixtureId, isYshyCoc, backgroundStyle, compositing, sty
     notes.push(`compositing ${compositing.decision}: weighted ${compositing.summary?.rowWeightedMismatchPct || 'n/a'}, luma-corrected ${compositing.summary?.lumaCorrectedMismatchPct || 'n/a'} (${fmtSigned(compositing.summary?.lumaCorrectionGainPct)})`);
     notes.push(`flat ${compositing.summary?.flatPaintMismatchSharePct || 'n/a'}, local darker ${compositing.summary?.localDarkerMismatchSharePct || 'n/a'}`);
   }
-  if (isYshyCoc && cocBackgroundSize) {
+  if (isFixtureCCoc && cocBackgroundSize) {
     notes.push(`coc-background-size-actual row raster risk ${cocBackgroundSize.rowRasterRisk || 'n/a'}, fixtureC weighted delta ${fmtSigned(cocBackgroundSize.fixtureCRowWeightedDeltaPct)}, worst delta ${fmtSigned(cocBackgroundSize.fixtureCWorstRowDeltaPct)}`);
   } else if (cocBackgroundSize) {
     notes.push(`coc-background-size-actual is fixtureC/CoC-scoped; ${fixtureId} keeps its own compositing/style axis`);
@@ -300,7 +300,7 @@ function candidateForFixture(candidate, fixtureId) {
   if (!candidate) return null;
   if (fixtureId === 'fixtureA') return candidate.fixtureA ?? null;
   if (fixtureId === 'fixtureB') return candidate.lesOublies ?? null;
-  if (fixtureId === 'fixtureC-commission-1bu') return candidate.fixtureC ?? null;
+  if (fixtureId === 'fixtureC') return candidate.fixtureC ?? null;
   return null;
 }
 

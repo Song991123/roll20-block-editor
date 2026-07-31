@@ -12,7 +12,7 @@ const runDir = path.resolve(runDirArg);
 const localSmokeFile = path.resolve(localSmokeArg);
 const outDir = path.join(runDir, 'chat-row-geometry');
 
-const fixtureIds = ['fixtureA', 'fixtureB', 'fixtureC-commission-1bu'];
+const fixtureIds = ['fixtureA', 'fixtureB', 'fixtureC'];
 
 const localSmoke = existsSync(localSmokeFile) ? JSON.parse(await readFile(localSmokeFile, 'utf8')) : null;
 const rows = [];

@@ -17,7 +17,7 @@ const localSmokeArg = args[1] ?? 'reports/rolltemplate-chat-smoke/rolltemplate-c
 const runDir = path.resolve(runDirArg);
 const localSmokeFile = path.resolve(localSmokeArg);
 const outDir = path.join(runDir, 'chat-structure-compare');
-const fixtureIds = ['fixtureA', 'fixtureB', 'fixtureC-commission-1bu'];
+const fixtureIds = ['fixtureA', 'fixtureB', 'fixtureC'];
 
 const localSmoke = await readJsonIfExists(localSmokeFile);
 const fixtures = [];

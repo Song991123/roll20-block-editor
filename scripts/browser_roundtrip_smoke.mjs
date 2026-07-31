@@ -20,7 +20,7 @@
  * Usage:
  *   node scripts/browser_roundtrip_smoke.mjs \
  *     --out-dir ./out --report-dir reports/roundtrip-browser \
- *     [--fixtures test-fixtures/visual] [--only fixtureC-commission-1bu] [--port 4180]
+ *     [--fixtures test-fixtures/visual] [--only fixtureC] [--port 4180]
  *
  * A protected local source can be measured without copying it into the
  * repository by setting R20_ROUNDTRIP_HTML_PATH and optionally the CSS/i18n

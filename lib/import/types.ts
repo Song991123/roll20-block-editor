@@ -34,7 +34,7 @@ export interface ImportWarning {
   message: string;
   /** 어떤 워크스페이스에 영향. */
   workspace: 'html' | 'css' | 'i18n' | 'js' | null;
-  /** 원본 토큰 (디버깅용 — roll20-sheet-builder specific markup 그대로 박힐 수 있으므로 local-only 분석에만 사용). */
+  /** 원본 토큰 (디버깅용 — legacy-sheet-corpus specific markup 그대로 박힐 수 있으므로 local-only 분석에만 사용). */
   hint?: string;
 }
 

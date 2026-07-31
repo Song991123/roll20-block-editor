@@ -225,13 +225,13 @@ function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate
     candidate.name === 'fixtureC-missing-bookk-table-font-context' ||
     candidate.name === 'fixtureC-bookk-fallback-only'
   ) {
-    return summarizeYshyFontContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
+    return summarizeFixtureCFontContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
   }
   if (candidate.name === 'fixtureC-roll20-fallback-stack') {
-    return summarizeYshyRoll20FallbackStack(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
+    return summarizeFixtureCRoll20FallbackStack(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
   }
   if (candidate.name.startsWith('fixtureC-coc-table-source-context')) {
-    return summarizeYshyCocTableSourceContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
+    return summarizeFixtureCCocTableSourceContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
   }
   if (candidate.name === 'text-auto-aa') {
     return summarizeTextAutoAa(candidate, fixtureId, candidateTemplate, actualTemplate);
@@ -460,8 +460,8 @@ function fixtureATextCells(template) {
     .slice(0, 3);
 }
 
-function summarizeYshyFontContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar) {
-  if (fixtureId !== 'fixtureC-commission-1bu') {
+function summarizeFixtureCFontContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar) {
+  if (fixtureId !== 'fixtureC') {
     return {
       fixtureId,
       status: 'STYLE_NEUTRAL',
@@ -512,8 +512,8 @@ function summarizeYshyFontContext(candidate, fixtureId, candidateTemplate, actua
   };
 }
 
-function summarizeYshyRoll20FallbackStack(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar) {
-  if (fixtureId !== 'fixtureC-commission-1bu') {
+function summarizeFixtureCRoll20FallbackStack(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar) {
+  if (fixtureId !== 'fixtureC') {
     return {
       fixtureId,
       status: 'STYLE_NEUTRAL',
@@ -586,8 +586,8 @@ function summarizeYshyRoll20FallbackStack(candidate, fixtureId, candidateTemplat
   };
 }
 
-function summarizeYshyCocTableSourceContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar) {
-  if (fixtureId !== 'fixtureC-commission-1bu') {
+function summarizeFixtureCCocTableSourceContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar) {
+  if (fixtureId !== 'fixtureC') {
     return {
       fixtureId,
       status: 'STYLE_NEUTRAL',
@@ -601,7 +601,7 @@ function summarizeYshyCocTableSourceContext(candidate, fixtureId, candidateTempl
     : candidate.name.includes('fallback-only')
       ? 'fixtureC-bookk-fallback-only'
     : 'fixtureC-missing-bookk-table-font-context';
-  const fontProof = summarizeYshyFontContext(
+  const fontProof = summarizeFixtureCFontContext(
     { ...candidate, name: fontCandidateName },
     fixtureId,
     candidateTemplate,
@@ -690,7 +690,7 @@ function summarizePaintFilter(candidate, fixtureId, candidateTemplate, actualTem
 }
 
 function summarizeCocBackgroundSize(candidate, fixtureId, candidateTemplate, actualTemplate) {
-  if (fixtureId !== 'fixtureC-commission-1bu') {
+  if (fixtureId !== 'fixtureC') {
     return {
       fixtureId,
       status: 'STYLE_NEUTRAL',
@@ -934,7 +934,7 @@ async function main() {
     const smokePath = candidateSmokeOverrides.get(candidate.name) ?? CANDIDATE_SMOKE[candidate.name];
     const candidateSmoke = smokePath ? await readJson(smokePath) : null;
     const fixtures = [];
-    for (const fixtureId of ['fixtureA', 'fixtureB', 'fixtureC-commission-1bu']) {
+    for (const fixtureId of ['fixtureA', 'fixtureB', 'fixtureC']) {
       const actualSidecar = await readJson(actualTemplateFor(RUN_DIR, fixtureId));
       const defaultFixture = fixtureById(defaultSmoke, fixtureId);
       const candidateFixture = fixtureById(candidateSmoke, fixtureId);

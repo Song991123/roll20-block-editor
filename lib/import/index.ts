@@ -8,8 +8,8 @@
  * 본 모듈은 입력 HTML/CSS/translation 텍스트를 Blockly XML 3 종으로 변환.
  * 결과는 `adapter.hydrateFromXml(key, xml)` 로 그대로 워크스페이스에 박을 수 있음.
  *
- * 일반화: roll20-sheet-builder / D&D 5e / PbtA 어떤 시트도 같은 알고리즘.
- * 한글 라벨 / roll20-sheet-builder specific class name hardcoding 0.
+ * 일반화: legacy-sheet-corpus / D&D 5e / PbtA 어떤 시트도 같은 알고리즘.
+ * 한글 라벨 / legacy-sheet-corpus specific class name hardcoding 0.
  */
 
 import { parseHtml } from './dom_walker';

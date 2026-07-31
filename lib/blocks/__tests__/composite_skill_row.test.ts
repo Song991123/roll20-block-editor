@@ -5,7 +5,7 @@
  *
  * Pure `renderSkillRowHtml` 함수만 test (Blockly 의존 0).
  *
- * roll20-sheet-builder hardcoding 0 — 모든 fixture 는 generic Roll20 idiom.
+ * legacy-sheet-corpus hardcoding 0 — 모든 fixture 는 generic Roll20 idiom.
  */
 
 import {

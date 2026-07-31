@@ -2,7 +2,7 @@
 
 Date: 2026-05-19
 
-This is the execution plan for making the editor honestly compatible with official Roll20 sheets, user custom sheets, and the fixture-C commission sheets. It is written so Codex, Claude, or another agent can continue without guessing the user's intent.
+This is the execution plan for making the editor honestly compatible with official Roll20 sheets, user custom sheets, and the fixture-C source-specific sheets. It is written so Codex, Claude, or another agent can continue without guessing the user's intent.
 
 ## Core Goal
 
@@ -114,7 +114,7 @@ Tasks:
 Exit criteria:
 
 - Computed-style origin/leak report exists.
-- Screenshot diff report exists for at least one official fixture and fixture-C 1부.
+- Screenshot diff report exists for at least one reference fixture and fixtureC.
 
 ### T5. Default View and Sheet Worker Simulation
 
@@ -270,11 +270,11 @@ Result:
 
 Use this order to avoid session overload:
 
-1. fixture-C 1부 HTML/CSS/translation.
+1. fixtureC HTML/CSS/translation.
 2. `Call_of_Cthulhu_7th_Ed` official.
 3. `DnD_5e` official.
 4. `13th Age by Roll20` official.
 5. Top 10 largest user custom sheets from `D:\훙냥냥\마렌상\티알\[중요]커스텀시트`.
 6. Then expand to the full corpus.
 
-This order covers translation-heavy custom sheets, CoC default-era behavior, roll expression-heavy official sheets, and smaller fast smoke tests.
+This order covers translation-heavy custom sheets, CoC default-era behavior, roll expression-heavy reference sheets, and smaller fast smoke tests.

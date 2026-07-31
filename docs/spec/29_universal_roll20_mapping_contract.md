@@ -2,7 +2,7 @@
 
 Date: 2026-05-19
 
-This is the contract for the editor. The goal is not "make fixture-C look okay." fixture-C is only one high-pressure fixture. The product must import, represent, edit, preview, and export arbitrary Roll20 custom sheets and official sheet patterns without silently losing semantics.
+This is the contract for the editor. The goal is not "make fixture-C look okay." fixture-C is only one high-pressure fixture. The product must import, represent, edit, preview, and export arbitrary Roll20 custom sheets and reference sheet patterns without silently losing semantics.
 
 ## Product Requirement
 
@@ -26,7 +26,7 @@ An import/export pass is not "matched enough." It is one of these:
 | L3 | Byte-identical or documented normalized diff: source and emitted output match after only explicitly allowed normalization. | "Roundtrip verified." |
 | L4 | Visual parity: local preview matches Roll20 sandbox screenshot within accepted diff bounds. | "Roll20 visual verified." |
 
-The project may only say "100%" for the exact level and corpus that passed. For example: "fixture-C 1부 L1 passed, L3 failed on expression parsing" is acceptable. "Import 100%" without a report is forbidden.
+The project may only say "100%" for the exact level and corpus that passed. For example: "fixtureC L1 passed, L3 failed on expression parsing" is acceptable. "Import 100%" without a report is forbidden.
 
 ## Source to Block Mapping
 
@@ -80,7 +80,7 @@ Script MIME boundary:
   `speculationrules`, and `text/template` stay as raw HTML at their authored
   position. They are not mislabeled as executable JavaScript blocks.
 - This distinction is generic and MIME-based; it is not tied to a particular
-  sheet or official sheet family.
+  sheet or reference sheet family.
 
 Preview execution boundary:
 

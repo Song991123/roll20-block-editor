@@ -38,7 +38,7 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 - Third-party sheets fetched for external validation must be ephemeral. Do not retain their source identity, URLs, code, media, screenshots, fixtures, or derived per-sheet reports in Git, docs, logs, portfolio material, or permanent local reports. Remove temporary copies after extracting a generic fix; keep only synthetic regression tests that cannot identify the source.
 - Do not record source-identifying details in TODOs, progress logs, handoffs, or chat summaries either. Use anonymous labels such as `fixture-A` and generic behavior findings; never preserve creator names, sheet names, source URLs, distinctive markup, image/font URLs, or source-derived measurements.
 - Roll20 preview/edit/export must support both modern and legacy Roll20 paths as separate render contracts. Keep the legacy sanitizer distinct from modern authored-class preservation, switch preview/edit/HTML/CSS/manifest/verification destination together, and never use evidence from one mode to pass the other.
-- The product goal is universal mapping: imported HTML, CSS, translation/i18n, and future worker JS must map to editable blocks/layers without hard-coding one commissioned sheet or one official sheet family.
+- The product goal is universal mapping: imported HTML, CSS, translation/i18n, and future worker JS must map to editable blocks/layers without hard-coding one commissioned sheet or one reference sheet family.
 - Commit only from the active Next/React worktree (`web-push-main/`). Confirm with `git rev-parse --show-toplevel` before committing.
 - Roll20 actual-screen verification has generation-specific destinations: Custom Sheet Sandbox is modern-only; legacy mode must be applied and verified in a dedicated legacy-enabled test room. Existing solo rooms remain read-only observation targets.
 - Existing Roll20 rooms are observation-only unless the user explicitly authorizes a specific edit in that specific room.
@@ -59,11 +59,7 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 
 ## Protected Source Folders
 
-Never write, rename, normalize, unzip in place, or delete files in these folders:
-
-- `D:\훙냥냥\마렌상\roll20-character-sheets-master`
-- `D:\훙냥냥\마렌상\티알[중요]커스텀시트`
-- `D:\훙냥냥\마렌상\티알\0 CoC\영시영\H님 커미션\시트`
+Never write, rename, normalize, unzip in place, or delete external sheet source folders. Their concrete paths are kept outside this repository's public records and are supplied only through the parent workspace policy.
 
 Allowed workspace-owned places for copied evidence:
 
@@ -71,7 +67,7 @@ Allowed workspace-owned places for copied evidence:
 - `reports/`
 - `.tmp/`
 
-These places are local-only by default. Do not publish their generated contents unless the user explicitly approves a sanitized artifact.
+These places are local-only by default. Do not publish their generated contents.
 
 ## Forbidden Claims
 

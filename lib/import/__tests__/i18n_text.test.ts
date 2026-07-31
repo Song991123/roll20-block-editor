@@ -4,7 +4,7 @@
  * 회귀 배경:
  *   - matchI18n 의 data-i18n DEFAULT 추출이 firstTextContent() 를 사용 →
  *     <td data-i18n="@x"><b>Bold</b></td> 같은 케이스에서 DEFAULT 빈 문자열.
- *   - roll20-sheet-builder 1부 측정에서 DEFAULT empty 17 건 → 1 건으로 떨어져야 함.
+ *   - legacy-sheet-corpus legacy corpus 측정에서 DEFAULT empty 17 건 → 1 건으로 떨어져야 함.
  *
  * Fix: matchI18n DEFAULT 추출 firstTextContent → allTextContent(...).trim()
  *

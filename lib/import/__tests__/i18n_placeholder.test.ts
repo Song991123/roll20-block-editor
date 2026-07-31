@@ -2,7 +2,7 @@
  * r20_i18n_placeholder — name / class / type 보존 회귀 테스트.
  *
  * 배경:
- *   직전 검증 세션에서 roll20-sheet-builder 1부 import 시 data-i18n-placeholder attribute 가진
+ *   직전 검증 세션에서 legacy-sheet-corpus legacy corpus import 시 data-i18n-placeholder attribute 가진
  *   input 61 블록 모두 name + class 속성 손실 → Roll20 sheet attr 식별자
  *   (attr_minionhp, attr_current_mental_condition 등) 가 export 후 사라져 sandbox
  *   업로드 시 sheet 동작 깨질 위험.
@@ -31,7 +31,7 @@ function getField(xml: string, fieldName: string): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// Spec 케이스: roll20-sheet-builder 1부 sheet 의 표준 minion HP 패턴.
+// Spec 케이스: legacy-sheet-corpus legacy corpus sheet 의 표준 minion HP 패턴.
 // ---------------------------------------------------------------------------
 
 function testMatchCapturesAllAttrs(): void {
@@ -111,7 +111,7 @@ function testMatchTextInputPlaceholderOnly(): void {
 }
 
 function testMultipleInputsBatch(): void {
-  // roll20-sheet-builder 1부 패턴: 여러 minion 슬롯이 같은 패턴으로 반복.
+  // legacy-sheet-corpus legacy corpus 패턴: 여러 minion 슬롯이 같은 패턴으로 반복.
   const html = `
     <input type="number" name="attr_minionhp" class="sheet-attr_minionhp" data-i18n-placeholder="@minion_hp" value="10">
     <input type="number" name="attr_minionhpmax" class="sheet-attr_minionhpmax" data-i18n-placeholder="@minion_hp_max" value="10">

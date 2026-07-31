@@ -350,13 +350,13 @@ function renderMarkdown(report) {
 function fixtureKeyForId(fixtureId) {
   if (fixtureId === 'fixtureA') return 'fixtureA';
   if (fixtureId === 'fixtureB') return 'lesOublies';
-  if (fixtureId === 'fixtureC-commission-1bu') return 'fixtureC';
-  return fixtureId.replace(/^official-roll20-/, '').replace(/-([a-z])/g, (_, char) => char.toUpperCase());
+  if (fixtureId === 'fixtureC') return 'fixtureC';
+  return fixtureId.replace(/^reference-corpus-/, '').replace(/-([a-z])/g, (_, char) => char.toUpperCase());
 }
 
 function scopeHintFor(fixtureId) {
   if (fixtureId === 'fixtureA') return 'fixtureA';
-  if (fixtureId === 'fixtureC-commission-1bu') return 'fixtureC';
+  if (fixtureId === 'fixtureC') return 'fixtureC';
   if (fixtureId === 'fixtureB') return 'les';
   return fixtureId;
 }
@@ -423,7 +423,7 @@ function selfTest() {
     sourceIntrinsic: {
       fixtures: [
         {
-          fixtureId: 'fixtureC-commission-1bu',
+          fixtureId: 'fixtureC',
           priority: 'P0',
           decision: 'SANITIZE_INTRINSIC_CROP_MODEL_REQUIRED',
           promotionBlocker: true,
@@ -464,7 +464,7 @@ function selfTest() {
     },
     assetPlan: {
       fixtures: [
-        { fixtureId: 'fixtureC-commission-1bu', decision: 'SOURCE_ASSET_LOST_RELINK_REQUIRED', rendererPolicy: 'DO_NOT_PROMOTE_CSS' },
+        { fixtureId: 'fixtureC', decision: 'SOURCE_ASSET_LOST_RELINK_REQUIRED', rendererPolicy: 'DO_NOT_PROMOTE_CSS' },
       ],
     },
   });

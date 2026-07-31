@@ -12,7 +12,7 @@
  * Usage:
  *   node scripts/live_shadow_cascade_smoke.mjs \
  *     --out-dir ./out --fixtures test-fixtures/visual \
- *     --report-dir reports/live-shadow-cascade [--only fixtureC-commission-1bu]
+ *     --report-dir reports/live-shadow-cascade [--only fixtureC]
  */
 
 import http from 'node:http';

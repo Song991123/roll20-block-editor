@@ -92,7 +92,7 @@ All four sessions may work concurrently only because their file ownership and ph
 ### Codex 1: Lead/Integrator
 
 ```text
-cd /d "D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\web-push-main"
+cd /d "D:\훙냥냥\마렌상\legacy-sheet-corpus 시트 고치기\web-push-main"
 git fetch origin
 git switch -c codex/ops-render-integration-20260715 origin/codex/roll20-mapping-fidelity-smoke
 
@@ -102,7 +102,7 @@ Use $roll20-render-ops. You are the lead integrator. Read AGENTS.md, docs/operat
 ### Codex 2: Render Evidence
 
 ```text
-cd /d "D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\web-push-main"
+cd /d "D:\훙냥냥\마렌상\legacy-sheet-corpus 시트 고치기\web-push-main"
 git fetch origin
 git switch -c codex/render-source-intrinsic-20260715 origin/codex/roll20-mapping-fidelity-smoke
 
@@ -112,7 +112,7 @@ Use $roll20-render-ops. Focus only on Roll20 render parity evidence. Do not edit
 ### Codex 3: Edit UX and Performance
 
 ```text
-cd /d "D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\web-push-main"
+cd /d "D:\훙냥냥\마렌상\legacy-sheet-corpus 시트 고치기\web-push-main"
 git fetch origin
 git switch -c codex/edit-flow-ux-perf-20260715 origin/codex/roll20-mapping-fidelity-smoke
 
@@ -122,7 +122,7 @@ Use $roll20-render-ops. Work on edit mode only. The edit screen must be the same
 ### Claude 1: Research and Corpus
 
 ```text
-Read-only research task. Repository: D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\web-push-main
+Read-only research task. Repository: D:\훙냥냥\마렌상\legacy-sheet-corpus 시트 고치기\web-push-main
 
 Read AGENTS.md and docs/research/40_roll20_render_reference_inventory.md first. Research official Roll20 custom sheet docs, the Roll20 character sheets GitHub repository, and relevant forum/GitHub discussions about legacy sanitizer, rolltemplates, sheet workers, translations, repeating sections, and sheet.json. Do not copy real sheet files, screenshots, or fixtures into the repo. Produce a Markdown report with links, exact evidence, and implementation implications. Mark forum findings as hypotheses unless verified in Roll20 Sandbox.
 ```
@@ -130,7 +130,7 @@ Read AGENTS.md and docs/research/40_roll20_render_reference_inventory.md first. 
 ### Claude 2: Security and Optimization Audit
 
 ```text
-Read-only audit first. Repository: D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\web-push-main
+Read-only audit first. Repository: D:\훙냥냥\마렌상\legacy-sheet-corpus 시트 고치기\web-push-main
 
 Read AGENTS.md, docs/operations/38_multi_agent_render_plan.md, package.json, next.config.*, scripts/ci_verify.mjs, .github/workflows, import/export code paths, preview/edit rendering paths, and asset relink code. Produce a security and optimization risk report. Focus on untrusted imported HTML/CSS/translation/assets/future worker JS, script stripping, CSS isolation, asset URL policy, CI guards, bundle size, worker offload, drag latency, and public repo leakage. Do not change code until the lead approves the report.
 ```

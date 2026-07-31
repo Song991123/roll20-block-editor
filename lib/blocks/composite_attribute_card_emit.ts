@@ -7,7 +7,7 @@
  * composite_matcher.ts (import packing 의 round-trip 검증) 양쪽이 본 모듈만
  * import 한다. 단위 테스트도 Blockly 미사용으로 본 모듈만 호출.
  *
- * 시스템 specific 토큰 0. roll20-sheet-builder hardcoding 0.
+ * 시스템 specific 토큰 0. legacy-sheet-corpus hardcoding 0.
  */
 
 export interface AttributeCardFields {

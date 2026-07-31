@@ -123,7 +123,7 @@ function positionalOnly(values, flagsWithValue) {
 function fixtureForTemplateClass(className) {
   if (/\bsheet-rolltemplate-aw\b/.test(className)) return 'fixtureA';
   if (/\bsheet-rolltemplate-initiative-roll\b/.test(className)) return 'fixtureB';
-  if (/\bsheet-rolltemplate-coc\b/.test(className)) return 'fixtureC-commission-1bu';
+  if (/\bsheet-rolltemplate-coc\b/.test(className)) return 'fixtureC';
   return '';
 }
 

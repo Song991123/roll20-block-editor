@@ -20,7 +20,7 @@ The Windows Codex owns merge order, shared TODO/progress updates, final combined
 Paste this into the Codex task that owns the Windows workspace:
 
 ```text
-Repository: D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\web-push-main
+Repository: D:\훙냥냥\마렌상\legacy-sheet-corpus 시트 고치기\web-push-main
 Branch: codex/roll20-mapping-fidelity-smoke
 
 Use $roll20-render-ops. You are the lead integrator and the only agent allowed to merge or push the integration branch.
@@ -71,10 +71,10 @@ Do not hard-code any private fixture or sheet family. Use synthetic fixtures in 
 Create a separate worktree so Claude Code never shares the Windows Codex files:
 
 ```powershell
-Set-Location -LiteralPath 'D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\web-push-main'
+Set-Location -LiteralPath 'D:\훙냥냥\마렌상\legacy-sheet-corpus 시트 고치기\web-push-main'
 git fetch origin
 git worktree add '..\web-claude-mapping' -b claude/universal-mapping-legacy-20260715 origin/codex/roll20-mapping-fidelity-smoke
-Set-Location -LiteralPath 'D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\web-claude-mapping'
+Set-Location -LiteralPath 'D:\훙냥냥\마렌상\legacy-sheet-corpus 시트 고치기\web-claude-mapping'
 gh auth status
 corepack pnpm install --frozen-lockfile
 claude
@@ -83,7 +83,7 @@ claude
 ## Windows Claude Code 1 Prompt
 
 ```text
-Repository: D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\web-claude-mapping
+Repository: D:\훙냥냥\마렌상\legacy-sheet-corpus 시트 고치기\web-claude-mapping
 Branch: claude/universal-mapping-legacy-20260715
 
 Work autonomously until this track's acceptance checks pass, then commit and push your branch. Do not stop after an audit or proposal when an in-scope implementation and test can be completed.
@@ -92,7 +92,7 @@ Read AGENTS.md, docs/operations/33_working_rules_and_requirements.md, docs/qa/31
 
 Own only the universal user-import-to-export mapping path and the real separation of modern mode, legacy CSS sanitize, selector auto-prefix, and Roll20 preupload sanitize. Trace HTML, CSS, translation/i18n, default attrs, assets, rolltemplates, script[type="text/worker"], ordinary script tags, raw unsupported nodes, block IDs, and emitted HTML/CSS. Remove fixture-specific behavior from product code if found. Unsupported source must remain losslessly represented as a raw/fallback block or explicit diagnostic; worker and script source must remain inert and invisible in sheet preview while preserved for a future worker workspace/export policy.
 
-Build synthetic committed tests for roundtrip preservation and use private/official sheets only through ignored local fixtures. Never commit real sheet source, names, screenshots, asset URLs, generated fixtures, or reports. Do not claim 100% or all-sheet support; report exact tested corpus and token/attribute preservation counts.
+Build synthetic committed tests for roundtrip preservation and use private/reference sheets only through ignored local fixtures. Never commit real sheet source, names, screenshots, asset URLs, generated fixtures, or reports. Do not claim 100% or all-sheet support; report exact tested corpus and token/attribute preservation counts.
 
 Acceptance checks: relevant importer/emitter tests, structural/mapping fidelity checks, modern and legacy mode tests proving auto-prefix and legacy sanitize are separate, ci:verify, lint, build, git diff --check, and server hygiene. Fix in-scope failures. Commit with a focused message, push claude/universal-mapping-legacy-20260715, and return the commit hash, full changed-file list, exact commands/results, measured preservation results, remaining VERIFY items, and cherry-pick risks.
 ```
