@@ -1,3 +1,20 @@
+# 2026-08-01 - Local baseline regenerated after cleanup
+
+## 2026-08-01 - Local render and mapping gates
+
+- Rebuilt the product and regenerated anonymous ignored evidence only.
+- Synthetic preview/edit visual smoke passed exact for four structures in both
+  modern and legacy modes (`0%` mismatch). Edit-flow, export-dialog,
+  imported-edit-sync strict, and fresh-sheet smoke also passed.
+- Import/mapping and runtime contracts passed: HTML/CSS/i18n `45/45`,
+  translation comments `7/7`, preserved attributes `16/16`, high-priority
+  mapping `27/27`, composite matching `25/25`, legacy sanitize `16/16`,
+  Sandbox sanitize `8/8`, worker parser `32/32`, and rolltemplate render.
+- The dedicated Sandbox participant gate was fresh and exactly one member.
+  The supported browser file-select route timed out before transmission, so
+  no external payload or chat/save action was made. `status:roll20-actual`
+  remains `OPEN` because the actual report directory is intentionally empty.
+
 # 2026-08-01 - Complete local-only cleanup
 
 ## 2026-08-01 - Explicit generated-data purge

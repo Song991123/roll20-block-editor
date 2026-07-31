@@ -1,5 +1,30 @@
 # 41. Product Reset and Short-Term Goals
 
+## Current Evidence Override - 2026-08-01
+
+This section supersedes the older evidence snapshot below. The local-only
+reports and payloads referenced by earlier entries were explicitly deleted on
+2026-08-01 and are not current evidence.
+
+| Area | Current verified state | Claim boundary |
+| --- | --- | --- |
+| Local shared render | The implementation and local smoke scripts remain in the repository, but their generated screenshots/reports were purged. | Regenerate anonymous fixtures and rerun the local gates before using a numeric result. |
+| Modern Roll20 runtime | The latest supported visible HTML chooser retry stopped before transmission with `Not allowed`. | No current payload was uploaded in this evidence window; modern parity is unproven. |
+| Legacy Roll20 runtime | A fresh legacy-room upload was not performed in this evidence window. | Do not reuse the historical legacy snapshot as current parity evidence. |
+| Universal mapping | Generic mapping code and tests remain tracked. | This does not prove every custom sheet or every structure. |
+| Worker/rolltemplate | Local worker and rolltemplate code/tests remain tracked. | Live worker mutation and external chat parity still require fresh evidence. |
+| Figma-like editing | Layer-role and shared-surface code remains tracked. | Regenerate edit-flow and paired preview/edit evidence before claiming current pass. |
+
+Fresh local regeneration on 2026-08-01 now passes the synthetic paired
+preview/edit visual smoke in both modes, plus edit-flow, imported-edit-sync,
+fresh-sheet, and export-dialog smoke. This is still local evidence only; the
+actual Roll20 report root is empty after the explicit cleanup and the latest
+supported Sandbox file-selection attempt timed out before transmission.
+
+Next action: regenerate only anonymous ignored fixtures/reports, then retry the
+supported Sandbox route or record the upload boundary without using hidden
+endpoint shortcuts as parity evidence.
+
 Date: 2026-07-18
 Status: ACTIVE CONTROL DOCUMENT
 

@@ -1,3 +1,20 @@
+# 2026-08-01 Local baseline regenerated after cleanup
+
+- `DONE LOCAL`: rebuilt the product and regenerated only anonymous ignored
+  fixtures/reports. Preview/edit visual smoke is exact for 4 synthetic cases
+  across modern and legacy modes (`0%` mismatch); edit-flow, export-dialog,
+  imported-edit-sync strict, and fresh-sheet smoke all pass.
+- `DONE LOCAL`: generic import/mapping and runtime contract suites pass:
+  HTML/CSS/i18n `45/45`, translation comments `7/7`, preserved attributes
+  `16/16`, high-priority mapping `27/27`, composite matching `25/25`, legacy
+  sanitize `16/16`, Sandbox sanitize `8/8`, worker parser `32/32`, and
+  rolltemplate render pass.
+- `VERIFY EXTERNAL`: the dedicated Sandbox still showed exactly one visible
+  member and the three file controls, but the supported browser file-select
+  route timed out before transmission. No CSS/translation upload, save, room
+  setting, or chat action was performed; actual-screen evidence remains
+  missing and `status:roll20-actual` stays `OPEN`.
+
 # 2026-08-01 Complete local-only cleanup
 
 - `DONE LOCAL`: removed the explicitly approved ignored archive/source-index
