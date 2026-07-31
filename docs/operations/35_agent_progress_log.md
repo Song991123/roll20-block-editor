@@ -10483,3 +10483,16 @@ same-hash modern/legacy comparison.
   missing tab or a successful payload application.
 - `SAFETY`: no chooser, upload, room setting, chat, or ordinary-room operation
   was attempted during this read-only recheck.
+
+## 2026-07-31 - Local runtime and placement smoke refresh
+
+- `VERIFIED LOCAL`: worker state smoke passed with the worker queue contract
+  intact and no browser/page errors.
+- `VERIFIED LOCAL`: Shadow drag moved an imported visual node from static flow
+  into managed absolute placement, emitted the containing CSS rule, and kept
+  console/page errors at zero.
+- `VERIFIED LOCAL`: synthetic modern/legacy Sandbox preview smoke passed for
+  both anonymous fixtures with `100%` import matching, zero visible runtime
+  nodes, and zero console/page errors.
+- `NOTE`: a first parallel launch saw a transient `4198` address-in-use error;
+  no listener remained on inspection and all three checks passed sequentially.

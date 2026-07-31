@@ -49,6 +49,20 @@
 - `SAFETY`: no file chooser, upload, room setting, chat, or ordinary-room
   operation was attempted during this read-only recheck.
 
+# 2026-07-31 Local runtime and placement smoke refresh
+
+- `VERIFIED LOCAL`: worker state smoke passes with the worker queue contract
+  intact and no browser/page errors.
+- `VERIFIED LOCAL`: Shadow drag moves an imported visual node from static flow
+  into managed absolute placement, emits the containing CSS rule, and keeps
+  console/page errors at zero.
+- `VERIFIED LOCAL`: synthetic modern/legacy Sandbox preview smoke passes for
+  both anonymous fixtures with `100%` import matching, zero visible runtime
+  nodes, and zero console/page errors.
+- `NOTE`: the first parallel launch saw a transient `4198` address-in-use
+  error; no listener remained on inspection and all three checks passed when
+  rerun sequentially.
+
 # 2026-07-31 Local imported edit-sync recheck
 
 - VERIFIED LOCAL: after rebuilding the deleted static `out` directory, the
