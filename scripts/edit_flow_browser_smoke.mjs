@@ -198,6 +198,7 @@ async function main() {
       const frameNode = document.querySelector('.sheet-frame');
       const rowA = document.querySelector('.sheet-row-a');
       const rowB = document.querySelector('.sheet-row-b');
+      const rowBInput = document.querySelector('.sheet-row-b input');
       const table = document.querySelector('.sheet-table');
       const tableBody = document.querySelector('.sheet-table tbody');
       const tableRow = document.querySelector('.sheet-table-row');
@@ -210,6 +211,7 @@ async function main() {
         frameId: frameNode?.getAttribute('data-r20-block-id') ?? null,
         rowAId: rowA?.getAttribute('data-r20-block-id') ?? null,
         rowBId: rowB?.getAttribute('data-r20-block-id') ?? null,
+        rowBInputId: rowBInput?.getAttribute('data-r20-block-id') ?? null,
         tableId: table?.getAttribute('data-r20-block-id') ?? null,
         tableBodyId: tableBody?.getAttribute('data-r20-block-id') ?? null,
         tableRowId: tableRow?.getAttribute('data-r20-block-id') ?? null,
@@ -221,7 +223,7 @@ async function main() {
       };
     });
     assert(
-      ids.frameId && ids.rowAId && ids.rowBId && ids.tableId && ids.tableBodyId
+      ids.frameId && ids.rowAId && ids.rowBId && ids.rowBInputId && ids.tableId && ids.tableBodyId
         && ids.tableRowId && ids.outsideId && ids.groupOneId && ids.groupTwoId,
       `synthetic structural IDs were not emitted: ${JSON.stringify(ids)}`,
     );
@@ -1382,6 +1384,37 @@ async function main() {
     assert(result.tests.sectionStylePreset?.paddingTop === '16px', `section preset padding did not reach the shared iframe: ${sectionPresetDebug}`);
     assert(!/background|border|padding/i.test(result.tests.sectionStylePreset?.inlineStyle ?? ''), 'section preset leaked presentation into inline HTML');
 
+    await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.rowBInputId}"]`,
+    ).click();
+    const controlSoftPreset = page.locator('[data-testid="design-preset-control-soft"]');
+    await controlSoftPreset.waitFor({ state: 'visible', timeout: 10000 });
+    await controlSoftPreset.click();
+    await page.waitForTimeout(300);
+    result.tests.controlStylePreset = await frame.evaluate((blockId) => {
+      const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+      if (!(element instanceof HTMLElement)) return null;
+      const style = getComputedStyle(element);
+      return {
+        inlineStyle: element.getAttribute('style') ?? '',
+        backgroundColor: style.backgroundColor,
+        color: style.color,
+        borderColor: style.borderColor,
+        borderRadius: style.borderRadius,
+        paddingTop: style.paddingTop,
+      };
+    }, ids.rowBInputId);
+    const controlPresetDebug = JSON.stringify(result.tests.controlStylePreset);
+    assert(result.tests.controlStylePreset?.backgroundColor === 'rgb(255, 242, 246)', `input preset fill did not render: ${controlPresetDebug}`);
+    assert(result.tests.controlStylePreset?.color === 'rgb(93, 47, 64)', `input preset text did not render: ${controlPresetDebug}`);
+    assert(result.tests.controlStylePreset?.borderColor === 'rgb(231, 175, 195)', `input preset border did not render: ${controlPresetDebug}`);
+    assert(result.tests.controlStylePreset?.borderRadius === '6px', `input preset radius did not render: ${controlPresetDebug}`);
+    assert(result.tests.controlStylePreset?.paddingTop === '7px', `input preset padding did not render: ${controlPresetDebug}`);
+    assert(!result.tests.controlStylePreset?.inlineStyle, 'input preset leaked presentation into inline HTML');
+    await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.rowBId}"]`,
+    ).click();
+
     const rollButtonCard = page.locator('[data-testid="widget-card-roll-button"]');
     assert((await rollButtonCard.count()) === 1, 'friendly Roll button preset is missing');
     await page.click('[data-testid="edit-placement-flow"]');
@@ -1587,6 +1620,26 @@ async function main() {
     }, result.tests.rolltemplatePreviewValues.rowBlockId);
     assert(result.tests.rolltemplateLayerSelection.exists, 'selected rolltemplate child is missing from the layer panel');
     assert(result.tests.rolltemplateLayerSelection.selected === '1', 'layer panel did not follow rolltemplate card selection');
+    const resultRosePreset = page.locator('[data-testid="design-preset-result-rose"]');
+    await resultRosePreset.waitFor({ state: 'visible', timeout: 10000 });
+    await resultRosePreset.click();
+    await page.waitForTimeout(300);
+    result.tests.rolltemplateResultPreset = await templateRow.evaluate((row) => {
+      const style = getComputedStyle(row);
+      return {
+        background: style.backgroundColor,
+        color: style.color,
+        borderBottomColor: style.borderBottomColor,
+        paddingTop: style.paddingTop,
+        inlineStyle: row.getAttribute('style') ?? '',
+      };
+    });
+    const resultPresetDebug = JSON.stringify(result.tests.rolltemplateResultPreset);
+    assert(result.tests.rolltemplateResultPreset.background === 'rgb(255, 242, 246)', `result-row preset fill did not render: ${resultPresetDebug}`);
+    assert(result.tests.rolltemplateResultPreset.color === 'rgb(93, 47, 64)', `result-row preset text did not render: ${resultPresetDebug}`);
+    assert(result.tests.rolltemplateResultPreset.borderBottomColor === 'rgb(226, 160, 184)', `result-row preset border did not render: ${resultPresetDebug}`);
+    assert(result.tests.rolltemplateResultPreset.paddingTop === '8px', `result-row preset padding did not render: ${resultPresetDebug}`);
+    assert(!result.tests.rolltemplateResultPreset.inlineStyle, 'result-row preset leaked presentation into inline HTML');
     const templateFill = page.locator('[data-testid="design-style-background-text"]');
     await templateFill.fill('#fde7ef');
     await page.waitForFunction((blockId) => {
@@ -1610,6 +1663,7 @@ async function main() {
         emittedCssHasColor: emit.css.includes('background-color: #fde7ef'),
         emittedCssHasTemplateScope: emit.css.includes('.sheet-rolltemplate-default .sheet-r20-node-'),
         managedColorRules: emit.css.match(/[^{}]*sheet-r20-node-[^{}]*\{[^}]*background-color:\s*#fde7ef[^}]*\}/g) ?? [],
+        designClass: [...(row?.classList ?? [])].find((token) => token.startsWith('sheet-r20-node-')) ?? null,
         layerTrace,
         emittedHtmlHasInlineColor: /style="[^"]*background-color:\s*#fde7ef/i.test(emit.html),
       };
@@ -1622,6 +1676,40 @@ async function main() {
       `rolltemplate visual style was not scoped for Roll20 chat: ${JSON.stringify(result.tests.rolltemplateStyleSync)}`,
     );
     assert(!result.tests.rolltemplateStyleSync.emittedHtmlHasInlineColor, 'rolltemplate visual style was emitted inline');
+
+    await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${result.tests.rolltemplatePreviewValues.rootBlockId}"]`,
+    ).click();
+    const templateNameInput = page.locator('[data-testid="edit-inspector-field-name"]');
+    await templateNameInput.waitFor({ state: 'visible', timeout: 10000 });
+    await templateNameInput.fill('renamed');
+    await page.waitForFunction((designClass) => {
+      const emit = window.__perfHook.getEmitContent();
+      return emit.html.includes('sheet-rolltemplate-renamed')
+        && emit.css.includes(`.sheet-rolltemplate-renamed .${designClass}`)
+        && !emit.css.includes(`.sheet-rolltemplate-default .${designClass}`);
+    }, result.tests.rolltemplateStyleSync.designClass, { timeout: 10000 });
+    await templateNameInput.fill('default');
+    await page.waitForFunction((designClass) => {
+      const emit = window.__perfHook.getEmitContent();
+      return emit.html.includes('sheet-rolltemplate-default')
+        && emit.css.includes(`.sheet-rolltemplate-default .${designClass}`)
+        && !emit.css.includes(`.sheet-rolltemplate-renamed .${designClass}`);
+    }, result.tests.rolltemplateStyleSync.designClass, { timeout: 10000 });
+    result.tests.rolltemplateNameStyleMigration = await page.evaluate((designClass) => {
+      const emit = window.__perfHook.getEmitContent();
+      return {
+        name: document.querySelector('[data-testid="rolltemplate-picker"]')?.value ?? null,
+        restoredScope: emit.css.includes(`.sheet-rolltemplate-default .${designClass}`),
+        staleScope: emit.css.includes(`.sheet-rolltemplate-renamed .${designClass}`),
+      };
+    }, result.tests.rolltemplateStyleSync.designClass);
+    assert(result.tests.rolltemplateNameStyleMigration.name === result.tests.rolltemplatePreviewValues.rootBlockId, 'template picker lost the renamed template root');
+    assert(result.tests.rolltemplateNameStyleMigration.restoredScope, 'template style scope did not return to default');
+    assert(!result.tests.rolltemplateNameStyleMigration.staleScope, 'stale renamed template style scope remained');
+    await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${result.tests.rolltemplatePreviewValues.rowBlockId}"]`,
+    ).click();
 
     result.tests.rolltemplateDrop = await page.evaluate(() => {
       const target = document.querySelector('[data-testid="rolltemplate-edit-card"] .sheet-template-row');

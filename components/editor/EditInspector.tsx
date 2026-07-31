@@ -16,6 +16,7 @@ import {
 } from '@/lib/editor/designPosition';
 import { designStyleFieldForBlockType } from '@/lib/editor/designClassField';
 import { getLayerRole } from '@/lib/editor/layerRoles';
+import { findOwningRolltemplateId } from '@/lib/editor/rolltemplateScope';
 import { flushEmitPipeline } from '@/lib/preview/useEmitPipeline';
 import { useWorkspaceStore, WORKSPACE_KEYS, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { fieldDisplayLabel } from './fieldLabels';
@@ -73,7 +74,9 @@ export default function EditInspector() {
     if (!selectedId || !workspace) return;
     const adapter = getBlocklyAdapter();
     if (!adapter.setBlockField(workspace, selectedId, name, value)) return;
-    useWorkspaceStore.getState().bumpStructure(workspace, adapter.countBlocks(workspace));
+    const store = useWorkspaceStore.getState();
+    store.bumpStructure(workspace, adapter.countBlocks(workspace));
+    queueMicrotask(() => flushEmitPipeline());
   }, [selectedId, workspace]);
 
   const role = snapshot ? getLayerRole(snapshot.type) : null;
@@ -90,6 +93,15 @@ export default function EditInspector() {
   // structureVersion invalidates the external Blockly and CSS models.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId, workspace, structureVersion, visualStyleEnabled]);
+  const visualStyleScope = useMemo(() => {
+    if (!selectedId || workspace !== 'html') return 'sheet' as const;
+    const nodes = getBlocklyAdapter().listAllBlocks('html');
+    return findOwningRolltemplateId(nodes, selectedId)
+      ? 'rolltemplate' as const
+      : 'sheet' as const;
+  // structureVersion invalidates template ownership in the external Blockly model.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, workspace, structureVersion]);
 
   const commitVisualStyle = useCallback((declarations: ManagedDesignDeclarations) => {
     if (!selectedId || workspace !== 'html') return;
@@ -193,6 +205,7 @@ export default function EditInspector() {
             values={visualStyle}
             role={resolvedRole}
             blockType={snapshot.type}
+            scope={visualStyleScope}
             onPatch={commitVisualStyle}
           />
         )}

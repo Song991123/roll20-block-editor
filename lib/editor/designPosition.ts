@@ -6,7 +6,11 @@ import {
   designPreservedAttrsFieldForBlockType,
   designStyleFieldForBlockType,
 } from './designClassField';
-import { findOwningRolltemplateId, rolltemplateSelectorForName } from './rolltemplateScope';
+import {
+  findOwningRolltemplateId,
+  ROLLTEMPLATE_ROOT_TYPE,
+  rolltemplateSelectorForName,
+} from './rolltemplateScope';
 
 export const DESIGN_CSS_MARKER = 'r20-design-css:managed';
 
@@ -42,6 +46,11 @@ export type DesignStyleResult = {
   cssBlockCreated: boolean;
   htmlChanged: boolean;
   cssChanged: boolean;
+};
+
+export type RolltemplateStyleScopeMigrationResult = {
+  changed: boolean;
+  migratedRules: number;
 };
 
 type DesignPositionAdapter = Pick<
@@ -247,6 +256,42 @@ export function commitManagedDesignStyle(
     htmlChanged,
     cssChanged,
   };
+}
+
+export function migrateManagedRolltemplateStyleScope(
+  adapter: DesignPositionAdapter,
+  rootId: string,
+  previousName: string | null | undefined,
+  nextName: string | null | undefined,
+): RolltemplateStyleScopeMigrationResult {
+  const root = adapter.getBlock('html', rootId);
+  if (!root || root.type !== ROLLTEMPLATE_ROOT_TYPE) {
+    return { changed: false, migratedRules: 0 };
+  }
+  const previousScope = rolltemplateSelectorForName(previousName);
+  const nextScope = rolltemplateSelectorForName(nextName);
+  if (previousScope === nextScope) return { changed: false, migratedRules: 0 };
+
+  const managedCss = findDesignCssBlock(adapter);
+  if (!managedCss) return { changed: false, migratedRules: 0 };
+  const nodes = adapter.listAllBlocks('html');
+  let css = adapter.getBlockField('css', managedCss.id, 'CSS') ?? '';
+  let migratedRules = 0;
+
+  for (const node of nodes) {
+    if (node.id === rootId || findOwningRolltemplateId(nodes, node.id) !== rootId) continue;
+    const className = designClassForBlock(node.id);
+    const previousMatcher = managedRuleMatcher(className, '[^}]*', previousScope);
+    if (!previousMatcher.test(css)) continue;
+    const previous = readExactCssRule(css, className, previousScope);
+    const next = readExactCssRule(css, className, nextScope);
+    css = css.replace(previousMatcher, '').trim();
+    css = upsertCssRule(css, className, { ...previous, ...next }, nextScope);
+    migratedRules += 1;
+  }
+
+  if (migratedRules > 0) adapter.setBlockField('css', managedCss.id, 'CSS', css);
+  return { changed: migratedRules > 0, migratedRules };
 }
 
 function failure(reason: DesignPositionResult['reason']): DesignPositionResult {

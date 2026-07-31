@@ -9,6 +9,7 @@ import {
   presetMatches,
   type VisualStylePreset,
   type VisualStylePresetFamily,
+  type VisualStylePresetScope,
 } from '@/lib/editor/stylePresets';
 import { cn } from '@/lib/utils/cn';
 
@@ -16,6 +17,7 @@ type VisualStyleInspectorProps = {
   values: Record<string, string>;
   role: LayerRole;
   blockType: string;
+  scope: VisualStylePresetScope;
   onPatch: (declarations: ManagedDesignDeclarations) => void;
 };
 
@@ -25,10 +27,11 @@ export default function VisualStyleInspector({
   values,
   role,
   blockType,
+  scope,
   onPatch,
 }: VisualStyleInspectorProps) {
   const layoutMode = resolveLayoutMode(values);
-  const presetGroup = getVisualStylePresetGroup(role, blockType);
+  const presetGroup = getVisualStylePresetGroup(role, blockType, scope);
 
   return (
     <div className="space-y-4" data-testid="visual-style-inspector">
@@ -275,6 +278,21 @@ function PresetPreview({
     return (
       <span className="grid h-9 w-10 place-items-center overflow-hidden" style={style} aria-hidden="true">
         <span className="text-[11px] leading-none">가나</span>
+      </span>
+    );
+  }
+  if (family === 'control') {
+    return (
+      <span className="flex h-8 w-10 items-center overflow-hidden px-1.5 text-[9px]" style={style} aria-hidden="true">
+        12
+      </span>
+    );
+  }
+  if (family === 'result') {
+    return (
+      <span className="flex h-9 w-10 items-center justify-between gap-1 overflow-hidden px-1.5" style={style} aria-hidden="true">
+        <span className="h-1 w-4 rounded-full bg-current opacity-35" />
+        <span className="h-1 w-2 rounded-full bg-current opacity-80" />
       </span>
     );
   }

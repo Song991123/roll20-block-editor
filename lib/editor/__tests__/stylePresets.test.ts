@@ -26,7 +26,26 @@ const text = getVisualStylePresetGroup(getLayerRole('r20_heading'), 'r20_heading
 assert.equal(text?.family, 'text');
 assert.equal(text?.presets.length, 3);
 
-assert.equal(getVisualStylePresetGroup(getLayerRole('r20_text_input'), 'r20_text_input'), null);
+const control = getVisualStylePresetGroup(getLayerRole('r20_text_input'), 'r20_text_input');
+assert.equal(control?.family, 'control');
+assert.equal(control?.title, '입력 칸 모양');
+assert.equal(control?.presets.length, 4);
+assert.equal(control?.presets.find((item) => item.id === 'soft')?.declarations['background-color'], '#fff2f6');
+
+const numberControl = getVisualStylePresetGroup(getLayerRole('r20_number_input'), 'r20_number_input');
+assert.equal(numberControl?.title, '숫자 칸 모양');
+assert.equal(getVisualStylePresetGroup(getLayerRole('r20_checkbox'), 'r20_checkbox'), null);
+assert.equal(getVisualStylePresetGroup(getLayerRole('r20_radio'), 'r20_radio'), null);
+
+const result = getVisualStylePresetGroup(
+  getLayerRole('r20_rolltemplate_row'),
+  'r20_rolltemplate_row',
+  'rolltemplate',
+);
+assert.equal(result?.family, 'result');
+assert.equal(result?.title, '결과 행 모양');
+assert.equal(result?.presets.length, 4);
+assert.equal(result?.presets.find((item) => item.id === 'rose')?.declarations['box-shadow'], 'inset 3px 0 0 #d96b91');
 
 const rose = rollButton?.presets.find((item) => item.id === 'rose');
 assert(rose);

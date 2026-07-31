@@ -11604,3 +11604,20 @@ same-hash modern/legacy comparison.
   four captures.
 - Actual current-payload modern Sandbox and dedicated legacy-room paint remain
   unverified. Supported modern file selection still blocks before upload.
+
+## 2026-08-01 - Input and result-row presets
+
+- Expanded `stylePresets.ts` from 11 to 19 generic authored presets by adding
+  four input treatments and four result-row treatments. No third-party sheet
+  source, preview, or derived design is bundled.
+- Added sheet/result-template context to the visual inspector. Control blocks
+  receive input choices; frame/flow children inside a result template receive
+  result-row choices while ordinary sheet containers keep section choices.
+- Added managed result-template scope migration to the shared Blockly change
+  listener. Renaming a template from `default` to another valid name and back
+  moves descendant CSS rules without leaving a stale selector.
+- Focused design tests, lint, production build, full `ci:verify`,
+  `smoke:edit-flow`, and the modern/legacy synthetic visual smoke pass. The
+  four Preview/Edit captures remain exact at `0%` mismatch.
+- Live modern Sandbox and dedicated legacy-room paint remain unverified and
+  keep their separate external evidence gates.

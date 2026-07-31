@@ -31,6 +31,7 @@ import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { registerAllBlocks, getBlockDef } from '@/lib/blocks/registry';
 import { playSfx } from '@/lib/sfx';
 import { shouldPlayBlockSnap } from '@/lib/editor/blocklySoundPolicy';
+import { migrateManagedRolltemplateStyleScope } from '@/lib/editor/designPosition';
 import HeadlessBlockBrowser from './HeadlessBlockBrowser';
 
 const BLOCKLY_MEDIA_PATH = 'blockly-media/';
@@ -132,6 +133,20 @@ export default function BlocklyModelHost({ visible, renderSvg }: Props) {
           const mv = ev as Blockly.Events.BlockMove;
           if (shouldPlayBlockSnap(mv)) {
             playSfx('block.snap');
+          }
+        }
+        if (key === 'html' && ev.type === Blockly.Events.BLOCK_CHANGE) {
+          const change = ev as Blockly.Events.BlockChange;
+          if (change.element === 'field' && change.name === 'NAME' && change.blockId) {
+            const migration = migrateManagedRolltemplateStyleScope(
+              adapter,
+              change.blockId,
+              change.oldValue == null ? null : String(change.oldValue),
+              change.newValue == null ? null : String(change.newValue),
+            );
+            if (migration.changed) {
+              bumpStructure('css', adapter.countBlocks('css'));
+            }
           }
         }
         // Mutation gate — UI / viewport / theme events are NO-OP for store.

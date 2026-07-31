@@ -1,7 +1,8 @@
 import type { LayerRole } from './layerRoles';
 import type { ManagedDesignDeclarations } from './designPosition';
 
-export type VisualStylePresetFamily = 'section' | 'button' | 'text';
+export type VisualStylePresetFamily = 'section' | 'button' | 'text' | 'control' | 'result';
+export type VisualStylePresetScope = 'sheet' | 'rolltemplate';
 
 export type VisualStylePreset = {
   id: string;
@@ -171,10 +172,120 @@ const TEXT_PRESETS: VisualStylePreset[] = [
   }),
 ];
 
+const CONTROL_PRESETS: VisualStylePreset[] = [
+  preset('clean', '깔끔한 칸', '흰 바탕과 얇은 테두리의 기본 입력 칸', {
+    'background-color': '#ffffff',
+    'background-image': 'none',
+    color: '#3f3439',
+    'border-width': '1px',
+    'border-style': 'solid',
+    'border-color': '#d8c8cf',
+    'border-radius': '4px',
+    padding: '7px 10px',
+    'font-size': '14px',
+    'font-weight': '400',
+    'line-height': '1.25',
+    'box-shadow': 'none',
+  }),
+  preset('underline', '밑줄 칸', '기록지처럼 밑줄만 남긴 입력 칸', {
+    'background-color': 'transparent',
+    'background-image': 'none',
+    color: '#493941',
+    'border-width': '0 0 2px 0',
+    'border-style': 'solid',
+    'border-color': '#a74d6e',
+    'border-radius': '0',
+    padding: '6px 2px',
+    'font-size': '14px',
+    'font-weight': '600',
+    'line-height': '1.25',
+    'box-shadow': 'none',
+  }),
+  preset('soft', '부드러운 칸', '연한 분홍 바탕으로 값을 구분하는 입력 칸', {
+    'background-color': '#fff2f6',
+    'background-image': 'none',
+    color: '#5d2f40',
+    'border-width': '1px',
+    'border-style': 'solid',
+    'border-color': '#e7afc3',
+    'border-radius': '6px',
+    padding: '7px 10px',
+    'font-size': '14px',
+    'font-weight': '500',
+    'line-height': '1.25',
+    'box-shadow': 'inset 0 1px 2px rgba(73, 45, 57, 0.06)',
+  }),
+  preset('ink', '또렷한 칸', '작은 수치와 짧은 값을 또렷하게 보여주는 입력 칸', {
+    'background-color': '#f7f5f6',
+    'background-image': 'none',
+    color: '#302a2e',
+    'border-width': '1px',
+    'border-style': 'solid',
+    'border-color': '#595057',
+    'border-radius': '3px',
+    padding: '6px 8px',
+    'font-size': '14px',
+    'font-weight': '700',
+    'line-height': '1.25',
+    'box-shadow': 'none',
+  }),
+];
+
+const RESULT_PRESETS: VisualStylePreset[] = [
+  preset('paper', '종이 행', '흰 카드에 얇은 구분선을 둔 결과 행', {
+    'background-color': '#fffdfd',
+    'background-image': 'none',
+    color: '#3f3439',
+    'border-width': '0 0 1px 0',
+    'border-style': 'solid',
+    'border-color': '#ead8df',
+    'border-radius': '0',
+    padding: '8px 10px',
+    'box-shadow': 'none',
+  }),
+  preset('rose', '장미 행', '핵심 결과를 강조하는 연한 분홍 행', {
+    'background-color': '#fff2f6',
+    'background-image': 'none',
+    color: '#5d2f40',
+    'border-width': '0 0 1px 0',
+    'border-style': 'solid',
+    'border-color': '#e2a0b8',
+    'border-radius': '0',
+    padding: '8px 10px',
+    'box-shadow': 'inset 3px 0 0 #d96b91',
+  }),
+  preset('mint', '민트 행', '보조 판정과 안내에 어울리는 민트 행', {
+    'background-color': '#f2fbf7',
+    'background-image': 'none',
+    color: '#245648',
+    'border-width': '0 0 1px 0',
+    'border-style': 'solid',
+    'border-color': '#9bd3c0',
+    'border-radius': '0',
+    padding: '8px 10px',
+    'box-shadow': 'inset 3px 0 0 #4ea88b',
+  }),
+  preset('ink', '잉크 행', '결과 카드의 제목처럼 쓰는 진한 행', {
+    'background-color': '#403940',
+    'background-image': 'none',
+    color: '#ffffff',
+    'border-width': '1px',
+    'border-style': 'solid',
+    'border-color': '#403940',
+    'border-radius': '3px',
+    padding: '8px 10px',
+    'box-shadow': 'none',
+  }),
+];
+
 export function getVisualStylePresetGroup(
   role: LayerRole,
   blockType: string,
+  scope: VisualStylePresetScope = 'sheet',
 ): VisualStylePresetGroup | null {
+  if (scope === 'rolltemplate' && (role.kind === 'frame' || role.kind === 'flow')) {
+    return { family: 'result', title: '결과 행 모양', presets: RESULT_PRESETS };
+  }
   if (role.kind === 'frame' || role.kind === 'flow') {
     return { family: 'section', title: '섹션 모양', presets: SECTION_PRESETS };
   }
@@ -187,6 +298,14 @@ export function getVisualStylePresetGroup(
   }
   if (role.kind === 'text') {
     return { family: 'text', title: '글자 꾸밈', presets: TEXT_PRESETS };
+  }
+  if (role.kind === 'control') {
+    if (isToggleControlType(blockType)) return null;
+    return {
+      family: 'control',
+      title: isNumberControlType(blockType) ? '숫자 칸 모양' : '입력 칸 모양',
+      presets: CONTROL_PRESETS,
+    };
   }
   return null;
 }
@@ -211,4 +330,12 @@ function preset(
 
 function isRollButtonType(blockType: string): boolean {
   return /(?:^|_)roll(?:_|$)/.test(blockType.toLowerCase());
+}
+
+function isNumberControlType(blockType: string): boolean {
+  return /(?:^|_)number(?:_|$)/.test(blockType.toLowerCase());
+}
+
+function isToggleControlType(blockType: string): boolean {
+  return /(?:^|_)(?:checkbox|radio|toggle)(?:_|$)/.test(blockType.toLowerCase());
 }

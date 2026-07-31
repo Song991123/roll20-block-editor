@@ -109,9 +109,10 @@ already-selected insertion position.
 - Friendly gallery defaults use the same managed CSS path. The gallery now
   includes an anonymous generic Roll button whose preview click produces the
   built-in default Roll20 template card.
-- The direct inspector provides 11 generic one-click starting styles: four
-  section styles, four button styles, and three text styles. These are authored
-  product presets, not copied sheet designs or bundled community examples.
+- The direct inspector provides 19 generic one-click starting styles: four
+  section styles, four button styles, three text styles, four input styles, and
+  four result-row styles. These are authored product presets, not copied sheet
+  designs or bundled community examples.
 - Managed rules repeat the stable node class to outrank Roll20's baseline
   control selectors without `!important`. The editor selection overlay uses an
   outline only and must not change the selected element's corner radius.
@@ -139,6 +140,10 @@ already-selected insertion position.
   `.sheet-rolltemplate-NAME` selector. This keeps the rule outside Roll20's
   `.charsheet` prefix and lets the same CSS reach the actual chat card. Normal
   sheet layers continue to use sheet-scoped selectors.
+- Changing a template `NAME` through either inspector or the Blockly field
+  migrates every managed descendant rule to the new
+  `.sheet-rolltemplate-NAME` scope. The old scope must not remain after the
+  rename, and changing the name back must restore the original chat linkage.
 - This is an implementation and local synthetic-browser result. It does not
   prove that every third-party template helper or actual modern/legacy Roll20
   chat renderer is visually identical.

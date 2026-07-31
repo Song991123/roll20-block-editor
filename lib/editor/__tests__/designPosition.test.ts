@@ -4,6 +4,7 @@ import {
   commitManagedDesignPosition,
   commitManagedDesignStyle,
   designClassForBlock,
+  migrateManagedRolltemplateStyleScope,
   readManagedDesignStyle,
 } from '../designPosition.ts';
 
@@ -205,6 +206,22 @@ assert.match(
   /\.sheet-rolltemplate-proof \.sheet-r20-node-template-row\.sheet-r20-node-template-row\.sheet-r20-node-template-row\.sheet-r20-node-template-row, \.sheet-rolltemplate-proof \.sheet-r20-node-template-row \{/,
 );
 assert.doesNotMatch(templateCss, /^\.sheet-r20-node-template-row/m);
+assert.deepEqual(readManagedDesignStyle(adapter, 'html', 'template-row'), {
+  'background-color': '#f8d7e3',
+  padding: '8px 10px',
+});
+
+adapter.setBlockField('html', 'template', 'NAME', 'renamed');
+const migratedTemplate = migrateManagedRolltemplateStyleScope(
+  adapter,
+  'template',
+  'proof',
+  'renamed',
+);
+assert.deepEqual(migratedTemplate, { changed: true, migratedRules: 1 });
+const renamedTemplateCss = adapter.getBlockField('css', 'managed-css', 'CSS') ?? '';
+assert.doesNotMatch(renamedTemplateCss, /\.sheet-rolltemplate-proof \.sheet-r20-node-template-row/);
+assert.match(renamedTemplateCss, /\.sheet-rolltemplate-renamed \.sheet-r20-node-template-row/);
 assert.deepEqual(readManagedDesignStyle(adapter, 'html', 'template-row'), {
   'background-color': '#f8d7e3',
   padding: '8px 10px',

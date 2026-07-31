@@ -11126,3 +11126,24 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   contracts only. Current generated payload paint in modern Sandbox remains
   blocked at the supported visible file chooser; dedicated legacy-room visual
   proof also remains open.
+
+## 2026-08-01 Input And Result-Row Presets
+
+- `DONE LOCAL`: expanded the direct visual inspector from 11 to 19 anonymous
+  starting styles. The added sets contain four input styles and four result-row
+  styles; section, button, and text sets remain available.
+- `DONE LOCAL`: input presets are selected by control type and result-row
+  presets appear only inside the result-template editing scope. All continue
+  to write managed CSS rather than presentation inline HTML.
+- `FIXED LOCAL`: result-template `NAME` changes now migrate every managed child
+  rule through the shared Blockly change listener. This covers both inspector
+  edits and direct Blockly field edits instead of tracking only one UI path.
+- `VERIFIED LOCAL`: focused design tests, lint, production build, full
+  `ci:verify`, and `smoke:edit-flow` pass. The browser applies an input preset,
+  applies a result row preset, renames `default` to `renamed` and back, and
+  proves the old CSS scope is removed while the current chat scope remains.
+- `VERIFIED LOCAL`: modern and legacy synthetic Preview/Edit comparison remains
+  exact at `0%` mismatch for all four captures.
+- `VERIFY / OPEN EXTERNAL`: actual modern Sandbox and dedicated legacy-room
+  paint remain independent evidence gates. No local result promotes a live
+  Roll20 parity claim.
