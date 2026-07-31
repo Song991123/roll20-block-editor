@@ -58,6 +58,10 @@ invent separate DOM models.
 9. Grouping rejects mixed parents, non-contiguous selections, and invalid
    table/conditional insertion points. The rejected action must leave the
    Blockly graph and rendered iframe unchanged.
+10. The persistent iframe is the canonical edit surface. Additive layer
+    selection is sent as a list to that iframe, so every selected object is
+    highlighted on the same rendered sheet while the primary selection alone
+    drives measurement and inspector focus.
 
 ## Visual Language
 
@@ -84,11 +88,12 @@ already-selected insertion position.
 
 Local tests cover classification, cycle protection, before/inside/after layer
 operations, flow versus free placement, grouping preconditions, and selection
-synchronization. The browser smoke also proves Ctrl selection -> group keeps
-the model parent, iframe parent, and emitted HTML aligned. A future browser
-acceptance test must additionally prove that the same imported HTML surface is
-visible in preview and edit after a nested drop, with no rollback frame and
-with the generated CSS output stable after re-import.
+synchronization. The browser smoke also proves Ctrl selection -> iframe
+multi-highlight -> group keeps the model parent, iframe parent, and emitted
+HTML aligned. A future browser acceptance test must additionally prove that
+the same imported HTML surface is visible in preview and edit after a nested
+drop, with no rollback frame and with the generated CSS output stable after
+re-import.
 
 ## Composite And Shadow Role Contract
 

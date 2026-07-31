@@ -294,9 +294,34 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       }, '*');
     } catch (e) {}
   }
-  function setEditBridgeEnabled(enabled, selectedBlockId) {
+  function normalizeSelectedBlockIds(primary, selectedBlockIds) {
+    var candidates = [];
+    var out = [];
+    if (typeof primary === 'string' && primary) candidates.push(primary);
+    if (Array.isArray(selectedBlockIds)) {
+      for (var i = 0; i < selectedBlockIds.length; i += 1) candidates.push(selectedBlockIds[i]);
+    }
+    for (var j = 0; j < candidates.length; j += 1) {
+      var id = candidates[j];
+      if (typeof id !== 'string' || !id || id.length > 256 || out.indexOf(id) >= 0) continue;
+      out.push(id);
+      if (out.length >= 128) break;
+    }
+    return out;
+  }
+  function setEditSelection(selectedBlockIds) {
+    var previous = document.querySelectorAll('[data-r20-selected="1"]');
+    for (var i = 0; i < previous.length; i += 1) previous[i].removeAttribute('data-r20-selected');
+    for (var j = 0; j < selectedBlockIds.length; j += 1) {
+      var selected = document.querySelector('[data-r20-block-id="' + cssEscape(selectedBlockIds[j]) + '"]');
+      if (selected) selected.setAttribute('data-r20-selected', '1');
+    }
+  }
+  function setEditBridgeEnabled(enabled, selectedBlockId, selectedBlockIds) {
     editBridgeEnabled = enabled === true;
     document.body.setAttribute('data-r20-edit-mode', editBridgeEnabled ? '1' : '0');
+    var normalizedSelectedBlockIds = normalizeSelectedBlockIds(selectedBlockId, selectedBlockIds);
+    setEditSelection(editBridgeEnabled ? normalizedSelectedBlockIds : []);
     if (!editBridgeEnabled) {
       if (editMoveFrame) window.cancelAnimationFrame(editMoveFrame);
       editMoveFrame = 0;
@@ -306,8 +331,8 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       rollbackOptimisticFlowMove();
       clearValidatedFlowTarget();
     }
-    if (!editBridgeEnabled || !selectedBlockId) return;
-    var selected = document.querySelector('[data-r20-block-id="' + cssEscape(selectedBlockId) + '"]');
+    if (!editBridgeEnabled || !normalizedSelectedBlockIds.length) return;
+    var selected = document.querySelector('[data-r20-block-id="' + cssEscape(normalizedSelectedBlockIds[0]) + '"]');
     if (selected) postEditHit('measure', selected, selected, {
       x: 0, y: 0, pointerId: -1, button: -1, buttons: 0
     });
@@ -1446,7 +1471,11 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       && e.data.protocol === 1
       && e.data.bridgeId === editBridgeId
     ) {
-      setEditBridgeEnabled(e.data.enabled, e.data.selectedBlockId || null);
+      setEditBridgeEnabled(
+        e.data.enabled,
+        e.data.selectedBlockId || null,
+        e.data.selectedBlockIds,
+      );
       return;
     }
     if (
@@ -1508,8 +1537,10 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     }
     // spec 17 §8 — 캔버스에서 위젯 선택 → 미리보기 강조
     if (e.data.type === 'r20:widget-select') {
-      var prevW = document.querySelector('[data-r20-selected="1"]');
-      if (prevW) prevW.removeAttribute('data-r20-selected');
+      var previousWidgets = document.querySelectorAll('[data-r20-selected="1"]');
+      for (var previousWidgetIndex = 0; previousWidgetIndex < previousWidgets.length; previousWidgetIndex += 1) {
+        previousWidgets[previousWidgetIndex].removeAttribute('data-r20-selected');
+      }
       var name = e.data.widgetName;
       if (!name) return;
       var nodes = document.querySelectorAll(

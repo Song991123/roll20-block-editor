@@ -220,6 +220,18 @@ async function main() {
     );
     await groupOneRow.click();
     await groupTwoRow.dispatchEvent('click', { bubbles: true, ctrlKey: true });
+    await page.waitForTimeout(120);
+    result.tests.layerMultiSelection = await frame.evaluate(({ firstId, secondId }) => ({
+      selectedIds: [...document.querySelectorAll('[data-r20-selected="1"]')]
+        .map((node) => node.getAttribute('data-r20-block-id'))
+        .filter(Boolean),
+      firstVisible: Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(firstId)}"][data-r20-selected="1"]`)),
+      secondVisible: Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(secondId)}"][data-r20-selected="1"]`)),
+    }), { firstId: ids.groupOneId, secondId: ids.groupTwoId });
+    assert(
+      result.tests.layerMultiSelection.firstVisible && result.tests.layerMultiSelection.secondVisible,
+      `iframe multi-selection is not visible: ${JSON.stringify(result.tests.layerMultiSelection)}`,
+    );
     await page.locator('[data-testid="edit-layer-group-selection"]').click();
     await page.waitForTimeout(900);
     result.tests.layerGrouping = await page.evaluate(({ firstId, secondId }) => {

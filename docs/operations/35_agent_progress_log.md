@@ -1,3 +1,16 @@
+# 2026-07-31 - Iframe multi-selection bridge
+
+- Added the optional `selectedBlockIds` field to the iframe edit-mode
+  contract while keeping `selectedBlockId` as the primary compatibility value.
+- The generated persistent iframe now applies the full selection list to
+  `data-r20-selected`, clears stale marks when selection or edit mode changes,
+  and keeps the primary layer as the measured edit target.
+- The browser smoke selects two anonymous sibling layers with Ctrl and proves
+  both rendered DOM nodes are highlighted before the grouping operation.
+- Local evidence: iframe bridge test, build-doc bundle test, edit-flow browser
+  smoke, `ci:verify`, lint, build, and server hygiene all pass; browser errors
+  are zero. Actual Roll20 evidence remains a separate blocked external gate.
+
 # 2026-07-31 - Layer multi-select and grouping
 
 - Added `selectedBlockIds` to the workspace selection model. Ctrl/Cmd-click

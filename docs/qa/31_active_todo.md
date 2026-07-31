@@ -1,3 +1,19 @@
+# 2026-07-31 Iframe multi-selection bridge
+
+- DONE LOCAL: additive layer selection now sends the full `selectedBlockIds`
+  list through the existing `r20:edit-mode` command. The persistent iframe
+  clears stale selection marks and highlights every selected DOM layer while
+  retaining the primary layer for geometry/inspector behavior.
+- VERIFIED LOCAL: iframe bridge and generated-document tests pass; the rebuilt
+  `smoke:edit-flow` confirms both selected synthetic layers are visibly marked,
+  then continues through grouping. `ci:verify`, lint, build, and server
+  hygiene pass with zero browser console/page errors.
+- CLAIM BOUNDARY: this is local synthetic evidence only. It does not prove
+  arbitrary-sheet semantics or actual Roll20 screenshot parity.
+- TODO P0: resume current-payload modern Sandbox capture after the browser
+  file-URL permission is enabled; keep legacy verification in its separate
+  dedicated destination.
+
 # 2026-07-31 Layer multi-select and grouping
 
 - DONE LOCAL: the layer panel now supports Ctrl/Cmd additive selection and a

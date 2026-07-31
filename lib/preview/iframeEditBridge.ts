@@ -106,6 +106,8 @@ export type IframeEditModeCommand = {
   bridgeId: string;
   enabled: boolean;
   selectedBlockId: string | null;
+  /** All selected layers; selectedBlockId remains the primary layer for compatibility. */
+  selectedBlockIds?: string[];
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {

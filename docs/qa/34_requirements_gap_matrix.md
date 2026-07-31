@@ -1,5 +1,16 @@
 # 34. Requirements Gap Matrix
 
+## Iframe Multi-Selection Bridge - 2026-07-31
+
+| Area | Current evidence | Status | Boundary |
+| --- | --- | --- | --- |
+| Selection contract | `selectedBlockIds` travels with the existing edit-mode message; the primary ID remains backward-compatible | DONE LOCAL | No external renderer evidence |
+| Rendered selection | Persistent iframe marks every selected synthetic DOM layer and clears stale marks | DONE LOCAL | Synthetic browser smoke only |
+| Edit geometry | Primary selection continues to drive measure/drop geometry and inspector behavior | DONE LOCAL | Multi-object transform behavior remains open |
+
+The bridge is intentionally local/transient. It does not persist selection in
+autosave and does not change exported HTML/CSS.
+
 ## Layer Multi-Select And Grouping - 2026-07-31
 
 | Area | Current evidence | Status | Boundary |

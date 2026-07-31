@@ -86,6 +86,7 @@ export default function PreviewMain() {
   const htmlStructureVersion = useWorkspaceStore((s) => s.workspaces.html.structureVersion);
   const activeWs = useWorkspaceStore((s) => s.activeWorkspace);
   const selectedId = useWorkspaceStore((s) => s.selectedBlockId);
+  const selectedIds = useWorkspaceStore((s) => s.selectedBlockIds);
   // Phase F (spec 17 §13) — origin === 'tree' 면 preview 안 element 가
   // viewport 밖일 때 scrollIntoView. preview origin (이미 클릭한 element 가
   // viewport 안) 이나 inspector / init 는 scroll 안 함 (UX: 갑작스러운 점프 방지).
@@ -635,6 +636,7 @@ export default function PreviewMain() {
           bridgeId: editMessage.bridgeId,
           enabled: useUiStore.getState().mainMode === 'edit',
           selectedBlockId: useWorkspaceStore.getState().selectedBlockId,
+          selectedBlockIds: useWorkspaceStore.getState().selectedBlockIds,
         }, '*');
         return;
       }
@@ -1318,8 +1320,9 @@ export default function PreviewMain() {
       bridgeId: iframeEditBridgeId,
       enabled: mainMode === 'edit',
       selectedBlockId: selectedId,
+      selectedBlockIds: selectedIds,
     }, '*');
-  }, [iframeEditBridgeId, mainMode, selectedId, lastApplyAck]);
+  }, [iframeEditBridgeId, mainMode, selectedId, selectedIds, lastApplyAck]);
 
   useEffect(() => {
     if (mainMode === 'edit') return;
