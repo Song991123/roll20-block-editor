@@ -1,3 +1,13 @@
+## 2026-07-31 Complete cleanup retry
+
+- `BLOCKED HOST`: user-authorized deletion was rechecked against 61 exact
+  generated/stale targets, but the host rejected recursive PowerShell removal
+  before execution.
+- `PRESERVED`: active dependencies, source, worktrees, report policy, and
+  protected external sheet roots were excluded and unchanged.
+- `TODO P1`: remove the same generated targets from an approved host/session
+  that permits recursive workspace cleanup; do not use a safety bypass here.
+
 ## 2026-07-31 Imported subtree regression guard
 
 - `DONE LOCAL`: Blockly layer-operation unit coverage now asserts non-leaf

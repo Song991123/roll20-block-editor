@@ -1,3 +1,13 @@
+## 2026-07-31 - Complete cleanup retry
+
+- RECHECKED: 61 generated/stale targets were inside the workspace and outside
+  protected ownership; active dependencies, sources, worktrees, and report
+  policy were excluded.
+- BLOCKED HOST: the explicitly authorized recursive PowerShell deletion was
+  rejected before execution. No alternate shell, native API, per-file
+  workaround, or safety bypass was used.
+- RESULT: zero targets changed. Cleanup remains a host-blocked P1, not done.
+
 ## 2026-07-31 - Imported subtree regression guard
 
 - IMPLEMENTED: added a Blockly layer-operation regression case that moves a

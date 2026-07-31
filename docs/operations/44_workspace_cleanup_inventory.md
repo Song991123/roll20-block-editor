@@ -1,5 +1,22 @@
 # 44. Workspace Cleanup Inventory
 
+# 2026-07-31 user-authorized complete-deletion retry (host blocked again)
+
+- RECHECKED: 61 targets were limited to old `web/` dependency/build output,
+  active-worktree generated `.next/`, `out/`, `.tmp/`, build metadata, and
+  ignored report children. `web-push-main/node_modules/`, source, worktree
+  roots, `reports/README.md`, and protected external sheet roots were excluded.
+- SAFETY CHECK: every target resolved inside the workspace; two nested
+  junctions inside generated `.next/` were identified and no top-level target
+  was a reparse point.
+- ATTEMPTED: one boundary-checked native PowerShell recursive deletion was
+  issued after the user explicitly authorized the retry.
+- BLOCKED HOST: the execution boundary rejected the destructive invocation
+  before PowerShell ran. No alternate shell, native API, per-file workaround,
+  or safety bypass was used.
+- NOT DELETED: all 61 targets remain. No source, dependency tree, worktree,
+  report policy, or protected external sheet root changed.
+
 # 2026-07-31 user-authorized complete-deletion retry (host boundary)
 
 - RECHECKED: the approved disposable targets were still limited to old
