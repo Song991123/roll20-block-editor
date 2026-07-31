@@ -93,7 +93,7 @@ export function isRoll20WorkerScript(type: string, body: string): boolean {
     || (normalizedType === '' && isLikelyRoll20WorkerSource(body));
 }
 
-export type Roll20ScriptKind = 'worker' | 'page';
+export type Roll20ScriptKind = 'worker' | 'page' | 'data';
 
 export interface Roll20ScriptSource {
   attrs: string;
@@ -108,11 +108,30 @@ export interface Roll20ScriptSource {
  * this helper only describes the source and does not execute it.
  */
 export function classifyRoll20Script(type: string, body: string): Roll20ScriptKind {
-  return isRoll20WorkerScript(type, body) ? 'worker' : 'page';
+  if (isRoll20WorkerScript(type, body)) return 'worker';
+  return isExecutablePageScript(type) ? 'page' : 'data';
 }
 
 export function isOrdinaryPageScript(type: string, body: string): boolean {
   return classifyRoll20Script(type, body) === 'page';
+}
+
+/**
+ * HTML also uses script tags as inert data containers. They must stay in the
+ * HTML workspace so their original position and MIME type survive import and
+ * export; only executable page scripts belong in the JS workspace.
+ */
+export function isExecutablePageScript(type: string): boolean {
+  const normalized = String(type ?? '')
+    .trim()
+    .toLowerCase()
+    .split(';', 1)[0]
+    .trim();
+  if (!normalized) return true;
+  if (normalized === 'module' || normalized === 'text/module') return true;
+  if (normalized === 'text/javascript' || normalized === 'application/javascript') return true;
+  if (normalized === 'text/ecmascript' || normalized === 'application/ecmascript') return true;
+  return /(?:^|[+/])(?:java|ecma)script$/.test(normalized);
 }
 
 /** Extract script tags without discarding attributes needed by a future JS workspace. */

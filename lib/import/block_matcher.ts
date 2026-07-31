@@ -20,7 +20,7 @@ import type { CompositePackStats } from './composite_matcher';
 import { elementChildren, firstTextContent, allTextContent } from './dom_walker';
 import { parseAttrRefToken } from './expression_parser';
 import { parseSheetWorkerScript } from './script_parser';
-import { isRoll20WorkerScript } from './worker_source';
+import { isExecutablePageScript, isRoll20WorkerScript } from './worker_source';
 import { isSemanticContainerTag } from '../blocks/semanticTags';
 import { isEditableElementTag, isVoidElementTag } from '../blocks/elementTags';
 import { I18N_DISPLAY_TAG_SET } from '../blocks/i18nTagPolicy';
@@ -637,17 +637,20 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       }
     }
 
-    // Keep ordinary page JavaScript editable without placing it in the worker
-    // workspace. The preview pipeline strips this inert script element, while
-    // the exporter emits the same script tag and body.
-    return {
-      blockType: 'r20_raw_page_js',
-      fields: {
-        ATTRS: serializeScriptAttrs(a),
-        JS: body,
-      },
-      children: {},
-    };
+    // Keep executable page JavaScript editable without placing it in the
+    // worker workspace. Data/template scripts are not executable page JS;
+    // leaving them on the generic raw-HTML path preserves their MIME type and
+    // source position in the authored HTML.
+    if (isExecutablePageScript(scriptType)) {
+      return {
+        blockType: 'r20_raw_page_js',
+        fields: {
+          ATTRS: serializeScriptAttrs(a),
+          JS: body,
+        },
+        children: {},
+      };
+    }
   }
   if (/^h[1-6]$/.test(tag)) {
     return {

@@ -1,3 +1,14 @@
+# 2026-07-31 Generic script MIME mapping fix
+
+- `FIXED LOCAL`: executable page scripts are the only non-worker scripts moved
+  to the Page JS workspace. Inert data/template scripts remain in HTML raw
+  blocks with their MIME type and authored position preserved.
+- `VERIFIED LOCAL`: import structure now covers JSON/template script cases;
+  basic import (44/44), high-priority import (25/25), worker parser (30/30),
+  emit contract, and build-doc bundle tests pass.
+- `CLAIM BOUNDARY`: this improves source mapping and does not prove arbitrary
+  page JavaScript execution or actual Roll20 visual parity.
+
 # 2026-07-31 Modern Sandbox chooser retry
 
 - `VERIFIED EXTERNAL READ-ONLY`: the dedicated modern Sandbox tab again showed

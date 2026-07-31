@@ -72,6 +72,16 @@ Untyped script compatibility:
   dropped from export. A future JS workspace can replace this raw fallback
   without changing the HTML/CSS mapping contract.
 
+Script MIME boundary:
+
+- Executable page scripts (empty type, `module`, JavaScript, or ECMAScript
+  MIME types) are moved to the Page JS workspace and keep a source-order slot.
+- Inert data/template scripts such as `application/json`, `importmap`,
+  `speculationrules`, and `text/template` stay as raw HTML at their authored
+  position. They are not mislabeled as executable JavaScript blocks.
+- This distinction is generic and MIME-based; it is not tied to a particular
+  sheet or official sheet family.
+
 Preview execution boundary:
 
 - Ordinary page scripts are preserved as HTML raw blocks and in export, but

@@ -1,3 +1,13 @@
+# 2026-07-31 - Generic script MIME mapping
+
+- Updated the shared script classifier so only executable Page JS enters the
+  JS workspace. Worker scripts keep the worker path, while inert data/template
+  scripts remain in HTML raw fallback at their original position.
+- Added a regression case for JSON and template script tags. Focused import,
+  worker, emit, and build-doc checks passed.
+- Actual Roll20 Sandbox upload and pixel parity remain open; this is a local
+  mapping fix only.
+
 # 2026-07-31 - Modern Sandbox chooser retry
 
 - `VERIFIED EXTERNAL READ-ONLY`: the dedicated modern Sandbox again showed

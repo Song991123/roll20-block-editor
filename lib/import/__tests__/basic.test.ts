@@ -11,6 +11,7 @@ import { importSheet } from '../index';
 import {
   classifyRoll20Script,
   extractRoll20ScriptSources,
+  isExecutablePageScript,
   isOrdinaryPageScript,
 } from '../worker_source';
 
@@ -450,6 +451,22 @@ function testPageScriptMapsToEditableBlock(): void {
   assert(r.stats.pageScriptBlocks === 1, 'page script count is reported');
 }
 
+function testDataScriptStaysInHtml(): void {
+  const html =
+    '<div data-role="before">Before</div>' +
+    '<script type="application/json" id="sheet-data">{"hp":10}</script>' +
+    '<script type="text/template" id="row-template"><div class="row"></div></script>';
+  const r = importSheet({ html });
+  assert(!r.js.includes('r20_raw_page_js'), 'data scripts do not enter Page JS workspace');
+  assert(r.html.includes('sheet-data'), 'JSON data script remains in HTML workspace');
+  assert(r.html.includes('row-template'), 'template script remains in HTML workspace');
+  assert(r.stats.pageScriptBlocks === 0, 'data scripts are excluded from page JS count');
+  assert(classifyRoll20Script('application/json', '{}') === 'data', 'JSON type is data');
+  assert(classifyRoll20Script('text/template', '<div />') === 'data', 'template type is data');
+  assert(isExecutablePageScript('text/javascript'), 'JavaScript MIME is executable');
+  assert(!isExecutablePageScript('application/json'), 'JSON MIME is inert');
+}
+
 const tests = [
   ['text input', testBasicTextInput],
   ['number input', testNumberInput],
@@ -494,6 +511,7 @@ const tests = [
   ['css custom element selector', testCssCustomElementSelector],
   ['script source classification', testScriptSourceClassification],
   ['page script editable block', testPageScriptMapsToEditableBlock],
+  ['data script stays in HTML', testDataScriptStaysInHtml],
 ] as const;
 
 let passed = 0;

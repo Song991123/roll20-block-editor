@@ -25,7 +25,7 @@ export function splitOrdinaryPageScripts(html: string): SplitPageJsResult {
     /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi,
     (full, rawAttrs: string, body: string) => {
       const type = readScriptType(rawAttrs);
-      if (classifyRoll20Script(type, body) === 'worker') return full;
+      if (classifyRoll20Script(type, body) !== 'page') return full;
       const slot = `page-${entries.length}`;
       entries.push({ slot, attrs: rawAttrs.trim(), body });
       return `<!-- ${PAGE_JS_SLOT_MARKER_PREFIX}${slot} -->`;

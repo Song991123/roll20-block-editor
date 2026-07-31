@@ -1,5 +1,14 @@
 # 34. Requirements Gap Matrix
 
+## Generic Script MIME Mapping - 2026-07-31
+
+- `DONE LOCAL`: executable Page JS, Roll20 worker JS, and inert data/template
+  scripts now use separate generic import destinations. Data scripts stay in
+  HTML raw fallback so source order and MIME are not silently changed.
+- `VERIFIED LOCAL`: import, worker, emit, and build-doc regression tests pass.
+- `OPEN`: arbitrary page-script behavior remains preserved/inert locally; it is
+  not executed in preview and has no claim of Roll20 runtime parity.
+
 ## Anonymous Corpus Inventory - 2026-07-31
 
 | Anonymous corpus | Sheets | Candidate files | Bytes | Scope |
