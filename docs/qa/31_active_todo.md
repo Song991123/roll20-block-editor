@@ -1,3 +1,19 @@
+# 2026-07-31 Legacy test-room observation
+
+- VERIFIED EXTERNAL READ-ONLY: the dedicated legacy verification tab showed a
+  fresh visible participant count of exactly one. The sheet dialog was open
+  with the expected Roll20 wrapper classes, one iframe, tabs, text/select/
+  number controls, and a roll button.
+- LOCAL EVIDENCE: ignored \`reports/roll20-actual-compare/anonymous-legacy-
+  runtime/legacy-editor-observation-latest.png\` and its sidecar record the
+  observed wrapper geometry and control state without source identity.
+- CLAIM BOUNDARY: this is a wrapper/default-state observation only. No roll,
+  save, upload, chat, or settings mutation was performed, and it does not
+  prove exported-sheet visual parity.
+- TODO P0: enable the supported modern Sandbox file-upload permission, then
+  upload anonymous payloads and capture root/chat evidence. Keep legacy
+  writes isolated to a dedicated test destination.
+
 # 2026-07-31 Canvas multi-object free transform
 
 - DONE LOCAL: Ctrl/Cmd-selected layers now move together on the persistent

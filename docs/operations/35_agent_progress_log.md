@@ -1,3 +1,15 @@
+# 2026-07-31 - Legacy test-room observation
+
+- Fresh preflight on the dedicated legacy verification tab showed exactly one
+  visible participant. Observation remained read-only.
+- The current sheet dialog exposes the Roll20 wrapper class family, one iframe,
+  tab links, text/select/number controls, and a roll button. The current
+  viewport geometry and screenshot are stored only in ignored anonymous local
+  evidence; source identity is omitted.
+- No roll, chat send, save, upload, or settings change was performed. This
+  closes only the legacy wrapper/default-state observation subtask, not legacy
+  export parity.
+
 # 2026-07-31 - Canvas multi-object free transform
 
 - The persistent iframe now keeps a Ctrl/Cmd selection stable through a free

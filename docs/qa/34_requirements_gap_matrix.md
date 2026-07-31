@@ -1,5 +1,13 @@
 # 34. Requirements Gap Matrix
 
+## Legacy Test-Room Observation - 2026-07-31
+
+| Area | Current evidence | Status | Boundary |
+| --- | --- | --- | --- |
+| Participant safety | Fresh visible count was exactly one in the dedicated legacy destination | DONE OBSERVATION | No writes permitted in this observation |
+| Roll20 wrapper/default state | Dialog class family, iframe geometry, tabs, controls, and roll-button presence captured locally | DONE OBSERVATION | Does not prove exported-sheet parity |
+| Legacy actual render parity | No user payload was uploaded or compared in this step | OPEN | Requires separate legacy export/apply/capture gate |
+
 ## Canvas Multi-Object Free Transform - 2026-07-31
 
 | Area | Current evidence | Status | Boundary |
