@@ -10486,3 +10486,13 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `VERIFY / OPEN`: unsupported call shapes remain raw-preserved. Arbitrary
   worker syntax, live Roll20 execution order, and modern/legacy screenshot or
   chat parity remain separate open gates.
+
+## 2026-07-31 Worker parseInt Mapping
+
+- `DONE LOCAL`: `parseInt(value)` and `parseInt(value, numericRadix)` now map
+  to an editable worker reporter with separate value and radix controls.
+  Non-numeric radix or unsupported arity remains raw-preserved.
+- `VERIFIED LOCAL`: parser `32/32`, generator/high-priority `27/27`,
+  headless workspace, full `ci:verify`, lint, and production build pass.
+- `VERIFY / OPEN`: this is local worker mapping only. Actual Roll20 worker
+  execution and modern/legacy visual/chat parity remain unverified.

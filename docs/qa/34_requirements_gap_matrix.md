@@ -3,9 +3,9 @@
 ## Current state - 2026-07-31
 
 - `DONE LOCAL`: common worker `Math.floor`, `Math.ceil`, `Math.round`,
-  `Math.abs`, `Math.min`, and `Math.max` calls now map to editable reporter
-  blocks when their supported argument shape is present.
-- `VERIFIED LOCAL`: worker parser `31/31`, generator/high-priority `26/26`,
+  `Math.abs`, `Math.min`, `Math.max`, and numeric `parseInt` calls now map to
+  editable reporter blocks when their supported argument shape is present.
+- `VERIFIED LOCAL`: worker parser `32/32`, generator/high-priority `27/27`,
   headless workspace, full `ci:verify`, lint, and production build pass.
 - `CLAIM BOUNDARY`: unsupported Math call shapes remain raw-preserved. This
   does not prove arbitrary worker JavaScript execution or actual Roll20

@@ -264,6 +264,15 @@ function testWorkerMathBinaryEmit(): void {
   expectEq(code, 'Math.max(v.hp, v.hp_max)', 'Math binary emit');
 }
 
+function testWorkerParseIntEmit(): void {
+  const def = findBlock(SHEET_WORKER_BLOCKS as Array<{ type: string }>, 'r20_worker_parse_int');
+  assert(def.generator, 'r20_worker_parse_int has generator');
+  const b = new FakeBlock({ type: 'r20_worker_parse_int', fields: { RADIX: '10' } });
+  const out = def.generator!(b, makeCtx({ VALUE: 'values.strength' }));
+  const code = Array.isArray(out) ? out[0] : out;
+  expectEq(code, 'parseInt(values.strength, 10)', 'parseInt emit');
+}
+
 // ---------- 1b) r20_get_compendium ----------------------------------------
 
 function testCompendiumBasicPath(): void {
@@ -610,6 +619,7 @@ const tests: Array<[string, () => void]> = [
   ['worker unary not emit', testWorkerUnaryNotEmit],
   ['worker Math unary emit', testWorkerMathUnaryEmit],
   ['worker Math binary emit', testWorkerMathBinaryEmit],
+  ['worker parseInt emit', testWorkerParseIntEmit],
   ['compendium basic path', testCompendiumBasicPath],
   ['compendium with subpath', testCompendiumWithSubpath],
   ['compendium empty path', testCompendiumEmptyPath],

@@ -801,6 +801,31 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     },
   },
   {
+    type: 'r20_worker_parse_int',
+    shape: 'reporter',
+    category: SHEET_WORKER,
+    label: 'parseInt',
+    tooltip: 'Parse a worker value as an integer, with an optional numeric radix.',
+    init: mkInit((b) => {
+      b.appendDummyInput().appendField('parseInt');
+      b.appendValueInput('VALUE').setCheck(null);
+      b.appendDummyInput()
+        .appendField('radix')
+        .appendField(new Blockly.FieldTextInput('10'), 'RADIX');
+      b.setOutput(true, T_NUM);
+      b.setInputsInline(true);
+    }),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const value = ctx.valueToCode(block, 'VALUE', ORDER.NONE) || '0';
+      const radix = String(b.getFieldValue('RADIX') ?? '').trim();
+      return [
+        /^\d+$/.test(radix) ? `parseInt(${value}, ${radix})` : `parseInt(${value})`,
+        ORDER.ATOMIC,
+      ];
+    },
+  },
+  {
     type: 'r20_get_translation',
     shape: 'reporter',
     category: SHEET_WORKER,

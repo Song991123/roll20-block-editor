@@ -11063,3 +11063,13 @@ same-hash modern/legacy comparison.
 - `CLAIM BOUNDARY`: this improves local JS block mapping only. It is not live
   Roll20 worker execution proof, and it does not change the open actual
   modern/legacy screenshot or chat evidence gate.
+
+## 2026-07-31 - Worker parseInt mapping
+
+- `IMPLEMENTED`: `parseInt(value)` and `parseInt(value, numericRadix)` now
+  map to a generic worker reporter with separate value and radix controls.
+  Invalid radix syntax and unsupported arity remain raw-preserved.
+- `VERIFIED LOCAL`: worker parser `32/32`, generator/high-priority `27/27`,
+  headless workspace, `ci:verify`, lint, and production build passed.
+- `CLAIM BOUNDARY`: this remains local JS mapping evidence. It does not prove
+  live Roll20 worker execution or actual modern/legacy visual/chat parity.

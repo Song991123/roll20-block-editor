@@ -618,6 +618,20 @@ function valueBlock(rawExpr: string): ParsedBlock {
       },
     };
   }
+  const parseIntCall = parseWorkerCall(e, /^parseInt\s*\(/);
+  if (
+    parseIntCall &&
+    (parseIntCall.args.length === 1 || parseIntCall.args.length === 2) &&
+    parseIntCall.args[0] &&
+    (!parseIntCall.args[1] || /^\d+$/.test(parseIntCall.args[1]))
+  ) {
+    return {
+      blockType: 'r20_worker_parse_int',
+      fields: { RADIX: parseIntCall.args[1] || '' },
+      children: {},
+      valueInputs: { VALUE: valueBlock(parseIntCall.args[0]) },
+    };
+  }
   let m = /^v\.([A-Za-z_$][\w$]*)_max$/.exec(e);
   if (m) {
     return {

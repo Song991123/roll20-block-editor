@@ -280,6 +280,17 @@ function testWorkerMathFunctions(): void {
   );
 }
 
+function testWorkerParseInt(): void {
+  const r = parseSheetWorkerScript(
+    `setAttrs({ total: parseInt(values.strength || "10", 10) });`,
+  );
+  const value = r.blocks[0].valueInputs?.VALUE;
+  if (!value) throw new Error('Assertion failed: missing parseInt value');
+  assert(value.blockType === 'r20_worker_parse_int', 'parseInt block');
+  assert(value.fields.RADIX === '10', 'parseInt radix');
+  assert(value.valueInputs?.VALUE.blockType === 'r20_worker_logic', 'parseInt operand expression');
+}
+
 function testWorkerUnaryNot(): void {
   const r = parseSheetWorkerScript(
     `if (!v.disabled) { setAttrs({ active: 1 }); }`,
@@ -369,6 +380,7 @@ const tests = [
   ['nested complex', testNestedComplex],
   ['worker binary expressions', testWorkerBinaryExpressions],
   ['worker Math helpers', testWorkerMathFunctions],
+  ['worker parseInt', testWorkerParseInt],
   ['worker unary not', testWorkerUnaryNot],
   ['raw fallback (switch)', testRawFallback],
   ['comments & strings', testCommentsAndStrings],
