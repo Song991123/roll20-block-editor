@@ -11012,3 +11012,14 @@ same-hash modern/legacy comparison.
   re-import stability, and resource checks all passed.
 - `CLAIM BOUNDARY`: these are local browser-contract results only. They do not
   replace supported Roll20 Sandbox upload or independent legacy-room evidence.
+
+## 2026-07-31 - Sandbox handoff recheck
+
+- `VERIFIED EXTERNAL READ-ONLY`: the dedicated Roll20 Sandbox tools dialog was
+  reachable and the official HTML/CSS/Translation chooser controls were
+  visible.
+- `WAITING USER INPUT`: the three file inputs were empty at recheck time. The
+  agent did not transmit, save, or apply a payload; the handoff tab remains
+  open for visible user selection.
+- `NEXT`: after selection, verify payload markers and capture the modern
+  same-payload root/chat evidence, then perform the separate legacy run.

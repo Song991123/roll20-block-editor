@@ -10436,3 +10436,13 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `VERIFY / OPEN EXTERNAL`: no actual Roll20 evidence is promoted by this
   change. Supported three-file selection and modern/legacy same-payload
   screenshots remain open.
+
+## 2026-07-31 Sandbox Handoff Recheck
+
+- `VERIFIED EXTERNAL READ-ONLY`: the dedicated Sheet Sandbox Tools dialog is
+  reachable again and exposes the official HTML, CSS, and Translation inputs.
+- `VERIFY / WAITING USER INPUT`: all three file inputs currently contain zero
+  selected files. No payload was transmitted, saved, or applied by the agent.
+- `NEXT P0`: select the three anonymous handoff files in the visible official
+  chooser, then confirm the generated markers and capture modern evidence
+  before repeating the same payload in the independent legacy destination.
