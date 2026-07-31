@@ -1,3 +1,21 @@
+# 2026-07-31 - Anonymous corpus inventory and repeating-class preservation
+
+- `VERIFIED LOCAL`: a read-only corrected inventory covered three anonymous
+  corpus labels: `1,434` sheet groups and `18,676` candidate files. The
+  capability prevalence was worker scripts `66.3%`, rolltemplate markers
+  `67.6%`, default-view/state logic `73.7%`, repeating sections `80.5%`, and
+  legacy CSS risk candidates `54.8%`.
+- `FIXED LOCAL`: repeating-section composite packing now carries authored
+  fieldset classes into `FIELDSET_CLASS`; the previous empty assignment could
+  drop CSS hooks on any packed `repeating_*` fieldset.
+- `VERIFIED LOCAL`: focused composite wrapper, import-structure,
+  high-priority mapping, and lint checks pass. The corpus report remains under
+  ignored `.tmp`; no source identity, screenshot, fixture, or derived sheet was
+  copied into the repository.
+- `CLAIM BOUNDARY`: static prevalence is scope evidence only. It does not
+  prove universal import/export, worker execution, or modern/legacy Roll20
+  visual parity.
+
 # 2026-07-31 - Chrome dedicated-tab control retry
 
 - `MEASURED EXTERNAL`: the browser control surface listed both dedicated

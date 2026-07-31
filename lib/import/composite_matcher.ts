@@ -794,7 +794,7 @@ function tryMatchRepeatingSectionWrapper(
     blockType: 'r20_repeating_section_wrapper',
     fields: {
       SECTION_NAME: sectionName,
-      FIELDSET_CLASS: '',
+      FIELDSET_CLASS: b.fields?.CLASS ?? '',
       FIELDSET_STYLE: b.fields?.STYLE ?? '',
       HAS_HEADER: hasHeader,
       HEADER_THEAD_CLASS: theadClass,

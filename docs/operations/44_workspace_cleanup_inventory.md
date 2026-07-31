@@ -1,5 +1,17 @@
 # 44. Workspace Cleanup Inventory
 
+# 2026-07-31 post-build cleanup retry
+
+- RECHECKED: the active worktree generated targets `.next/`, `out/`, and
+  `.tmp/` resolved under `web-push-main/` at approximately 229.61 MB, 3.06 MB,
+  and 49.33 MB respectively. Product source, Git metadata, dependencies,
+  reports policy, and protected external sheet roots were excluded.
+- ATTEMPTED: one boundary-checked native PowerShell recursive deletion was
+  requested after explicit user approval.
+- BLOCKED HOST: the execution boundary rejected the destructive invocation
+  before PowerShell ran. No alternate shell, native API, per-file workaround,
+  or safety bypass was used; the three generated targets remain present.
+
 # 2026-07-31 latest explicit-approval retry
 
 - RECHECKED: the seven exact generated/stale targets were old

@@ -59,10 +59,10 @@ function thead(cls: string, kids: MatchedBlock[]): MatchedBlock {
   };
 }
 
-function repeatingSection(name: string, kids: MatchedBlock[]): MatchedBlock {
+function repeatingSection(name: string, kids: MatchedBlock[], className = ''): MatchedBlock {
   return {
     blockType: 'r20_repeating_section',
-    fields: { NAME: name, STYLE: '' },
+    fields: { NAME: name, CLASS: className, STYLE: '' },
     children: { CONTENT: kids },
   };
 }
@@ -299,11 +299,15 @@ function testRepeatingWrapperNoHeader(): void {
       td('', [i18nText('s', 'S')]),
       td('', [textInput('s', '', '0')]),
     ]),
-  ]);
+  ], 'sheet-panel custom-hook');
   const packed = packComposites([sec]);
   assert(packed[0].blockType === 'r20_repeating_section_wrapper');
   assert(fieldOf(packed[0], 'HAS_HEADER') === 'FALSE');
   assert(fieldOf(packed[0], 'COLUMNS') === '');
+  assert(
+    fieldOf(packed[0], 'FIELDSET_CLASS') === 'sheet-panel custom-hook',
+    `fieldset classes preserved: ${fieldOf(packed[0], 'FIELDSET_CLASS')}`,
+  );
 }
 
 function testRepeatingWrapperInvalidName(): void {

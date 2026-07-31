@@ -1,5 +1,28 @@
 # 34. Requirements Gap Matrix
 
+## Anonymous Corpus Inventory - 2026-07-31
+
+| Anonymous corpus | Sheets | Candidate files | Bytes | Scope |
+| --- | ---: | ---: | ---: | --- |
+| `corpus-A` | 1,427 | 18,543 | 717,082,278 | Read-only static inventory |
+| `corpus-B` | 6 | 126 | 14,999,965 | Read-only static inventory |
+| `corpus-C` | 1 | 7 | 2,320,059 | Read-only static inventory |
+| **Total** | **1,434** | **18,676** | **734,402,302** | No source copied or committed |
+
+The corrected local inventory found the following capability prevalence across
+the 1,434 anonymous sheet groups: worker scripts `66.3%`, rolltemplate
+markers `67.6%`, default-view/state logic `73.7%`, repeating-section patterns
+`80.5%`, and legacy CSS risk candidates `54.8%`. These are scope indicators,
+not import or visual-parity pass rates. The report is ignored local evidence;
+source paths, sheet identities, screenshots, and derived fixtures remain out of
+the public tree.
+
+The first generic mapping correction from this inventory is now local and
+tested: packing a `repeating_*` fieldset into the composite wrapper preserves
+additional authored fieldset classes instead of replacing them with an empty
+class field. Focused composite, import-structure, high-priority mapping, and
+lint checks pass. Broad roundtrip and actual Roll20 verification remain open.
+
 ## Local Imported Edit-Sync Recheck - 2026-07-31
 
 | Area | Current evidence | Status | Boundary |
