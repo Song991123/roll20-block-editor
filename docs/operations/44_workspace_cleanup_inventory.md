@@ -1,5 +1,24 @@
 # 44. Workspace Cleanup Inventory
 
+# 2026-07-31 final complete-deletion retry after explicit user approval
+
+- RECHECKED: the five approved generated/stale targets were limited to old
+  `web/node_modules/`, `web/.next/`, `web/out/`, and active-worktree
+  `web-push-main/.next/`, `web-push-main/out/`. The active dependency tree,
+  source, Git worktrees, report policy, and protected external sheet roots
+  were excluded.
+- SAFETY CHECK: every target resolved inside the workspace, no target root was
+  a reparse point, and no active project listener was present.
+- ATTEMPTED: one boundary-checked native PowerShell `Remove-Item
+  -LiteralPath ... -Recurse -Force` request was issued after the user gave
+  explicit authorization.
+- BLOCKED HOST: the execution boundary rejected the destructive invocation
+  before PowerShell ran. User approval cannot override this session-level
+  restriction.
+- VERIFIED: all five targets still exist; no source, dependency, worktree,
+  report policy, or protected external sheet root changed. No alternate shell,
+  native API, per-file workaround, or safety bypass was used.
+
 # 2026-07-31 user-authorized complete-deletion retry (host blocked again)
 
 - RECHECKED: 61 targets were limited to old `web/` dependency/build output,
