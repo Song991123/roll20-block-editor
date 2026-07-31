@@ -123,6 +123,11 @@ async function runMode(browser, mode) {
       window.localStorage.setItem('__perfOn', '1');
       window.localStorage.removeItem('r20be-autosave');
     } catch {}
+    window.addEventListener('message', (event) => {
+      if (event.data?.type === 'r20:edit-ready' && typeof event.data.bridgeId === 'string') {
+        window.__r20SmokeBridgeId = event.data.bridgeId;
+      }
+    });
   });
 
   const result = { mode, pass: false };
@@ -1395,6 +1400,66 @@ async function runMode(browser, mode) {
       afterLoadCount: await page.evaluate(() => window.__persistentPreviewLoadCount),
     });
     result.workerChange.stats = await readApplyStats(frame);
+
+    // Exercise the iframe's monotonic revision guard after all normal source
+    // changes are complete. A delayed older patch must not roll the sheet back.
+    result.revisionOrdering = await page.evaluate(() => {
+      const iframe = document.querySelector('[data-testid="preview-iframe"]');
+      const bridgeId = window.__r20SmokeBridgeId;
+      const lastAck = Number(document
+        .querySelector('[data-r20-apply-acked]')
+        ?.getAttribute('data-r20-apply-acked') ?? 0);
+      const revision = Math.max(lastAck + 100000, 100000);
+      const styles = {
+        'roll20-legacy-sheet-surface': '',
+        'roll20-base-dark': '',
+        'roll20-legacy-input-state': '',
+        'r20-layer-filter': '',
+        'r20-user': '',
+        'r20-renderer-model': '',
+      };
+      iframe?.contentWindow?.postMessage({
+        type: 'r20:edit-apply',
+        protocol: 1,
+        bridgeId,
+        revision,
+        html: '<div data-r20-block-id="revision-probe">new</div>',
+        htmlKey: 'revision-probe-new',
+        styles,
+        i18n: '{}',
+        darkMode: false,
+        layer: 'all',
+        roll20SandboxSanitize: false,
+        roll20RendererModel: 'default',
+        documentLanguage: 'en',
+      }, '*');
+      return { bridgeIdPresent: typeof bridgeId === 'string' && bridgeId.length > 0, revision };
+    });
+    if (!result.revisionOrdering.bridgeIdPresent) {
+      throw new Error('revision ordering probe could not observe iframe bridge id');
+    }
+    await frame.waitForFunction(
+      (revision) => document.body?.getAttribute('data-r20-last-applied-revision') === String(revision)
+        && document.querySelector('[data-r20-block-id="revision-probe"]')?.textContent === 'new',
+      result.revisionOrdering.revision,
+      { timeout: 30000 },
+    );
+    await page.evaluate(({ revision }) => {
+      const iframe = document.querySelector('[data-testid="preview-iframe"]');
+      const bridgeId = window.__r20SmokeBridgeId;
+      iframe?.contentWindow?.postMessage({
+        type: 'r20:edit-apply',
+        protocol: 1,
+        bridgeId,
+        revision: revision - 1,
+      }, '*');
+    }, result.revisionOrdering);
+    await page.waitForTimeout(75);
+    result.revisionOrdering.after = await frame.evaluate(() => ({
+      text: document.querySelector('[data-r20-block-id="revision-probe"]')?.textContent ?? '',
+      lastRevision: Number(document.body?.getAttribute('data-r20-last-applied-revision') ?? 0),
+      staleDrops: Number(document.body?.getAttribute('data-r20-stale-apply-drops') ?? 0),
+    }));
     result.consoleErrors = consoleErrors;
     result.pageErrors = pageErrors;
     result.pass =
@@ -1621,6 +1686,10 @@ async function runMode(browser, mode) {
       && result.workerChange.stats.rootReplacements === result.widgetDrop.stats.rootReplacements
       && result.workerChange.stats.structuralPatches > result.widgetDrop.stats.structuralPatches
       && result.workerChange.stats.structuralPatchFallbacks === 0
+      && result.revisionOrdering.bridgeIdPresent === true
+      && result.revisionOrdering.after.text === 'new'
+      && result.revisionOrdering.after.lastRevision === result.revisionOrdering.revision
+      && result.revisionOrdering.after.staleDrops >= 1
       && consoleErrors.length === 0
       && pageErrors.length === 0;
   } catch (error) {
