@@ -1,3 +1,15 @@
+# 2026-07-31 Latest dedicated-tab control retry
+
+- `MEASURED EXTERNAL`: the browser listed both dedicated anonymous Roll20
+  verification tabs at the expected editor URL.
+- `VERIFY / BLOCKED EXTERNAL`: the supported tab read timed out before a fresh
+  DOM or exactly-one participant preflight could be observed. No upload,
+  screenshot, save, chat, or room mutation is counted.
+- `HANDOFF`: both dedicated tabs remain open for a later responsive browser
+  handoff; actual parity metrics remain unchanged.
+- `TODO P0`: do not retry via hidden input, endpoint, or direct DOM injection.
+  Resume only when the supported tab read returns a fresh participant state.
+
 # 2026-07-31 Latest cleanup and browser handoff recheck
 
 - `VERIFIED SAFETY`: `.next`, `out`, and `.tmp` were resolved as generated

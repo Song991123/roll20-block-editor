@@ -1,3 +1,14 @@
+# 2026-07-31 - Chrome dedicated-tab control retry
+
+- `MEASURED EXTERNAL`: the browser control surface listed both dedicated
+  anonymous Roll20 verification tabs at their expected URLs.
+- `VERIFY / BLOCKED EXTERNAL`: the supported tab read operation timed out
+  before DOM, participant count, file hash, screenshot, or settings state could
+  be observed. No upload, save, chat, room setting, or ordinary-room action
+  occurred.
+- `HANDOFF`: both dedicated verification tabs were left open for a later
+  responsive handoff. Actual modern/legacy parity metrics were not changed.
+
 # 2026-07-31 - Generated-output deletion and Roll20 handoff recheck
 
 - `VERIFIED SAFETY`: the only requested cleanup targets remain the generated
