@@ -1,5 +1,23 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Parent render-readiness surface gate
+
+- `DONE LOCAL`: the product PreviewMain now consumes the shared iframe's
+  `r20:render-ready` signal and compares the matching HTML key. During an
+  asset/layout transition, the same iframe remains visible but edit pointer,
+  layer, widget, and context-menu actions are temporarily gated by a small
+  editor overlay; no second sheet renderer was introduced.
+- `DONE LOCAL`: the readiness key is derived from the current live HTML key,
+  so new CSS/i18n/worker patches invalidate the edit surface immediately and
+  restore it only after the iframe reports the current rendered surface ready.
+- `VERIFIED LOCAL`: latest build passed; persistent Preview/Edit passed modern
+  and legacy with `loads=0`; synthetic Preview/Edit passed `4/4` exact in both
+  modes; edit-flow smoke passed.
+- `BLOCKED EXTERNAL`: the dedicated modern Sandbox still rejects the official
+  visible HTML chooser with `Not allowed` before transmission. No HTML/CSS/
+  translation was uploaded or saved, and generated actual root/chat evidence
+  remains `0/4`.
+
 # 2026-07-31 Render-readiness gate
 
 - `DONE LOCAL`: the shared iframe render bridge now waits for authored `<img>`

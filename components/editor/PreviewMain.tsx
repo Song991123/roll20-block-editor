@@ -165,6 +165,7 @@ export default function PreviewMain() {
   const [iframeHeight, setIframeHeight] = useState(900);
   const [viewportWidth, setViewportWidth] = useState(0);
   const [iframeEditBridgeId, setIframeEditBridgeId] = useState<string | null>(null);
+  const [iframeReadySourceKey, setIframeReadySourceKey] = useState<string | null>(null);
   const [iframeLoadRevision, setIframeLoadRevision] = useState(0);
   const iframeEditBridgeIdRef = useRef<string | null>(null);
   const [iframeEditOverlay, setIframeEditOverlay] = useState<IframeEditHitMessage | null>(null);
@@ -370,6 +371,10 @@ export default function PreviewMain() {
   // The bridge only needs a content identity to suppress duplicate applies;
   // keep the large full-document string out of this dependency path.
   const renderSourceKey = livePatch.sourceKey;
+  const liveHtmlKey = livePatch.htmlKey;
+  const iframeRenderReady = renderMode !== 'iframe'
+    || isEmpty
+    || iframeReadySourceKey === liveHtmlKey;
 
   // spec 21 Phase A — Shadow DOM 모드 mount.
   // host element 에 Shadow Root attach → buildSheetParts(html, css) 인젝션.
@@ -695,6 +700,23 @@ export default function PreviewMain() {
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
       if (!isTrustedIframeMessage(e, iframeRef.current)) return;
+      const rawData = e.data as Record<string, unknown> | null;
+      if (rawData?.type === 'r20:render-ready') {
+        if (
+          rawData.protocol !== 1
+          || typeof rawData.bridgeId !== 'string'
+            || rawData.bridgeId !== iframeEditBridgeIdRef.current
+            || (typeof rawData.htmlKey === 'string'
+              && rawData.htmlKey !== ''
+              && rawData.htmlKey !== liveHtmlKey)
+        ) return;
+        setIframeReadySourceKey(
+          typeof rawData.htmlKey === 'string' && rawData.htmlKey !== ''
+            ? rawData.htmlKey
+            : liveHtmlKey,
+        );
+        return;
+      }
       const editMessage = parseIframeEditBridgeMessage(e.data);
       if (editMessage?.type === 'r20:edit-ready') {
         if (iframeEditBridgeIdRef.current !== editMessage.bridgeId) {
@@ -703,6 +725,7 @@ export default function PreviewMain() {
           iframeEditDragOriginRef.current = null;
         }
         iframeEditBridgeIdRef.current = editMessage.bridgeId;
+        setIframeReadySourceKey(null);
         if (lastAppliedSourceRef.current == null) {
           lastAppliedSourceRef.current = iframeDocumentSrcdoc;
         }
@@ -711,6 +734,7 @@ export default function PreviewMain() {
       }
       if (editMessage?.type === 'r20:edit-applied') {
         if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
+        setIframeReadySourceKey(null);
         const appliedSource = applySourcesRef.current.get(editMessage.revision);
         if (!appliedSource) return;
         markEditorTiming('apply-acked-parent');
@@ -742,6 +766,7 @@ export default function PreviewMain() {
       if (editMessage?.type === 'r20:edit-hit') {
         if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
         if (useUiStore.getState().mainMode !== 'edit') return;
+        if (!iframeRenderReady) return;
         const adapter = getBlocklyAdapter();
         if (!htmlLayerMap.has(editMessage.blockId)) return;
         if (!editMessage.hitPath.every((item) => htmlLayerMap.has(item.blockId))) return;
@@ -988,6 +1013,7 @@ export default function PreviewMain() {
       if (editMessage?.type === 'r20:widget-drag') {
         if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
         if (useUiStore.getState().mainMode !== 'edit') return;
+        if (!iframeRenderReady) return;
         if (editMessage.phase === 'dragleave') {
           setIframeEditDropTarget(null);
           return;
@@ -1057,6 +1083,7 @@ export default function PreviewMain() {
       if (editMessage?.type === 'r20:block-type-drag') {
         if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
         if (useUiStore.getState().mainMode !== 'edit') return;
+        if (!iframeRenderReady) return;
         const blockType = editMessage.blockType;
         const def = blockType ? getBlockDef(blockType) : null;
         if (editMessage.phase === 'dragleave' || !blockType || !def) {
@@ -1160,6 +1187,7 @@ export default function PreviewMain() {
       if (editMessage?.type === 'r20:layer-drag') {
         if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
         if (useUiStore.getState().mainMode !== 'edit') return;
+        if (!iframeRenderReady) return;
         if (!htmlLayerMap.has(editMessage.blockId)) return;
         if (
           editMessage.subject
@@ -1277,6 +1305,7 @@ export default function PreviewMain() {
       if (editMessage?.type === 'r20:edit-context-menu') {
         if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
         if (useUiStore.getState().mainMode !== 'edit') return;
+        if (!iframeRenderReady) return;
         const adapter = getBlocklyAdapter();
         if (!adapter.getBlock('html', editMessage.blockId)) return;
         const iframe = iframeRef.current;
@@ -1400,7 +1429,7 @@ export default function PreviewMain() {
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [appendBlock, canvasWidthAuto, editSubmode, flushIframeEditState, htmlLayerMap, iframeDocumentSrcdoc, queueIframeEditState, setAutoCanvasWidth, setHoveredWidgetId, setSelected, setSelectedWidgetId]);
+  }, [appendBlock, canvasWidthAuto, editSubmode, flushIframeEditState, htmlLayerMap, iframeDocumentSrcdoc, iframeRenderReady, liveHtmlKey, queueIframeEditState, renderSourceKey, setAutoCanvasWidth, setHoveredWidgetId, setSelected, setSelectedWidgetId]);
 
   useEffect(() => {
     if (!iframeEditBridgeId) return;
@@ -1608,8 +1637,10 @@ export default function PreviewMain() {
     <div
       className="relative flex h-full min-h-0 flex-col"
       data-r20-edit-bridge-ready={iframeEditBridgeId ? '1' : '0'}
+      data-r20-render-ready={renderMode !== 'iframe' || isEmpty || iframeRenderReady ? '1' : '0'}
       data-r20-apply-pending={pendingApplyRevision || ''}
       data-r20-apply-acked={lastApplyAck || ''}
+      aria-busy={renderMode === 'iframe' && !isEmpty && !iframeRenderReady ? true : undefined}
     >
       <div
         ref={previewAreaRef}
@@ -1700,7 +1731,10 @@ export default function PreviewMain() {
                 title="시트 미리보기"
                 sandbox={sandbox}
                 srcDoc={iframeDocumentSrcdoc}
-                onLoad={() => setIframeLoadRevision((value) => value + 1)}
+                onLoad={() => {
+                  setIframeReadySourceKey(null);
+                  setIframeLoadRevision((value) => value + 1);
+                }}
                 className="block w-full border-0"
                 style={{ width: `${canvasWidth}px`, height: `${iframeHeight}px` }}
               />
@@ -1710,6 +1744,19 @@ export default function PreviewMain() {
                 data-testid="preview-shadow-host"
                 className="block h-[calc(100vh-220px)] w-full overflow-auto"
               />
+            )}
+            {renderMode === 'iframe' && mainMode === 'edit' && !isEmpty && !iframeRenderReady && (
+              <div
+                aria-live="polite"
+                data-testid="iframe-render-loading"
+                data-r20-render-loading="1"
+                role="status"
+                className="pointer-events-auto absolute inset-0 z-40 flex items-start justify-center bg-white/25 pt-4"
+              >
+                <span className="rounded-full border border-rose-200 bg-white/90 px-3 py-1 text-xs font-medium text-rose-800 shadow-sm">
+                  시트 불러오는 중...
+                </span>
+              </div>
             )}
             {renderMode === 'iframe' && mainMode === 'edit' && iframeEditOverlay && (
               <div

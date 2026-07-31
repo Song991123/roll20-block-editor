@@ -1,5 +1,23 @@
 # 2026-07-31 - Actual-status and renderer-action gate refresh
 
+## 2026-07-31 - Parent render-readiness surface gate
+
+- `IMPLEMENTED`: `PreviewMain` now treats the persistent iframe as the only
+  preview/edit surface and consumes its `r20:render-ready` message. The parent
+  compares the message's HTML key with the current live HTML key; a new live
+  patch immediately invalidates edit readiness until the matching paint has
+  settled.
+- `IMPLEMENTED`: while the current iframe surface is not ready, edit pointer,
+  layer/widget drop, and context-menu actions are gated behind a temporary
+  editor loading overlay. The sheet is not copied into a second editor DOM.
+- `VERIFIED LOCAL`: lint, build, persistent Preview/Edit (`modern loads=0`,
+  `legacy loads=0`), synthetic Preview/Edit (`4/4 exact`, `0px / 0%` in both
+  modes), and edit-flow smoke passed.
+- `BLOCKED EXTERNAL`: a fresh supported visible HTML chooser attempt in the
+  dedicated one-member modern Sandbox returned `Not allowed` before file
+  transmission. Actual generated root/chat evidence remains `0/4`; no room
+  setting, sheet payload, save, or chat write occurred.
+
 # 2026-07-31 - Render-readiness gate
 
 - Added a shared iframe readiness marker. The bridge now waits for authored

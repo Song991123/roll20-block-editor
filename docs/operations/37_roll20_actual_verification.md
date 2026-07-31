@@ -2,6 +2,22 @@
 
 Date: 2026-06-18
 
+## 2026-07-31 current external gate and local readiness result
+
+- `VERIFIED LOCAL`: the product parent now honors the same iframe
+  `r20:render-ready` contract used by the local strict smoke. Edit input is
+  gated only during a current-source paint transition, then released on the
+  matching HTML key; Preview and Edit still share one persistent iframe.
+- `VERIFIED EXTERNAL READ-ONLY`: the dedicated modern Sandbox showed a fresh
+  visible participant count of exactly one and the official HTML/CSS/Translation
+  controls.
+- `BLOCKED EXTERNAL`: the official visible HTML chooser returned `Not allowed`
+  before transmission. No payload, save, room setting, or chat write occurred.
+- `CURRENT EVIDENCE`: actual generated root/chat captures remain `0/4` and
+  this run must not be reported as Roll20 visual parity. Continue only through
+  a user-visible file selection or a supported browser file-URL permission;
+  legacy still requires a separate dedicated legacy-enabled room.
+
 This document defines how agents verify that this editor's preview/edit output matches what Roll20 actually shows. It is intentionally strict because Roll20 rooms may contain private campaign material and real sheet assets.
 
 ## Goal

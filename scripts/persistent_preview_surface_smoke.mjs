@@ -82,6 +82,14 @@ async function warmPerfHook(page) {
   );
 }
 
+async function waitForRenderReady(page) {
+  await page.waitForFunction(
+    () => document.querySelector('[data-r20-render-ready]')?.getAttribute('data-r20-render-ready') === '1',
+    null,
+    { timeout: 30000 },
+  );
+}
+
 async function readApplyStats(frame) {
   return frame.evaluate(() => ({
     mode: document.body?.getAttribute('data-r20-last-apply-mode') ?? '',
@@ -187,6 +195,7 @@ async function runMode(browser, mode) {
     const frame = await handle?.contentFrame();
     if (!frame) throw new Error('preview iframe content frame unavailable');
     await frame.locator(expectedSelector).waitFor({ state: 'visible', timeout: 30000 });
+    await waitForRenderReady(page);
     result.autoCanvasWidth = await page.locator('[data-testid="preview-iframe"]').evaluate((node) => ({
       width: Number.parseFloat(node.getAttribute('style')?.match(/width:\s*([\d.]+)px/)?.[1] ?? ''),
     }));
@@ -336,6 +345,7 @@ async function runMode(browser, mode) {
       result.liveApplyMutation.beforeAck,
       { timeout: 30000 },
     );
+    await waitForRenderReady(page);
     await frame.waitForFunction(
       (expectedValue) => document.querySelector('input[name="attr_probe"]')?.value === expectedValue,
       `runtime-${mode}`,
@@ -441,6 +451,7 @@ async function runMode(browser, mode) {
         blockId: target.getAttribute('data-r20-block-id'),
       };
     });
+    await waitForRenderReady(page);
     const contextMenu = page.locator('[data-testid="shadow-context-menu"]');
     await contextMenu.waitFor({ state: 'visible', timeout: 30000 });
     Object.assign(result.contextMenu, await contextMenu.evaluate((menu) => {
@@ -475,6 +486,7 @@ async function runMode(browser, mode) {
     // A visible menu alone is insufficient: duplicate/delete must update the
     // Blockly model, emit cache, and rendered DOM without replacing the iframe.
     const openContextMenuFor = async (blockId) => {
+      await waitForRenderReady(page);
       const dispatched = await frame.evaluate((targetBlockId) => {
         const target = Array.from(document.querySelectorAll('[data-r20-block-id]'))
           .find((node) => node.getAttribute('data-r20-block-id') === targetBlockId);
@@ -512,6 +524,7 @@ async function runMode(browser, mode) {
       result.contextMenu.mutations,
       { timeout: 30000 },
     );
+    await waitForRenderReady(page);
     await frame.waitForFunction(
       () => document.querySelectorAll('.sheet-probe-card').length === 2,
       null,
@@ -548,6 +561,7 @@ async function runMode(browser, mode) {
       result.contextMenu.mutations.deleteBeforeAck,
       { timeout: 30000 },
     );
+    await waitForRenderReady(page);
     await frame.waitForFunction(
       () => document.querySelectorAll('.sheet-probe-card').length === 1,
       null,
@@ -897,6 +911,7 @@ async function runMode(browser, mode) {
       result.flowCommit.beforeAck,
       { timeout: 30000 },
     );
+    await waitForRenderReady(page);
     await frame.waitForFunction(
       () => Boolean(document.querySelector('.sheet-probe-drop > .sheet-probe-card')),
       null,
@@ -1006,6 +1021,7 @@ async function runMode(browser, mode) {
       result.freeCommit.beforeAck,
       { timeout: 30000 },
     );
+    await waitForRenderReady(page);
     Object.assign(result.freeCommit, await frame.evaluate(() => {
       const subject = document.querySelector('.sheet-probe-card');
       const container = document.querySelector('.sheet-probe-drop');
