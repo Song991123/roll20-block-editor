@@ -1,3 +1,12 @@
+## 2026-07-31 Sandbox permission recheck
+
+- `VERIFY`: modern Sandbox participant preflight still passed with one visible
+  participant.
+- `BLOCKED`: the supported HTML chooser still returned `Not allowed`; no
+  payload reached Roll20.
+- `TODO P0`: enable the documented Chrome extension file-URL permission,
+  then resume the modern upload and capture path.
+
 ## 2026-07-31 Sandbox upload permission blocker
 
 - `DONE`: dedicated modern tab preflight passed with exactly one visible

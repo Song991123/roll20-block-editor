@@ -1,3 +1,11 @@
+## 2026-07-31 - Sandbox permission recheck
+
+- RECHECKED: the same dedicated modern Sandbox tab still showed exactly one
+  visible participant and the supported HTML chooser remained available.
+- RESULT: the chooser still returned `Not allowed`; the local anonymous file
+  was not transmitted and no Roll20 state changed. The extension permission
+  remains the only known external prerequisite.
+
 ## 2026-07-31 - Sandbox upload permission diagnosis
 
 - VERIFIED EXTERNAL: the dedicated modern tab was freshly listed and safely
