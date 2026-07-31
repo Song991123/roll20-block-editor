@@ -22,6 +22,7 @@ const tasks = [
   'test:asset-replacements',
   'test:translation-payload',
   'test:roll20-upload-files',
+  'test:roll20-sandbox-synthetic',
   'test:export-smoke',
   'test:layer-roles',
   'test:blockly-history',

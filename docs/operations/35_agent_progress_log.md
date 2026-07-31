@@ -11562,3 +11562,22 @@ same-hash modern/legacy comparison.
   synthetic Preview/Edit mismatch is `0%` for all four captures.
 - Actual current-payload modern/legacy Roll20 parity remains open. No private
   sheet source, screenshot, fixture, or generated report was committed.
+
+## 2026-08-01 - Generated result-card verification
+
+- Extended the ignored anonymous Sandbox payload generator with a custom
+  result card and Roll-button linkage for modern and legacy export modes.
+- Added `test:roll20-sandbox-synthetic` to `ci:verify`. It checks the default
+  path, custom template markup/CSS/translation, both generation modes, and
+  internal-ID stripping without committing a fixture.
+- Local browser evidence passed: `100%` import match, stable imported-edit
+  roundtrip, modern/legacy Preview/Edit mismatch `0%`, and a real Preview
+  click producing `sheet-rolltemplate-proof` in the shared chat renderer.
+- Lint, production build, full `ci:verify`, and the private-evidence guard all
+  passed with the new synthetic generator self-test included.
+- The modern Sandbox participant gate passed at exactly one visible member.
+  A character iframe was covering the visible upload controls; closing that
+  window fixed the hit target, but the supported chooser still returned
+  `Not allowed` before transmission. No sheet, room setting, or chat changed.
+- Current-payload actual modern root/chat paint and the independent dedicated
+  legacy-room run remain open. No parity claim is made from local equality.

@@ -11065,3 +11065,39 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: run the copyright-safe generated result-card payload through the
   supported modern Sandbox path and a separate dedicated legacy-enabled test
   room, then classify wrapper, font, control, and chat-paint differences.
+
+## 2026-08-01 Generated Result-Card Verification
+
+- `DONE LOCAL`: the anonymous Sandbox payload generator now accepts
+  `--rolltemplate` and emits a generic sheet body, Roll button, custom
+  `<rolltemplate>`, CSS, translation, and worker source for both modern and
+  legacy export modes. Generated files remain under ignored `.tmp/` only.
+- `DONE LOCAL`: added a CI self-test covering default-template compatibility,
+  custom-template linkage, template CSS/translation presence, modern and
+  legacy payload generation, and removal of internal block IDs.
+- `VERIFIED LOCAL`: the generated custom-template payload imported with
+  `100%` structural match and `39` blocks. Sandbox-preview smoke kept one
+  template in source/runtime storage, hid template and worker runtime nodes
+  from the visible sheet, and reported zero console or page errors.
+- `VERIFIED LOCAL`: imported edit sync passed flow insertion, nested free
+  placement, leaf/non-leaf layer reorder, Preview synchronization, and stable
+  re-import. Modern and legacy Preview/Edit image comparison both reported
+  exact `0%` mismatch for this synthetic payload.
+- `VERIFIED LOCAL`: a real Preview Roll-button click produced a
+  `sheet-rolltemplate-proof` result card through the shared ChatPane renderer;
+  the card had no app-only debug label and no console or page errors.
+- `VERIFIED REPO`: lint, production build, full `ci:verify`, and the private
+  evidence guard pass with the new generator self-test included.
+- `BLOCKED EXTERNAL`: the dedicated modern Sandbox showed exactly one visible
+  member. The open character iframe was found covering the upload controls;
+  after closing that window, hit testing reached the visible HTML label, but
+  the supported file chooser still failed with `Not allowed` before any file
+  transmission.
+- `NOT VERIFIED`: current-payload modern Roll20 root/chat paint remains
+  unmeasured. Current-payload legacy Roll20 remains a separate dedicated-room
+  gate and was not run in this batch. Local `0%` Preview/Edit equality is not
+  actual Roll20 visual parity.
+- `NEXT P0`: enable the Chrome extension's local-file access or complete the
+  visible HTML/CSS/Translation selections manually in the retained Sandbox,
+  then capture current-payload modern root and chat evidence. Run the same
+  anonymous payload separately in a newly created legacy-enabled test room.

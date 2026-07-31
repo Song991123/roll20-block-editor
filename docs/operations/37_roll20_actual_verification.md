@@ -1079,3 +1079,25 @@ legacy-room evidence.
 - Sampled authored-relative geometry and computed styles were equal. Treat the
   remaining result as native paint/raster variation for this one synthetic
   fixture; do not tune generic CSS or claim arbitrary-sheet parity from it.
+
+## 2026-08-01 Generated Result-Card Retry
+
+- The current retry used only a newly generated anonymous payload containing
+  a generic layout, Roll button, custom result card, translation, and worker.
+  The modern and legacy variants remain ignored under `.tmp/`.
+- The dedicated modern Sandbox again showed exactly one visible member. The
+  open character-sheet iframe was hit-testing above the Sandbox upload labels;
+  closing that character window exposed the official HTML/CSS/Translation
+  controls without changing room or sheet data.
+- After the overlay was removed, hit testing selected the visible HTML label
+  correctly and the browser opened the supported chooser path. Local file
+  assignment still ended at `fileChooser.setFiles: Not allowed`, before any
+  upload or Roll20 save request.
+- Therefore current generated-sheet evidence remains `0/4` for modern actual
+  root, modern actual chat, legacy actual root, and legacy actual chat. Local
+  Preview/Edit exact equality and local ChatPane success do not satisfy those
+  four external gates.
+- Preserve the existing rule: do not use hidden input mutation or endpoint
+  upload as parity evidence. Retry modern only after supported local-file
+  access is enabled; run legacy only in a newly created dedicated
+  legacy-enabled one-member room.
