@@ -122,6 +122,33 @@ try {
   nestWorkspace.dispose();
 }
 
+const nonLeafWorkspace = new Blockly.Workspace();
+const nonLeafRoot = nonLeafWorkspace.newBlock('r20_test_container');
+const nonLeafGroupA = nonLeafWorkspace.newBlock('r20_test_container');
+const nonLeafChildA = nonLeafWorkspace.newBlock('r20_test_leaf');
+const nonLeafGroupB = nonLeafWorkspace.newBlock('r20_test_container');
+const nonLeafChildB = nonLeafWorkspace.newBlock('r20_test_leaf');
+nonLeafRoot.getInput('BODY')!.connection!.connect(nonLeafGroupA.previousConnection!);
+nonLeafGroupA.nextConnection!.connect(nonLeafGroupB.previousConnection!);
+nonLeafGroupA.getInput('BODY')!.connection!.connect(nonLeafChildA.previousConnection!);
+nonLeafGroupB.getInput('BODY')!.connection!.connect(nonLeafChildB.previousConnection!);
+
+adapter.registerWorkspace('html', nonLeafWorkspace as unknown as Blockly.WorkspaceSvg);
+try {
+  // Moving a visible group must move its complete subtree, not promote or
+  // detach the group's children from their original container.
+  assert.equal(adapter.moveBlockAfter('html', nonLeafGroupA.id, nonLeafGroupB.id), true);
+  assert.equal(nonLeafRoot.getInput('BODY')!.connection!.targetBlock()?.id, nonLeafGroupB.id);
+  assert.equal(nonLeafGroupB.nextConnection!.targetBlock()?.id, nonLeafGroupA.id);
+  assert.equal(nonLeafChildA.getSurroundParent()?.id, nonLeafGroupA.id);
+  assert.equal(nonLeafChildB.getSurroundParent()?.id, nonLeafGroupB.id);
+  assert.equal(nonLeafGroupA.getInput('BODY')!.connection!.targetBlock()?.id, nonLeafChildA.id);
+  assert.equal(nonLeafGroupB.getInput('BODY')!.connection!.targetBlock()?.id, nonLeafChildB.id);
+} finally {
+  adapter.unregisterWorkspace('html');
+  nonLeafWorkspace.dispose();
+}
+
 const deleteWorkspace = new Blockly.Workspace();
 const deleteRoot = deleteWorkspace.newBlock('r20_test_container');
 const deleteFrame = deleteWorkspace.newBlock('r20_test_container');

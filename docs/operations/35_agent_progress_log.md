@@ -1,3 +1,15 @@
+## 2026-07-31 - Imported subtree regression guard
+
+- IMPLEMENTED: added a Blockly layer-operation regression case that moves a
+  non-leaf group after a sibling while asserting both child parent links and
+  statement connections remain intact.
+- VERIFIED: focused layer-operation test, full `ci:verify`, lint, and
+  production build all pass. The browser-level imported non-leaf fixture also
+  remains PASS with `0%` subtree mismatch and synchronized edit/preview
+  geometry.
+- BOUNDARY: this strengthens local regression coverage only; actual Roll20
+  screenshot, worker, asset, and chat parity remain external gates.
+
 ## 2026-07-31 - Imported non-leaf layer reorder verification
 
 - VERIFIED LOCAL: the neutral imported non-leaf fixture passed a real layer

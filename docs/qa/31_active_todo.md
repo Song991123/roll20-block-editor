@@ -1,3 +1,11 @@
+## 2026-07-31 Imported subtree regression guard
+
+- `DONE LOCAL`: Blockly layer-operation unit coverage now asserts non-leaf
+  group reorder preserves child parents and statement connections.
+- `VERIFIED LOCAL`: focused test, full `ci:verify`, lint, and production build
+  pass. Browser imported non-leaf smoke remains `0%` subtree mismatch.
+- `VERIFY`: this does not close actual Roll20 visual/worker/asset/chat parity.
+
 ## 2026-07-31 Imported non-leaf layer reorder
 
 - `DONE LOCAL`: neutral imported group subtree reordering passed through the
