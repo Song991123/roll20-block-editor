@@ -1,3 +1,17 @@
+## 2026-07-31 - Sandbox upload permission retry
+
+- Reclaimed the dedicated modern Sandbox and confirmed a fresh visible member
+  count of exactly one and the expected Sheet Sandbox Tools dialog.
+- Retried the supported visible HTML file chooser with the current anonymous
+  payload. Chrome returned `Not allowed` before the file reached Roll20.
+- Confirmed the connector accepts only a local path for `setFiles`; the
+  in-memory payload shape is unsupported. No hidden input, direct endpoint,
+  internal Roll20 API, upload workaround, or ordinary-room interaction was
+  attempted.
+- External gate remains open: generated actual screenshots `0/4`, chat
+  captures `0/2`. Next action is the documented Chrome file-URL permission,
+  followed by fresh modern evidence and then the separate legacy destination.
+
 ## 2026-07-31 - Canonical free-placement containment regression
 
 - IMPLEMENTED: `resolveIframeWidgetDropTarget` now accepts the active

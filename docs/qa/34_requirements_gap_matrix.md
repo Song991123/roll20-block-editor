@@ -2,6 +2,20 @@
 
 Date: 2026-07-31
 
+## Sandbox Upload Permission Retry - 2026-07-31
+
+- `VERIFY / BLOCKED EXTERNAL`: a fresh dedicated modern Sandbox preflight again
+  showed exactly one visible participant and the expected file-upload dialog.
+  The supported local-path chooser returned `Not allowed` before upload.
+- The browser connector does not support the in-memory file-payload form, and
+  no hidden DOM input, direct endpoint, internal Roll20 API, or other bypass
+  was used.
+- Current authoritative run remains `generatedActualScreenshots=0/4` and
+  `chatCurrentMetrics=0/2`; no visual parity claim is made.
+- Next gate: enable the documented Chrome file-URL permission, upload the
+  current anonymous payload, capture modern root/chat evidence, then repeat
+  independently in the dedicated legacy destination.
+
 ## Canonical Free-Placement Containment Regression - 2026-07-31
 
 - FIXED LOCAL: free-mode widget target resolution no longer commits a root

@@ -1,3 +1,18 @@
+## 2026-07-31 Sandbox upload permission retry
+
+- `VERIFY / BLOCKED EXTERNAL`: the dedicated modern Sandbox was reclaimed and
+  freshly showed exactly one visible participant plus the `Sheet Sandbox Tools`
+  dialog. The visible HTML chooser still returned `Not allowed` before the
+  anonymous current payload reached Roll20.
+- `NOT USED`: the in-memory file-payload form is not supported by this browser
+  connector; only a local path is accepted. No hidden input, direct DOM file
+  injection, endpoint, or Roll20 internal API was used as a bypass.
+- `PRESERVED`: no upload, save, chat send, setting change, or ordinary-room
+  interaction occurred. Current authoritative status remains `0/4` generated
+  actual screenshots and `0/2` chat captures.
+- `TODO P0`: enable Chrome extension file-URL access, then resume the modern
+  current-payload upload and capture path before entering the legacy gate.
+
 ## 2026-07-31 Canonical free-placement containment regression
 
 - DONE LOCAL: free-mode widget drops now continue past a child `before/after`
