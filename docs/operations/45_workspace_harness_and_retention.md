@@ -540,3 +540,16 @@ external material remain preserved.
   User approval cannot override this execution boundary.
 - NOT DELETED: no target changed. No alternate shell, native API, per-file
   workaround, or safety bypass was used.
+
+## 2026-07-31 explicit retry after latest user approval
+
+- RECHECKED: the active worktree currently contains only the generated
+  `.next/`, `out/`, and `.tmp/` cleanup targets from the latest local build
+  and verification run. The active `node_modules/` tree, source, Git
+  worktrees, protected sheet roots, and report policy were excluded.
+- ATTEMPTED: a boundary-checked native PowerShell recursive deletion was
+  requested after confirming no project listener was active.
+- BLOCKED: the host rejected the deletion invocation before PowerShell
+  executed. User approval cannot override this host execution boundary.
+- NOT DELETED: all three targets remain. No alternate shell, native API,
+  per-file workaround, or safety bypass was used.

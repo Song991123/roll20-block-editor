@@ -9654,6 +9654,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `OPEN`: `web-push-main/.next/`, `out/`, `.tmp/`, ignored report outputs, and
   the old worktree's generated/dependency output still need a permitted
   maintenance operation. They are not product-source changes.
+
+## 2026-07-31 Generated-output deletion retry
+
+- `BLOCKED / LOCAL MAINTENANCE`: the user authorized a retry, but the host
+  rejected the native recursive deletion before PowerShell execution.
+- `NOT DONE`: `.next/`, `out/`, and `.tmp/` remain present; no alternate
+  deletion path was used. Source, dependencies, worktrees, and protected
+  external sheet roots remain intact.
 ## 2026-07-31 Edit surface commit latency refresh
 
 - DONE LOCAL: Layer-panel reorder, eject, undo, and redo now publish the

@@ -10265,3 +10265,15 @@ same-hash modern/legacy comparison.
 - Next: recover a supported user-mediated file handoff, then capture fresh
   modern and independently participant-gated legacy evidence. Do not promote
   local editor or synthetic visual results to live parity.
+
+## 2026-07-31 - Explicit generated-output deletion retry
+
+- The active worktree was rechecked with no project listener. Only the
+  generated `.next/`, `out/`, and `.tmp/` directories were selected; active
+  dependencies, source, worktrees, protected sources, and report policy were
+  preserved.
+- The user explicitly authorized another deletion attempt, but the host
+  rejected the boundary-checked recursive PowerShell operation before it
+  executed. No alternate shell, native API, or per-file workaround was used.
+- Result: zero targets deleted. The three generated directories remain local
+  and ignored.
