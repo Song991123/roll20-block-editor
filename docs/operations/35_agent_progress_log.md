@@ -9968,3 +9968,18 @@ same-hash modern/legacy comparison.
 - This keeps the deletion state explicit: generated build/tmp/report output
   remains local and ignored; product source, active dependencies, worktrees,
   protected sheet roots, and the report policy remain preserved.
+## 2026-07-31 - Edit surface commit latency refresh
+
+- The persistent iframe remains the only rendered sheet surface in edit mode.
+  Layer-panel reorder/eject and HTML undo/redo now call the same immediate
+  emit path used by completed canvas drops, so the preview cannot wait for the
+  120ms debounce after a committed structural action.
+- Local evidence: layer-role/drop tests, lint, production build,
+  `smoke:edit-flow`, and full `ci:verify` passed.
+- External boundary: the dedicated modern Sandbox was inspected with exactly
+  one visible member and the expected HTML/CSS/Translation inputs. The
+  supported browser chooser rejected the workspace-local anonymous payload
+  with `Not allowed`; no upload/save occurred and no ordinary room changed.
+- Next: recover a supported user-mediated file handoff, then capture fresh
+  modern and independently participant-gated legacy evidence. Do not promote
+  local editor or synthetic visual results to live parity.

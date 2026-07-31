@@ -9357,3 +9357,20 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `OPEN`: `web-push-main/.next/`, `out/`, `.tmp/`, ignored report outputs, and
   the old worktree's generated/dependency output still need a permitted
   maintenance operation. They are not product-source changes.
+## 2026-07-31 Edit surface commit latency refresh
+
+- DONE LOCAL: Layer-panel reorder, eject, undo, and redo now publish the
+  committed Blockly state to the persistent preview iframe immediately. They
+  no longer wait for the normal debounce window or a later edit.
+- VERIFIED LOCAL: `test:layer-roles`, `test:iframe-drop-target`, `lint`,
+  `build`, `smoke:edit-flow`, and full `ci:verify` pass. The browser smoke
+  still covers flow/free placement, layer insertion, table guards, cycle
+  rejection, selection sync, and zero console/page errors.
+- CLAIM BOUNDARY: This improves local edit-to-render latency only. It does not
+  prove arbitrary-sheet visual parity or live Roll20 worker behavior.
+- VERIFY / BLOCKED EXTERNAL: The dedicated modern Sandbox still exposes the
+  three expected file inputs, but the supported browser file chooser rejects
+  the workspace-local anonymous payload with `Not allowed`. No upload or save
+  occurred; no ordinary room was opened or modified.
+- NEXT P0: Use a supported user-mediated file-selection handoff for the
+  anonymous payload, then capture modern and independent legacy root evidence.

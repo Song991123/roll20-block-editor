@@ -11,6 +11,7 @@ import { EDIT_SURFACE_LAYER_PANEL_WIDTH_PX } from '@/lib/editor/editSurfaceLayou
 import { useUiStore } from '@/lib/stores/uiStore';
 import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { cn } from '@/lib/utils/cn';
+import { flushEmitPipeline } from '@/lib/preview/useEmitPipeline';
 
 function formatDropModeLabel(mode: LayerDropMode): string {
   if (mode === 'inside') return '안에 넣기';
@@ -113,9 +114,15 @@ export default function EditCanvas() {
   const runHistoryAction = useCallback((action: 'undo' | 'redo') => {
     const changed = action === 'undo' ? adapter.undo('html') : adapter.redo('html');
     if (!changed) return;
+    const store = useWorkspaceStore.getState();
+    store.bumpStructure('html', adapter.countBlocks('html'));
+    // History actions are commit points, just like a completed pointer drop.
+    // Publish the same render surface immediately instead of waiting for the
+    // debounce window or a later unrelated edit.
+    flushEmitPipeline();
     const selectedId = useWorkspaceStore.getState().selectedBlockId;
     if (selectedId && !adapter.getBlock('html', selectedId)) {
-      useWorkspaceStore.getState().setSelectedBlockId(null, 'tree');
+      store.setSelectedBlockId(null, 'tree');
     }
   }, [adapter]);
 
@@ -411,6 +418,7 @@ function EditLayerPanel({
             : adapter.moveBlockBefore(tab, draggedId, targetId);
       if (!moved) return;
       bumpStructure(tab, adapter.countBlocks(tab));
+      flushEmitPipeline();
       setSelected(draggedId, 'tree');
     },
     [bumpStructure, canMoveLayer, setSelected, tab],
@@ -421,6 +429,7 @@ function EditLayerPanel({
       const adapter = getBlocklyAdapter();
       if (!adapter.moveBlockOutOfContainer(tab, blockId)) return;
       bumpStructure(tab, adapter.countBlocks(tab));
+      flushEmitPipeline();
       setSelected(blockId, 'tree');
     },
     [bumpStructure, setSelected, tab],
