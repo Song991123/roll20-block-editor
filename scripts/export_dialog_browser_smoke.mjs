@@ -154,6 +154,8 @@ async function verifyAssetReplacementRender(page) {
   await page.evaluate(async ({ html: h, css: c, map }) => {
     window.__perfHook.clearAll();
     window.__perfHook.setAssetReplacementMap(map);
+    window.__perfHook.setRoll20CompatibilityMode('modern');
+    window.__perfHook.setRoll20SandboxSanitize(false);
     await window.__perfHook.importSheet({ html: h, css: c, i18n: '{}' });
     window.__perfHook.saveAssetReplacementProfile('Synthetic relink profile');
     window.__perfHook.setPreviewZoom(1);
@@ -259,6 +261,14 @@ async function verifyAssetReplacementRender(page) {
     };
   }, { oldNeedle: oldUrl, newNeedle: newUrl });
 
+  await page.evaluate(() => {
+    window.__perfHook.setRoll20CompatibilityMode('legacy');
+    window.__perfHook.setRoll20SandboxSanitize(true);
+  });
+  await page.waitForFunction(() => (
+    document.querySelector('[data-testid="roll20-mode-legacy"]')?.getAttribute('aria-pressed') === 'true'
+    && document.querySelector('[data-testid="roll20-sandbox-sanitize-toggle"]')?.checked === true
+  ));
   await page.click('[data-testid="header-save-button"]');
   await page.waitForFunction(
     async ({ mapNeedle }) => {
@@ -297,6 +307,8 @@ async function verifyAssetReplacementRender(page) {
           hasPreviewNode: xml.includes('<asset-replacement-map><![CDATA['),
           hasProfileNode: xml.includes('<asset-replacement-profiles'),
           hasProfileName: xml.includes('Synthetic relink profile'),
+          hasCompatibilityNode: xml.includes('<roll20-compatibility-mode>legacy</roll20-compatibility-mode>'),
+          hasSandboxNode: xml.includes('<roll20-sandbox-sanitize>true</roll20-sandbox-sanitize>'),
         });
       };
     };
@@ -307,7 +319,11 @@ async function verifyAssetReplacementRender(page) {
   await page.waitForSelector('[data-testid="autosave-restore"]', { timeout: 15000 });
   await page.click('[data-testid="autosave-restore"]');
   await page.waitForFunction(
-    ({ mapNeedle }) => window.__perfHook.getAssetReplacementMap() === mapNeedle,
+    ({ mapNeedle }) => (
+      window.__perfHook.getAssetReplacementMap() === mapNeedle
+      && document.querySelector('[data-testid="roll20-mode-legacy"]')?.getAttribute('aria-pressed') === 'true'
+      && document.querySelector('[data-testid="roll20-sandbox-sanitize-toggle"]')?.checked === true
+    ),
     { mapNeedle: mapText },
     { timeout: 15000 },
   );
@@ -316,6 +332,8 @@ async function verifyAssetReplacementRender(page) {
     profileRestored: window.__perfHook.getAssetReplacementProfiles().some((profile) => (
       profile.name === 'Synthetic relink profile' && profile.text === mapNeedle
     )),
+    compatibilityModeRestored: document.querySelector('[data-testid="roll20-mode-legacy"]')?.getAttribute('aria-pressed') === 'true',
+    sandboxSanitizeRestored: document.querySelector('[data-testid="roll20-sandbox-sanitize-toggle"]')?.checked === true,
   }), { mapNeedle: mapText });
 
   await page.click('[data-testid="header-export-button"]');
@@ -862,8 +880,12 @@ async function main() {
     if (!result.checks.assetReplacementRender.persisted.hasPreviewNode) failures.push('asset replacement autosave preview node missing');
     if (!result.checks.assetReplacementRender.persisted.hasProfileNode) failures.push('asset replacement profile autosave node missing');
     if (!result.checks.assetReplacementRender.persisted.hasProfileName) failures.push('asset replacement profile name was not saved');
+    if (!result.checks.assetReplacementRender.persisted.hasCompatibilityNode) failures.push('Roll20 compatibility mode was not saved to autosave XML');
+    if (!result.checks.assetReplacementRender.persisted.hasSandboxNode) failures.push('Roll20 Sandbox sanitize flag was not saved to autosave XML');
     if (!result.checks.assetReplacementRender.restored.mapRestored) failures.push('asset replacement map did not restore from autosave');
     if (!result.checks.assetReplacementRender.restored.profileRestored) failures.push('asset replacement profile did not restore from autosave');
+    if (!result.checks.assetReplacementRender.restored.compatibilityModeRestored) failures.push('Roll20 compatibility mode did not restore from autosave');
+    if (!result.checks.assetReplacementRender.restored.sandboxSanitizeRestored) failures.push('Roll20 Sandbox sanitize flag did not restore from autosave');
     if (!result.checks.assetReplacementRender.exportMapUi.hasCopy) failures.push('restored asset map copy button missing');
     if (!result.checks.assetReplacementRender.exportMapUi.hasDownload) failures.push('restored asset map download button missing');
     if (!result.checks.assetReplacementRender.exportMapUi.hasCliHint) failures.push('restored asset map CLI hint missing');

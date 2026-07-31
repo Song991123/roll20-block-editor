@@ -1,3 +1,14 @@
+# 2026-07-31 Autosave Roll20 mode persistence
+
+- `FIXED LOCAL`: autosave XML version 3 now stores the selected modern/legacy
+  compatibility mode and the independent Roll20 Sandbox sanitize flag.
+- `VERIFIED LOCAL`: `smoke:export-dialog` saved `legacy=true` and
+  `Sandbox=true`, reloaded the app, restored the autosave banner, and observed
+  both settings restored. Console issues, page errors, and external requests
+  were all zero.
+- `CLAIM BOUNDARY`: this prevents local mode drift after reload; it does not
+  close actual Roll20 Sandbox or dedicated legacy-room visual parity.
+
 # 2026-07-31 Roll20 pre-upload payload refresh
 
 - `VERIFIED LOCAL`: the fresh anonymous modern payload passed local baseline,

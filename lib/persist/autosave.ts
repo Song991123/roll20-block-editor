@@ -31,17 +31,20 @@ import { useSettingsStore } from '@/lib/stores/settingsStore';
 import {
   usePreviewStore,
   type AssetReplacementProfile,
+  type Roll20CompatibilityMode,
 } from '@/lib/stores/previewStore';
 import { AUTOSAVE_KEY, saveWorkspace, type SaveError, type SaveResult } from './indexeddb';
 
 /** 복합 XML 형태 — 3 워크스페이스 합본. spec 22 §3.2. */
-const COMBINED_XML_VERSION = 2;
+const COMBINED_XML_VERSION = 3;
 
 export type ParsedCombinedXml = Record<WorkspaceKey, string> & {
   assetReplacementMap?: string;
   assetReplacementProfiles?: AssetReplacementProfile[];
   activeAssetReplacementProfileId?: string | null;
   documentLanguage?: string;
+  compatibilityMode?: Roll20CompatibilityMode;
+  roll20SandboxSanitize?: boolean;
 };
 
 /**
@@ -55,6 +58,10 @@ export function buildCombinedXml(): string {
   const assetReplacementProfiles = previewState.assetReplacementProfiles;
   const activeAssetReplacementProfileId = previewState.activeAssetReplacementProfileId;
   const documentLanguage = previewState.documentLanguage;
+  const compatibilityMode: Roll20CompatibilityMode = previewState.legacyCssSanitize
+    ? 'legacy'
+    : 'modern';
+  const roll20SandboxSanitize = previewState.roll20SandboxSanitize;
   const parts: string[] = [];
   parts.push(
     `<r20-autosave version="${COMBINED_XML_VERSION}" ts="${Date.now()}">`,
@@ -74,6 +81,12 @@ export function buildCombinedXml(): string {
   );
   parts.push(
     `<document-language><![CDATA[${escapeCdata(documentLanguage)}]]></document-language>`,
+  );
+  parts.push(
+    `<roll20-compatibility-mode>${compatibilityMode}</roll20-compatibility-mode>`,
+  );
+  parts.push(
+    `<roll20-sandbox-sanitize>${roll20SandboxSanitize ? 'true' : 'false'}</roll20-sandbox-sanitize>`,
   );
   parts.push('</preview>');
   parts.push('</r20-autosave>');
@@ -120,6 +133,8 @@ export function parseCombinedXml(
     const assetMapNode = previewNode?.getElementsByTagName('asset-replacement-map')[0] ?? null;
     const profileNode = previewNode?.getElementsByTagName('asset-replacement-profiles')[0] ?? null;
     const languageNode = previewNode?.getElementsByTagName('document-language')[0] ?? null;
+    const compatibilityNode = previewNode?.getElementsByTagName('roll20-compatibility-mode')[0] ?? null;
+    const sandboxSanitizeNode = previewNode?.getElementsByTagName('roll20-sandbox-sanitize')[0] ?? null;
     return {
       html: out.html ?? '',
       css: out.css ?? '',
@@ -130,10 +145,24 @@ export function parseCombinedXml(
       assetReplacementProfiles: parseAssetReplacementProfiles(profileNode?.textContent ?? ''),
       activeAssetReplacementProfileId: profileNode?.getAttribute('active-id') || null,
       documentLanguage: languageNode ? languageNode.textContent ?? '' : undefined,
+      compatibilityMode: parseCompatibilityMode(compatibilityNode?.textContent),
+      roll20SandboxSanitize: parseBoolean(sandboxSanitizeNode?.textContent),
     };
   } catch {
     return null;
   }
+}
+
+function parseCompatibilityMode(value: string | null | undefined): Roll20CompatibilityMode | undefined {
+  const normalized = value?.trim();
+  return normalized === 'modern' || normalized === 'legacy' ? normalized : undefined;
+}
+
+function parseBoolean(value: string | null | undefined): boolean | undefined {
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === 'true' || normalized === '1') return true;
+  if (normalized === 'false' || normalized === '0') return false;
+  return undefined;
 }
 
 function parseAssetReplacementProfiles(text: string): AssetReplacementProfile[] | undefined {
@@ -194,6 +223,8 @@ export function installAutosave(): () => void {
     if (state.assetReplacementProfiles !== prev.assetReplacementProfiles) trigger();
     if (state.activeAssetReplacementProfileId !== prev.activeAssetReplacementProfileId) trigger();
     if (state.documentLanguage !== prev.documentLanguage) trigger();
+    if (state.legacyCssSanitize !== prev.legacyCssSanitize) trigger();
+    if (state.roll20SandboxSanitize !== prev.roll20SandboxSanitize) trigger();
   });
 
   return () => {

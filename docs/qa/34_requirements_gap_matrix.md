@@ -1,5 +1,15 @@
 # 34. Requirements Gap Matrix
 
+# Autosave Render Contract Persistence - 2026-07-31
+
+- `DONE LOCAL`: autosave version 3 persists the per-sheet modern/legacy
+  compatibility selection and independent Sandbox sanitize flag.
+- `VERIFIED LOCAL`: browser save/reload/restore smoke proves both values return
+  to the toolbar state; lint, build, render-mode, and upload-payload checks
+  pass.
+- `OPEN`: actual Roll20 Sandbox render/chat parity and dedicated legacy-room
+  parity remain unverified.
+
 ## Roll20 Pre-upload Payload Refresh - 2026-07-31
 
 - `DONE LOCAL`: a fresh anonymous modern payload passed all seven pre-upload

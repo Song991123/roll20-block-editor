@@ -94,6 +94,12 @@ export default function AutosaveBanner({ xml, meta, onDismiss }: Props) {
       if (parts.documentLanguage !== undefined && parts.documentLanguage.trim()) {
         previewStore.setDocumentLanguage(parts.documentLanguage);
       }
+      if (parts.compatibilityMode !== undefined) {
+        previewStore.setRoll20CompatibilityMode(parts.compatibilityMode);
+      }
+      if (parts.roll20SandboxSanitize !== undefined) {
+        previewStore.setRoll20SandboxSanitize(parts.roll20SandboxSanitize);
+      }
       for (const key of WORKSPACE_KEYS) {
         const ws = adapter.getWorkspace(key);
         if (ws) {

@@ -1,3 +1,15 @@
+# 2026-07-31 - Autosave Roll20 mode persistence
+
+- Added version-3 autosave metadata for the selected modern/legacy
+  compatibility mode and independent Roll20 Sandbox sanitize flag.
+- Restored both fields through `AutosaveBanner` using the same atomic mode
+  setter used by the live preview/edit surface; older records without these
+  nodes keep their existing defaults.
+- Verified with lint, build, render-mode smoke, upload-file tests, and the
+  browser export-dialog smoke. The browser roundtrip reported both fields
+  persisted/restored and zero console/page/external-request issues.
+- Actual Roll20 Sandbox upload and legacy-room visual parity remain open.
+
 # 2026-07-31 - Roll20 pre-upload payload refresh
 
 - `VERIFIED LOCAL`: the fresh anonymous modern payload passed local baseline,
