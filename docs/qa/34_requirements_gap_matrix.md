@@ -1597,3 +1597,19 @@ not close the external Roll20 parity rows above.
   `ci:verify`, lint, and production build pass.
 - `OPEN EXTERNAL`: no Roll20 upload was accepted after this change, so live
   translation parity and same-payload modern/legacy evidence remain VERIFY.
+
+## Live Sandbox Runtime Observation Refresh - 2026-07-31
+
+- `VERIFIED EXTERNAL READ-ONLY`: the dedicated test destination showed one
+  visible member. A live anonymous sheet iframe exposed a `852.8px x 340px`
+  root, four controls, one table, and one roll control.
+- `VERIFIED EXTERNAL TEST-ROOM`: the visible roll control produced a live
+  `sheet-rolltemplate-default` message and a new result in the text chat. The
+  test action was restricted to the dedicated destination.
+- `VERIFIED CAPTURE`: browser DPR `1.25` was measured and corrected raw local
+  captures/sidecars were saved under ignored evidence. The first unscaled CSS
+  chat crop was treated as suspect rather than used as parity evidence.
+- `OPEN / VERIFY`: the active iframe payload is not proven to equal the
+  current local three-file fixture export. The supported file chooser still
+  stops before transmission, so current-payload visual parity and the
+  modern/legacy same-payload gate remain unverified.

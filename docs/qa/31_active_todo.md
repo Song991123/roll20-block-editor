@@ -10607,3 +10607,24 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   They do not prove Roll20's live worker execution, actual chat pixels, or
   modern/legacy same-payload parity. Those remain dependent on the supported
   Sandbox upload and fresh evidence gate.
+
+## 2026-07-31 Live Sandbox Iframe And Roll Smoke Recheck
+
+- `VERIFIED EXTERNAL READ-ONLY`: the dedicated test destination visibly
+  reported exactly one member. An existing anonymous test character opened a
+  live Roll20 iframe; its root measured `852.8px` wide by `340px` high with
+  four controls, one table, and one roll control. The Roll20 root class and
+  active computed style context were observable.
+- `VERIFIED EXTERNAL TEST-ROOM SMOKE`: activating the visible roll control
+  produced a Roll20 `sheet-rolltemplate-default` message. The fresh chat
+  sidecar observed the `#textchat` shell and a new `Layout proof` result. The
+  action was limited to the dedicated test destination.
+- `VERIFIED CAPTURE DETAIL`: Chrome reported DPR `1.25`; CSS clips captured
+  the wrong region, so DPR-scaled raw PNGs and sidecars were saved only under
+  the ignored `reports/roll20-actual-compare/.../live-sandbox-observation/`
+  folder.
+- `VERIFY / OPEN EXTERNAL`: the opened test payload is not proven to be the
+  current local fixture-A/fixture-B three-file export. The supported HTML
+  chooser still rejects `fileChooser.setFiles` before transmission, so this
+  observation cannot be promoted to current-payload visual parity or the
+  modern/legacy same-payload gate.

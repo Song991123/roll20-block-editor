@@ -11160,3 +11160,21 @@ same-hash modern/legacy comparison.
 - `CLAIM BOUNDARY`: this strengthens the generic local runtime contract only.
   Live Roll20 worker/chat execution and actual modern/legacy screenshot parity
   remain open until the supported external upload produces fresh evidence.
+
+## 2026-07-31 - Live Sandbox iframe and roll smoke recheck
+
+- `VERIFIED READ-ONLY`: the dedicated test destination showed exactly one
+  visible member. An existing anonymous test character exposed a live Roll20
+  sheet iframe; root geometry was `852.8px x 340px`, with four controls, one
+  table, and one roll control. The live root/class and computed style context
+  were readable.
+- `VERIFIED TEST-ROOM SMOKE`: clicking the visible roll control produced a
+  live `sheet-rolltemplate-default` message and a fresh `Layout proof` result
+  in the text chat. The action stayed inside the dedicated test destination.
+- `VERIFIED CAPTURE DETAIL`: the browser DPR was `1.25`; unscaled CSS clips
+  landed on the wrong region. DPR-scaled raw captures and JSON sidecars were
+  written to ignored local evidence only.
+- `CLAIM BOUNDARY`: this is actual Roll20 runtime/wrapper/chat observation,
+  not current-payload parity. The supported file chooser still rejects the
+  upload before transmission, and modern/legacy same-payload screenshot
+  evidence remains open.
