@@ -10432,3 +10432,20 @@ same-hash modern/legacy comparison.
   chooser handoff did not complete. Modern and legacy actual evidence remain
   partial, not full parity. Full-height root stitching, normalized diff, and
   independent fixture-A smoke are still required.
+
+## 2026-07-31 - Latest dedicated Sandbox chooser retry
+
+- `VERIFIED EXTERNAL / READ-ONLY`: the dedicated modern Sandbox still showed a
+  fresh visible participant count of exactly one and the expected Sheet Sandbox
+  Tools dialog. No ordinary room was opened or changed.
+- `VERIFY / BLOCKED EXTERNAL`: the supported visible file-chooser flow reached
+  the anonymous HTML input, but Chrome rejected `fileChooser.setFiles` with
+  `Not allowed` before transmission. No hidden-input, endpoint, or DOM
+  injection workaround was used.
+- `MEASURED`: modern `fixture-B` remains `2/4` generated/diffed with a `6.90%`
+  sandbox diagnostic mismatch; legacy `fixture-B` remains `2/4` with `6.73%`.
+  Both difference classifiers report a clipped Roll20 dialog viewport. This
+  is not yet evidence of a product CSS defect or pixel parity.
+- `NEXT P0`: enable the supported Chrome local-file upload access, then apply
+  anonymous `fixture-A` in the dedicated modern Sandbox and rerun the separate
+  legacy evidence pass. Keep actual parity partial until those captures exist.

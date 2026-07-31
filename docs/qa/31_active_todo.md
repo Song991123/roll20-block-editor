@@ -1,3 +1,21 @@
+# 2026-07-31 Latest dedicated Sandbox chooser retry
+
+- `VERIFIED EXTERNAL READ-ONLY`: the dedicated modern Sandbox tab still shows
+  exactly `1 구성원` and the Sheet Sandbox Tools dialog. No ordinary room was
+  opened or changed.
+- `VERIFY / BLOCKED EXTERNAL`: the supported visible file-chooser flow reached
+  the HTML input, but Chrome rejected `fileChooser.setFiles` with `Not allowed`
+  before any file was transmitted. Hidden-input, endpoint, and DOM-injection
+  workarounds were not used.
+- `MEASURED LOCAL EVIDENCE`: modern `fixture-B` remains `2/4` generated and
+  diffed with sandbox mismatch `6.90%`; legacy `fixture-B` remains `2/4` with
+  sandbox mismatch `6.73%`. Both classifiers report Roll20 dialog viewport
+  clipping, not a confirmed product CSS defect. `fixture-A` remains missing.
+- `TODO P0`: enable Chrome's permitted local-file upload access, then upload
+  the anonymous `fixture-A` payload in the dedicated modern Sandbox and repeat
+  the generation-specific legacy evidence. Until then actual parity remains
+  partial and unclaimed.
+
 # 2026-07-31 Local imported edit-sync recheck
 
 - VERIFIED LOCAL: after rebuilding the deleted static `out` directory, the

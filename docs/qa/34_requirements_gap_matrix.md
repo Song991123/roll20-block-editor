@@ -1129,3 +1129,20 @@ not close the external Roll20 parity rows above.
   items and `5,205` mapped blocks.
 - `OPEN EXTERNAL`: live Roll20 screenshot/diff evidence and independent
   legacy same-payload evidence are still absent from the current gate.
+
+## Latest Dedicated Sandbox Evidence Reconciliation - 2026-07-31
+
+- `VERIFIED EXTERNAL READ-ONLY`: the dedicated modern Sandbox had exactly one
+  visible member and its Sheet Sandbox Tools dialog was reachable. No ordinary
+  user room was touched.
+- `VERIFY / BLOCKED EXTERNAL`: the supported visible chooser reached the HTML
+  input, but Chrome rejected `fileChooser.setFiles` with `Not allowed` before
+  transmission. No hidden-input or direct endpoint workaround was used.
+- `MEASURED`: modern anonymous `fixture-B` has `2/4` generated/diffed targets
+  with a `6.90%` sandbox diagnostic mismatch; the separate legacy report has
+  `2/4` with `6.73%`. Both classify the mismatch as a clipped Roll20 dialog
+  viewport. This is a diagnostic classification, not a CSS or parity pass.
+- `OPEN`: `fixture-A` upload/capture, normalized crop/root stitching, and
+  same-payload modern/legacy parity remain unproven. Historical `0/4` entries
+  above are retained as audit history; the latest current status is the
+  partial `2/4` evidence recorded here.
