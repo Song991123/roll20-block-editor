@@ -10392,3 +10392,20 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: recover a user-visible supported file selection for the anonymous
   synthetic payload, then capture fresh modern and independent legacy root
   evidence with matching payload hashes. Keep screenshot parity open.
+
+## 2026-07-31 Supported Chooser Handoff Retry
+
+- `VERIFIED EXTERNAL READ-ONLY`: after closing the character viewer, the
+  dedicated Sandbox still exposed the three visible HTML/CSS/Translation
+  labels and the participant condition remained the dedicated one-member
+  Sandbox path.
+- `VERIFY / BLOCKED AUTOMATION`: the official visible HTML label was tried
+  with the temporary anonymous payload, but Chrome rejected the supported
+  `fileChooser.setFiles` operation with `Not allowed` before transmission.
+- `HANDOFF`: the official HTML chooser was then opened for user-mediated
+  selection. The agent did not select a file, submit settings, call an
+  endpoint, or change any room state. CSS and Translation still require the
+  same explicit user selection path.
+- `NEXT P0`: complete the three-file user-visible selection, confirm the
+  generated markers after reload, and capture same-payload modern evidence
+  before starting the independent legacy run.

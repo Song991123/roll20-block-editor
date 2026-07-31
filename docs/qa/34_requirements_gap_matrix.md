@@ -1493,3 +1493,15 @@ not close the external Roll20 parity rows above.
   temp-path retry timed out. The Sandbox tools dialog also showed a
   translation parsing warning. No endpoint, hidden-input, or ordinary-room
   workaround was used.
+
+## Supported Chooser Handoff Retry - 2026-07-31
+
+- `VERIFY / BLOCKED AUTOMATION`: with the anonymous viewer closed, the
+  official Sandbox file labels were visible, but Chrome rejected the
+  supported `fileChooser.setFiles` call with `Not allowed` before upload.
+- `HANDOFF`: the official HTML file chooser was opened for a user-mediated
+  selection. No file was selected or submitted by the agent, and no room or
+  settings mutation occurred.
+- `OPEN`: the three-file same-payload modern capture and independent legacy
+  capture remain unproven; do not promote any screenshot or chat metric until
+  the generated markers are confirmed after reload.

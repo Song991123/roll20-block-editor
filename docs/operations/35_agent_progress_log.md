@@ -10973,3 +10973,17 @@ same-hash modern/legacy comparison.
 - `NEXT`: restore a supported user-visible file handoff, bind the payload hash
   to the modern Sandbox capture, then repeat independently in the legacy test
   room before changing renderer CSS.
+
+## 2026-07-31 - Supported chooser handoff retry
+
+- `RECHECKED`: after closing the anonymous character viewer, the dedicated
+  Sandbox exposed its official HTML/CSS/Translation labels again.
+- `BLOCKED AUTOMATION`: Chrome rejected the supported `fileChooser.setFiles`
+  operation with `Not allowed` before any payload transmission, including the
+  temporary local path.
+- `HANDOFF`: the official HTML chooser was opened and left for user-mediated
+  selection. No file was selected by the agent, no settings save or endpoint
+  call occurred, and no room state changed.
+- `NEXT`: after the user-visible three-file selection completes, verify the
+  fixture markers and capture modern root/chat evidence, then repeat in the
+  dedicated legacy destination.
