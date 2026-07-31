@@ -27,11 +27,16 @@ local output and is deleted after the verification batch.
 - `VERIFIED REGRESSION`: lint, production build, full `ci:verify`, persistent
   preview smoke, and two-fixture modern/legacy Preview/Edit visual smoke pass;
   local Preview/Edit mismatch remains `0%` for all four captures.
-- `MEASURED NOT PARITY`: best-aligned root pixel mismatch is `1.6638%` above
-  RGB-sum threshold `90`, concentrated around glyph and control/border raster.
-  The source viewport is JPEG by magic bytes despite its `.png` filename, so
-  the metric is non-authoritative until a true PNG source is recaptured. This
-  does not prove arbitrary-sheet or reference-image parity.
+- `VERIFIED LOSSLESS CAPTURE`: the exact authored root was recaptured through
+  supported tab CDP as true PNG at `760 x 320` CSS and `950 x 400` physical
+  pixels. The earlier JPEG-derived `1.6638%` metric is superseded.
+- `MEASURED NOT UNIVERSAL PARITY`: the physical PNG comparison has `3.1353%`
+  threshold-`90` mismatch. All `11,914` mismatches are inside sampled
+  glyph/control/table/border paint regions; `160,712` plain-background pixels
+  have zero threshold mismatches. Geometry and computed styles match for this
+  fixture, so no generic renderer CSS change is justified by the remaining
+  native-paint residual. This is still one anonymous fixture, not arbitrary-
+  sheet or reference-image parity.
 - `BLOCKED MODERN`: the modern Sandbox still rejects the supported visible
   file selection before transmission; modern generated same-payload root/chat
   evidence remains `0/4`.

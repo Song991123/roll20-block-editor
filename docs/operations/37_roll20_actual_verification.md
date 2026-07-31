@@ -1042,7 +1042,7 @@ room. With that flag it performs the same fresh participant check on the
 current editor page before navigating to settings or evaluating an upload
 snippet. Sandbox uploads remain a separate path and must never be used as
 legacy-room evidence.
-# 2026-08-01 fresh upload boundary evidence
+## 2026-08-01 Fresh Upload Boundary Evidence
 
 - The dedicated Sandbox was rechecked with a fresh visible `1 구성원` gate.
 - The same anonymous synthetic payload was tried first from the canonical
@@ -1056,3 +1056,26 @@ legacy-room evidence.
 - Next supported path: user-assisted file selection in the already-open
   Sandbox or a browser permission/tool path that explicitly permits local file
   chooser transfer. Do not use hidden endpoints as parity evidence.
+
+## 2026-08-01 Lossless Legacy Root Capture
+
+- Before capture, the newly created dedicated legacy room showed a fresh
+  visible `1` member. Existing rooms were not opened or changed.
+- `tab.screenshot()` returned JPEG bytes even when passed PNG-like options.
+  The supported tab `cdp` capability with `Page.captureScreenshot` returned
+  true PNG bytes instead.
+- On this Windows DPR-`1.25` path, CDP clip origin and dimensions had to be
+  scaled from visible CSS coordinates into physical coordinates. The exact
+  authored root was captured at `760 x 320` CSS and `950 x 400` physical
+  pixels. Record both the CSS rect and DPR in the ignored sidecar.
+- The local baseline generator now accepts `--screenshot-scale css|device`.
+  When the imported sheet has exactly one visible top-level authored element,
+  it also writes `local-authored-root.png` without changing the sheet DOM.
+- The physical PNG comparison measured `11,914 / 380,000` pixels (`3.1353%`)
+  above RGB-sum threshold `90`. Every threshold mismatch was inside sampled
+  glyph, native control, table, button, or outer-border paint regions. The
+  `160,712` remaining plain-background pixels had zero threshold mismatches
+  and mean RGB-sum delta `0.093584`.
+- Sampled authored-relative geometry and computed styles were equal. Treat the
+  remaining result as native paint/raster variation for this one synthetic
+  fixture; do not tune generic CSS or claim arbitrary-sheet parity from it.

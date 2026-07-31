@@ -17,6 +17,7 @@
  *     --run-label 2026-06-18-local-baseline [--only fixture-id] \
  *     [--compatibility-mode auto|modern|legacy] \
  *     [--device-scale-factor 1.25] \
+ *     [--screenshot-scale css|device] \
  *     [--state-map reports/visual-state-candidates/visual-state-candidates-state-map.json]
  */
 
@@ -52,6 +53,7 @@ const OFFICIAL_SHEETS_ROOT = path.resolve(
 );
 const PORT = Number(argOf('--port', '4192'));
 const DEVICE_SCALE_FACTOR = Number(argOf('--device-scale-factor', '1'));
+const SCREENSHOT_SCALE = argOf('--screenshot-scale', 'css').toLowerCase();
 const VIEWPORT = { width: 2200, height: 1200 };
 
 if (!['auto', 'modern', 'legacy'].includes(COMPATIBILITY_MODE)) {
@@ -59,6 +61,9 @@ if (!['auto', 'modern', 'legacy'].includes(COMPATIBILITY_MODE)) {
 }
 if (!Number.isFinite(DEVICE_SCALE_FACTOR) || DEVICE_SCALE_FACTOR <= 0) {
   throw new Error(`Unsupported --device-scale-factor: ${DEVICE_SCALE_FACTOR}. Use a positive number.`);
+}
+if (!['css', 'device'].includes(SCREENSHOT_SCALE)) {
+  throw new Error(`Unsupported --screenshot-scale: ${SCREENSHOT_SCALE}. Use css or device.`);
 }
 
 const MIME = {
@@ -376,7 +381,7 @@ async function applyPreviewStateCandidate(page, frame, sheet, candidate) {
   return result;
 }
 
-async function capturePreview(page, outFile, stateCandidate) {
+async function capturePreview(page, outFile, authoredRootOutFile, stateCandidate) {
   await page.evaluate(() => {
     window.__perfHook.setPreviewZoom(1);
     window.__perfHook.setPreviewRenderMode('iframe');
@@ -388,9 +393,11 @@ async function capturePreview(page, outFile, stateCandidate) {
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
   await waitForVisualStability(page, sheet);
   const stateCandidateResult = await applyPreviewStateCandidate(page, frame, sheet, stateCandidate);
-  await sheet.screenshot({ path: outFile, scale: 'css' });
+  const authoredRootCapture = await captureSingleAuthoredRoot(sheet, authoredRootOutFile);
+  await sheet.screenshot({ path: outFile, scale: SCREENSHOT_SCALE });
   const summary = await sheet.evaluate(summarizeSheetElement);
   summary.stateCandidate = stateCandidateResult;
+  summary.authoredRootCapture = authoredRootCapture;
   return summary;
 }
 
@@ -407,8 +414,72 @@ async function captureEdit(page, outFile) {
   const sheet = frame.locator('.charactersheet.charsheet').first();
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
   await waitForVisualStability(page, sheet);
-  await sheet.screenshot({ path: outFile, scale: 'css' });
+  await sheet.screenshot({ path: outFile, scale: SCREENSHOT_SCALE });
   return sheet.evaluate(summarizeSheetElement);
+}
+
+async function captureSingleAuthoredRoot(sheet, outFile) {
+  await fs.rm(outFile, { force: true });
+  const candidate = await sheet.evaluate((root) => {
+    const excludedTags = new Set(['SCRIPT', 'STYLE', 'TEMPLATE']);
+    const visibleChildren = Array.from(root.children)
+      .map((element, childIndex) => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return {
+          childIndex,
+          tagName: element.tagName,
+          className: typeof element.className === 'string'
+            ? element.className
+            : element.getAttribute('class') ?? '',
+          rect: {
+            width: Math.round(rect.width * 1000) / 1000,
+            height: Math.round(rect.height * 1000) / 1000,
+          },
+          visible:
+            !excludedTags.has(element.tagName) &&
+            !element.classList.contains('r20-empty') &&
+            style.display !== 'none' &&
+            style.visibility !== 'hidden' &&
+            Number(style.opacity || '1') !== 0 &&
+            rect.width > 0 &&
+            rect.height > 0,
+        };
+      })
+      .filter((item) => item.visible);
+
+    if (visibleChildren.length !== 1) {
+      return {
+        status: visibleChildren.length === 0 ? 'SKIP_EMPTY' : 'SKIP_MULTI_ROOT',
+        candidateCount: visibleChildren.length,
+        candidates: visibleChildren.map(({ childIndex, tagName, className, rect }) => ({
+          childIndex,
+          tagName,
+          className,
+          rect,
+        })),
+      };
+    }
+
+    const [{ childIndex, tagName, className, rect }] = visibleChildren;
+    return {
+      status: 'READY',
+      candidateCount: 1,
+      childIndex,
+      tagName,
+      className,
+      rect,
+    };
+  });
+
+  if (candidate.status !== 'READY') return candidate;
+  const authoredRoot = sheet.locator(`:scope > :nth-child(${candidate.childIndex + 1})`);
+  await authoredRoot.screenshot({ path: outFile, scale: SCREENSHOT_SCALE });
+  return {
+    ...candidate,
+    status: 'CAPTURED',
+    screenshotScale: SCREENSHOT_SCALE,
+  };
 }
 
 async function waitForVisualStability(page, sheet) {
@@ -635,6 +706,7 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push(`Run label: \`${report.runLabel}\``);
   lines.push(`Generated: ${report.createdAt}`);
+  lines.push(`Screenshot scale: \`${report.screenshotScale}\` at device scale factor \`${report.deviceScaleFactor}\``);
   if (report.assetMapPath) {
     lines.push(`Asset map: \`${report.assetMapPath}\` (${report.assetMapEntryCount} entries; Roll20-ready ${report.assetMapReadiness?.roll20ReadyTargets ?? 0}; local-only ${report.assetMapReadiness?.localOnlyTargets ?? 0}; placeholders ${report.assetMapReadiness?.placeholderTargets ?? 0})`);
   }
@@ -643,11 +715,11 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('## Summary');
   lines.push('');
-  lines.push('| Fixture | Status | Legacy | Blocks | HTML bytes | CSS bytes | Translation bytes | Internal ids stripped | Preview size | Preview state | Edit size | Roll buttons | Blocking warnings |');
-  lines.push('| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | ---: | --- |');
+  lines.push('| Fixture | Status | Legacy | Blocks | HTML bytes | CSS bytes | Translation bytes | Internal ids stripped | Preview size | Authored root | Preview state | Edit size | Roll buttons | Blocking warnings |');
+  lines.push('| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | --- | ---: | --- |');
   for (const item of report.fixtures) {
     lines.push(
-      `| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${fmtLegacyMode(item.legacyMode)} | ${item.import?.blockCount ?? 0} | ${item.emitBytes.html} | ${item.emitBytes.css} | ${item.emitBytes.translation} | ${item.removedInternalBlockIds ?? 0} | ${fmtRect(item.previewDom?.rect)} | ${fmtStateCandidate(item.previewDom?.stateCandidate)} | ${fmtRect(item.editDom?.rect)} | ${item.previewDom?.rollButtonCount ?? 0}/${item.editDom?.rollButtonCount ?? 0} | ${item.blockingWarnings.join(', ') || 'none'} |`,
+      `| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${fmtLegacyMode(item.legacyMode)} | ${item.import?.blockCount ?? 0} | ${item.emitBytes.html} | ${item.emitBytes.css} | ${item.emitBytes.translation} | ${item.removedInternalBlockIds ?? 0} | ${fmtRect(item.previewDom?.rect)} | ${fmtAuthoredRoot(item.previewDom?.authoredRootCapture)} | ${fmtStateCandidate(item.previewDom?.stateCandidate)} | ${fmtRect(item.editDom?.rect)} | ${item.previewDom?.rollButtonCount ?? 0}/${item.editDom?.rollButtonCount ?? 0} | ${item.blockingWarnings.join(', ') || 'none'} |`,
     );
   }
   lines.push('');
@@ -663,6 +735,8 @@ function renderMarkdown(report) {
   lines.push('- Proves local import -> emit -> payload package generation for selected ignored fixtures only.');
   lines.push('- Optional `--state-map` changes only the local preview screenshot state before capture. It does not mutate exported payloads or the edit screenshot.');
   lines.push('- Optional `--asset-map-file` applies URL text replacements to local preview/edit renders and emitted Roll20 upload payload HTML/CSS. The map file and generated evidence stay local-only.');
+  lines.push('- `--screenshot-scale device` preserves physical pixels for comparison with a device-scale Roll20 capture; the default remains `css`.');
+  lines.push('- `local-authored-root.png` is written only when one visible top-level authored element can be identified without changing the sheet DOM.');
   lines.push('- Local baseline allows `data:` and relative replacement targets for plumbing checks, but Roll20 upload verification requires Roll20-ready http(s) or protocol-relative replacement targets.');
   lines.push('- Does not prove actual Roll20 visual parity or all-sheet support.');
   return `${lines.join('\n')}\n`;
@@ -671,6 +745,12 @@ function renderMarkdown(report) {
 function fmtRect(rect) {
   if (!rect) return '';
   return `${rect.width}x${rect.height}`;
+}
+
+function fmtAuthoredRoot(capture) {
+  if (!capture) return '';
+  if (capture.status !== 'CAPTURED') return `${capture.status} (${capture.candidateCount ?? 0})`;
+  return `${capture.rect.width}x${capture.rect.height} ${capture.screenshotScale}`;
 }
 
 function fmtStateCandidate(candidate) {
@@ -724,7 +804,7 @@ async function main() {
     runLabel: RUN_LABEL,
     compatibilityMode: COMPATIBILITY_MODE,
     deviceScaleFactor: DEVICE_SCALE_FACTOR,
-    screenshotScale: 'css',
+    screenshotScale: SCREENSHOT_SCALE,
     baseUrl: `http://127.0.0.1:${PORT}${BASE_PATH}/`,
     reportDir: runDir,
     stateMapPath: stateMap.path,
@@ -820,8 +900,17 @@ async function main() {
         };
         entry.blockingWarnings = blockingExportWarnings({ ...emit, i18n: emit.translation });
         entry.previewScreenshot = path.join(screenshotDir, 'local-preview.png');
+        entry.authoredRootScreenshot = path.join(screenshotDir, 'local-authored-root.png');
         entry.previewStateCandidate = sanitizeStateCandidate(stateMap.fixtures[fixture.id]);
-        entry.previewDom = await capturePreview(page, entry.previewScreenshot, entry.previewStateCandidate);
+        entry.previewDom = await capturePreview(
+          page,
+          entry.previewScreenshot,
+          entry.authoredRootScreenshot,
+          entry.previewStateCandidate,
+        );
+        if (entry.previewDom?.authoredRootCapture?.status !== 'CAPTURED') {
+          entry.authoredRootScreenshot = null;
+        }
         entry.editScreenshot = path.join(screenshotDir, 'local-edit.png');
         entry.editDom = await captureEdit(page, entry.editScreenshot);
         entry.pass =

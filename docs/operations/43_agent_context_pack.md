@@ -19,11 +19,13 @@ the entire history and generated evidence tree.
 - One anonymous generated legacy fixture now has actual same-payload editor
   readback, render, worker, and roll proof in a new dedicated one-member test
   room. HTML/CSS readback is byte-identical; Translation is semantically
-  identical after Roll20 formatting. Authored-relative geometry matches the
-  DPR-`1.25` local baseline, but the best root pixel residual is `1.6638%`
-  above threshold `90`. The source viewport is JPEG by magic bytes despite its
-  `.png` name, so the residual is non-authoritative and arbitrary-sheet visual
-  parity remains open.
+  identical after Roll20 formatting. A supported tab-CDP capture now provides
+  a true lossless `760x320` CSS / `950x400` physical root PNG. At physical
+  DPR `1.25`, the authoritative threshold-`90` residual is `3.1353%`; all
+  `11,914` mismatches are inside glyph/control/table/border paint regions,
+  while `160,712` plain-background pixels have zero threshold mismatches.
+  Sampled geometry and computed styles match exactly for this fixture, so no
+  generic CSS patch is justified. Arbitrary-sheet visual parity remains open.
 - Modern generated same-payload evidence remains `0/4`. Its visible upload
   route is blocked before transmission until Chrome extension file-URL access
   is enabled; do not use hidden-input or endpoint workarounds.

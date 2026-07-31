@@ -22,12 +22,20 @@
   preview smoke, and modern/legacy synthetic Preview/Edit visual smoke pass.
   Both synthetic fixtures report exact `0%` Preview/Edit mismatch in both
   compatibility modes.
-- `MEASURED NOT PARITY`: normalized root comparison still has `1.6638%`
-  mismatch above RGB-sum threshold `90` at best alignment (`dx=1`, `dy=0`).
-  Residuals cluster around text glyphs and control/border edges. The actual
-  viewport capture is JPEG by magic bytes despite a `.png` filename, so this
-  lossy-source metric cannot justify renderer CSS. This one synthetic fixture
-  is not universal visual parity.
+- `SUPERSEDED DIAGNOSTIC`: the earlier `1.6638%` root residual came from a
+  JPEG viewport saved with a `.png` name. It remains non-authoritative and is
+  not a renderer-tuning input.
+- `VERIFIED LOSSLESS CAPTURE`: supported tab CDP produced true PNG bytes for
+  the exact authored root at `760 x 320` CSS pixels and `950 x 400` physical
+  pixels. The Windows DPR-`1.25` capture required scaling the CDP clip origin
+  and size into physical coordinates.
+- `MEASURED NOT UNIVERSAL PARITY`: the physical local-vs-actual PNG diff has
+  `11,914 / 380,000` pixels (`3.1353%`) above RGB-sum threshold `90`. Sampled
+  geometry and computed styles match. All threshold mismatches lie inside
+  glyph/control/table/border paint masks; the remaining `160,712` plain
+  background pixels have `0` threshold mismatches and mean RGB-sum delta
+  `0.093584`. This classifies the remaining residual as native paint/raster
+  variation for this fixture, not evidence for a generic CSS patch.
 - `DONE LOCAL EVIDENCE GUARD`: screenshot diff now classifies image magic bytes
   and crop source lineage. JPEG/WebP inputs and PNG crops derived from them are
   marked non-authoritative; actual-status cannot promote generated evidence
@@ -37,10 +45,15 @@
 - `BLOCKED MODERN`: fresh modern Sandbox file selection remains blocked before
   transmission by the visible chooser permission boundary. Modern generated
   same-payload proof remains open.
-- `TODO P0`: obtain a true lossless actual root capture before isolating any
-  remaining text/control raster difference, then retry the modern destination
-  through the supported visible file flow. Keep broad arbitrary-sheet coverage
-  open.
+- `DONE LOCAL CAPTURE BASELINE`: local baseline now accepts
+  `--screenshot-scale css|device` and writes `local-authored-root.png` when one
+  visible top-level authored element can be isolated without changing the DOM.
+- `VERIFIED REGRESSION`: synthetic CSS-scale capture produced `760 x 320`,
+  device-scale capture produced `950 x 400`, invalid scale input failed closed,
+  and syntax, lint, production build, and full `ci:verify` passed.
+- `TODO P0`: retry the modern destination through the supported visible file
+  flow, then repeat lossless same-payload capture on additional anonymous
+  structures. Keep broad arbitrary-sheet coverage open.
 
 # 2026-08-01 Actual default-rolltemplate parity fix
 

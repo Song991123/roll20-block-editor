@@ -17,17 +17,28 @@
   and modern/legacy synthetic Preview/Edit visual smoke all pass. The two
   synthetic visual fixtures remain exact at `0%` Preview/Edit mismatch in both
   modes.
-- The normalized root pixel comparison remains `MEASURED_NOT_PARITY`: best
-  alignment leaves `1.6638%` mismatch above RGB-sum threshold `90`, mainly at
-  text and control/border edges. The actual viewport is JPEG by magic bytes
-  despite its `.png` name, so this lossy-source metric cannot justify renderer
-  CSS. Arbitrary-sheet parity remains open.
+- The earlier `1.6638%` comparison is retained only as a superseded JPEG-source
+  diagnostic. Supported tab CDP then captured the exact root as true PNG at
+  `760 x 320` CSS and `950 x 400` physical pixels.
+- A device-scale local authored-root capture now compares the same `950 x 400`
+  region. The authoritative threshold-`90` residual is `11,914 / 380,000`
+  pixels (`3.1353%`). All mismatches are inside glyph/control/table/border
+  paint masks; the `160,712` plain-background pixels contain zero threshold
+  mismatches. Sampled geometry and computed styles match, so no generic CSS
+  change was made from this native-paint residual. Arbitrary-sheet parity is
+  still open.
 - Added a shared capture-quality classifier and CI self-test. Screenshot diff
   records file-byte MIME plus crop source lineage, and actual-status now blocks
   authoritative generated evidence when a required target is lossy or lacks
   the new trust metadata. Lint, build, and full `ci:verify` pass.
 - Modern fresh-payload upload is still blocked before transmission by the
   visible file chooser permission boundary.
+- Added `--screenshot-scale css|device` and automatic single authored-root
+  capture to the local baseline generator. This removes wrapper chrome from
+  future comparisons and preserves physical pixels when required.
+- The synthetic baseline produced the expected `760 x 320` CSS and `950 x 400`
+  device captures. Invalid scale input failed closed; syntax, lint, production
+  build, and full `ci:verify` passed.
 
 # 2026-08-01 - Actual default-rolltemplate parity fix
 
