@@ -10658,6 +10658,16 @@ same-hash modern/legacy comparison.
   partial, not full parity. Full-height root stitching, normalized diff, and
   independent fixture-A smoke are still required.
 
+# 2026-07-31 - Dedicated test-room creation
+
+- `READ-ONLY AFTER CREATION`: created a new dedicated Roll20 test room for
+  later generated-sheet verification; existing rooms were not used for writes.
+- `BLOCKED EXTERNAL`: the room contains a `1 구성원` indicator, but the
+  participant panel is positioned above the current viewport, so the safety
+  gate still cannot count it as visible exactly-one evidence.
+- `PRESERVED`: no payload upload, save, chat, setting, or sheet mutation was
+  performed.
+
 # 2026-07-31 - Local shared-surface and performance recheck
 
 - `SERVER`: hygiene check found no project dev/smoke or CDP listener.

@@ -1,5 +1,18 @@
 # 2026-07-31 Actual-status and renderer-action gate refresh
 
+# 2026-07-31 Dedicated test-room creation
+
+- `VERIFIED EXTERNAL READ-ONLY`: a newly created dedicated Roll20 test room
+  is available for generated-sheet verification; no existing user room was
+  selected or modified.
+- `BLOCKED EXTERNAL`: the new room's `1 구성원` indicator exists in the DOM,
+  but its entire participant panel is positioned outside the current viewport.
+  It therefore does not satisfy the fresh visible exactly-one gate.
+- `PRESERVED`: no payload upload, save, chat message, room setting, or sheet
+  content change was performed.
+- `TODO P0`: make the participant panel visibly readable in the supported
+  browser, then run modern and legacy payload checks separately in this room.
+
 # 2026-07-31 Local shared-surface and performance recheck
 
 - `VERIFIED LOCAL`: server hygiene found no project dev/smoke listener or CDP

@@ -1,5 +1,17 @@
 # 34. Requirements Gap Matrix
 
+# Dedicated test-room creation - 2026-07-31
+
+- `DONE OBSERVATION`: a new dedicated Roll20 test room was created for future
+  generated-sheet verification; no existing room was used for writes.
+- `BLOCKED EXTERNAL`: the room exposes `1 구성원` only in a participant panel
+  positioned above the viewport, so visible exactly-one proof is still
+  missing.
+- `PRESERVED`: no payload, save, chat, setting, or sheet content was sent or
+  changed.
+- `OPEN P0`: obtain a visible exactly-one participant state before modern or
+  legacy upload/capture.
+
 # Local shared-surface and performance recheck - 2026-07-31
 
 - `DONE LOCAL`: server hygiene found no project listener or CDP listener;
