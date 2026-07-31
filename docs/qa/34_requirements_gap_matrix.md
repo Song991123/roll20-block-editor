@@ -2,6 +2,20 @@
 
 Date: 2026-07-31
 
+## Imported Non-Leaf Layer Reorder Refresh - 2026-07-31
+
+- VERIFIED LOCAL: `smoke:imported-edit-sync --only
+  synthetic-nonleaf-flow --require-nonleaf-visual-sync true` passed with
+  `blockCount=9`, a real layer-panel subtree move, preserved child parents,
+  changed sibling order, preview/edit coordinate sync, and `0%` subtree image
+  mismatch.
+- CLAIM BOUNDARY: this closes the neutral imported non-leaf regression case;
+  it does not prove every imported DOM shape, actual Roll20 parity, or
+  arbitrary-sheet coverage.
+- NEXT: extend the same assertion to more anonymous structural families when
+  doing so does not require retaining source-identifying or copyrighted sheet
+  material.
+
 ## Local Payload Fidelity Gate - 2026-07-31
 
 - DONE LOCAL: The new fidelity gate checks exact local payload/snippet byte

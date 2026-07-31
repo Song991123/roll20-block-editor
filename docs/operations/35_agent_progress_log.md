@@ -1,3 +1,14 @@
+## 2026-07-31 - Imported non-leaf layer reorder verification
+
+- VERIFIED LOCAL: the neutral imported non-leaf fixture passed a real layer
+  panel drag with the group subtree intact. The child parent IDs remained
+  unchanged, sibling order crossed the target, edit/preview geometry matched,
+  and subtree screenshot mismatch was `0%`.
+- This closes one imported Figma-like group movement case without changing
+  production renderer behavior or introducing source-derived sample data.
+- ACTUAL ROLL20 boundary: external screenshot, worker, asset, and chat parity
+  remain separate and unverified.
+
 ## 2026-07-31 - UI copy and mode-switch smoke refresh
 
 - VERIFIED LOCAL: the current export/import browser smoke passed with no

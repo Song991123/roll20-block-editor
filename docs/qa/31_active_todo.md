@@ -1,3 +1,10 @@
+## 2026-07-31 Imported non-leaf layer reorder
+
+- `DONE LOCAL`: neutral imported group subtree reordering passed through the
+  real layer-panel drag path; child parents stayed intact, order changed,
+  preview/edit stayed synchronized, and subtree mismatch was `0%`.
+- `VERIFY`: broader imported DOM families and actual Roll20 parity remain open.
+
 ## 2026-07-31 UI copy and mode-switch smoke
 
 - `DONE LOCAL`: export/import browser smoke passed with zero console/page/
