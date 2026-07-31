@@ -1,5 +1,20 @@
 # 44. Workspace Cleanup Inventory
 
+## 2026-07-31 user-authorized generated cleanup completed
+
+- DELETED: the canonical worktree's generated `.next/`, `out/`, and
+  `next-env.d.ts`, plus 25 stale ignored report directories.
+- PRESERVED: `reports/README.md`, the current `reports/roll20-actual-compare/`
+  and `reports/imported-edit-sync-render-ready-rerun/` evidence, the active
+  `.tmp/roll20-sandbox-synthetic/` payload, dependencies, source, worktrees,
+  four-zone markers, and all protected external sheet roots.
+- RETAINED BY SAFETY: `.tmp/` was not partially deleted because it is the
+  active Roll20 verification root; its reproducible synthetic subfolder will
+  be removed after that external handoff is closed.
+- VERIFIED: no product or CDP listener was active, deletion targets were
+  ignored and inside the canonical worktree, and no protected source path was
+  included. This cleanup changed no tracked product file.
+
 # 2026-07-31 explicit user-authorized retry (host blocked before execution)
 
 - RECHECKED: the only currently present inactive generated targets eligible for

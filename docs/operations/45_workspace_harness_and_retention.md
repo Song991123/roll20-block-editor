@@ -1,5 +1,16 @@
 # 45. Workspace Harness and Retention Policy
 
+## 2026-07-31 generated cleanup result
+
+- The approved stale generated targets were removed after an exact dry-run:
+  `.next/`, `out/`, `next-env.d.ts`, and 25 old ignored report directories.
+- The active `.tmp/` root remains intentionally. It contains the current
+  anonymous Roll20 Sandbox payload, so it is not treated as disposable until
+  the external upload handoff is closed.
+- Only current Roll20/local baseline evidence and the tracked report policy
+  remain under `reports/`; protected sources and active dependencies are never
+  cleanup targets.
+
 ## 2026-07-31 explicit user-authorized retry (host blocked before execution)
 
 - RECHECKED: the only currently present inactive generated targets eligible for
