@@ -8,6 +8,11 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import {
+  clampCanvasWidth,
+  ROLLTEMPLATE_CANVAS_DEFAULT_WIDTH,
+  SHEET_CANVAS_DEFAULT_WIDTH,
+} from '@/lib/preview/canvasDimensions';
 
 export type SidebarLeftMode = 'blocks';
 export type SidebarRightTab = 'attrs' | 'code' | 'chat'; // D49 + chat (dice 굴림 결과)
@@ -147,8 +152,8 @@ const DEFAULT_STATE = {
   previewZoom: 'fit' as PreviewZoom,
   previewLayer: 'all' as PreviewLayer,
   editSubmode: 'sheet' as EditSubmode,
-  sheetCanvasWidth: 850,
-  rolltemplateCanvasWidth: 280,
+  sheetCanvasWidth: SHEET_CANVAS_DEFAULT_WIDTH,
+  rolltemplateCanvasWidth: ROLLTEMPLATE_CANVAS_DEFAULT_WIDTH,
   // Blank workspaces keep the documented fixed canvas defaults. Import
   // explicitly enables intrinsic sizing after user content is available.
   sheetCanvasWidthAuto: false,
@@ -221,22 +226,22 @@ export const useUiStore = create<UiState>()(
       setEditSubmode: (m) => set({ editSubmode: m }),
       setSheetCanvasWidth: (w) =>
         set({
-          sheetCanvasWidth: Math.max(320, Math.min(2000, Math.round(w))),
+          sheetCanvasWidth: clampCanvasWidth('sheet', w),
           sheetCanvasWidthAuto: false,
         }),
       setRolltemplateCanvasWidth: (w) =>
         set({
-          rolltemplateCanvasWidth: Math.max(200, Math.min(600, Math.round(w))),
+          rolltemplateCanvasWidth: clampCanvasWidth('rolltemplate', w),
           rolltemplateCanvasWidthAuto: false,
         }),
       setAutoSheetCanvasWidth: (w) =>
         set({
-          sheetCanvasWidth: Math.max(320, Math.min(2000, Math.round(w))),
+          sheetCanvasWidth: clampCanvasWidth('sheet', w),
           sheetCanvasWidthAuto: true,
         }),
       setAutoRolltemplateCanvasWidth: (w) =>
         set({
-          rolltemplateCanvasWidth: Math.max(200, Math.min(600, Math.round(w))),
+          rolltemplateCanvasWidth: clampCanvasWidth('rolltemplate', w),
           rolltemplateCanvasWidthAuto: true,
         }),
       resetCanvasWidths: () =>

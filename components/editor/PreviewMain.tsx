@@ -52,6 +52,7 @@ import {
   appendFriendlyWidgetPreset,
   decodeFriendlyWidgetDrag,
 } from '@/lib/widgets/presets';
+import { clampCanvasWidth } from '@/lib/preview/canvasDimensions';
 
 type OptimisticFlowCommit = {
   subjectBlockId: string;
@@ -1307,9 +1308,7 @@ export default function PreviewMain() {
           && typeof data.width === 'number'
         ) {
           autoWidthSizedRef.current = true;
-          const nextWidth = editSubmode === 'rolltemplate'
-            ? Math.max(200, Math.min(600, Math.ceil(data.width)))
-            : Math.max(320, Math.min(2000, Math.ceil(data.width)));
+          const nextWidth = clampCanvasWidth(editSubmode, data.width);
           const currentWidth = editSubmode === 'rolltemplate'
             ? useUiStore.getState().rolltemplateCanvasWidth
             : useUiStore.getState().sheetCanvasWidth;

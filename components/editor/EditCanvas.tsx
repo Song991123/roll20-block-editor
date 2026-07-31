@@ -13,6 +13,13 @@ import { useUiStore } from '@/lib/stores/uiStore';
 import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { cn } from '@/lib/utils/cn';
 import { flushEmitPipeline } from '@/lib/preview/useEmitPipeline';
+import {
+  clampCanvasWidth,
+  ROLLTEMPLATE_CANVAS_MAX_WIDTH,
+  ROLLTEMPLATE_CANVAS_MIN_WIDTH,
+  SHEET_CANVAS_MAX_WIDTH,
+  SHEET_CANVAS_MIN_WIDTH,
+} from '@/lib/preview/canvasDimensions';
 
 function formatDropModeLabel(mode: LayerDropMode): string {
   if (mode === 'inside') return '안에 넣기';
@@ -100,8 +107,12 @@ export default function EditCanvas() {
   const setCanvasWidth = editSubmode === 'rolltemplate'
     ? setRolltemplateCanvasWidth
     : setSheetCanvasWidth;
-  const minWidth = editSubmode === 'rolltemplate' ? 200 : 320;
-  const maxWidth = editSubmode === 'rolltemplate' ? 600 : 2000;
+  const minWidth = editSubmode === 'rolltemplate'
+    ? ROLLTEMPLATE_CANVAS_MIN_WIDTH
+    : SHEET_CANVAS_MIN_WIDTH;
+  const maxWidth = editSubmode === 'rolltemplate'
+    ? ROLLTEMPLATE_CANVAS_MAX_WIDTH
+    : SHEET_CANVAS_MAX_WIDTH;
   const [canvasWidthDraft, setCanvasWidthDraft] = useState(() => String(canvasWidth));
   const canvasWidthInputRef = useRef<HTMLInputElement>(null);
   const canvasWidthDraftDirtyRef = useRef(false);
@@ -120,11 +131,11 @@ export default function EditCanvas() {
       setCanvasWidthDraft(String(canvasWidth));
       return;
     }
-    const clamped = Math.max(minWidth, Math.min(maxWidth, Math.round(next)));
+    const clamped = clampCanvasWidth(editSubmode, next);
     canvasWidthDraftDirtyRef.current = false;
     setCanvasWidth(clamped);
     setCanvasWidthDraft(String(clamped));
-  }, [canvasWidth, maxWidth, minWidth, setCanvasWidth]);
+  }, [canvasWidth, editSubmode, setCanvasWidth]);
   const structureVersion = useWorkspaceStore((s) => s.workspaces.html.structureVersion);
   const adapter = getBlocklyAdapter();
   const canUndo = useMemo(() => {

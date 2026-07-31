@@ -33,6 +33,7 @@ import {
   type PreparedSheetRenderContract,
   type Roll20CompatibilityMode,
 } from './renderContract';
+import { SHEET_CANVAS_MAX_WIDTH } from './canvasDimensions';
 
 export interface BuildDocOptions {
   html: string;
@@ -1066,7 +1067,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (!sheet) return null;
     var box = measureContentBox(sheet);
     if (!box.width || box.width < 120) return null;
-    return Math.max(320, Math.min(2400, Math.ceil(box.width)));
+    return Math.max(320, Math.min(${SHEET_CANVAS_MAX_WIDTH}, Math.ceil(box.width)));
   }
   function measureContentBox(root) {
     var rootRect = root.getBoundingClientRect();
