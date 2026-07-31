@@ -10641,3 +10641,18 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `PRESERVED`: no hidden input, direct endpoint, CDP upload, ordinary room, or
   protected source path was used. The handoff tab remains available for a
   user-mediated permission/file-selection retry.
+
+## 2026-07-31 Anonymous Sandbox Payload Retry
+
+- `VERIFIED LOCAL`: regenerated the copyright-safe anonymous modern payload
+  (`sheet.html`, `sheet.css`, `translation.json`) under ignored `.tmp/` only.
+- `VERIFIED LOCAL`: modern/legacy render-contract smoke passed; upload-file
+  boundary, shared build-doc bundle, and Sandbox CSS/HTML sanitizer tests
+  passed (`8/8`).
+- `BLOCKED EXTERNAL`: the visible Roll20 HTML chooser still returned
+  `Not allowed` from the supported `fileChooser.setFiles` action before
+  transmission. No generated file reached Roll20.
+- `TODO P0`: enable the browser extension's file-URL access or perform the
+  visible file selection manually, then retry the anonymous modern payload.
+  Only after that succeeds can current-payload root/chat evidence be captured;
+  the separate legacy-room check remains independent.

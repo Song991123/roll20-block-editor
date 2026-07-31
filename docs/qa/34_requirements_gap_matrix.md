@@ -1624,3 +1624,12 @@ not close the external Roll20 parity rows above.
 - `OPEN`: current-payload modern parity, independent legacy-room parity, and
   their screenshot/chat evidence remain unverified. No workaround outside the
   supported visible chooser policy was used.
+
+## 2026-07-31 Latest Evidence Boundary
+
+- Local modern/legacy render-contract and export boundary: `VERIFIED LOCAL`.
+- Anonymous synthetic Sandbox payload generation: `VERIFIED LOCAL`, ignored
+  workspace only.
+- Current payload reaching Roll20: `BLOCKED EXTERNAL`; visible file chooser
+  rejected the supported file assignment before transmission.
+- Actual current-payload visual parity and legacy-room parity: `OPEN`.

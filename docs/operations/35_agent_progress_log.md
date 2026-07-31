@@ -11190,3 +11190,17 @@ same-hash modern/legacy comparison.
 - `CLAIM BOUNDARY`: no hidden input, endpoint, CDP upload, ordinary room, or
   protected source path was used. The tab remains a handoff for a user-led
   permission/file-selection retry.
+
+## 2026-07-31 - Anonymous Sandbox payload retry
+
+- `VERIFIED LOCAL`: regenerated only an anonymous synthetic modern payload in
+  ignored `.tmp/roll20-sandbox-synthetic/`; no protected or third-party sheet
+  source was copied.
+- `VERIFIED LOCAL`: the paired modern/legacy render contract, upload-file
+  boundary, shared document bundle, and Sandbox sanitizer checks passed.
+- `BLOCKED EXTERNAL`: the visible official HTML chooser again returned
+  `Not allowed` before transmission. The retry did not alter the dedicated
+  test destination.
+- `NEXT`: obtain the supported browser file-URL permission or a user-mediated
+  visible file selection, then capture current-payload modern root/chat proof;
+  legacy still requires a separate dedicated legacy-enabled room.
