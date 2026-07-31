@@ -10,6 +10,10 @@
   changed.
 - `OPEN P0`: complete the same-payload Sandbox upload and capture actual
   Roll20 render/chat evidence before claiming L4 parity.
+- `STATUS MEASURED`: the current run is
+  `PREUPLOAD_READY_MISSING_GENERATED_ACTUAL`; generated screenshots are `0/4`,
+  generated diffs are `0/4`, chat parity is `MISSING`, and renderer-ready is
+  `NO`.
 
 ## Modern Sandbox Supported Upload Reconnect - 2026-07-31
 

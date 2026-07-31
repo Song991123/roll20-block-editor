@@ -8,6 +8,9 @@
   No ordinary room was opened or changed.
 - `NEXT P0`: recover the supported browser handoff, recheck exactly one visible
   participant, and upload only the anonymous payload in the dedicated Sandbox.
+- `STATUS`: the latest actual-status gate is
+  `PREUPLOAD_READY_MISSING_GENERATED_ACTUAL` with generated screenshots `0/4`,
+  generated diffs `0/4`, missing chat parity, and renderer-ready `NO`.
 
 # 2026-07-31 - Local edit surface recheck
 

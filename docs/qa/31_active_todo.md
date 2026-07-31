@@ -10,6 +10,8 @@
   participant, upload only this anonymous payload in the dedicated Sandbox,
   then capture payload identity, full-root screenshot, current roll/chat, and
   normalized diff evidence.
+- `STATUS MEASURED`: `preupload=PASS`, generated Sandbox screenshots `0/4`,
+  generated diff `0/4`, chat parity `MISSING`, renderer-ready `NO`.
 
 # 2026-07-31 Local edit surface recheck
 
