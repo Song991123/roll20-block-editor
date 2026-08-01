@@ -112,6 +112,14 @@ the entire history and generated evidence tree.
 - Modern generated same-payload evidence remains `0/4`. Its visible upload
   route is blocked before transmission until Chrome extension file-URL access
   is enabled; do not use hidden-input or endpoint workarounds.
+- The anonymous payload generator now accepts the four editor section
+  compositions and emits their exact managed theme/layout CSS through the
+  normal Roll20 upload-file boundary. Fresh modern and legacy mint wide/narrow
+  payloads are locally ready and hash-identical. A new dedicated-Sandbox retry
+  reverified exactly one visible member, but both workspace and ASCII-temp HTML
+  chooser attempts returned `Not allowed` before transmission. Commit
+  `3cfb145` is pushed to `claude/design-reset`; GitHub CI run `30682895953`
+  passed. Actual generated evidence therefore remains `0/4`.
 - Generated `.next/`, `out/`, `.tmp/`, and report outputs are disposable. Real
   or derived sheets and screenshots stay local, ignored, and uncommitted.
 

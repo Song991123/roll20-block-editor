@@ -11962,3 +11962,27 @@ same-hash modern/legacy comparison.
   remains open.
 - Pushed commit `d481a48` to `claude/design-reset`; GitHub CI run
   `30682502247` passed safety/unit verification, lint, and build in `1m30s`.
+
+## 2026-08-01 - Section-design actual Roll20 retry
+
+- Extended the anonymous Roll20 payload generator with a section-composition
+  option. It imports the editor's real composition/theme/layout declarations,
+  emits the same strong/base managed selectors, and passes them through the
+  normal three-file upload preparation boundary.
+- Generated fresh modern and legacy mint wide/narrow payloads with generic
+  controls, worker, Roll button, Rolltemplate, and translations. All three
+  output hashes match across modes because the selected declarations survive
+  legacy sanitization unchanged.
+- Rechecked the dedicated modern Sandbox immediately before interaction. Its
+  visible member count was exactly one and the official HTML/CSS/Translation
+  chooser dialog was open.
+- Tried the official HTML chooser with both the workspace file and an
+  ASCII-only temporary copy. Browser control returned `Not allowed` before
+  transmission in both cases. CSS, Translation, save, settings, and chat were
+  untouched; no hidden-input or endpoint route was used.
+- Saved the blocked pre-upload screenshot and bounded attempt record only in
+  the ignored actual-compare report. Generated modern root/chat evidence stays
+  `0/4`; dedicated legacy-room application remains pending.
+- Generator self-tests, full `ci:verify`, lint, production build, and privacy
+  guards pass. Pushed commit `3cfb145`; GitHub CI run `30682895953` passed in
+  `1m22s`.

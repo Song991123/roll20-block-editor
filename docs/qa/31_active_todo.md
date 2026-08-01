@@ -1,3 +1,35 @@
+# 2026-08-01 Section-design actual Roll20 retry
+
+- `DONE LOCAL PAYLOAD`: the anonymous Sandbox generator can now carry any of
+  the four editor section compositions through the same three-file Roll20
+  upload boundary. The current mint wide/narrow payload contains the exact
+  managed root/title declarations, generic controls, worker action, Roll
+  button, Rolltemplate, and translation map.
+- `VERIFIED MODE PREP`: fresh modern and legacy outputs were generated in
+  ignored local folders. Their HTML, CSS, and Translation hashes are identical
+  because this composition uses only declarations accepted unchanged by the
+  current legacy sanitizer. This is payload evidence, not rendered parity.
+- `VERIFIED EXTERNAL READ-ONLY`: immediately before upload, the dedicated
+  modern Custom Sheet Sandbox visibly reported exactly one member and exposed
+  the official HTML/CSS/Translation chooser controls.
+- `BLOCKED BEFORE TRANSMISSION`: official HTML selection was attempted once
+  from the workspace path and once from an ASCII-only temporary path. Both
+  reached the native chooser and returned `Not allowed` before any file bytes
+  were transmitted. CSS, Translation, save, room settings, and chat were not
+  touched. No hidden-input dispatch or endpoint fallback was used.
+- `CURRENT EXTERNAL EVIDENCE`: generated modern section root/chat evidence
+  remains `0/4`. Dedicated legacy-room application was not started because the
+  same supported file-selection boundary is unresolved.
+- `VERIFIED REGRESSION`: generator self-tests now cover modern and legacy
+  section-composition payloads. Full `ci:verify`, lint, production build, and
+  evidence/privacy guards pass.
+- `VERIFIED REMOTE`: commit `3cfb145` is pushed to `claude/design-reset`.
+  GitHub CI run `30682895953` passed safety/unit verification, lint, and build
+  in `1m22s`.
+- `P0 HANDOFF`: use the visible OS chooser to select the three prepared
+  anonymous files, or explicitly approve opening Chrome extension settings for
+  the required file-access permission. Do not substitute a hidden upload path.
+
 # 2026-08-01 One-click section designs
 
 - `DONE PRODUCT`: eligible frame/flow sections now show four original complete

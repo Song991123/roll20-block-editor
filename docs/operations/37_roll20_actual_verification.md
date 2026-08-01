@@ -2,6 +2,26 @@
 
 Date: 2026-06-18
 
+## 2026-08-01 section-design upload retry
+
+- `VERIFIED LOCAL SOURCE BINDING`: the anonymous generator now imports the
+  editor's exact section-composition theme/layout declarations, emits the same
+  managed selectors, and passes HTML/CSS/Translation through the production
+  upload preparation boundary. Fresh modern and legacy mint wide/narrow
+  outputs are hash-identical because their declarations require no legacy
+  rewrite.
+- `VERIFIED EXTERNAL READ-ONLY`: the dedicated modern Sandbox showed exactly
+  one visible member and the official HTML/CSS/Translation controls immediately
+  before the attempt.
+- `BLOCKED EXTERNAL`: the supported HTML chooser returned `Not allowed` before
+  transmission for both the workspace path and an ASCII-only temporary copy.
+  CSS, Translation, save, settings, and chat were not touched. Hidden-input
+  dispatch and endpoint fallback remain prohibited for this run.
+- `CURRENT EVIDENCE`: generated modern section root/chat evidence remains
+  `0/4`; dedicated legacy-room application was not attempted. The next allowed
+  action is a user-visible OS file selection or explicit approval to inspect
+  the Chrome extension file-access setting.
+
 ## 2026-08-01 dedicated legacy same-payload result
 
 - `VERIFIED EXTERNAL SAFETY`: a newly created dedicated legacy destination
