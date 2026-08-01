@@ -3,6 +3,7 @@ import {
   commitManagedDesignPosition,
   commitManagedDesignStyle,
 } from '@/lib/editor/designPosition';
+import { getSectionTheme } from '@/lib/editor/sectionThemes';
 import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
 import { flushEmitPipeline } from '@/lib/preview/useEmitPipeline';
 
@@ -38,6 +39,12 @@ export const FRIENDLY_WIDGET_GROUPS: Record<FriendlyWidgetGroup, string> = {
   media: '이미지',
 };
 
+const DEFAULT_SECTION_STYLE = serializeCssDeclarations({
+  ...getSectionTheme('paper').parts.root,
+  width: '320px',
+  'min-height': '180px',
+});
+
 export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
   {
     id: 'section',
@@ -49,7 +56,7 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
     preview: 'box',
     fields: {
       CLASS: 'section',
-      STYLE: 'width: 320px; min-height: 180px; padding: 12px; border: 1px solid #d4d4d8',
+      STYLE: DEFAULT_SECTION_STYLE,
     },
   },
   {
@@ -473,6 +480,15 @@ function parseCssDeclarationRecord(style: string): Record<string, string> {
     if (property && value) declarations[property] = value;
   }
   return declarations;
+}
+
+function serializeCssDeclarations(
+  declarations: Record<string, string | null | undefined>,
+): string {
+  return Object.entries(declarations)
+    .filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].trim().length > 0)
+    .map(([property, value]) => `${property}: ${value}`)
+    .join('; ');
 }
 
 function hasPositionDeclaration(style: string): boolean {

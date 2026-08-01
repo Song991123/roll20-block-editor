@@ -21,12 +21,17 @@ import {
   RESULT_CARD_THEMES,
   type ResultCardTheme,
 } from '@/lib/editor/resultCardThemes';
+import {
+  SECTION_THEMES,
+  type SectionTheme,
+} from '@/lib/editor/sectionThemes';
 import { cn } from '@/lib/utils/cn';
 import BackgroundImageControls from './BackgroundImageControls';
 import ImageStyleControls from './ImageStyleControls';
 import RollButtonIconControls from './RollButtonIconControls';
 import ResultCardThemeControls from './ResultCardThemeControls';
 import SectionDecorationControls from './SectionDecorationControls';
+import SectionThemeControls from './SectionThemeControls';
 import TextDecorationControls from './TextDecorationControls';
 
 type VisualStyleInspectorProps = {
@@ -38,6 +43,7 @@ type VisualStyleInspectorProps = {
   beforeValues?: Record<string, string>;
   onBeforePatch?: (declarations: ManagedDesignDeclarations) => void;
   onApplyResultCardTheme?: (themeId: ResultCardTheme['id']) => void;
+  onApplySectionTheme?: (themeId: SectionTheme['id']) => void;
 };
 
 type LayoutMode = 'auto' | 'row' | 'column' | 'grid';
@@ -51,6 +57,7 @@ export default function VisualStyleInspector({
   beforeValues = {},
   onBeforePatch,
   onApplyResultCardTheme,
+  onApplySectionTheme,
 }: VisualStyleInspectorProps) {
   const [activeState, setActiveState] = useState<ManagedDesignState>('base');
   const values = valuesByState[activeState] ?? {};
@@ -65,6 +72,19 @@ export default function VisualStyleInspector({
       declarations: theme.parts.root,
     }))?.id ?? null
     : null;
+  const sectionThemeId = presetGroup?.family === 'section'
+    ? SECTION_THEMES.find((theme) => presetMatches(values, {
+      id: theme.id,
+      label: theme.label,
+      description: theme.description,
+      declarations: theme.parts.root,
+    }))?.id ?? null
+    : null;
+  const coordinatedThemeVisible = (
+    presetGroup?.family === 'result-card' && Boolean(onApplyResultCardTheme)
+  ) || (
+    presetGroup?.family === 'section' && Boolean(onApplySectionTheme)
+  );
   const applyPatch = (declarations: ManagedDesignDeclarations) => onPatch(declarations, activeState);
   const clearActiveState = () => applyPatch(
     Object.fromEntries(Object.keys(values).map((property) => [property, null])),
@@ -126,7 +146,14 @@ export default function VisualStyleInspector({
         />
       )}
 
-      {presetGroup && (presetGroup.family !== 'result-card' || !onApplyResultCardTheme) && (
+      {presetGroup?.family === 'section' && onApplySectionTheme && (
+        <SectionThemeControls
+          activeThemeId={sectionThemeId}
+          onApply={onApplySectionTheme}
+        />
+      )}
+
+      {presetGroup && !coordinatedThemeVisible && (
         <StyleSection title={presetGroup.title}>
           <div className="grid grid-cols-2 gap-2" data-testid="design-style-presets">
             {presetGroup.presets.map((preset) => {

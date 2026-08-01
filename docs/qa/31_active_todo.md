@@ -1,3 +1,31 @@
+# 2026-08-01 Coordinated section themes
+
+- `DONE PRODUCT`: frame/flow selection now offers four coordinated section
+  themes. One explicit click styles the selected outer frame plus confident
+  title/eyebrow descendants; ordinary body copy, inputs, field labels, and
+  nested semantic sections are not direct theme targets.
+- `DONE CONSISTENCY`: the old root-only section presets and newly created
+  section box now use the same authored theme definitions. Generated design
+  remains managed CSS rather than presentation in emitted HTML.
+- `VERIFIED UNIT`: target classification excludes `field-label`, stops at a
+  nested section boundary, and preserves theme CSS through both modern and
+  legacy sanitizers.
+- `VERIFIED BROWSER`: synthetic edit-flow rendered the rose frame and title
+  band together. The field label retained its prior computed color, untouched
+  inline declarations stayed intact, and the existing Roll-button icon smoke
+  now waits for the iframe's rendered revision instead of only emitted CSS.
+- `VERIFIED LOCAL PARITY`: synthetic Preview/Edit comparison remains exact at
+  `0%` mismatch for two fixtures in both modern and legacy modes.
+- `VERIFIED REGRESSION`: full `ci:verify`, lint, and production build pass
+  after the coordinated-theme UI copy and preview refinements. Remote push and
+  CI remain to be checked before promoting this item to remote-verified.
+- `BLOCKED EXTERNAL MODERN`: these generic section themes have not been freshly
+  uploaded to the modern Roll20 Sandbox. The supported visible chooser remains
+  the only allowed route; local evidence is not actual Roll20 parity.
+- `TODO P1`: add coordinated controls for complete input groups and Roll-button
+  groups after this section batch lands. Keep imported author CSS unchanged
+  until an explicit user action.
+
 # 2026-08-01 Current result-card same-payload correction
 
 - `VERIFIED SOURCE BINDING`: the current anonymous payload imported at `100%`

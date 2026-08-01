@@ -1,3 +1,23 @@
+# 2026-08-01 - Coordinated section themes
+
+- Replaced the root-only section style choice with four coordinated, original
+  themes for the outer frame and nearby semantic heading/eyebrow layers.
+- Kept target discovery conservative: maximum depth two, nested section
+  boundaries stop traversal, and ordinary field labels/body/input layers are
+  not directly restyled.
+- Reused the same paper-theme root for newly created section boxes, removing
+  the separate stale gray-box default.
+- Added modern/legacy sanitizer tests and browser checks for frame/title paint,
+  unchanged field-label paint, managed-CSS emission, and inline-style
+  preservation.
+- `test:design-position`, lint, production build, edit-flow browser smoke, and
+  modern/legacy synthetic Preview/Edit visual smoke pass. The four visual
+  comparisons remain exact at `0%` mismatch.
+- Full `ci:verify`, lint, and production build pass after the final UI copy and
+  preview refinements. Remote CI remains to be checked. Modern actual Sandbox
+  upload remains blocked at the supported visible file chooser and is not
+  claimed from local evidence.
+
 # 2026-08-01 - Current result-card same-payload correction
 
 - Repeated the external legacy check with the current app-emitted anonymous

@@ -46,6 +46,13 @@ the entire history and generated evidence tree.
   semantic/bold result values together. Unclassified imported body text is not
   guessed or changed. The same theme definitions seed newly created cards and
   the editor/chat browser smoke verifies the coordinated rose theme.
+  Sheet frame/flow roots now also expose four coordinated section themes. An
+  explicit click styles the selected frame and nearby semantic title/eyebrow
+  layers through managed CSS, stops at nested section boundaries, and excludes
+  ordinary field labels/body/input layers from direct theme targeting. The
+  same paper root definition seeds a newly created section box. Synthetic
+  browser evidence verifies coordinated frame/title paint and preserved field
+  label paint in both render modes.
   This is not arbitrary-sheet actual Roll20 parity.
 - Actual Roll20's built-in default chat-template DOM and typography were
   measured in the dedicated one-member modern Sandbox. The local fallback now

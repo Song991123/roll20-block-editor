@@ -114,6 +114,16 @@ already-selected insertion position.
   four table-surface styles, four table-row styles, four table-cell styles,
   four result-card styles, and four result-row styles. These are authored
   product presets, not copied sheet designs or bundled community examples.
+- A sheet frame/flow selection presents the four section choices as
+  coordinated whole-section themes. Applying one is explicit: it paints the
+  selected root plus a confident heading or semantic title/eyebrow no deeper
+  than two layer levels. Discovery stops at a nested classed section, panel,
+  card, box, group, or frame boundary. Generic body text, field labels, inputs,
+  and deeper headings remain outside the theme target set.
+- New section boxes seed their root from the same paper-theme definition used
+  by later theme changes. Creation and editing therefore do not maintain
+  separate palettes, and both paths still emit managed CSS rather than inline
+  presentation.
 - Buttons and ordinary input controls expose base, hover, active, and focus
   appearance states. State rules use the same stable managed class with CSS
   pseudo-classes. If a touched property came from an imported inline style,

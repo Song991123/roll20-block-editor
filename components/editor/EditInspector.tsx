@@ -24,6 +24,11 @@ import {
   getResultCardTheme,
   type ResultCardTheme,
 } from '@/lib/editor/resultCardThemes';
+import {
+  collectSectionThemeTargets,
+  getSectionTheme,
+  type SectionTheme,
+} from '@/lib/editor/sectionThemes';
 import { flushEmitPipeline } from '@/lib/preview/useEmitPipeline';
 import { useWorkspaceStore, WORKSPACE_KEYS, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { fieldDisplayLabel } from './fieldLabels';
@@ -199,6 +204,40 @@ export default function EditInspector() {
     queueMicrotask(() => flushEmitPipeline());
   }, [selectedId, workspace]);
 
+  const applySectionTheme = useCallback((themeId: SectionTheme['id']) => {
+    if (!selectedId || workspace !== 'html') return;
+    const adapter = getBlocklyAdapter();
+    const selected = adapter.getBlock('html', selectedId);
+    if (!selected) return;
+    const selectedRole = getLayerRole(selected.type);
+    if (selectedRole.kind !== 'frame' && selectedRole.kind !== 'flow') return;
+    const nodes = adapter.listAllBlocks('html');
+    if (findOwningRolltemplateId(nodes, selectedId)) return;
+
+    const theme = getSectionTheme(themeId);
+    const targets = collectSectionThemeTargets(
+      nodes,
+      selectedId,
+      (blockId) => adapter.getBlockField('html', blockId, 'CLASS') ?? '',
+    );
+    let htmlChanged = false;
+    let cssChanged = false;
+    for (const target of targets) {
+      const result = commitManagedDesignStyle(adapter, {
+        workspace: 'html',
+        blockId: target.blockId,
+        declarations: theme.parts[target.part],
+      });
+      htmlChanged = htmlChanged || result.htmlChanged;
+      cssChanged = cssChanged || result.cssChanged || result.cssBlockCreated;
+    }
+    if (!htmlChanged && !cssChanged) return;
+    const store = useWorkspaceStore.getState();
+    if (htmlChanged) store.bumpStructure('html', adapter.countBlocks('html'));
+    if (cssChanged) store.bumpStructure('css', adapter.countBlocks('css'));
+    queueMicrotask(() => flushEmitPipeline());
+  }, [selectedId, workspace]);
+
   const deleteSelected = useCallback(() => {
     if (!selectedId || !workspace) return;
     const adapter = getBlocklyAdapter();
@@ -289,6 +328,7 @@ export default function EditInspector() {
             beforeValues={beforeVisualStyles}
             onBeforePatch={commitBeforeVisualStyle}
             onApplyResultCardTheme={applyResultCardTheme}
+            onApplySectionTheme={applySectionTheme}
           />
         )}
 

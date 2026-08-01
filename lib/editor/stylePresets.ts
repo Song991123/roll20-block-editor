@@ -1,6 +1,7 @@
 import type { LayerRole } from './layerRoles';
 import type { ManagedDesignDeclarations } from './designPosition';
 import { RESULT_CARD_THEMES } from './resultCardThemes';
+import { SECTION_THEMES } from './sectionThemes';
 
 export type VisualStylePresetFamily =
   | 'section'
@@ -31,52 +32,12 @@ const DIRECT_ROLL_BUTTON_ICON_TYPES = new Set([
   'r20_chat_button',
 ]);
 
-const SECTION_PRESETS: VisualStylePreset[] = [
-  preset('paper', '종이', '밝은 종이 위에 어울리는 얇은 선과 그림자', {
-    'background-color': '#fffdfd',
-    'background-image': 'none',
-    color: '#3f3439',
-    'border-width': '1px',
-    'border-style': 'solid',
-    'border-color': '#ead8df',
-    'border-radius': '6px',
-    padding: '16px',
-    'box-shadow': '0 2px 8px rgba(73, 45, 57, 0.08)',
-  }),
-  preset('rose', '장미', '제목과 중요 내용을 감싸는 분홍색 선', {
-    'background-color': '#fff2f6',
-    'background-image': 'none',
-    color: '#5d2f40',
-    'border-width': '2px',
-    'border-style': 'solid',
-    'border-color': '#d96b91',
-    'border-radius': '6px',
-    padding: '16px',
-    'box-shadow': 'none',
-  }),
-  preset('mint', '민트', '반복 항목에 쓰기 좋은 차분한 색과 안쪽 표시선', {
-    'background-color': '#f2fbf7',
-    'background-image': 'none',
-    color: '#245648',
-    'border-width': '1px',
-    'border-style': 'solid',
-    'border-color': '#86c9b3',
-    'border-radius': '4px',
-    padding: '16px',
-    'box-shadow': 'inset 4px 0 0 #4ea88b',
-  }),
-  preset('ink', '잉크', '작은 정보 구역에 어울리는 선명한 틀', {
-    'background-color': '#f7f5f6',
-    'background-image': 'none',
-    color: '#352f33',
-    'border-width': '1px',
-    'border-style': 'solid',
-    'border-color': '#595057',
-    'border-radius': '2px',
-    padding: '16px',
-    'box-shadow': 'none',
-  }),
-];
+const SECTION_PRESETS: VisualStylePreset[] = SECTION_THEMES.map((theme) => ({
+  id: theme.id,
+  label: theme.label,
+  description: theme.description,
+  declarations: theme.parts.root,
+}));
 
 const BUTTON_PRESETS: VisualStylePreset[] = [
   preset('rose', '장미', '주요 주사위 버튼에 어울리는 도톰한 분홍 버튼', {

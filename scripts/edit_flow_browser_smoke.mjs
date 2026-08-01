@@ -1430,8 +1430,20 @@ async function main() {
     assert(styledEmit.css.includes('background-color: #f1a7bf'), 'visual background was not emitted to CSS');
     assert(styledEmit.css.includes('padding: 18px'), 'visual padding was not emitted to CSS');
 
+    const fieldLabelBeforeTheme = await frame.evaluate((blockId) => {
+      const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+      if (!(element instanceof HTMLElement)) return null;
+      return {
+        color: getComputedStyle(element).color,
+        inlineStyle: element.getAttribute('style') ?? '',
+      };
+    }, ids.labelId);
+    await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.frameId}"]`,
+    ).click();
     const sectionRosePreset = page.locator('[data-testid="design-preset-section-rose"]');
-    assert((await sectionRosePreset.count()) === 1, 'section style preset is missing');
+    await sectionRosePreset.waitFor({ state: 'visible', timeout: 10000 });
+    assert((await page.locator('[data-testid="design-section-themes"]').count()) === 1, 'coordinated section theme controls are missing');
     await sectionRosePreset.click();
     await page.waitForFunction(
       () => {
@@ -1444,24 +1456,55 @@ async function main() {
       { timeout: 10000 },
     );
     await page.waitForTimeout(300);
-    result.tests.sectionStylePreset = await frame.evaluate((blockId) => {
-      const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
-      if (!(element instanceof HTMLElement)) return null;
-      const style = getComputedStyle(element);
+    result.tests.sectionStylePreset = await frame.evaluate(({ frameId, titleId, labelId }) => {
+      const root = document.querySelector(`[data-r20-block-id="${CSS.escape(frameId)}"]`);
+      const title = document.querySelector(`[data-r20-block-id="${CSS.escape(titleId)}"]`);
+      const label = document.querySelector(`[data-r20-block-id="${CSS.escape(labelId)}"]`);
+      if (!(root instanceof HTMLElement) || !(title instanceof HTMLElement) || !(label instanceof HTMLElement)) return null;
+      const rootStyle = getComputedStyle(root);
+      const titleStyle = getComputedStyle(title);
+      const labelStyle = getComputedStyle(label);
       return {
-        inlineStyle: element.getAttribute('style') ?? '',
-        backgroundColor: style.backgroundColor,
-        borderColor: style.borderColor,
-        borderRadius: style.borderRadius,
-        paddingTop: style.paddingTop,
+        root: {
+          inlineStyle: root.getAttribute('style') ?? '',
+          backgroundColor: rootStyle.backgroundColor,
+          borderColor: rootStyle.borderColor,
+          borderRadius: rootStyle.borderRadius,
+          paddingTop: rootStyle.paddingTop,
+        },
+        title: {
+          inlineStyle: title.getAttribute('style') ?? '',
+          backgroundColor: titleStyle.backgroundColor,
+          color: titleStyle.color,
+          paddingTop: titleStyle.paddingTop,
+        },
+        label: {
+          inlineStyle: label.getAttribute('style') ?? '',
+          color: labelStyle.color,
+        },
       };
-    }, ids.rowBId);
+    }, { frameId: ids.frameId, titleId: ids.titleId, labelId: ids.labelId });
     const sectionPresetDebug = JSON.stringify(result.tests.sectionStylePreset);
-    assert(result.tests.sectionStylePreset?.backgroundColor === 'rgb(255, 242, 246)', `section preset fill did not reach the shared iframe: ${sectionPresetDebug}`);
-    assert(result.tests.sectionStylePreset?.borderColor === 'rgb(217, 107, 145)', `section preset border did not reach the shared iframe: ${sectionPresetDebug}`);
-    assert(result.tests.sectionStylePreset?.borderRadius === '6px', `section preset radius did not reach the shared iframe: ${sectionPresetDebug}`);
-    assert(result.tests.sectionStylePreset?.paddingTop === '16px', `section preset padding did not reach the shared iframe: ${sectionPresetDebug}`);
-    assert(!/background|border|padding/i.test(result.tests.sectionStylePreset?.inlineStyle ?? ''), 'section preset leaked presentation into inline HTML');
+    assert(result.tests.sectionStylePreset?.root.backgroundColor === 'rgb(255, 242, 246)', `section theme fill did not reach the shared iframe: ${sectionPresetDebug}`);
+    assert(result.tests.sectionStylePreset?.root.borderColor === 'rgb(217, 107, 145)', `section theme border did not reach the shared iframe: ${sectionPresetDebug}`);
+    assert(result.tests.sectionStylePreset?.root.borderRadius === '6px', `section theme radius did not reach the shared iframe: ${sectionPresetDebug}`);
+    assert(result.tests.sectionStylePreset?.root.paddingTop === '16px', `section theme padding did not reach the shared iframe: ${sectionPresetDebug}`);
+    assert(result.tests.sectionStylePreset?.title.backgroundColor === 'rgb(217, 107, 145)', `section theme did not coordinate the title band: ${sectionPresetDebug}`);
+    assert(result.tests.sectionStylePreset?.title.color === 'rgb(255, 255, 255)', `section theme did not coordinate title text: ${sectionPresetDebug}`);
+    assert(result.tests.sectionStylePreset?.title.paddingTop === '8px', `section theme did not coordinate title spacing: ${sectionPresetDebug}`);
+    assert(result.tests.sectionStylePreset?.label.color === fieldLabelBeforeTheme?.color, `section theme changed a nested field label: ${sectionPresetDebug}`);
+    assert(result.tests.sectionStylePreset?.label.inlineStyle === fieldLabelBeforeTheme?.inlineStyle, 'section theme rewrote nested field-label inline style');
+    assert(!/background|border|padding/i.test(result.tests.sectionStylePreset?.root.inlineStyle ?? ''), 'section theme leaked root presentation into inline HTML');
+    assert(!/background|color|border|padding/i.test(result.tests.sectionStylePreset?.title.inlineStyle ?? ''), 'section theme leaked title presentation into inline HTML');
+    await page.locator('[data-testid="design-section-themes"]').scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: path.join(REPORT_DIR, 'section-theme-editor.png'),
+      fullPage: false,
+    });
+
+    await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.rowBId}"]`,
+    ).click();
 
     const sectionAccentLeft = page.locator('[data-testid="design-section-accent-left"]');
     await sectionAccentLeft.waitFor({ state: 'visible', timeout: 10000 });
@@ -1932,6 +1975,14 @@ async function main() {
       () => window.__perfHook.getEmitContent().css.includes('::before')
         && window.__perfHook.getEmitContent().css.includes('display: none'),
       null,
+      { timeout: 10000 },
+    );
+    await frame.waitForFunction(
+      (blockId) => {
+        const button = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+        return button instanceof HTMLElement && getComputedStyle(button, '::before').display === 'none';
+      },
+      result.tests.rollButtonLayer.id,
       { timeout: 10000 },
     );
     result.tests.rollButtonIconHidden = await rollButton.evaluate((button) => (
