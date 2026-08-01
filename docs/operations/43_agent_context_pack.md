@@ -15,8 +15,9 @@ the entire history and generated evidence tree.
   for sections, Roll buttons, text, inputs, table surfaces/rows/cells, result
   cards, and result rows. Buttons and ordinary inputs can edit separate base,
   hover, active, and focus states. Frame/flow sections can also author a remote
-  background image with fit, repeat, and 3x3 position controls. The authoring
-  path accepts only HTTP(S), warns on HTTP, preserves imported complex
+  background image with fit, repeat, and 3x3 position controls, then choose
+  visual accent side/color/width, shadow, corner, and inner-spacing treatments.
+  The authoring path accepts only HTTP(S), warns on HTTP, preserves imported complex
   backgrounds until explicit replacement. Direct Roll buttons expose built-in
   d20 icon visibility, size, text gap, opacity, and color without replacing
   Roll20's glyph or `dicefontd20` family. Both controls emit managed CSS that
@@ -30,8 +31,9 @@ the entire history and generated evidence tree.
   rows/text into flow. The persistent sheet iframe remains mounted separately,
   so card width cannot reflow the sheet. Blockly template-name changes migrate
   root and descendant managed CSS to the new chat scope. Section background and
-  Roll-button icon paint plus modern/legacy sanitizer preservation are locally
-  browser-verified. This is not arbitrary-sheet actual Roll20 parity.
+  section-decoration paint, and Roll-button icon paint plus modern/legacy
+  sanitizer preservation are locally browser-verified. This is not
+  arbitrary-sheet actual Roll20 parity.
 - Actual Roll20's built-in default chat-template DOM and typography were
   measured in the dedicated one-member modern Sandbox. The local fallback now
   matches its caption/row/inline-roll structure and passes browser smoke.

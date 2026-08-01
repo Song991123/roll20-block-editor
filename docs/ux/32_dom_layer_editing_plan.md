@@ -127,6 +127,12 @@ already-selected insertion position.
   position control, and writes `background-image`, `background-size`,
   `background-position`, and `background-repeat` through the same managed CSS
   rule as the rest of the inspector.
+- Frame and flow layers also expose a visual quick-decoration panel. It offers
+  no/left/top/right/bottom accent placement, four authored color swatches plus
+  a custom color, three line widths, four shadow treatments, three corner
+  treatments, and three inner-spacing choices. These controls write ordinary
+  border longhands, `box-shadow`, `border-radius`, and `padding` to the same
+  stable managed class without inserting a wrapper or changing DOM order.
 - New background URLs reject relative, `data:`, executable, credential-bearing,
   and multiline values. HTTP remains editable for imported compatibility but
   shows a visible Roll20 warning. A newly added URL starts at cover, centered,

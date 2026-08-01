@@ -1414,6 +1414,56 @@ async function main() {
     assert(result.tests.sectionStylePreset?.paddingTop === '16px', `section preset padding did not reach the shared iframe: ${sectionPresetDebug}`);
     assert(!/background|border|padding/i.test(result.tests.sectionStylePreset?.inlineStyle ?? ''), 'section preset leaked presentation into inline HTML');
 
+    const sectionAccentLeft = page.locator('[data-testid="design-section-accent-left"]');
+    await sectionAccentLeft.waitFor({ state: 'visible', timeout: 10000 });
+    await sectionAccentLeft.click();
+    await page.locator('[data-testid="design-section-accent-color-mint"]').click();
+    await page.locator('[data-testid="design-section-accent-width-6"]').click();
+    await page.locator('[data-testid="design-section-shadow-lifted"]').click();
+    await page.locator('[data-testid="design-section-corner-8"]').click();
+    await page.locator('[data-testid="design-section-padding-24"]').click();
+    await page.waitForFunction(
+      () => {
+        const css = window.__perfHook.getEmitContent().css;
+        return css.includes('border-left-width: 6px')
+          && css.includes('border-left-style: solid')
+          && css.includes('border-left-color: #4ea88b')
+          && css.includes('box-shadow: 0 8px 20px rgba(73, 45, 57, 0.16)')
+          && css.includes('border-radius: 8px')
+          && css.includes('padding: 24px');
+      },
+      null,
+      { timeout: 10000 },
+    );
+    await page.waitForTimeout(300);
+    result.tests.sectionDecoration = await frame.evaluate((blockId) => {
+      const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+      if (!(element instanceof HTMLElement)) return null;
+      const style = getComputedStyle(element);
+      return {
+        inlineStyle: element.getAttribute('style') ?? '',
+        borderLeftWidth: style.borderLeftWidth,
+        borderLeftStyle: style.borderLeftStyle,
+        borderLeftColor: style.borderLeftColor,
+        boxShadow: style.boxShadow,
+        borderRadius: style.borderRadius,
+        paddingTop: style.paddingTop,
+      };
+    }, ids.rowBId);
+    const sectionDecorationDebug = JSON.stringify(result.tests.sectionDecoration);
+    assert(result.tests.sectionDecoration?.borderLeftWidth === '6px', `section accent width did not render: ${sectionDecorationDebug}`);
+    assert(result.tests.sectionDecoration?.borderLeftStyle === 'solid', `section accent style did not render: ${sectionDecorationDebug}`);
+    assert(result.tests.sectionDecoration?.borderLeftColor === 'rgb(78, 168, 139)', `section accent color did not render: ${sectionDecorationDebug}`);
+    assert(result.tests.sectionDecoration?.boxShadow !== 'none', `section shadow did not render: ${sectionDecorationDebug}`);
+    assert(result.tests.sectionDecoration?.borderRadius === '8px', `section corner choice did not render: ${sectionDecorationDebug}`);
+    assert(result.tests.sectionDecoration?.paddingTop === '24px', `section padding choice did not render: ${sectionDecorationDebug}`);
+    assert(!/border|box-shadow|padding/i.test(result.tests.sectionDecoration?.inlineStyle ?? ''), 'section decoration leaked presentation into inline HTML');
+    await page.locator('[data-testid="design-section-decoration"]').scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: path.join(REPORT_DIR, 'section-decoration-editor.png'),
+      fullPage: false,
+    });
+
     const syntheticBackgroundUrl = `http://127.0.0.1:${PORT}${BASE_PATH}/synthetic-background.png`;
     const backgroundUrlInput = page.locator('[data-testid="design-background-url"]');
     await backgroundUrlInput.waitFor({ state: 'visible', timeout: 10000 });
@@ -1776,6 +1826,25 @@ async function main() {
         backgroundRepeat: 'repeat-x',
       }),
       `section background changed between edit and preview: ${JSON.stringify(result.tests.sectionBackgroundPreview)}`,
+    );
+    result.tests.sectionDecorationPreview = await frame.evaluate((blockId) => {
+      const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+      if (!(element instanceof HTMLElement)) return null;
+      const style = getComputedStyle(element);
+      return {
+        inlineStyle: element.getAttribute('style') ?? '',
+        borderLeftWidth: style.borderLeftWidth,
+        borderLeftStyle: style.borderLeftStyle,
+        borderLeftColor: style.borderLeftColor,
+        boxShadow: style.boxShadow,
+        borderRadius: style.borderRadius,
+        paddingTop: style.paddingTop,
+      };
+    }, ids.rowBId);
+    assert(
+      JSON.stringify(result.tests.sectionDecorationPreview)
+        === JSON.stringify(result.tests.sectionDecoration),
+      `section decoration changed between edit and preview: ${JSON.stringify(result.tests.sectionDecorationPreview)}`,
     );
     result.tests.rollButtonPreviewIconStyle = await rollButton.evaluate((button) => {
       const style = getComputedStyle(button, '::before');

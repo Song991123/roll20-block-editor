@@ -18,6 +18,7 @@ import {
 import { cn } from '@/lib/utils/cn';
 import BackgroundImageControls from './BackgroundImageControls';
 import RollButtonIconControls from './RollButtonIconControls';
+import SectionDecorationControls from './SectionDecorationControls';
 
 type VisualStyleInspectorProps = {
   valuesByState: Record<ManagedDesignState, Record<string, string>>;
@@ -127,6 +128,10 @@ export default function VisualStyleInspector({
             })}
           </div>
         </StyleSection>
+      )}
+
+      {(role.kind === 'frame' || role.kind === 'flow') && activeState === 'base' && (
+        <SectionDecorationControls values={values} onPatch={applyPatch} />
       )}
 
       <StyleSection title="크기와 여백">

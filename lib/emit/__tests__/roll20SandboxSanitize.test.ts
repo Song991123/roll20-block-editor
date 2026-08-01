@@ -27,7 +27,13 @@ function testCssPrefixesSelectors(): void {
     .charsheet .kept { color: blue; }
     .sheet-rolltemplate-default { width: 280px; }
     .sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a,
-    .sheet-r20-node-a { padding: 7px 14px; }
+    .sheet-r20-node-a {
+      padding: 24px;
+      border-left-width: 6px;
+      border-left-style: solid;
+      border-left-color: #4ea88b;
+      box-shadow: 0 8px 20px rgba(73, 45, 57, 0.16);
+    }
     .sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a:hover,
     .sheet-r20-node-a:hover { background-color: #f2fbf7; }
     .sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a::before,
@@ -49,6 +55,9 @@ function testCssPrefixesSelectors(): void {
     '.charsheet .sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a:hover,.charsheet .sheet-r20-node-a:hover',
     'keeps managed hover selector while applying Sandbox scope',
   );
+  expectContains(r.css, 'border-left-width: 6px', 'keeps managed section accent width');
+  expectContains(r.css, 'border-left-color: #4ea88b', 'keeps managed section accent color');
+  expectContains(r.css, 'box-shadow: 0 8px 20px rgba(73, 45, 57, 0.16)', 'keeps managed section shadow');
   expectContains(
     r.css,
     '.charsheet .sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a::before,.charsheet .sheet-r20-node-a::before',

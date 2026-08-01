@@ -11265,3 +11265,28 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   not actual Roll20 visual parity.
 - `NEXT P1`: add section decoration controls that expose borders, shadows,
   separators, and spacing as visual choices without bundling a sample sheet.
+
+## 2026-08-01 Section Quick Decoration
+
+- `DONE LOCAL`: frame and flow sections now expose visual quick controls for
+  accent side, four authored accent swatches plus a custom color, line width,
+  shadow, corner shape, and inner spacing. Labels use ordinary Korean rather
+  than CSS property names.
+- `DONE LOCAL`: choices emit side-specific border longhands, `box-shadow`,
+  `border-radius`, and `padding` through the selected layer's stable managed
+  class. No wrapper, DOM reorder, inline presentation, sample asset, or copied
+  sheet design is added.
+- `VERIFIED LOCAL`: focused helper tests, modern sanitizer `8/8`, legacy
+  sanitizer `18/18`, lint, production build, full `ci:verify`, and edit-flow
+  browser smoke pass. Browser proof covers a 6px mint left accent, lifted
+  shadow, 8px corner, and 24px inner spacing with exact Edit/Preview computed
+  values and zero console/page errors.
+- `VERIFIED LOCAL`: anonymous modern and legacy synthetic Preview/Edit visual
+  comparison remains exact at `0%` mismatch for all four captures. Evidence is
+  ignored under `reports/edit-flow-section-decoration-r34/` and
+  `reports/preview-edit-section-decoration-r1/`.
+- `VERIFY / OPEN EXTERNAL`: actual current-payload section paint in modern
+  Roll20 Sandbox and a dedicated legacy room remains unverified. Local equality
+  is not actual Roll20 visual parity.
+- `NEXT P1`: extend similarly visual controls to title/label decoration while
+  keeping arbitrary imported structure and authored CSS intact.

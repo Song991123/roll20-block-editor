@@ -11717,3 +11717,22 @@ same-hash modern/legacy comparison.
   clean reruns passed and the timing point remains observable.
 - Actual modern Sandbox and dedicated legacy-room icon paint remain external
   evidence gates. No actual Roll20 parity claim is made.
+
+## 2026-08-01 - Section quick decoration
+
+- Added a section-only visual panel for accent placement, authored and custom
+  accent colors, line width, shadow, corner shape, and inner spacing. It appears
+  only for frame/flow base state and keeps the generic detailed inspector below.
+- Added `sectionDecorationStyle.ts` as the source-reading and CSS-patch boundary.
+  Switching accent sides clears only managed side-specific border properties,
+  then writes the selected side with ordinary Roll20-compatible longhands.
+- Extended sanitizer checks to preserve generated accent, padding, and shadow
+  declarations in both modern and legacy output paths.
+- Rebuilt and captured the UI with a synthetic section. Edit and Preview report
+  exact matching border, shadow, radius, and padding values; no presentation
+  leaked into inline HTML and no browser errors were recorded.
+- Focused tests, lint, build, full `ci:verify`, modern sanitizer `8/8`, legacy
+  sanitizer `18/18`, edit-flow smoke, and four modern/legacy synthetic visual
+  comparisons pass locally.
+- Actual current-payload modern Sandbox and dedicated legacy-room paint remain
+  open external evidence gates. No actual Roll20 parity claim is made.
