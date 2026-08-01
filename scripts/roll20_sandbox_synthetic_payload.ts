@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { upsertManagedCssRule } from '../lib/editor/designPosition';
+import {
+  getSectionComposition,
+  SECTION_COMPOSITIONS,
+  type SectionComposition,
+} from '../lib/editor/sectionCompositions';
+import { getSectionLayout } from '../lib/editor/sectionLayouts';
+import { getSectionTheme } from '../lib/editor/sectionThemes';
 import { prepareRoll20UploadFiles } from '../lib/export/payload';
 
 const args = process.argv.slice(2);
@@ -8,6 +16,9 @@ const outIndex = args.indexOf('--out-dir');
 const legacy = args.includes('--legacy');
 const layout = args.includes('--layout');
 const rolltemplate = args.includes('--rolltemplate');
+const compositionIndex = args.indexOf('--section-composition');
+const requestedCompositionId = compositionIndex >= 0 ? args[compositionIndex + 1] : null;
+const sectionCompositionId = resolveCompositionId(requestedCompositionId);
 const outDir = path.resolve(
   outIndex >= 0 && args[outIndex + 1]
     ? args[outIndex + 1]
@@ -18,11 +29,16 @@ type SyntheticPayloadOptions = {
   legacy: boolean;
   layout: boolean;
   rolltemplate: boolean;
+  sectionCompositionId: SectionComposition['id'] | null;
 };
 
-function buildSyntheticSource({ layout, rolltemplate }: Omit<SyntheticPayloadOptions, 'legacy'>) {
+function buildSyntheticSource({
+  layout,
+  rolltemplate,
+  sectionCompositionId: compositionId,
+}: Omit<SyntheticPayloadOptions, 'legacy'>) {
   const templateName = rolltemplate ? 'proof' : 'default';
-  const sheetHtml = layout ? [
+  const sheetHtml = compositionId ? buildCompositionHtml(compositionId, templateName) : layout ? [
     '<div class="sheet-layout-proof" style="width:760px;min-height:320px;padding:16px">',
     '  <div class="sheet-2colrow">',
     '    <div class="sheet-col">',
@@ -64,7 +80,7 @@ function buildSyntheticSource({ layout, rolltemplate }: Omit<SyntheticPayloadOpt
     );
   }
 
-  const sheetCss = layout ? [
+  const sheetCss = compositionId ? buildCompositionCss(compositionId) : layout ? [
     '.sheet-layout-proof { background: #fffafc; border: 2px solid #d96b91; box-sizing: border-box; color: #3b2730; }',
     '.sheet-layout-proof .sheet-2colrow { display: flex; gap: 16px; align-items: flex-start; }',
     '.sheet-layout-proof .sheet-col { flex: 1 1 0; min-width: 0; }',
@@ -88,7 +104,13 @@ function buildSyntheticSource({ layout, rolltemplate }: Omit<SyntheticPayloadOpt
     );
   }
 
-  const translation: Record<string, string> = layout ? {
+  const translation: Record<string, string> = compositionId ? {
+    section_title: 'Generated section',
+    name: 'Name',
+    role: 'Role',
+    worker: 'Worker',
+    result: 'Result',
+  } : layout ? {
     name: 'Name',
     role: 'Role',
     score: 'Score',
@@ -121,9 +143,11 @@ function contentOf(
 
 function runSelfTest() {
   const variants: SyntheticPayloadOptions[] = [
-    { legacy: false, layout: false, rolltemplate: false },
-    { legacy: false, layout: true, rolltemplate: true },
-    { legacy: true, layout: true, rolltemplate: true },
+    { legacy: false, layout: false, rolltemplate: false, sectionCompositionId: null },
+    { legacy: false, layout: true, rolltemplate: true, sectionCompositionId: null },
+    { legacy: true, layout: true, rolltemplate: true, sectionCompositionId: null },
+    { legacy: false, layout: true, rolltemplate: true, sectionCompositionId: 'mint-sidebar' },
+    { legacy: true, layout: true, rolltemplate: true, sectionCompositionId: 'mint-sidebar' },
   ];
 
   for (const options of variants) {
@@ -135,6 +159,15 @@ function runSelfTest() {
     assert.equal(payload.files.length, 3);
     assert.equal(payload.removedInternalBlockIds, 0);
     assert.doesNotMatch(html, /data-r20-block-id/);
+
+    if (options.sectionCompositionId) {
+      assert.match(html, /sheet-r20-node-composition-root/);
+      assert.match(html, /sheet-r20-node-composition-title/);
+      assert.match(css, /\.sheet-r20-node-composition-root\.sheet-r20-node-composition-root/);
+      assert.match(css, /background-color: #f2fbf7/);
+      assert.match(css, /grid-template-columns: minmax\(0, 2fr\) minmax\(0, 1fr\)/);
+      assert.match(css, /grid-column: 1 \/ -1/);
+    }
 
     if (options.rolltemplate) {
       assert.match(html, /&amp;\{template:proof\}/);
@@ -158,7 +191,12 @@ async function main() {
     return;
   }
 
-  const payload = createSyntheticPayload({ legacy, layout, rolltemplate });
+  const payload = createSyntheticPayload({
+    legacy,
+    layout: layout || Boolean(sectionCompositionId),
+    rolltemplate,
+    sectionCompositionId,
+  });
 
   await mkdir(outDir, { recursive: true });
   for (const file of payload.files) {
@@ -169,8 +207,9 @@ async function main() {
     `${JSON.stringify({
       synthetic: true,
       legacy,
-      layout,
+      layout: layout || Boolean(sectionCompositionId),
       rolltemplate,
+      sectionCompositionId,
       removedInternalBlockIds: payload.removedInternalBlockIds,
       legacyWarnings: payload.legacyWarnings,
       files: payload.files.map(({ name, content }) => ({ name, bytes: content.length })),
@@ -181,8 +220,9 @@ async function main() {
   console.log(JSON.stringify({
     outDir,
     legacy,
-    layout,
+    layout: layout || Boolean(sectionCompositionId),
     rolltemplate,
+    sectionCompositionId,
     files: payload.files.map(({ name, content }) => ({ name, bytes: content.length })),
     removedInternalBlockIds: payload.removedInternalBlockIds,
   }, null, 2));
@@ -192,3 +232,80 @@ main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
+
+function resolveCompositionId(value: string | null): SectionComposition['id'] | null {
+  if (!value) return null;
+  const match = SECTION_COMPOSITIONS.find((candidate) => candidate.id === value);
+  if (!match) {
+    throw new Error(`Unknown --section-composition value: ${value}`);
+  }
+  return match.id;
+}
+
+function buildCompositionHtml(
+  compositionId: SectionComposition['id'],
+  templateName: string,
+): string[] {
+  const label = getSectionComposition(compositionId).label;
+  return [
+    '<section class="sheet-layout-proof sheet-r20-node-composition-root" style="width:760px;min-height:320px">',
+    `  <h2 class="sheet-r20-node-composition-title" data-i18n="section_title">${label}</h2>`,
+    '  <div class="sheet-composition-panel sheet-composition-main">',
+    '    <label data-i18n="name">Name</label>',
+    '    <input type="text" name="attr_name" value="">',
+    '    <textarea name="attr_notes" rows="3"></textarea>',
+    '  </div>',
+    '  <div class="sheet-composition-panel sheet-composition-side">',
+    '    <label data-i18n="role">Role</label>',
+    '    <select name="attr_role"><option value="one">One</option><option value="two">Two</option></select>',
+    '  </div>',
+    '  <div class="sheet-composition-panel sheet-composition-actions">',
+    `    <button type="roll" name="roll_layout" value="&amp;{template:${templateName}} {{name=Generated section}} {{result=[[1d20]]}}">Roll</button>`,
+    '    <button type="action" name="act_layout_mark">Mark</button>',
+    '    <label data-i18n="worker">Worker</label>',
+    '    <input type="text" name="attr_layout_clicked" value="0" readonly>',
+    '  </div>',
+    '  <script type="text/worker">on(\'clicked:layout_mark\', function () { setAttrs({ layout_clicked: \'1\' }); });</script>',
+    '</section>',
+  ];
+}
+
+function buildCompositionCss(compositionId: SectionComposition['id']): string[] {
+  const compositionValue = getSectionComposition(compositionId);
+  const theme = getSectionTheme(compositionValue.themeId);
+  const layoutValue = getSectionLayout(compositionValue.layoutId);
+  const rootDeclarations = definedDeclarations({
+    ...theme.parts.root,
+    ...layoutValue.parts.root,
+    'box-sizing': 'border-box',
+  });
+  const titleDeclarations = definedDeclarations({
+    ...theme.parts.title,
+    ...layoutValue.parts.header,
+  });
+  let managedCss = upsertManagedCssRule(
+    '',
+    'sheet-r20-node-composition-root',
+    rootDeclarations,
+  );
+  managedCss = upsertManagedCssRule(
+    managedCss,
+    'sheet-r20-node-composition-title',
+    titleDeclarations,
+  );
+  return [
+    managedCss,
+    '.sheet-composition-panel { min-width: 0; padding: 10px; border: 1px solid #b8ddd0; border-radius: 3px; background: rgba(255, 255, 255, 0.72); }',
+    '.sheet-composition-panel label { display: block; margin-bottom: 6px; font-weight: 700; }',
+    '.sheet-composition-panel textarea, .sheet-composition-panel select { display: block; margin-top: 8px; }',
+    '.sheet-composition-actions button, .sheet-composition-actions label, .sheet-composition-actions input { margin-right: 8px; }',
+  ];
+}
+
+function definedDeclarations(
+  declarations: Record<string, string | null>,
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(declarations).filter((entry): entry is [string, string] => entry[1] != null),
+  );
+}
