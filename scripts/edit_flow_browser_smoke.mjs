@@ -177,7 +177,8 @@ async function main() {
 
     const syntheticHtml = [
       '<div class="frame" style="width:520px; min-height:220px; padding:16px">',
-      '  <div class="row-a" style="padding:8px"><input type="text" name="attr_a" value="A"></div>',
+      '  <h2 class="title" style="font-size:18px; font-weight:700">Character</h2>',
+      '  <div class="row-a" style="padding:8px"><label class="field-label">Name</label><input type="text" name="attr_a" value="A"></div>',
       '  <div class="row-b" style="padding:8px"><input type="text" name="attr_b" value="B"></div>',
       '</div>',
       '<table class="sheet-table"><tbody><tr class="sheet-table-row">',
@@ -208,7 +209,9 @@ async function main() {
     result.tests.editSurface.persistentIframe = true;
     const ids = await frame.evaluate(() => {
       const frameNode = document.querySelector('.sheet-frame');
+      const title = document.querySelector('.sheet-title');
       const rowA = document.querySelector('.sheet-row-a');
+      const fieldLabel = document.querySelector('.sheet-field-label');
       const rowB = document.querySelector('.sheet-row-b');
       const rowBInput = document.querySelector('.sheet-row-b input');
       const table = document.querySelector('.sheet-table');
@@ -221,7 +224,9 @@ async function main() {
       const groupTwo = document.querySelector('.sheet-group-two');
       return {
         frameId: frameNode?.getAttribute('data-r20-block-id') ?? null,
+        titleId: title?.getAttribute('data-r20-block-id') ?? null,
         rowAId: rowA?.getAttribute('data-r20-block-id') ?? null,
+        labelId: fieldLabel?.getAttribute('data-r20-block-id') ?? null,
         rowBId: rowB?.getAttribute('data-r20-block-id') ?? null,
         rowBInputId: rowBInput?.getAttribute('data-r20-block-id') ?? null,
         tableId: table?.getAttribute('data-r20-block-id') ?? null,
@@ -235,7 +240,7 @@ async function main() {
       };
     });
     assert(
-      ids.frameId && ids.rowAId && ids.rowBId && ids.rowBInputId && ids.tableId && ids.tableBodyId
+      ids.frameId && ids.titleId && ids.labelId && ids.rowAId && ids.rowBId && ids.rowBInputId && ids.tableId && ids.tableBodyId
         && ids.tableRowId && ids.outsideId && ids.groupOneId && ids.groupTwoId,
       `synthetic structural IDs were not emitted: ${JSON.stringify(ids)}`,
     );
@@ -1510,6 +1515,130 @@ async function main() {
     });
 
     await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.titleId}"]`,
+    ).click();
+    const textDecorationSide = page.locator('[data-testid="design-text-decoration-side"]');
+    await textDecorationSide.waitFor({ state: 'visible', timeout: 10000 });
+    await textDecorationSide.click();
+    await page.locator('[data-testid="design-text-decoration-color-gold"]').click();
+    await page.locator('[data-testid="design-text-decoration-align-center"]').click();
+    await page.locator('[data-testid="design-text-decoration-size-22"]').click();
+    await page.locator('[data-testid="design-text-decoration-weight-900"]').click();
+    await page.waitForFunction(
+      () => {
+        const css = window.__perfHook.getEmitContent().css;
+        return css.includes('border-width: 0 0 0 4px')
+          && css.includes('border-color: #c9943e')
+          && css.includes('text-align: center')
+          && css.includes('font-size: 22px')
+          && css.includes('font-weight: 900');
+      },
+      null,
+      { timeout: 10000 },
+    );
+    await page.waitForTimeout(300);
+    result.tests.textDecoration = await frame.evaluate((blockId) => {
+      const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+      if (!(element instanceof HTMLElement)) return null;
+      const style = getComputedStyle(element);
+      return {
+        inlineStyle: element.getAttribute('style') ?? '',
+        backgroundColor: style.backgroundColor,
+        color: style.color,
+        borderLeftWidth: style.borderLeftWidth,
+        borderLeftStyle: style.borderLeftStyle,
+        borderLeftColor: style.borderLeftColor,
+        paddingLeft: style.paddingLeft,
+        textAlign: style.textAlign,
+        fontSize: style.fontSize,
+        fontWeight: style.fontWeight,
+      };
+    }, ids.titleId);
+    const textDecorationDebug = JSON.stringify(result.tests.textDecoration);
+    assert(result.tests.textDecoration?.backgroundColor === 'rgba(0, 0, 0, 0)', `text decoration background changed unexpectedly: ${textDecorationDebug}`);
+    assert(result.tests.textDecoration?.color === 'rgb(109, 75, 21)', `text decoration foreground did not render: ${textDecorationDebug}`);
+    assert(result.tests.textDecoration?.borderLeftWidth === '4px', `text decoration side width did not render: ${textDecorationDebug}`);
+    assert(result.tests.textDecoration?.borderLeftStyle === 'solid', `text decoration side style did not render: ${textDecorationDebug}`);
+    assert(result.tests.textDecoration?.borderLeftColor === 'rgb(201, 148, 62)', `text decoration side color did not render: ${textDecorationDebug}`);
+    assert(result.tests.textDecoration?.paddingLeft === '8px', `text decoration padding did not render: ${textDecorationDebug}`);
+    assert(result.tests.textDecoration?.textAlign === 'center', `text decoration alignment did not render: ${textDecorationDebug}`);
+    assert(result.tests.textDecoration?.fontSize === '22px', `text decoration size did not render: ${textDecorationDebug}`);
+    assert(result.tests.textDecoration?.fontWeight === '900', `text decoration weight did not render: ${textDecorationDebug}`);
+    assert(!/font|border|background|padding|text-align/i.test(result.tests.textDecoration?.inlineStyle ?? ''), 'text decoration leaked presentation into inline HTML');
+    const textDecorationBackgroundField = page.locator('[data-testid="design-style-background-text"]');
+    result.tests.textDecorationColorField = {
+      value: await textDecorationBackgroundField.inputValue(),
+      placeholder: await textDecorationBackgroundField.getAttribute('placeholder'),
+    };
+    assert(
+      result.tests.textDecorationColorField.value === ''
+        && result.tests.textDecorationColorField.placeholder === '투명',
+      `transparent text decoration exposed raw CSS: ${JSON.stringify(result.tests.textDecorationColorField)}`,
+    );
+    await page.locator('[data-testid="design-text-decoration"]').scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: path.join(REPORT_DIR, 'text-decoration-editor.png'),
+      fullPage: false,
+    });
+
+    await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.labelId}"]`,
+    ).click();
+    await page.locator('[data-testid="design-text-decoration-tag"]').click();
+    await page.locator('[data-testid="design-text-decoration-color-mint"]').click();
+    await page.locator('[data-testid="design-text-decoration-align-left"]').click();
+    await page.locator('[data-testid="design-text-decoration-size-13"]').click();
+    await page.locator('[data-testid="design-text-decoration-weight-600"]').click();
+    await page.waitForFunction(
+      () => {
+        const css = window.__perfHook.getEmitContent().css;
+        return css.includes('background-color: #e8f7f1')
+          && css.includes('border-color: #4ea88b')
+          && css.includes('border-radius: 999px')
+          && css.includes('font-size: 13px')
+          && css.includes('font-weight: 600');
+      },
+      null,
+      { timeout: 10000 },
+    );
+    await page.waitForTimeout(300);
+    result.tests.labelDecoration = await frame.evaluate((blockId) => {
+      const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+      if (!(element instanceof HTMLElement)) return null;
+      const style = getComputedStyle(element);
+      return {
+        inlineStyle: element.getAttribute('style') ?? '',
+        backgroundColor: style.backgroundColor,
+        color: style.color,
+        borderWidth: style.borderWidth,
+        borderStyle: style.borderStyle,
+        borderColor: style.borderColor,
+        borderRadius: style.borderRadius,
+        paddingLeft: style.paddingLeft,
+        textAlign: style.textAlign,
+        fontSize: style.fontSize,
+        fontWeight: style.fontWeight,
+      };
+    }, ids.labelId);
+    const labelDecorationDebug = JSON.stringify(result.tests.labelDecoration);
+    assert(result.tests.labelDecoration?.backgroundColor === 'rgb(232, 247, 241)', `label decoration background did not render: ${labelDecorationDebug}`);
+    assert(result.tests.labelDecoration?.color === 'rgb(40, 92, 76)', `label decoration foreground did not render: ${labelDecorationDebug}`);
+    assert(result.tests.labelDecoration?.borderWidth === '1px', `label decoration border width did not render: ${labelDecorationDebug}`);
+    assert(result.tests.labelDecoration?.borderStyle === 'solid', `label decoration border style did not render: ${labelDecorationDebug}`);
+    assert(result.tests.labelDecoration?.borderColor === 'rgb(78, 168, 139)', `label decoration border color did not render: ${labelDecorationDebug}`);
+    assert(result.tests.labelDecoration?.borderRadius === '999px', `label decoration tag shape did not render: ${labelDecorationDebug}`);
+    assert(result.tests.labelDecoration?.paddingLeft === '10px', `label decoration padding did not render: ${labelDecorationDebug}`);
+    assert(result.tests.labelDecoration?.textAlign === 'left', `label decoration alignment did not render: ${labelDecorationDebug}`);
+    assert(result.tests.labelDecoration?.fontSize === '13px', `label decoration size did not render: ${labelDecorationDebug}`);
+    assert(result.tests.labelDecoration?.fontWeight === '600', `label decoration weight did not render: ${labelDecorationDebug}`);
+    assert(!/font|border|background|padding|text-align/i.test(result.tests.labelDecoration?.inlineStyle ?? ''), 'label decoration leaked presentation into inline HTML');
+    await page.locator('[data-testid="design-text-decoration"]').scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: path.join(REPORT_DIR, 'label-decoration-editor.png'),
+      fullPage: false,
+    });
+
+    await page.locator(
       `[data-testid="edit-layer-row"][data-r20-block-id="${ids.tableId}"]`,
     ).click();
     const tablePaperPreset = page.locator('[data-testid="design-preset-table-paper"]');
@@ -1845,6 +1974,51 @@ async function main() {
       JSON.stringify(result.tests.sectionDecorationPreview)
         === JSON.stringify(result.tests.sectionDecoration),
       `section decoration changed between edit and preview: ${JSON.stringify(result.tests.sectionDecorationPreview)}`,
+    );
+    result.tests.textDecorationPreview = await frame.evaluate((blockId) => {
+      const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+      if (!(element instanceof HTMLElement)) return null;
+      const style = getComputedStyle(element);
+      return {
+        inlineStyle: element.getAttribute('style') ?? '',
+        backgroundColor: style.backgroundColor,
+        color: style.color,
+        borderLeftWidth: style.borderLeftWidth,
+        borderLeftStyle: style.borderLeftStyle,
+        borderLeftColor: style.borderLeftColor,
+        paddingLeft: style.paddingLeft,
+        textAlign: style.textAlign,
+        fontSize: style.fontSize,
+        fontWeight: style.fontWeight,
+      };
+    }, ids.titleId);
+    assert(
+      JSON.stringify(result.tests.textDecorationPreview)
+        === JSON.stringify(result.tests.textDecoration),
+      `text decoration changed between edit and preview: ${JSON.stringify(result.tests.textDecorationPreview)}`,
+    );
+    result.tests.labelDecorationPreview = await frame.evaluate((blockId) => {
+      const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+      if (!(element instanceof HTMLElement)) return null;
+      const style = getComputedStyle(element);
+      return {
+        inlineStyle: element.getAttribute('style') ?? '',
+        backgroundColor: style.backgroundColor,
+        color: style.color,
+        borderWidth: style.borderWidth,
+        borderStyle: style.borderStyle,
+        borderColor: style.borderColor,
+        borderRadius: style.borderRadius,
+        paddingLeft: style.paddingLeft,
+        textAlign: style.textAlign,
+        fontSize: style.fontSize,
+        fontWeight: style.fontWeight,
+      };
+    }, ids.labelId);
+    assert(
+      JSON.stringify(result.tests.labelDecorationPreview)
+        === JSON.stringify(result.tests.labelDecoration),
+      `label decoration changed between edit and preview: ${JSON.stringify(result.tests.labelDecorationPreview)}`,
     );
     result.tests.rollButtonPreviewIconStyle = await rollButton.evaluate((button) => {
       const style = getComputedStyle(button, '::before');

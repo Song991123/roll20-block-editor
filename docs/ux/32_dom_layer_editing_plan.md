@@ -146,6 +146,15 @@ already-selected insertion position.
   size, text gap, opacity, and color. The editor changes only the button's
   `::before` presentation; Roll20 remains the source of the icon content and
   `dicefontd20` font family.
+- Direct heading, label, static-text, and translated-text blocks expose a
+  visual title/label editor in their base state. Users can choose plain,
+  underline, side-line, band, or tag treatment, four authored palettes or a
+  custom color, three alignments, three sizes, and four weights. The source tag
+  and text stay unchanged; presentation is moved to the same stable managed
+  class used by the detailed inspector.
+- Runtime text markers and unwrapped text-node emitters do not receive these
+  controls. A layer must own a selectable emitted element before the editor
+  offers element-level title/label decoration.
 - Managed presentation rules can target the selected element, `::before`, or
   `::after`. Pseudo-element edits never strip the selected element's inline
   declarations. State selectors keep CSS order as pseudo-class then

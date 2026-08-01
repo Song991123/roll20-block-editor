@@ -15,10 +15,12 @@ import {
   type VisualStylePresetFamily,
   type VisualStylePresetScope,
 } from '@/lib/editor/stylePresets';
+import { hasTextDecorationControls } from '@/lib/editor/textDecorationStyle';
 import { cn } from '@/lib/utils/cn';
 import BackgroundImageControls from './BackgroundImageControls';
 import RollButtonIconControls from './RollButtonIconControls';
 import SectionDecorationControls from './SectionDecorationControls';
+import TextDecorationControls from './TextDecorationControls';
 
 type VisualStyleInspectorProps = {
   valuesByState: Record<ManagedDesignState, Record<string, string>>;
@@ -132,6 +134,10 @@ export default function VisualStyleInspector({
 
       {(role.kind === 'frame' || role.kind === 'flow') && activeState === 'base' && (
         <SectionDecorationControls values={values} onPatch={applyPatch} />
+      )}
+
+      {activeState === 'base' && hasTextDecorationControls(blockType) && (
+        <TextDecorationControls values={values} blockType={blockType} onPatch={applyPatch} />
       )}
 
       <StyleSection title="크기와 여백">
@@ -478,6 +484,15 @@ function ColorField({
   testid: string;
 }) {
   const swatch = normalizeHex(value) ?? '#ffffff';
+  const keyword = String(value ?? '').trim().toLowerCase();
+  const displayValue = keyword === 'transparent' || keyword === 'currentcolor'
+    ? ''
+    : value ?? '';
+  const placeholder = keyword === 'transparent'
+    ? '투명'
+    : keyword === 'currentcolor'
+      ? '글자색'
+      : '없음';
   return (
     <div className="grid grid-cols-[72px_40px_minmax(0,1fr)_34px] items-center gap-2">
       <span className="text-xs font-semibold text-muted-foreground">{label}</span>
@@ -491,9 +506,9 @@ function ColorField({
       />
       <input
         type="text"
-        value={value ?? ''}
+        value={displayValue}
         onChange={(event) => onChange(event.target.value || null)}
-        placeholder="없음"
+        placeholder={placeholder}
         spellCheck={false}
         className="r20-input min-w-0 font-mono"
         aria-label={`${label} 색상 값`}

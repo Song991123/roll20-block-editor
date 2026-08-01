@@ -11290,3 +11290,32 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   is not actual Roll20 visual parity.
 - `NEXT P1`: extend similarly visual controls to title/label decoration while
   keeping arbitrary imported structure and authored CSS intact.
+
+## 2026-08-01 Title And Label Decoration
+
+- `DONE LOCAL`: direct heading, label, static-text, and translated-text blocks
+  now expose plain, underline, side-line, band, and tag treatments, four
+  authored palettes plus a custom color, alignment, size, and weight controls.
+  Runtime and unwrapped text nodes remain excluded.
+- `DONE LOCAL`: title/label choices update the selected element's stable managed
+  class only. Source tag, text, DOM order, and translation key remain unchanged;
+  touched imported inline presentation is removed through the existing managed
+  CSS contract.
+- `FIXED LOCAL`: detailed color inputs display `투명` and `글자색` states as
+  readable placeholders instead of clipping raw CSS keywords in the narrow
+  inspector.
+- `VERIFIED LOCAL`: focused helper tests, modern sanitizer `8/8`, legacy
+  sanitizer `18/18`, lint, production build, full `ci:verify`, and edit-flow
+  browser smoke pass. A synthetic heading proves gold side-line, center, 22px,
+  weight 900; a separate label proves mint tag, 13px, weight 600. Both have
+  exact Edit/Preview computed values, no inline leakage, and zero browser
+  errors.
+- `VERIFIED LOCAL`: anonymous modern and legacy synthetic Preview/Edit visual
+  comparison remains exact at `0%` mismatch for all four captures. Evidence is
+  ignored under `reports/edit-flow-text-decoration-r38/` and
+  `reports/preview-edit-text-decoration-r1/`.
+- `VERIFY / OPEN EXTERNAL`: actual current-payload title/label paint in modern
+  Roll20 Sandbox and a dedicated legacy room remains unverified. Local equality
+  is not actual Roll20 visual parity.
+- `NEXT P1`: add image/media fit, position, opacity, and corner controls using
+  the same source-preserving visual workflow.

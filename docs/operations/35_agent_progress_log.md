@@ -11736,3 +11736,24 @@ same-hash modern/legacy comparison.
   comparisons pass locally.
 - Actual current-payload modern Sandbox and dedicated legacy-room paint remain
   open external evidence gates. No actual Roll20 parity claim is made.
+
+## 2026-08-01 - Title and label decoration
+
+- Added a direct title/label panel for selectable heading, label, static-text,
+  and translated-text blocks. It provides five visual treatments, four authored
+  palettes and a custom color, alignment icons, sizes, and weights.
+- Kept runtime text helpers and raw text nodes outside the panel because they do
+  not own a safe selectable element surface.
+- Added `textDecorationStyle.ts` to recognize existing underline/tag/banner
+  values and generate ordinary border, background, spacing, alignment, size,
+  and weight declarations without changing source text or tags.
+- Improved generic color fields so `transparent` and `currentColor` appear as
+  readable Korean states instead of clipped raw keywords.
+- Extended the canonical synthetic browser flow with separate heading and label
+  nodes. Both retain exact computed paint across Edit and Preview with no inline
+  presentation or browser errors.
+- Focused tests, lint, build, full `ci:verify`, modern sanitizer `8/8`, legacy
+  sanitizer `18/18`, edit-flow smoke, and four modern/legacy synthetic visual
+  comparisons pass locally.
+- Actual modern Sandbox and dedicated legacy-room title/label paint remain open
+  external evidence gates. No actual Roll20 parity claim is made.

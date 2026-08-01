@@ -33,6 +33,9 @@ function testCssPrefixesSelectors(): void {
       border-left-style: solid;
       border-left-color: #4ea88b;
       box-shadow: 0 8px 20px rgba(73, 45, 57, 0.16);
+      text-align: center;
+      font-size: 22px;
+      font-weight: 900;
     }
     .sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a:hover,
     .sheet-r20-node-a:hover { background-color: #f2fbf7; }
@@ -58,6 +61,9 @@ function testCssPrefixesSelectors(): void {
   expectContains(r.css, 'border-left-width: 6px', 'keeps managed section accent width');
   expectContains(r.css, 'border-left-color: #4ea88b', 'keeps managed section accent color');
   expectContains(r.css, 'box-shadow: 0 8px 20px rgba(73, 45, 57, 0.16)', 'keeps managed section shadow');
+  expectContains(r.css, 'text-align: center', 'keeps managed text alignment');
+  expectContains(r.css, 'font-size: 22px', 'keeps managed text size');
+  expectContains(r.css, 'font-weight: 900', 'keeps managed text weight');
   expectContains(
     r.css,
     '.charsheet .sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a::before,.charsheet .sheet-r20-node-a::before',

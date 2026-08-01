@@ -222,6 +222,9 @@ function testManagedSelectorPreserved(): void {
       border-left-style: solid;
       border-left-color: #4ea88b;
       box-shadow: 0 8px 20px rgba(73, 45, 57, 0.16);
+      text-align: center;
+      font-size: 22px;
+      font-weight: 900;
     }
     .sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a:hover, .sheet-r20-node-a:hover { background-color: #f2fbf7; }
     .sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a.sheet-r20-node-a::before, .sheet-r20-node-a::before { font-size: 1.3em; margin-right: 6px; }
@@ -247,6 +250,9 @@ function testManagedSelectorPreserved(): void {
   expectContains(r.sanitized, 'border-left-width: 6px', 'managed section accent width preserved');
   expectContains(r.sanitized, 'border-left-color: #4ea88b', 'managed section accent color preserved');
   expectContains(r.sanitized, 'box-shadow: 0 8px 20px rgba(73, 45, 57, 0.16)', 'managed section shadow preserved');
+  expectContains(r.sanitized, 'text-align: center', 'managed text alignment preserved');
+  expectContains(r.sanitized, 'font-size: 22px', 'managed text size preserved');
+  expectContains(r.sanitized, 'font-weight: 900', 'managed text weight preserved');
   assert(r.warnings.length === 0, `managed selector should not warn, got ${r.warnings.length}`);
 }
 
