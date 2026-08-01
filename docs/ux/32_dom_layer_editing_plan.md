@@ -130,6 +130,13 @@ already-selected insertion position.
   layout recipe. Existing color, typography, border, background, and unrelated
   imported declarations stay intact. The resulting flow must be measured in
   the same persistent iframe in both Edit and Preview.
+- Sections eligible for both contracts present four complete designs before
+  separate controls. Each complete design pairs one original section theme
+  with one structure-aware layout and applies both in a single managed-CSS
+  batch. It must never insert a wrapper, clone a child, or reorder source HTML.
+- Separate color and layout galleries remain available under a collapsed
+  user-facing fine-tune control. This is progressive disclosure only; it does
+  not remove granular authoring or silently apply a default to imported sheets.
 - New section boxes seed their root from the same paper-theme definition used
   by later theme changes. Creation and editing therefore do not maintain
   separate palettes, and both paths still emit managed CSS rather than inline

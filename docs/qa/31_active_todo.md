@@ -1,3 +1,36 @@
+# 2026-08-01 One-click section designs
+
+- `DONE PRODUCT`: eligible frame/flow sections now show four original complete
+  designs first: paper stack, rose two-column, mint wide/narrow, and ink row.
+  One explicit click applies the coordinated surface, border, title treatment,
+  spacing, and child layout through the existing managed-CSS path.
+- `DONE UX`: separate layout and color galleries now live under the collapsed
+  `배치와 색 따로 바꾸기` control. The common one-click choices stay visible
+  first, while all previous fine-tuning remains available.
+- `DONE STRUCTURE SAFETY`: composition application does not add wrappers or
+  reorder HTML. It combines the verified section-theme and layout targets,
+  stops before nested semantic section boundaries, and keeps unclassified body
+  text and field labels unchanged.
+- `VERIFIED BROWSER`: edit-flow smoke applied the mint wide/narrow design in
+  one click and measured the mint surface/border, title accent, 2:1 grid,
+  source child order, collapsed/expanded fine-tune state, active-card state,
+  managed-CSS boundary, and exact final computed result after switching to
+  Preview. The reviewed screenshot has no visible overlap or clipping at the
+  canonical desktop viewport.
+- `VERIFIED LOCAL PARITY`: two anonymous synthetic fixtures remain exact at
+  `0%` Preview/Edit mismatch in modern and legacy modes. This does not prove
+  arbitrary-sheet or actual Roll20 parity.
+- `VERIFIED REGRESSION`: composition unit/sanitizer tests, focused design tests,
+  edit-flow smoke, synthetic visual smoke, full `ci:verify`, UI-copy/privacy
+  guards, lint, and production build pass.
+- `VERIFIED REMOTE`: commit `d481a48` is pushed to `claude/design-reset`.
+  GitHub CI run `30682502247` passed safety/unit verification, lint, and build
+  in `1m30s`.
+- `BLOCKED EXTERNAL`: the generated complete-section CSS has not been freshly
+  applied in the modern Sandbox or dedicated legacy-enabled test room.
+- `P0 NEXT`: obtain actual modern/legacy generated-sheet evidence for this
+  section output before making any Roll20 parity claim.
+
 # 2026-08-01 Structure-aware section layouts
 
 - `DONE PRODUCT`: eligible frame/flow sections now expose four original inside

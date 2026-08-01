@@ -11939,3 +11939,26 @@ same-hash modern/legacy comparison.
   remains an external evidence gate.
 - Pushed commit `b14247c` to `claude/design-reset`; GitHub CI run
   `30681986753` passed safety/unit verification, lint, and build in `1m11s`.
+
+## 2026-08-01 - One-click section designs
+
+- Added four original complete-section choices that combine the existing
+  theme and layout contracts: paper stack, rose two-column, mint wide/narrow,
+  and ink row. Applying a choice is explicit and emits managed CSS only.
+- Moved the independent layout and color galleries into a native collapsed
+  fine-tune control. This keeps the primary inspector compact while preserving
+  every prior adjustment path and keyboard-accessible disclosure behavior.
+- Added a composition target combiner that merges root and title declarations
+  without adding wrappers or changing HTML order. Nested section boundaries,
+  ordinary body text, and field labels retain their existing protections.
+- Extended browser evidence to apply the mint composition in one click,
+  measure its surface, border, title accent, 2:1 geometry, source order,
+  active-card state, fine-tune disclosure, inline-style boundary, and exact
+  Edit/Preview computed result. The canonical desktop screenshot was visually
+  reviewed with no overlap or clipping.
+- Composition unit/sanitizer tests, focused design tests, edit-flow smoke, four
+  modern/legacy synthetic Preview/Edit captures, full `ci:verify`, lint, and
+  production build pass. Synthetic mismatch remains `0%`; actual Roll20 upload
+  remains open.
+- Pushed commit `d481a48` to `claude/design-reset`; GitHub CI run
+  `30682502247` passed safety/unit verification, lint, and build in `1m30s`.

@@ -79,6 +79,14 @@ the entire history and generated evidence tree.
   shared Edit/Preview iframe. Commit `b14247c` is pushed to
   `claude/design-reset`; GitHub CI run `30681986753` passed. Actual modern and
   legacy Roll20 upload proof remains open.
+  The inspector now presents four complete-section designs before low-level
+  controls: paper stack, rose two-column, mint wide/narrow, and ink row. One
+  explicit click combines the existing theme and layout contracts without
+  wrappers or HTML reordering. Independent layout/color galleries remain under
+  the collapsed `배치와 색 따로 바꾸기` control. Browser smoke verifies the
+  full mint composition and exact Edit/Preview computed output. Commit
+  `d481a48` is pushed to `claude/design-reset`; GitHub CI run `30682502247`
+  passed. Actual modern and legacy Roll20 paint remains unverified.
 - Actual Roll20's built-in default chat-template DOM and typography were
   measured in the dedicated one-member modern Sandbox. The local fallback now
   matches its caption/row/inline-roll structure and passes browser smoke.
