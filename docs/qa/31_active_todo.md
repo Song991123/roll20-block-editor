@@ -20,7 +20,9 @@
   mismatch for two fixtures in both modern and legacy modes.
 - `VERIFIED REGRESSION`: focused design tests, full `ci:verify`, lint, and the
   production build pass after the final state-reset fix.
-- `VERIFY REMOTE`: push the coherent batch and check GitHub CI.
+- `VERIFIED REMOTE`: commit `9d89ef3` is pushed to `claude/design-reset`.
+  GitHub CI run `30681492063` passed safety/unit verification, lint, and build
+  in `1m20s`.
 - `BLOCKED EXTERNAL MODERN`: the new Roll-button output has not been freshly
   uploaded to the modern Roll20 Sandbox. Local browser evidence is not actual
   Roll20 parity.

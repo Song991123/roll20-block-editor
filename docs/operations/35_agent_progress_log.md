@@ -17,7 +17,9 @@
   The dedicated gallery screenshot stays in the ignored local report.
 - Modern/legacy synthetic Preview/Edit comparisons remain exact at `0%` for
   two fixtures. Focused tests, full `ci:verify`, lint, and production build
-  pass. Actual modern Sandbox upload remains separate and unproven.
+  pass. Commit `9d89ef3` is pushed to `claude/design-reset`; GitHub CI run
+  `30681492063` passed in `1m20s`. Actual modern Sandbox upload remains
+  separate and unproven.
 
 # 2026-08-01 - Coordinated input and Roll-button rows
 

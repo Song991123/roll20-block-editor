@@ -69,7 +69,8 @@ the entire history and generated evidence tree.
   overrides. Local browser smoke verifies Edit/Preview base, hover, focus, and
   icon behavior. Modern/legacy sanitizer tests preserve the generated rules,
   and generic synthetic Preview/Edit comparison stays exact in both modes;
-  remote CI and an actual modern Sandbox upload remain pending for this batch.
+  commit `9d89ef3` is pushed to `claude/design-reset` and GitHub CI run
+  `30681492063` passed. An actual modern Sandbox upload remains pending.
 - Actual Roll20's built-in default chat-template DOM and typography were
   measured in the dedicated one-member modern Sandbox. The local fallback now
   matches its caption/row/inline-roll structure and passes browser smoke.
