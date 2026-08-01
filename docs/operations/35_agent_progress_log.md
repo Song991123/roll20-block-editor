@@ -11845,3 +11845,5 @@ same-hash modern/legacy comparison.
   selection acknowledgement before the additive click.
 - Full `ci:verify` passes. Edit-flow smoke passes again against that fresh
   production build; evidence/privacy and UI-copy guards remain green.
+- Pushed commit `dd9df49` to `claude/design-reset`; GitHub CI run
+  `30679036128` passed safety/unit verification, lint, and build in `1m23s`.

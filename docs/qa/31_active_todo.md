@@ -11449,6 +11449,9 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `VERIFIED REGRESSION`: full `ci:verify` passes, including import/export,
   theme tests, modern/legacy render modes, evidence/privacy, and UI-copy gates.
   Edit-flow smoke also passes again against the fresh production build.
-- `TODO P0`: commit/push and verify GitHub Actions. Modern actual same-payload
-  Sandbox upload and broader anonymous imported-card structures remain separate
-  unverified work.
+- `VERIFIED REMOTE`: commit `dd9df49` is pushed to `claude/design-reset`.
+  GitHub CI run `30679036128` passed safety/unit verification, lint, and build.
+- `TODO P0`: make section-level styling faster and more visible without
+  replacing imported CSS implicitly. Modern actual same-payload Sandbox upload
+  and broader anonymous imported-card structures remain separate unverified
+  work.
