@@ -25,6 +25,8 @@
   exact at `0%` mismatch in four synthetic comparisons.
 - Full `ci:verify` passes, including renderer, import/export, modern/legacy,
   evidence/privacy, and UI-copy gates.
+- Pushed commit `fd210af` to `claude/design-reset`; GitHub CI run
+  `30678130171` passed safety/unit verification, lint, and build in `1m21s`.
 - Fresh modern same-payload upload remains blocked before transmission by the
   visible file chooser's `Not allowed` response. No unsupported workaround was
   attempted.

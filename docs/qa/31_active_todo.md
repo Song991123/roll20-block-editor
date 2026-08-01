@@ -33,13 +33,15 @@
 - `VERIFIED REGRESSION`: the full `ci:verify` gate passes with the chat geometry,
   rolltemplate renderer, import/export, modern/legacy render-mode, evidence,
   private-data, and UI-copy checks included.
+- `VERIFIED REMOTE`: commit `fd210af` is pushed to `claude/design-reset`.
+  GitHub CI run `30678130171` passed safety/unit verification, lint, and build.
 - `BLOCKED MODERN`: the current modern Sandbox payload is still not freshly
   applied. Its visible file chooser rejects supported `setFiles` before
   transmission with `Not allowed`; no hidden-input or endpoint workaround was
   used.
-- `TODO P0`: commit/push, verify GitHub Actions, then retry the modern visible
-  upload path. Keep section/result-card style controls and broader anonymous
-  structure coverage queued after renderer evidence.
+- `TODO P0`: retry the modern visible upload path. Then expand user-facing
+  section/result-card style controls and broader anonymous structure coverage;
+  do not count renderer parity work as completion of those design controls.
 
 # 2026-08-01 Dedicated legacy same-payload runtime proof
 
