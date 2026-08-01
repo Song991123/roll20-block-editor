@@ -71,6 +71,14 @@ the entire history and generated evidence tree.
   and generic synthetic Preview/Edit comparison stays exact in both modes;
   commit `9d89ef3` is pushed to `claude/design-reset` and GitHub CI run
   `30681492063` passed. An actual modern Sandbox upload remains pending.
+  Eligible frame/flow sections now also expose four structure-aware inside
+  layouts: stack, wrapping row, equal two columns, and 2:1 sidebar. Applying a
+  layout preserves HTML child order, spans only confident direct title/eyebrow
+  children, and excludes control groups, childless roots, and Rolltemplates.
+  Browser smoke proves real reflow and exact final computed layout across the
+  shared Edit/Preview iframe. Commit `b14247c` is pushed to
+  `claude/design-reset`; GitHub CI run `30681986753` passed. Actual modern and
+  legacy Roll20 upload proof remains open.
 - Actual Roll20's built-in default chat-template DOM and typography were
   measured in the dedicated one-member modern Sandbox. The local fallback now
   matches its caption/row/inline-roll structure and passes browser smoke.

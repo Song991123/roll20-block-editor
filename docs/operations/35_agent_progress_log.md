@@ -11917,3 +11917,25 @@ same-hash modern/legacy comparison.
   production build; evidence/privacy and UI-copy guards remain green.
 - Pushed commit `dd9df49` to `claude/design-reset`; GitHub CI run
   `30679036128` passed safety/unit verification, lint, and build in `1m23s`.
+
+## 2026-08-01 - Structure-aware section layouts
+
+- Added four explicit inside-layout choices for eligible frame/flow sections:
+  vertical stack, horizontal wrap, equal two columns, and a 2:1 sidebar.
+- Kept generated presentation in managed CSS. Layout application preserves
+  HTML child order and limits full-row spanning to confident direct
+  title/eyebrow children. Childless roots, input/action groups, and
+  Rolltemplate trees are excluded.
+- Extended the canonical browser smoke with a real section reflow proof. It
+  measures 2:1 sidebar geometry, title spanning, vertical source order after a
+  stack switch, and exact computed layout after changing from Edit to Preview.
+- Replaced an unrelated virtualization-sensitive collapse assertion with a
+  direct known-descendant visibility assertion. The same child must now be
+  visible before collapse, absent after collapse, and restored on iframe
+  selection.
+- Focused design tests, modern/legacy sanitizer preservation, edit-flow smoke,
+  four modern/legacy synthetic Preview/Edit captures, full `ci:verify`, lint,
+  and production build pass. Synthetic mismatch is `0%`; actual Roll20 upload
+  remains an external evidence gate.
+- Pushed commit `b14247c` to `claude/design-reset`; GitHub CI run
+  `30681986753` passed safety/unit verification, lint, and build in `1m11s`.

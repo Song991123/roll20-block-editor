@@ -1,3 +1,32 @@
+# 2026-08-01 Structure-aware section layouts
+
+- `DONE PRODUCT`: eligible frame/flow sections now expose four original inside
+  layouts: vertical stack, horizontal wrap, equal two columns, and wide plus
+  narrow sidebar. The gallery appears beside the existing whole-section visual
+  themes instead of replacing imported styling automatically.
+- `DONE STRUCTURE SAFETY`: layout changes write managed CSS only. They preserve
+  HTML child order, make only confident direct title/eyebrow children span the
+  full row, and exclude childless containers, input/action groups, and
+  Rolltemplate trees.
+- `VERIFIED BROWSER`: edit-flow smoke measured real reflow in the persistent
+  iframe. Sidebar children shared one row at approximately 2:1 width, the title
+  spanned both columns, switching back to stack restored vertical source order,
+  and the final computed layout was identical after switching to Preview.
+- `VERIFIED LOCAL PARITY`: two anonymous synthetic fixtures remain exact at
+  `0%` Preview/Edit mismatch in both modern and legacy modes. This is local
+  synthetic evidence, not arbitrary-sheet or actual Roll20 parity.
+- `VERIFIED REGRESSION`: focused layout/sanitizer tests, full `ci:verify`, lint,
+  production build, edit-flow smoke, and synthetic visual smoke pass.
+- `VERIFIED REMOTE`: commit `b14247c` is pushed to `claude/design-reset`.
+  GitHub CI run `30681986753` passed safety/unit verification, lint, and build
+  in `1m11s`.
+- `BLOCKED EXTERNAL`: this newly generated grid/flex paint has not been freshly
+  uploaded to the modern Sandbox or a dedicated legacy-enabled test room.
+- `P1 NEXT VISUAL`: add composition-oriented section designs and clearer live
+  previews so users can assemble recognizable sheet regions without starting
+  from individual CSS controls. Keep every application explicit and generic;
+  do not bundle third-party sheet designs.
+
 # 2026-08-01 Coordinated Roll-button designs
 
 - `DONE PRODUCT`: direct Roll buttons now expose four original coordinated

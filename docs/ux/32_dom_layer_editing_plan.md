@@ -120,6 +120,16 @@ already-selected insertion position.
   than two layer levels. Discovery stops at a nested classed section, panel,
   card, box, group, or frame boundary. Generic body text, field labels, inputs,
   and deeper headings remain outside the theme target set.
+- An eligible frame/flow selection with children also presents four explicit
+  inside-layout choices: vertical stack, horizontal wrap, equal two columns,
+  and a 2:1 sidebar. Layout changes affect the selected root plus confident
+  direct title/eyebrow children only; the HTML child sequence is never
+  reordered. Childless roots, ordinary input/action groups, and Rolltemplate
+  trees do not receive this gallery.
+- A layout switch clears only the managed flex/grid properties owned by the
+  layout recipe. Existing color, typography, border, background, and unrelated
+  imported declarations stay intact. The resulting flow must be measured in
+  the same persistent iframe in both Edit and Preview.
 - New section boxes seed their root from the same paper-theme definition used
   by later theme changes. Creation and editing therefore do not maintain
   separate palettes, and both paths still emit managed CSS rather than inline
