@@ -110,6 +110,7 @@ export interface PerfHook {
   getLayerSnapshot: (key?: WorkspaceKey) => BlockSnapshot[];
   getBlockFields: (key: WorkspaceKey, blockId: string) => BlockFieldInfo[];
   getBlockGraph: (key?: WorkspaceKey) => PerfBlockGraphNode[];
+  getSelectedBlockId: () => string | null;
   /** emit 결과 (lazy emit). 길이만 — 본문 dump X (사용자 시트 식별자 leak 방지). */
   getEmitCache: () => PerfEmitSnap;
   /**
@@ -298,6 +299,8 @@ function buildHook(): PerfHook {
     getLayerSnapshot: (key = 'html') => getBlocklyAdapter().listAllBlocks(key),
 
     getBlockFields: (key, blockId) => getBlocklyAdapter().getBlockFields(key, blockId),
+
+    getSelectedBlockId: () => useWorkspaceStore.getState().selectedBlockId,
 
     getBlockGraph: (key = 'html') => {
       const adapter = getBlocklyAdapter();

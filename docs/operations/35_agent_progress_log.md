@@ -1,3 +1,27 @@
+# 2026-08-01 - Coordinated input and Roll-button rows
+
+- Added four original whole-row themes for selected input/button rows. Themes
+  coordinate the row root, semantic label, ordinary control, and action/Roll
+  button through the existing managed-CSS path.
+- Required the selected root to be a real/semantic row or field/control wrapper.
+  A loose input inside a large section no longer misclassifies that section as
+  one input row. Nested rows are not traversed; hidden/toggle/file controls are
+  excluded.
+- Eligible rows replace the broader section-theme gallery with the plain-Korean
+  `한 줄 전체 모양` gallery and accurate label/input/dice previews.
+- Browser smoke proves coordinated mint label/input paint and rose input/Roll
+  button paint. It also proves unchanged Roll command text and preserved
+  Roll20 d20 icon content/font, with no presentation returned to inline HTML.
+- Added the missing local-only selected-block diagnostic to `__perfHook`; this
+  identified the roll-history tab as the reason an inspector was intentionally
+  hidden after a preview roll.
+- Focused design tests, lint, production build, edit-flow browser smoke, and
+  modern/legacy synthetic Preview/Edit visual smoke pass. Four visual
+  comparisons remain exact at `0%` mismatch.
+- Full `ci:verify`, lint, and production build pass after the final
+  browser-smoke refinements. Remote CI remains to run. Actual modern Sandbox
+  upload is still separate and unproven.
+
 # 2026-08-01 - Coordinated section themes
 
 - Replaced the root-only section style choice with four coordinated, original

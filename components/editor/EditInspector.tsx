@@ -16,6 +16,13 @@ import {
   type ManagedDesignDeclarations,
   type ManagedDesignState,
 } from '@/lib/editor/designPosition';
+import {
+  collectControlGroupThemeTargets,
+  getControlGroupTheme,
+  hasControlGroupThemeContent,
+  isControlGroupThemeRoot,
+  type ControlGroupTheme,
+} from '@/lib/editor/controlGroupThemes';
 import { designStyleFieldForBlockType } from '@/lib/editor/designClassField';
 import { getLayerRole } from '@/lib/editor/layerRoles';
 import { findOwningRolltemplateId } from '@/lib/editor/rolltemplateScope';
@@ -124,6 +131,29 @@ export default function EditInspector() {
   // structureVersion invalidates template ownership in the external Blockly model.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId, workspace, structureVersion]);
+  const controlGroupThemeEligible = useMemo(() => {
+    if (!selectedId || workspace !== 'html' || !role) return false;
+    if (role.kind !== 'frame' && role.kind !== 'flow') return false;
+    const adapter = getBlocklyAdapter();
+    const nodes = adapter.listAllBlocks('html');
+    if (findOwningRolltemplateId(nodes, selectedId)) return false;
+    if (!isControlGroupThemeRoot(
+      snapshot?.type ?? '',
+      adapter.getBlockField('html', selectedId, 'CLASS') ?? '',
+    )) return false;
+    const targets = collectControlGroupThemeTargets(
+      nodes,
+      selectedId,
+      (blockId) => adapter.getBlockField('html', blockId, 'CLASS') ?? '',
+    );
+    return hasControlGroupThemeContent(targets)
+      && targets.some((target) => (
+        target.part !== 'root'
+        && canManageDesignStyle(adapter, 'html', target.blockId)
+      ));
+  // structureVersion invalidates descendants in the external Blockly model.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, workspace, structureVersion, role, snapshot]);
   const beforeVisualStyles = useMemo(() => {
     if (!visualStyleEnabled || !selectedId || workspace !== 'html') return {};
     return readManagedDesignStyle(
@@ -238,6 +268,46 @@ export default function EditInspector() {
     queueMicrotask(() => flushEmitPipeline());
   }, [selectedId, workspace]);
 
+  const applyControlGroupTheme = useCallback((themeId: ControlGroupTheme['id']) => {
+    if (!selectedId || workspace !== 'html') return;
+    const adapter = getBlocklyAdapter();
+    const selected = adapter.getBlock('html', selectedId);
+    if (!selected) return;
+    const selectedRole = getLayerRole(selected.type);
+    if (selectedRole.kind !== 'frame' && selectedRole.kind !== 'flow') return;
+    const nodes = adapter.listAllBlocks('html');
+    if (findOwningRolltemplateId(nodes, selectedId)) return;
+    if (!isControlGroupThemeRoot(
+      selected.type,
+      adapter.getBlockField('html', selectedId, 'CLASS') ?? '',
+    )) return;
+
+    const targets = collectControlGroupThemeTargets(
+      nodes,
+      selectedId,
+      (blockId) => adapter.getBlockField('html', blockId, 'CLASS') ?? '',
+    );
+    if (!hasControlGroupThemeContent(targets)) return;
+    const theme = getControlGroupTheme(themeId);
+    let htmlChanged = false;
+    let cssChanged = false;
+    for (const target of targets) {
+      if (!canManageDesignStyle(adapter, 'html', target.blockId)) continue;
+      const result = commitManagedDesignStyle(adapter, {
+        workspace: 'html',
+        blockId: target.blockId,
+        declarations: theme.parts[target.part],
+      });
+      htmlChanged = htmlChanged || result.htmlChanged;
+      cssChanged = cssChanged || result.cssChanged || result.cssBlockCreated;
+    }
+    if (!htmlChanged && !cssChanged) return;
+    const store = useWorkspaceStore.getState();
+    if (htmlChanged) store.bumpStructure('html', adapter.countBlocks('html'));
+    if (cssChanged) store.bumpStructure('css', adapter.countBlocks('css'));
+    queueMicrotask(() => flushEmitPipeline());
+  }, [selectedId, workspace]);
+
   const deleteSelected = useCallback(() => {
     if (!selectedId || !workspace) return;
     const adapter = getBlocklyAdapter();
@@ -329,6 +399,8 @@ export default function EditInspector() {
             onBeforePatch={commitBeforeVisualStyle}
             onApplyResultCardTheme={applyResultCardTheme}
             onApplySectionTheme={applySectionTheme}
+            controlGroupThemeEligible={controlGroupThemeEligible}
+            onApplyControlGroupTheme={applyControlGroupTheme}
           />
         )}
 

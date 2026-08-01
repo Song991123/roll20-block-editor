@@ -124,6 +124,16 @@ already-selected insertion position.
   by later theme changes. Creation and editing therefore do not maintain
   separate palettes, and both paths still emit managed CSS rather than inline
   presentation.
+- A row or semantic field/control wrapper with a direct ordinary input or
+  action uses a more specific `한 줄 전체 모양` gallery. Its four themes
+  coordinate the selected root, semantic label, ordinary input, and action/Roll
+  button. This replaces, rather than stacks with, the broader section gallery
+  for that selection.
+- Whole-row target discovery accepts direct children and one shallow
+  label/control wrapper only. It does not descend into a nested row and does not
+  paint hidden, checkbox, radio, toggle, or file controls as text inputs. Roll
+  commands and Roll20's d20 pseudo-element content/font remain outside the
+  theme declarations.
 - Buttons and ordinary input controls expose base, hover, active, and focus
   appearance states. State rules use the same stable managed class with CSS
   pseudo-classes. If a touched property came from an imported inline style,

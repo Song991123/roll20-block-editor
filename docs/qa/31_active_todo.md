@@ -1,3 +1,32 @@
+# 2026-08-01 Coordinated input and Roll-button rows
+
+- `DONE PRODUCT`: a selected input/button row now offers four original whole-row
+  styles: paper, rose, mint, and ink. One explicit click coordinates the row,
+  semantic label, ordinary input, and action/Roll button through managed CSS.
+- `DONE STRUCTURE BOUNDARY`: row eligibility requires an actual row or semantic
+  field/control wrapper root plus a direct input/action target. Target discovery
+  stops before nested rows, permits only one shallow label/control wrapper, and
+  excludes hidden, checkbox, radio, toggle, and file controls.
+- `DONE UI`: eligible rows show `한 줄 전체 모양` instead of the broader
+  section-theme choices. Each choice previews label, input, and dice-button
+  paint before applying it.
+- `VERIFIED BROWSER`: the edit-flow smoke coordinated a mint label/input row and
+  a rose input/Roll-button row. All touched presentation remained out of inline
+  HTML. The original Roll command, Roll20 `dicefontd20` family, icon content,
+  and icon visibility were preserved.
+- `DONE DIAGNOSTICS`: the local-only perf hook now exposes current selected block
+  ID. Browser failures can distinguish a real layer-selection fault from an
+  inspector tab that is intentionally showing roll history.
+- `VERIFIED LOCAL PARITY`: synthetic Preview/Edit remains exact at `0%` mismatch
+  for two fixtures in both modern and legacy modes.
+- `VERIFIED REGRESSION`: full `ci:verify`, lint, and production build pass after
+  the final browser-smoke refinements.
+- `VERIFY REMOTE`: push the coherent batch and check GitHub CI before marking
+  it remote-verified.
+- `BLOCKED EXTERNAL MODERN`: the coordinated row output has not been freshly
+  uploaded to the modern Roll20 Sandbox. Local browser evidence is not actual
+  Roll20 parity.
+
 # 2026-08-01 Coordinated section themes
 
 - `DONE PRODUCT`: frame/flow selection now offers four coordinated section

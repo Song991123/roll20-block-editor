@@ -246,6 +246,7 @@ async function main() {
       const title = document.querySelector('.sheet-title');
       const rowA = document.querySelector('.sheet-row-a');
       const fieldLabel = document.querySelector('.sheet-field-label');
+      const rowAInput = document.querySelector('.sheet-row-a input');
       const rowB = document.querySelector('.sheet-row-b');
       const rowBInput = document.querySelector('.sheet-row-b input');
       const image = document.querySelector('.sheet-portrait');
@@ -262,6 +263,7 @@ async function main() {
         titleId: title?.getAttribute('data-r20-block-id') ?? null,
         rowAId: rowA?.getAttribute('data-r20-block-id') ?? null,
         labelId: fieldLabel?.getAttribute('data-r20-block-id') ?? null,
+        rowAInputId: rowAInput?.getAttribute('data-r20-block-id') ?? null,
         rowBId: rowB?.getAttribute('data-r20-block-id') ?? null,
         rowBInputId: rowBInput?.getAttribute('data-r20-block-id') ?? null,
         imageId: image?.getAttribute('data-r20-block-id') ?? null,
@@ -276,7 +278,7 @@ async function main() {
       };
     });
     assert(
-      ids.frameId && ids.titleId && ids.labelId && ids.rowAId && ids.rowBId && ids.rowBInputId && ids.imageId && ids.tableId && ids.tableBodyId
+      ids.frameId && ids.titleId && ids.labelId && ids.rowAId && ids.rowAInputId && ids.rowBId && ids.rowBInputId && ids.imageId && ids.tableId && ids.tableBodyId
         && ids.tableRowId && ids.outsideId && ids.groupOneId && ids.groupTwoId,
       `synthetic structural IDs were not emitted: ${JSON.stringify(ids)}`,
     );
@@ -1445,16 +1447,27 @@ async function main() {
     await sectionRosePreset.waitFor({ state: 'visible', timeout: 10000 });
     assert((await page.locator('[data-testid="design-section-themes"]').count()) === 1, 'coordinated section theme controls are missing');
     await sectionRosePreset.click();
-    await page.waitForFunction(
-      () => {
+    try {
+      await page.waitForFunction(
+        () => {
+          const css = window.__perfHook.getEmitContent().css;
+          return css.includes('background-color: #fff2f6')
+            && css.includes('border-color: #d96b91')
+            && css.includes('box-shadow: none');
+        },
+        null,
+        { timeout: 10000 },
+      );
+    } catch (error) {
+      const debug = await page.evaluate(() => {
         const css = window.__perfHook.getEmitContent().css;
-        return css.includes('background-color: #fff2f6')
-          && css.includes('border-color: #d96b91')
-          && css.includes('box-shadow: none');
-      },
-      null,
-      { timeout: 10000 },
-    );
+        return {
+          selectedId: window.__perfHook.getSelectedBlockId?.() ?? null,
+          cssTail: css.slice(-1200),
+        };
+      });
+      throw new Error(`section theme emit did not settle: ${JSON.stringify(debug)}`, { cause: error });
+    }
     await page.waitForTimeout(300);
     result.tests.sectionStylePreset = await frame.evaluate(({ frameId, titleId, labelId }) => {
       const root = document.querySelector(`[data-r20-block-id="${CSS.escape(frameId)}"]`);
@@ -1598,6 +1611,85 @@ async function main() {
     await page.locator('[data-testid="design-background-preview"]').scrollIntoViewIfNeeded();
     await page.screenshot({
       path: path.join(REPORT_DIR, 'section-background-editor.png'),
+      fullPage: false,
+    });
+
+    await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.rowAId}"]`,
+    ).click();
+    const controlGroupMintPreset = page.locator('[data-testid="design-preset-control-group-mint"]');
+    await controlGroupMintPreset.waitFor({ state: 'visible', timeout: 10000 });
+    assert((await page.locator('[data-testid="design-control-group-themes"]').count()) === 1, 'control-group theme controls are missing for an input row');
+    assert((await page.locator('[data-testid="design-section-themes"]').count()) === 0, 'input row still exposes the broader section theme controls');
+    await controlGroupMintPreset.click();
+    await frame.waitForFunction(
+      ({ rowId, labelId, inputId }) => {
+        const row = document.querySelector(`[data-r20-block-id="${CSS.escape(rowId)}"]`);
+        const label = document.querySelector(`[data-r20-block-id="${CSS.escape(labelId)}"]`);
+        const input = document.querySelector(`[data-r20-block-id="${CSS.escape(inputId)}"]`);
+        if (!(row instanceof HTMLElement) || !(label instanceof HTMLElement) || !(input instanceof HTMLElement)) return false;
+        const rowStyle = getComputedStyle(row);
+        const labelStyle = getComputedStyle(label);
+        const inputStyle = getComputedStyle(input);
+        return rowStyle.backgroundColor === 'rgb(242, 251, 247)'
+          && labelStyle.color === 'rgb(36, 113, 91)'
+          && inputStyle.borderColor === 'rgb(105, 185, 159)';
+      },
+      { rowId: ids.rowAId, labelId: ids.labelId, inputId: ids.rowAInputId },
+      { timeout: 10000 },
+    );
+    result.tests.controlGroupInputTheme = await frame.evaluate(({ rowId, labelId, inputId }) => {
+      const row = document.querySelector(`[data-r20-block-id="${CSS.escape(rowId)}"]`);
+      const label = document.querySelector(`[data-r20-block-id="${CSS.escape(labelId)}"]`);
+      const input = document.querySelector(`[data-r20-block-id="${CSS.escape(inputId)}"]`);
+      if (!(row instanceof HTMLElement) || !(label instanceof HTMLElement) || !(input instanceof HTMLElement)) return null;
+      const rowStyle = getComputedStyle(row);
+      const labelStyle = getComputedStyle(label);
+      const inputStyle = getComputedStyle(input);
+      return {
+        root: {
+          inlineStyle: row.getAttribute('style') ?? '',
+          display: rowStyle.display,
+          backgroundColor: rowStyle.backgroundColor,
+          borderColor: rowStyle.borderColor,
+          borderRadius: rowStyle.borderRadius,
+          gap: rowStyle.gap,
+        },
+        label: {
+          inlineStyle: label.getAttribute('style') ?? '',
+          backgroundColor: labelStyle.backgroundColor,
+          color: labelStyle.color,
+          fontWeight: labelStyle.fontWeight,
+        },
+        control: {
+          inlineStyle: input.getAttribute('style') ?? '',
+          backgroundColor: inputStyle.backgroundColor,
+          color: inputStyle.color,
+          borderColor: inputStyle.borderColor,
+          borderRadius: inputStyle.borderRadius,
+          paddingTop: inputStyle.paddingTop,
+        },
+      };
+    }, { rowId: ids.rowAId, labelId: ids.labelId, inputId: ids.rowAInputId });
+    const controlGroupInputDebug = JSON.stringify(result.tests.controlGroupInputTheme);
+    assert(result.tests.controlGroupInputTheme?.root.display === 'flex', `control-group root did not become one line: ${controlGroupInputDebug}`);
+    assert(result.tests.controlGroupInputTheme?.root.backgroundColor === 'rgb(242, 251, 247)', `control-group root fill did not render: ${controlGroupInputDebug}`);
+    assert(result.tests.controlGroupInputTheme?.root.borderColor === 'rgb(155, 211, 192)', `control-group root border did not render: ${controlGroupInputDebug}`);
+    assert(result.tests.controlGroupInputTheme?.root.borderRadius === '6px', `control-group root corner did not render: ${controlGroupInputDebug}`);
+    assert(result.tests.controlGroupInputTheme?.root.gap === '8px', `control-group spacing did not render: ${controlGroupInputDebug}`);
+    assert(result.tests.controlGroupInputTheme?.label.backgroundColor === 'rgba(0, 0, 0, 0)', `control-group label background changed unexpectedly: ${controlGroupInputDebug}`);
+    assert(result.tests.controlGroupInputTheme?.label.color === 'rgb(36, 113, 91)', `control-group label color did not render: ${controlGroupInputDebug}`);
+    assert(result.tests.controlGroupInputTheme?.label.fontWeight === '700', `control-group label weight did not render: ${controlGroupInputDebug}`);
+    assert(result.tests.controlGroupInputTheme?.control.backgroundColor === 'rgb(255, 255, 255)', `control-group input fill did not render: ${controlGroupInputDebug}`);
+    assert(result.tests.controlGroupInputTheme?.control.borderColor === 'rgb(105, 185, 159)', `control-group input border did not render: ${controlGroupInputDebug}`);
+    assert(result.tests.controlGroupInputTheme?.control.borderRadius === '5px', `control-group input corner did not render: ${controlGroupInputDebug}`);
+    assert(result.tests.controlGroupInputTheme?.control.paddingTop === '7px', `control-group input spacing did not render: ${controlGroupInputDebug}`);
+    assert(!/display|background|border|padding|gap/i.test(result.tests.controlGroupInputTheme?.root.inlineStyle ?? ''), 'control-group root theme leaked into inline HTML');
+    assert(!/background|color|border|padding|font|box-shadow/i.test(result.tests.controlGroupInputTheme?.label.inlineStyle ?? ''), 'control-group label theme leaked into inline HTML');
+    assert(!/background|color|border|padding|font|box-shadow/i.test(result.tests.controlGroupInputTheme?.control.inlineStyle ?? ''), 'control-group input theme leaked into inline HTML');
+    await page.locator('[data-testid="design-control-group-themes"]').scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: path.join(REPORT_DIR, 'control-group-input-theme-editor.png'),
       fullPage: false,
     });
 
@@ -2264,6 +2356,105 @@ async function main() {
     assert(result.tests.rollButtonPreview.debugLabels === 0, 'preview Roll card exposed a debug label');
     await page.click('[data-testid="preview-exit-edit"]');
     await page.waitForSelector('[data-testid="edit-canvas-root"]');
+
+    await page.mouse.move(0, 0);
+    await page.locator('[data-testid="tab-attrs"]').click();
+    await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.rowBId}"]`,
+    ).click();
+    const controlGroupRosePreset = page.locator('[data-testid="design-preset-control-group-rose"]');
+    try {
+      await controlGroupRosePreset.waitFor({ state: 'visible', timeout: 10000 });
+    } catch (error) {
+      const debug = await page.evaluate((rowId) => {
+        const layers = window.__perfHook.getLayerSnapshot('html');
+        return {
+          selectedId: window.__perfHook.getSelectedBlockId(),
+          row: layers.find((node) => node.id === rowId) ?? null,
+          children: layers
+            .filter((node) => node.layerParentId === rowId)
+            .map((node) => ({ id: node.id, type: node.type })),
+          inspectorVisible: Boolean(document.querySelector('[data-testid="edit-inspector"]')),
+          groupPanelVisible: Boolean(document.querySelector('[data-testid="design-control-group-themes"]')),
+          sectionPanelVisible: Boolean(document.querySelector('[data-testid="design-section-themes"]')),
+        };
+      }, ids.rowBId);
+      throw new Error(`button-group controls did not appear: ${JSON.stringify(debug)}`, { cause: error });
+    }
+    await controlGroupRosePreset.click();
+    await frame.waitForFunction(
+      ({ rowId, inputId, buttonId }) => {
+        const row = document.querySelector(`[data-r20-block-id="${CSS.escape(rowId)}"]`);
+        const input = document.querySelector(`[data-r20-block-id="${CSS.escape(inputId)}"]`);
+        const button = document.querySelector(`[data-r20-block-id="${CSS.escape(buttonId)}"]`);
+        if (!(row instanceof HTMLElement) || !(input instanceof HTMLElement) || !(button instanceof HTMLElement)) return false;
+        return getComputedStyle(row).backgroundColor === 'rgb(255, 242, 246)'
+          && getComputedStyle(input).borderColor === 'rgb(217, 107, 145)'
+          && getComputedStyle(button).backgroundColor === 'rgb(217, 107, 145)';
+      },
+      { rowId: ids.rowBId, inputId: ids.rowBInputId, buttonId: result.tests.rollButtonLayer.id },
+      { timeout: 10000 },
+    );
+    result.tests.controlGroupRollTheme = await frame.evaluate(({ rowId, inputId, buttonId }) => {
+      const row = document.querySelector(`[data-r20-block-id="${CSS.escape(rowId)}"]`);
+      const input = document.querySelector(`[data-r20-block-id="${CSS.escape(inputId)}"]`);
+      const button = document.querySelector(`[data-r20-block-id="${CSS.escape(buttonId)}"]`);
+      if (!(row instanceof HTMLElement) || !(input instanceof HTMLElement) || !(button instanceof HTMLElement)) return null;
+      const rowStyle = getComputedStyle(row);
+      const inputStyle = getComputedStyle(input);
+      const buttonStyle = getComputedStyle(button);
+      const iconStyle = getComputedStyle(button, '::before');
+      return {
+        root: {
+          inlineStyle: row.getAttribute('style') ?? '',
+          backgroundColor: rowStyle.backgroundColor,
+          display: rowStyle.display,
+          gap: rowStyle.gap,
+        },
+        control: {
+          inlineStyle: input.getAttribute('style') ?? '',
+          backgroundColor: inputStyle.backgroundColor,
+          borderColor: inputStyle.borderColor,
+          borderRadius: inputStyle.borderRadius,
+        },
+        action: {
+          inlineStyle: button.getAttribute('style') ?? '',
+          value: button.getAttribute('value') ?? '',
+          backgroundColor: buttonStyle.backgroundColor,
+          color: buttonStyle.color,
+          borderColor: buttonStyle.borderColor,
+          borderRadius: buttonStyle.borderRadius,
+          paddingTop: buttonStyle.paddingTop,
+        },
+        icon: {
+          content: iconStyle.content,
+          display: iconStyle.display,
+          fontFamily: iconStyle.fontFamily,
+        },
+      };
+    }, { rowId: ids.rowBId, inputId: ids.rowBInputId, buttonId: result.tests.rollButtonLayer.id });
+    const controlGroupRollDebug = JSON.stringify(result.tests.controlGroupRollTheme);
+    assert(result.tests.controlGroupRollTheme?.root.backgroundColor === 'rgb(255, 242, 246)', `button-group root fill did not render: ${controlGroupRollDebug}`);
+    assert(result.tests.controlGroupRollTheme?.root.display === 'flex', `button-group root layout did not render: ${controlGroupRollDebug}`);
+    assert(result.tests.controlGroupRollTheme?.root.gap === '8px', `button-group spacing did not render: ${controlGroupRollDebug}`);
+    assert(result.tests.controlGroupRollTheme?.control.backgroundColor === 'rgb(255, 255, 255)', `button-group input fill did not render: ${controlGroupRollDebug}`);
+    assert(result.tests.controlGroupRollTheme?.control.borderColor === 'rgb(217, 107, 145)', `button-group input border did not render: ${controlGroupRollDebug}`);
+    assert(result.tests.controlGroupRollTheme?.action.backgroundColor === 'rgb(217, 107, 145)', `button-group Roll button fill did not render: ${controlGroupRollDebug}`);
+    assert(result.tests.controlGroupRollTheme?.action.color === 'rgb(255, 255, 255)', `button-group Roll button text did not render: ${controlGroupRollDebug}`);
+    assert(result.tests.controlGroupRollTheme?.action.borderColor === 'rgb(217, 107, 145)', `button-group Roll button border did not render: ${controlGroupRollDebug}`);
+    assert(result.tests.controlGroupRollTheme?.action.borderRadius === '5px', `button-group Roll button corner did not render: ${controlGroupRollDebug}`);
+    assert(result.tests.controlGroupRollTheme?.action.paddingTop === '7px', `button-group Roll button spacing did not render: ${controlGroupRollDebug}`);
+    assert(result.tests.controlGroupRollTheme?.action.value.includes('&{template:default}'), 'button-group theme changed the Roll command');
+    assert(result.tests.controlGroupRollTheme?.icon.display === 'inline-block', `button-group theme hid the Roll20 d20 icon: ${controlGroupRollDebug}`);
+    assert(/dicefontd20/i.test(result.tests.controlGroupRollTheme?.icon.fontFamily ?? ''), `button-group theme replaced the Roll20 d20 icon font: ${controlGroupRollDebug}`);
+    assert(result.tests.controlGroupRollTheme?.icon.content !== 'none', `button-group theme removed the Roll20 d20 icon content: ${controlGroupRollDebug}`);
+    assert(!/background|color|border|padding|font|box-shadow/i.test(result.tests.controlGroupRollTheme?.control.inlineStyle ?? ''), 'button-group input theme leaked into inline HTML');
+    assert(!result.tests.controlGroupRollTheme?.action.inlineStyle, 'button-group Roll button theme leaked into inline HTML');
+    await page.locator('[data-testid="design-control-group-themes"]').scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: path.join(REPORT_DIR, 'control-group-roll-theme-editor.png'),
+      fullPage: false,
+    });
 
     const widthInput = page.locator('[data-testid="edit-canvas-width-input"]');
     await widthInput.fill('930');

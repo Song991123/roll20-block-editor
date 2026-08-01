@@ -54,7 +54,13 @@ the entire history and generated evidence tree.
   browser evidence verifies coordinated frame/title paint and preserved field
   label paint in both render modes. Commit `937caa6` is pushed to
   `claude/design-reset`, and GitHub CI run `30679762722` passed.
-  This is not arbitrary-sheet actual Roll20 parity.
+  Input/button rows now expose four coordinated whole-row themes instead of the
+  broader section gallery. Eligibility requires a row/field wrapper with a
+  direct ordinary control or action, does not traverse nested rows, and excludes
+  hidden/toggle/file controls. Browser smoke verifies coordinated label/input
+  and input/Roll-button paint while preserving the Roll command and Roll20 d20
+  icon contract. Full `ci:verify`, lint, and production build pass locally;
+  GitHub CI remains pending. This is not arbitrary-sheet actual Roll20 parity.
 - Actual Roll20's built-in default chat-template DOM and typography were
   measured in the dedicated one-member modern Sandbox. The local fallback now
   matches its caption/row/inline-roll structure and passes browser smoke.

@@ -25,8 +25,13 @@ import {
   SECTION_THEMES,
   type SectionTheme,
 } from '@/lib/editor/sectionThemes';
+import {
+  CONTROL_GROUP_THEMES,
+  type ControlGroupTheme,
+} from '@/lib/editor/controlGroupThemes';
 import { cn } from '@/lib/utils/cn';
 import BackgroundImageControls from './BackgroundImageControls';
+import ControlGroupThemeControls from './ControlGroupThemeControls';
 import ImageStyleControls from './ImageStyleControls';
 import RollButtonIconControls from './RollButtonIconControls';
 import ResultCardThemeControls from './ResultCardThemeControls';
@@ -44,6 +49,8 @@ type VisualStyleInspectorProps = {
   onBeforePatch?: (declarations: ManagedDesignDeclarations) => void;
   onApplyResultCardTheme?: (themeId: ResultCardTheme['id']) => void;
   onApplySectionTheme?: (themeId: SectionTheme['id']) => void;
+  controlGroupThemeEligible?: boolean;
+  onApplyControlGroupTheme?: (themeId: ControlGroupTheme['id']) => void;
 };
 
 type LayoutMode = 'auto' | 'row' | 'column' | 'grid';
@@ -58,6 +65,8 @@ export default function VisualStyleInspector({
   onBeforePatch,
   onApplyResultCardTheme,
   onApplySectionTheme,
+  controlGroupThemeEligible = false,
+  onApplyControlGroupTheme,
 }: VisualStyleInspectorProps) {
   const [activeState, setActiveState] = useState<ManagedDesignState>('base');
   const values = valuesByState[activeState] ?? {};
@@ -80,10 +89,19 @@ export default function VisualStyleInspector({
       declarations: theme.parts.root,
     }))?.id ?? null
     : null;
+  const controlGroupThemeId = presetGroup?.family === 'section' && controlGroupThemeEligible
+    ? CONTROL_GROUP_THEMES.find((theme) => presetMatches(values, {
+      id: theme.id,
+      label: theme.label,
+      description: theme.description,
+      declarations: theme.parts.root,
+    }))?.id ?? null
+    : null;
   const coordinatedThemeVisible = (
     presetGroup?.family === 'result-card' && Boolean(onApplyResultCardTheme)
   ) || (
-    presetGroup?.family === 'section' && Boolean(onApplySectionTheme)
+    presetGroup?.family === 'section'
+    && Boolean(controlGroupThemeEligible ? onApplyControlGroupTheme : onApplySectionTheme)
   );
   const applyPatch = (declarations: ManagedDesignDeclarations) => onPatch(declarations, activeState);
   const clearActiveState = () => applyPatch(
@@ -146,7 +164,18 @@ export default function VisualStyleInspector({
         />
       )}
 
-      {presetGroup?.family === 'section' && onApplySectionTheme && (
+      {presetGroup?.family === 'section'
+        && controlGroupThemeEligible
+        && onApplyControlGroupTheme && (
+        <ControlGroupThemeControls
+          activeThemeId={controlGroupThemeId}
+          onApply={onApplyControlGroupTheme}
+        />
+      )}
+
+      {presetGroup?.family === 'section'
+        && !controlGroupThemeEligible
+        && onApplySectionTheme && (
         <SectionThemeControls
           activeThemeId={sectionThemeId}
           onApply={onApplySectionTheme}
