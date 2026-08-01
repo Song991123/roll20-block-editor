@@ -1,3 +1,30 @@
+# 2026-08-01 Coordinated Roll-button designs
+
+- `DONE PRODUCT`: direct Roll buttons now expose four original coordinated
+  designs: rose ribbon, paper ticket, mint tab, and ink stamp. Each card shows
+  the actual shape/color direction before applying it.
+- `DONE STATE BUNDLE`: one explicit choice writes base, hover, active, focus,
+  and Roll20 d20 pseudo-element paint together. The existing state tabs and
+  icon controls remain available for later fine tuning.
+- `DONE ACCESSIBILITY`: every theme's base, hover, and active text/background
+  pair is guarded at `4.5:1` or higher. Rose ribbon moved from the old white-on-
+  rose `3.25:1` pair to a pastel/dark-text `7.84:1` pair.
+- `DONE REAPPLY SAFETY`: applying a whole design clears stale state-only
+  radius, spacing, typography, and border overrides before writing the new
+  state. A prior hover preset can no longer leave a mismatched shape behind.
+- `VERIFIED BROWSER`: the edit-flow smoke rendered the rose ribbon base, hover,
+  focus outline, and d20 icon in the persistent iframe. It preserved the Roll
+  command, `dicefontd20` family, icon content, and inline-HTML boundary, then
+  reproduced the same final base/hover/icon paint in Preview.
+- `VERIFIED LOCAL PARITY`: synthetic Preview/Edit remains exact at `0%`
+  mismatch for two fixtures in both modern and legacy modes.
+- `VERIFIED REGRESSION`: focused design tests, full `ci:verify`, lint, and the
+  production build pass after the final state-reset fix.
+- `VERIFY REMOTE`: push the coherent batch and check GitHub CI.
+- `BLOCKED EXTERNAL MODERN`: the new Roll-button output has not been freshly
+  uploaded to the modern Roll20 Sandbox. Local browser evidence is not actual
+  Roll20 parity.
+
 # 2026-08-01 Coordinated input and Roll-button rows
 
 - `DONE PRODUCT`: a selected input/button row now offers four original whole-row
@@ -27,9 +54,9 @@
 - `BLOCKED EXTERNAL MODERN`: the coordinated row output has not been freshly
   uploaded to the modern Roll20 Sandbox. Local browser evidence is not actual
   Roll20 parity.
-- `P1 NEXT VISUAL`: after the current render contract is closed, expand the
-  same managed-CSS path with richer Roll-button looks and section layout
-  recipes. Keep these explicit user choices; never overwrite imported design.
+- `P1 NEXT VISUAL`: coordinated Roll-button designs are now implemented above.
+  The remaining visual expansion is structure-aware section layout recipes.
+  Keep these explicit user choices; never overwrite imported design.
 
 # 2026-08-01 Coordinated section themes
 

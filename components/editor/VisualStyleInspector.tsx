@@ -10,6 +10,7 @@ import type {
 import {
   getVisualStylePresetGroup,
   hasDirectRollButtonIcon,
+  isRollButtonType,
   presetMatches,
   type VisualStylePreset,
   type VisualStylePresetFamily,
@@ -29,11 +30,17 @@ import {
   CONTROL_GROUP_THEMES,
   type ControlGroupTheme,
 } from '@/lib/editor/controlGroupThemes';
+import {
+  ROLL_BUTTON_THEMES,
+  rollButtonThemeMatches,
+  type RollButtonTheme,
+} from '@/lib/editor/rollButtonThemes';
 import { cn } from '@/lib/utils/cn';
 import BackgroundImageControls from './BackgroundImageControls';
 import ControlGroupThemeControls from './ControlGroupThemeControls';
 import ImageStyleControls from './ImageStyleControls';
 import RollButtonIconControls from './RollButtonIconControls';
+import RollButtonThemeControls from './RollButtonThemeControls';
 import ResultCardThemeControls from './ResultCardThemeControls';
 import SectionDecorationControls from './SectionDecorationControls';
 import SectionThemeControls from './SectionThemeControls';
@@ -51,6 +58,7 @@ type VisualStyleInspectorProps = {
   onApplySectionTheme?: (themeId: SectionTheme['id']) => void;
   controlGroupThemeEligible?: boolean;
   onApplyControlGroupTheme?: (themeId: ControlGroupTheme['id']) => void;
+  onApplyRollButtonTheme?: (themeId: RollButtonTheme['id']) => void;
 };
 
 type LayoutMode = 'auto' | 'row' | 'column' | 'grid';
@@ -67,6 +75,7 @@ export default function VisualStyleInspector({
   onApplySectionTheme,
   controlGroupThemeEligible = false,
   onApplyControlGroupTheme,
+  onApplyRollButtonTheme,
 }: VisualStyleInspectorProps) {
   const [activeState, setActiveState] = useState<ManagedDesignState>('base');
   const values = valuesByState[activeState] ?? {};
@@ -97,12 +106,22 @@ export default function VisualStyleInspector({
       declarations: theme.parts.root,
     }))?.id ?? null
     : null;
+  const rollButtonThemeVisible = activeState === 'base'
+    && scope === 'sheet'
+    && presetGroup?.family === 'button'
+    && isRollButtonType(blockType)
+    && Boolean(onApplyRollButtonTheme);
+  const rollButtonThemeId = rollButtonThemeVisible
+    ? ROLL_BUTTON_THEMES.find((theme) => (
+      rollButtonThemeMatches(valuesByState, beforeValues, theme)
+    ))?.id ?? null
+    : null;
   const coordinatedThemeVisible = (
     presetGroup?.family === 'result-card' && Boolean(onApplyResultCardTheme)
   ) || (
     presetGroup?.family === 'section'
     && Boolean(controlGroupThemeEligible ? onApplyControlGroupTheme : onApplySectionTheme)
-  );
+  ) || rollButtonThemeVisible;
   const applyPatch = (declarations: ManagedDesignDeclarations) => onPatch(declarations, activeState);
   const clearActiveState = () => applyPatch(
     Object.fromEntries(Object.keys(values).map((property) => [property, null])),
@@ -170,6 +189,13 @@ export default function VisualStyleInspector({
         <ControlGroupThemeControls
           activeThemeId={controlGroupThemeId}
           onApply={onApplyControlGroupTheme}
+        />
+      )}
+
+      {rollButtonThemeVisible && onApplyRollButtonTheme && (
+        <RollButtonThemeControls
+          activeThemeId={rollButtonThemeId}
+          onApply={onApplyRollButtonTheme}
         />
       )}
 

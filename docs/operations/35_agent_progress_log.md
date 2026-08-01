@@ -1,3 +1,24 @@
+# 2026-08-01 - Coordinated Roll-button designs
+
+- Replaced the base-only Roll-button gallery with four original coordinated
+  designs: rose ribbon, paper ticket, mint tab, and ink stamp.
+- Kept the older single-state presets as fine-tuning choices under hover,
+  active, and focus tabs. A whole design now writes all four states plus the
+  Roll20 d20 pseudo-element in one batched edit.
+- Added a contrast regression guard for base, hover, and active states. The
+  rose ribbon now uses pastel rose with dark text at `7.84:1`, replacing the
+  previous white-on-rose `3.25:1` pair.
+- Found and fixed a real reapply defect: state properties left by an earlier
+  preset could survive the next whole-design click. Whole designs now remove
+  stale state-only shape/spacing/type properties before applying their own
+  state paint.
+- Browser smoke proves base, hover, focus, d20 font/content preservation,
+  command preservation, no inline presentation, and Edit/Preview equality.
+  The dedicated gallery screenshot stays in the ignored local report.
+- Modern/legacy synthetic Preview/Edit comparisons remain exact at `0%` for
+  two fixtures. Focused tests, full `ci:verify`, lint, and production build
+  pass. Actual modern Sandbox upload remains separate and unproven.
+
 # 2026-08-01 - Coordinated input and Roll-button rows
 
 - Added four original whole-row themes for selected input/button rows. Themes

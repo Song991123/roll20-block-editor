@@ -2023,22 +2023,33 @@ async function main() {
     await page.locator(
       `[data-testid="edit-layer-row"][data-r20-block-id="${result.tests.rollButtonLayer.id}"]`,
     ).click();
-    const rollRosePreset = page.locator('[data-testid="design-preset-button-rose"]');
-    await rollRosePreset.waitFor({ state: 'visible', timeout: 10000 });
-    await rollRosePreset.click();
+    const rollRibbonTheme = page.locator('[data-testid="design-roll-button-theme-ribbon"]');
+    await rollRibbonTheme.waitFor({ state: 'visible', timeout: 10000 });
+    assert((await page.locator('[data-testid="design-roll-button-themes"]').count()) === 1, 'coordinated Roll button theme gallery is missing');
+    assert((await page.locator('[data-testid="design-style-presets"]').count()) === 0, 'base Roll button still exposes the old single-state gallery');
+    await rollRibbonTheme.click();
     await page.waitForFunction(
       () => {
         const css = window.__perfHook.getEmitContent().css;
-        return css.includes('background-color: #d96b91')
+        return css.includes('background-color: #f6bfd2')
           && css.includes('background-image: none')
-          && css.includes('box-shadow: 0 2px 0 #963653');
+          && css.includes('box-shadow: 0 3px 0 #b94f75')
+          && css.includes(':hover')
+          && css.includes('background-color: #f9d0de')
+          && css.includes(':active')
+          && css.includes('background-color: #eca4bc')
+          && css.includes(':focus')
+          && css.includes('outline: 2px solid #d96b91')
+          && css.includes('::before')
+          && css.includes('font-size: 1.15em');
       },
       null,
       { timeout: 10000 },
     );
     await page.waitForTimeout(300);
-    result.tests.rollButtonStylePreset = await rollButton.evaluate((button) => {
+    result.tests.rollButtonTheme = await rollButton.evaluate((button) => {
       const style = getComputedStyle(button);
+      const icon = getComputedStyle(button, '::before');
       return {
         inlineStyle: button.getAttribute('style') ?? '',
         backgroundColor: style.backgroundColor,
@@ -2048,16 +2059,75 @@ async function main() {
         borderRadius: style.borderRadius,
         paddingTop: style.paddingTop,
         boxShadow: style.boxShadow,
+        icon: {
+          content: icon.content,
+          display: icon.display,
+          fontFamily: icon.fontFamily,
+          fontSize: icon.fontSize,
+          marginRight: icon.marginRight,
+          color: icon.color,
+        },
       };
     });
-    const rollPresetDebug = JSON.stringify(result.tests.rollButtonStylePreset);
-    assert(result.tests.rollButtonStylePreset.backgroundColor === 'rgb(217, 107, 145)', `Roll button preset fill did not render: ${rollPresetDebug}`);
-    assert(result.tests.rollButtonStylePreset.backgroundImage === 'none', `Roll button preset did not remove the baseline gradient: ${rollPresetDebug}`);
-    assert(result.tests.rollButtonStylePreset.color === 'rgb(255, 255, 255)', `Roll button preset text color did not render: ${rollPresetDebug}`);
-    assert(result.tests.rollButtonStylePreset.borderColor === 'rgb(185, 79, 117)', `Roll button preset border did not render: ${rollPresetDebug}`);
-    assert(result.tests.rollButtonStylePreset.borderRadius === '6px', `Roll button preset radius did not render: ${rollPresetDebug}`);
-    assert(result.tests.rollButtonStylePreset.paddingTop === '7px', `Roll button preset padding did not render: ${rollPresetDebug}`);
-    assert(!result.tests.rollButtonStylePreset.inlineStyle, 'Roll button preset leaked presentation into inline HTML');
+    const rollThemeDebug = JSON.stringify(result.tests.rollButtonTheme);
+    assert(result.tests.rollButtonTheme.backgroundColor === 'rgb(246, 191, 210)', `Roll button theme fill did not render: ${rollThemeDebug}`);
+    assert(result.tests.rollButtonTheme.backgroundImage === 'none', `Roll button theme did not remove the baseline gradient: ${rollThemeDebug}`);
+    assert(result.tests.rollButtonTheme.color === 'rgb(84, 37, 55)', `Roll button theme text color did not render: ${rollThemeDebug}`);
+    assert(result.tests.rollButtonTheme.borderColor === 'rgb(201, 86, 127)', `Roll button theme border did not render: ${rollThemeDebug}`);
+    assert(result.tests.rollButtonTheme.borderRadius === '5px', `Roll button theme radius did not render: ${rollThemeDebug}`);
+    assert(result.tests.rollButtonTheme.paddingTop === '7px', `Roll button theme padding did not render: ${rollThemeDebug}`);
+    assert(result.tests.rollButtonTheme.icon.display === 'inline-block', `Roll button theme icon display did not render: ${rollThemeDebug}`);
+    assert(Number.parseFloat(result.tests.rollButtonTheme.icon.fontSize) > 15, `Roll button theme icon size did not render: ${rollThemeDebug}`);
+    assert(result.tests.rollButtonTheme.icon.marginRight === '6px', `Roll button theme icon gap did not render: ${rollThemeDebug}`);
+    assert(result.tests.rollButtonTheme.icon.color === 'rgb(84, 37, 55)', `Roll button theme icon color did not render: ${rollThemeDebug}`);
+    assert(/dicefontd20/i.test(result.tests.rollButtonTheme.icon.fontFamily), `Roll button theme replaced the Roll20 d20 font: ${rollThemeDebug}`);
+    assert(result.tests.rollButtonTheme.icon.content !== 'none', `Roll button theme removed the Roll20 d20 content: ${rollThemeDebug}`);
+    assert(!result.tests.rollButtonTheme.inlineStyle, 'Roll button theme leaked presentation into inline HTML');
+
+    await rollButton.hover();
+    await page.waitForTimeout(120);
+    result.tests.rollButtonThemeHover = await rollButton.evaluate((button) => {
+      const style = getComputedStyle(button);
+      return {
+        backgroundColor: style.backgroundColor,
+        color: style.color,
+        borderColor: style.borderColor,
+      };
+    });
+    assert(
+      JSON.stringify(result.tests.rollButtonThemeHover) === JSON.stringify({
+        backgroundColor: 'rgb(249, 208, 222)',
+        color: 'rgb(84, 37, 55)',
+        borderColor: 'rgb(185, 79, 117)',
+      }),
+      `coordinated Roll hover did not render: ${JSON.stringify(result.tests.rollButtonThemeHover)}`,
+    );
+    await page.mouse.move(0, 0);
+    await rollButton.evaluate((button) => button.focus());
+    await page.waitForTimeout(80);
+    result.tests.rollButtonThemeFocus = await rollButton.evaluate((button) => {
+      const style = getComputedStyle(button);
+      return {
+        outlineColor: style.outlineColor,
+        outlineStyle: style.outlineStyle,
+        outlineWidth: style.outlineWidth,
+        outlineOffset: style.outlineOffset,
+      };
+    });
+    assert(
+      JSON.stringify(result.tests.rollButtonThemeFocus) === JSON.stringify({
+        outlineColor: 'rgb(217, 107, 145)',
+        outlineStyle: 'solid',
+        outlineWidth: '2px',
+        outlineOffset: '2px',
+      }),
+      `coordinated Roll focus did not render: ${JSON.stringify(result.tests.rollButtonThemeFocus)}`,
+    );
+    await page.locator('[data-testid="design-roll-button-themes"]').scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: path.join(REPORT_DIR, 'roll-button-theme-editor.png'),
+      fullPage: false,
+    });
 
     const rollIconHiddenPreset = page.locator('[data-testid="design-roll-icon-preset-hidden"]');
     const rollIconLargePreset = page.locator('[data-testid="design-roll-icon-preset-large"]');
@@ -2114,7 +2184,7 @@ async function main() {
     assert(Number.parseFloat(result.tests.rollButtonIconStyle.fontSize) > 18, `Roll button icon size did not render: ${rollIconDebug}`);
     assert(result.tests.rollButtonIconStyle.marginRight === '6px', `Roll button icon gap did not render: ${rollIconDebug}`);
     assert(result.tests.rollButtonIconStyle.opacity === '1', `Roll button icon opacity did not render: ${rollIconDebug}`);
-    assert(result.tests.rollButtonIconStyle.color === 'rgb(255, 255, 255)', `Roll button icon color did not inherit the button: ${rollIconDebug}`);
+    assert(result.tests.rollButtonIconStyle.color === 'rgb(84, 37, 55)', `Roll button icon color did not inherit the button: ${rollIconDebug}`);
     assert(/dicefontd20/i.test(result.tests.rollButtonIconStyle.fontFamily), `Roll20 d20 icon font was replaced: ${rollIconDebug}`);
     assert(result.tests.rollButtonIconStyle.content !== 'none', `Roll20 d20 icon content disappeared: ${rollIconDebug}`);
     assert(!result.tests.rollButtonIconStyle.inlineStyle, 'Roll button icon style leaked into inline HTML');
@@ -2169,6 +2239,65 @@ async function main() {
       fullPage: false,
     });
     await page.mouse.move(0, 0);
+    await page.locator('[data-testid="design-style-state-base"]').click();
+    await rollRibbonTheme.waitFor({ state: 'visible', timeout: 10000 });
+    await rollRibbonTheme.click();
+    const rollDesignClass = result.tests.rollButtonPreset.className
+      .split(/\s+/)
+      .find((className) => className.startsWith('sheet-r20-node-'));
+    assert(rollDesignClass, 'Roll button managed design class is missing');
+    try {
+      await page.waitForFunction(
+        (className) => {
+          const css = window.__perfHook.getEmitContent().css;
+          const escaped = className.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const hover = css.match(new RegExp(`\\.${escaped}:hover\\s*\\{([^}]*)\\}`));
+          const icon = css.match(new RegExp(`\\.${escaped}::before\\s*\\{([^}]*)\\}`));
+          return Boolean(
+            hover?.[1].includes('background-color: #f9d0de')
+            && !hover?.[1].includes('border-radius: 6px')
+            && icon?.[1].includes('font-size: 1.15em'),
+          );
+        },
+        rollDesignClass,
+        { timeout: 10000 },
+      );
+    } catch (error) {
+      const debug = await page.evaluate((className) => ({
+        selectedId: window.__perfHook.getSelectedBlockId?.() ?? null,
+        rules: window.__perfHook.getEmitContent().css
+          .split('\n')
+          .filter((line) => line.includes(className)),
+      }), rollDesignClass);
+      throw new Error(`Roll button theme reapply did not settle: ${JSON.stringify(debug)}`, { cause: error });
+    }
+    await frame.waitForFunction(
+      (blockId) => {
+        const button = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+        if (!(button instanceof HTMLElement)) return false;
+        const style = getComputedStyle(button);
+        const icon = getComputedStyle(button, '::before');
+        return style.backgroundColor === 'rgb(246, 191, 210)'
+          && icon.display === 'inline-block'
+          && icon.marginRight === '6px';
+      },
+      result.tests.rollButtonLayer.id,
+      { timeout: 10000 },
+    );
+    result.tests.rollButtonThemeFinalIconStyle = await rollButton.evaluate((button) => {
+      const style = getComputedStyle(button, '::before');
+      return {
+        content: style.content,
+        display: style.display,
+        fontFamily: style.fontFamily,
+        fontSize: style.fontSize,
+        marginRight: style.marginRight,
+        opacity: style.opacity,
+        color: style.color,
+        textShadow: style.textShadow,
+        inlineStyle: button.getAttribute('style') ?? '',
+      };
+    });
     await page.waitForFunction(
       () => document.querySelector('[data-r20-render-ready]')?.getAttribute('data-r20-render-ready') === '1',
       null,
@@ -2300,7 +2429,7 @@ async function main() {
     });
     assert(
       JSON.stringify(result.tests.rollButtonPreviewIconStyle)
-        === JSON.stringify(result.tests.rollButtonIconStyle),
+        === JSON.stringify(result.tests.rollButtonThemeFinalIconStyle),
       `Roll button icon changed between edit and preview: ${JSON.stringify(result.tests.rollButtonPreviewIconStyle)}`,
     );
     result.tests.rollButtonPreviewStyle = await rollButton.evaluate((button) => {
@@ -2314,9 +2443,9 @@ async function main() {
     });
     assert(
       JSON.stringify(result.tests.rollButtonPreviewStyle) === JSON.stringify({
-        backgroundColor: 'rgb(217, 107, 145)',
-        color: 'rgb(255, 255, 255)',
-        borderRadius: '6px',
+        backgroundColor: 'rgb(246, 191, 210)',
+        color: 'rgb(84, 37, 55)',
+        borderRadius: '5px',
         paddingTop: '7px',
       }),
       `Roll button style changed between edit and preview: ${JSON.stringify(result.tests.rollButtonPreviewStyle)}`,
@@ -2334,10 +2463,10 @@ async function main() {
     });
     assert(
       JSON.stringify(result.tests.rollButtonPreviewHoverStyle) === JSON.stringify({
-        backgroundColor: 'rgb(242, 251, 247)',
-        color: 'rgb(36, 86, 72)',
-        borderColor: 'rgb(105, 185, 159)',
-        borderRadius: '6px',
+        backgroundColor: 'rgb(249, 208, 222)',
+        color: 'rgb(84, 37, 55)',
+        borderColor: 'rgb(185, 79, 117)',
+        borderRadius: '5px',
       }),
       `Roll button hover style changed between edit and preview: ${JSON.stringify(result.tests.rollButtonPreviewHoverStyle)}`,
     );

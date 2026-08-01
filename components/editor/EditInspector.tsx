@@ -32,10 +32,15 @@ import {
   type ResultCardTheme,
 } from '@/lib/editor/resultCardThemes';
 import {
+  getRollButtonTheme,
+  type RollButtonTheme,
+} from '@/lib/editor/rollButtonThemes';
+import {
   collectSectionThemeTargets,
   getSectionTheme,
   type SectionTheme,
 } from '@/lib/editor/sectionThemes';
+import { hasDirectRollButtonIcon, isRollButtonType } from '@/lib/editor/stylePresets';
 import { flushEmitPipeline } from '@/lib/preview/useEmitPipeline';
 import { useWorkspaceStore, WORKSPACE_KEYS, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { fieldDisplayLabel } from './fieldLabels';
@@ -308,6 +313,44 @@ export default function EditInspector() {
     queueMicrotask(() => flushEmitPipeline());
   }, [selectedId, workspace]);
 
+  const applyRollButtonTheme = useCallback((themeId: RollButtonTheme['id']) => {
+    if (!selectedId || workspace !== 'html') return;
+    const adapter = getBlocklyAdapter();
+    const selected = adapter.getBlock('html', selectedId);
+    if (!selected || !isRollButtonType(selected.type)) return;
+    if (getLayerRole(selected.type).kind !== 'action') return;
+    if (findOwningRolltemplateId(adapter.listAllBlocks('html'), selectedId)) return;
+
+    const theme = getRollButtonTheme(themeId);
+    let htmlChanged = false;
+    let cssChanged = false;
+    for (const state of MANAGED_DESIGN_STATES) {
+      const result = commitManagedDesignStyle(adapter, {
+        workspace: 'html',
+        blockId: selectedId,
+        declarations: theme.states[state],
+        state,
+      });
+      htmlChanged = htmlChanged || result.htmlChanged;
+      cssChanged = cssChanged || result.cssChanged || result.cssBlockCreated;
+    }
+    if (hasDirectRollButtonIcon(selected.type)) {
+      const iconResult = commitManagedDesignStyle(adapter, {
+        workspace: 'html',
+        blockId: selectedId,
+        declarations: theme.before,
+        part: 'before',
+      });
+      htmlChanged = htmlChanged || iconResult.htmlChanged;
+      cssChanged = cssChanged || iconResult.cssChanged || iconResult.cssBlockCreated;
+    }
+    if (!htmlChanged && !cssChanged) return;
+    const store = useWorkspaceStore.getState();
+    if (htmlChanged) store.bumpStructure('html', adapter.countBlocks('html'));
+    if (cssChanged) store.bumpStructure('css', adapter.countBlocks('css'));
+    queueMicrotask(() => flushEmitPipeline());
+  }, [selectedId, workspace]);
+
   const deleteSelected = useCallback(() => {
     if (!selectedId || !workspace) return;
     const adapter = getBlocklyAdapter();
@@ -401,6 +444,7 @@ export default function EditInspector() {
             onApplySectionTheme={applySectionTheme}
             controlGroupThemeEligible={controlGroupThemeEligible}
             onApplyControlGroupTheme={applyControlGroupTheme}
+            onApplyRollButtonTheme={applyRollButtonTheme}
           />
         )}
 

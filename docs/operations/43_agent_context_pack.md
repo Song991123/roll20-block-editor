@@ -62,6 +62,14 @@ the entire history and generated evidence tree.
   icon contract. Full `ci:verify`, lint, and production build pass locally.
   Commit `9fbf908` is pushed to `claude/design-reset`; GitHub CI run
   `30680689365` passed. This is not arbitrary-sheet actual Roll20 parity.
+  Direct Roll buttons now additionally expose four whole-button designs that
+  coordinate base, hover, active, focus, and the native d20 pseudo-element.
+  Base mode shows the visual gallery; state tabs and icon controls remain for
+  fine tuning. Whole-design reapply clears stale state-only shape/spacing/type
+  overrides. Local browser smoke verifies Edit/Preview base, hover, focus, and
+  icon behavior. Modern/legacy sanitizer tests preserve the generated rules,
+  and generic synthetic Preview/Edit comparison stays exact in both modes;
+  remote CI and an actual modern Sandbox upload remain pending for this batch.
 - Actual Roll20's built-in default chat-template DOM and typography were
   measured in the dedicated one-member modern Sandbox. The local fallback now
   matches its caption/row/inline-roll structure and passes browser smoke.

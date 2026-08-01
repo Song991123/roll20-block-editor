@@ -134,6 +134,12 @@ already-selected insertion position.
   paint hidden, checkbox, radio, toggle, or file controls as text inputs. Roll
   commands and Roll20's d20 pseudo-element content/font remain outside the
   theme declarations.
+- A direct Roll-button selection uses a whole-button design gallery in its
+  base state. Each design owns base, hover, active, focus, and d20 icon paint;
+  it never changes the Roll command, icon content, or `dicefontd20` family.
+- Whole-button design application clears stale state-only visual declarations
+  before writing the selected design. State tabs and icon controls then remain
+  available as deliberate per-state overrides.
 - Buttons and ordinary input controls expose base, hover, active, and focus
   appearance states. State rules use the same stable managed class with CSS
   pseudo-classes. If a touched property came from an imported inline style,
