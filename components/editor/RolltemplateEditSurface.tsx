@@ -7,13 +7,12 @@ import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import { buildRolltemplatePreviewResult } from '@/lib/dice/rolltemplatePreview';
 import { extractRolltemplateBody } from '@/lib/dice/rolltemplateRender';
 import { commitManagedDesignStyle } from '@/lib/editor/designPosition';
-import { getLayerRole } from '@/lib/editor/layerRoles';
+import { getResultCardTheme } from '@/lib/editor/resultCardThemes';
 import {
   findOwningRolltemplateId,
   listRolltemplateRoots,
   resolveActiveRolltemplateId,
 } from '@/lib/editor/rolltemplateScope';
-import { getVisualStylePresetGroup } from '@/lib/editor/stylePresets';
 import { flushEmitPipeline } from '@/lib/preview/useEmitPipeline';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
@@ -165,37 +164,13 @@ export default function RolltemplateEditSurface() {
       return;
     }
 
-    const cardPreset = getVisualStylePresetGroup(
-      getLayerRole('r20_rolltemplate_define'),
-      'r20_rolltemplate_define',
-      'rolltemplate',
-    )?.presets.find((preset) => preset.id === 'paper')?.declarations ?? {};
+    const cardTheme = getResultCardTheme('paper');
     const styles = [
-      [rootId, cardPreset],
-      [titleId, {
-        'background-color': '#d96b91',
-        color: '#ffffff',
-        padding: '10px 12px',
-        'font-size': '18px',
-        'font-weight': '700',
-      }],
-      [rowId, {
-        display: 'flex',
-        gap: '8px',
-        padding: '10px 12px',
-        'align-items': 'center',
-        'background-color': '#fffdfd',
-        'border-width': '0 0 1px 0',
-        'border-style': 'solid',
-        'border-color': '#ead8df',
-      }],
-      [labelId, { color: '#5d4450', 'font-weight': '600' }],
-      [valueId, {
-        color: '#9f3158',
-        'margin-left': 'auto',
-        'font-size': '20px',
-        'font-weight': '700',
-      }],
+      [rootId, cardTheme.parts.root],
+      [titleId, cardTheme.parts.title],
+      [rowId, cardTheme.parts.row],
+      [labelId, cardTheme.parts.label],
+      [valueId, cardTheme.parts.value],
     ] as const;
     let cssChanged = false;
     for (const [blockId, declarations] of styles) {

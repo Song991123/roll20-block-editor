@@ -361,6 +361,14 @@ async function main() {
     let canvasMultiSelected = false;
     for (let attempt = 0; attempt < 3 && !canvasMultiSelected; attempt += 1) {
       await canvasFirst.click({ force: true });
+      try {
+        await frame.waitForFunction((firstId) => Boolean(
+          document.querySelector(`[data-r20-block-id="${CSS.escape(firstId)}"][data-r20-selected="1"]`),
+        ), ids.groupOneId, { timeout: 1200 });
+      } catch {
+        await page.waitForTimeout(80);
+        continue;
+      }
       await canvasSecond.click({ modifiers: ['Control'], force: true });
       try {
         await frame.waitForFunction(({ firstId, secondId }) => (
@@ -2342,8 +2350,13 @@ async function main() {
     }, null, { timeout: 10000 });
     result.tests.rolltemplateCardPreset = await page.evaluate(() => {
       const root = document.querySelector('[data-testid="rolltemplate-edit-card"] .sheet-rolltemplate-default');
+      const title = document.querySelector('[data-testid="rolltemplate-edit-card"] .sheet-template-title');
+      const row = document.querySelector('[data-testid="rolltemplate-edit-card"] .sheet-template-row');
+      const label = row?.querySelector('span') ?? null;
+      const value = row?.querySelector('.inlinerollresult, strong, b') ?? row?.lastElementChild ?? null;
       const style = root ? getComputedStyle(root) : null;
       const emit = window.__perfHook.getEmitContent();
+      const layerTypes = new Map(window.__perfHook.getLayerSnapshot('html').map((item) => [item.id, item.type]));
       return {
         background: style?.backgroundColor ?? null,
         color: style?.color ?? null,
@@ -2352,8 +2365,25 @@ async function main() {
         radius: style?.borderTopLeftRadius ?? null,
         width: style?.width ?? null,
         inspectorWidthValue: document.querySelector('[data-testid="design-style-width"]')?.value ?? null,
+        themeControlVisible: Boolean(document.querySelector('[data-testid="design-result-card-themes"]')),
+        titleBackground: title ? getComputedStyle(title).backgroundColor : null,
+        titleColor: title ? getComputedStyle(title).color : null,
+        rowBackground: row ? getComputedStyle(row).backgroundColor : null,
+        rowBorderColor: row ? getComputedStyle(row).borderBottomColor : null,
+        labelColor: label ? getComputedStyle(label).color : null,
+        valueColor: value ? getComputedStyle(value).color : null,
+        rowHtml: row?.innerHTML ?? null,
+        descendantBlocks: [...(row?.querySelectorAll('[data-r20-block-id]') ?? [])].map((node) => ({
+          id: node.getAttribute('data-r20-block-id'),
+          type: layerTypes.get(node.getAttribute('data-r20-block-id')) ?? null,
+          tag: node.tagName.toLowerCase(),
+          className: node.className,
+        })),
         inlineStyle: root?.getAttribute('style') ?? '',
+        descendantInlineStyles: [title, row, label, value].map((node) => node?.getAttribute('style') ?? ''),
         emittedCssHasRootRule: emit.css.includes('.sheet-rolltemplate-default.sheet-rolltemplate-default.sheet-rolltemplate-default.sheet-rolltemplate-default'),
+        emittedCssHasThemeParts: ['#d96b91', '#fff2f6', '#5d2f40', '#9f3158']
+          .every((color) => emit.css.includes(color)),
         emittedHtmlHasInlineFill: /<rolltemplate\b[^>]*style="[^"]*background-color:\s*#fff6f9/i.test(emit.html),
       };
     });
@@ -2364,8 +2394,17 @@ async function main() {
     assert(result.tests.rolltemplateCardPreset.borderWidth === '2px', `result-card preset border width did not render: ${cardPresetDebug}`);
     assert(result.tests.rolltemplateCardPreset.radius === '6px', `result-card preset radius did not render: ${cardPresetDebug}`);
     assert(result.tests.rolltemplateCardPreset.inspectorWidthValue === '100%', `result-card width unit was misreported: ${cardPresetDebug}`);
+    assert(result.tests.rolltemplateCardPreset.themeControlVisible, 'coordinated result-card theme control is missing');
+    assert(result.tests.rolltemplateCardPreset.titleBackground === 'rgb(217, 107, 145)', `result-card theme did not style the title: ${cardPresetDebug}`);
+    assert(result.tests.rolltemplateCardPreset.titleColor === 'rgb(255, 255, 255)', `result-card theme title lost readable text: ${cardPresetDebug}`);
+    assert(result.tests.rolltemplateCardPreset.rowBackground === 'rgb(255, 242, 246)', `result-card theme did not style the row: ${cardPresetDebug}`);
+    assert(result.tests.rolltemplateCardPreset.rowBorderColor === 'rgb(217, 107, 145)', `result-card theme did not style the row divider: ${cardPresetDebug}`);
+    assert(result.tests.rolltemplateCardPreset.labelColor === 'rgb(93, 47, 64)', `result-card theme did not style the label: ${cardPresetDebug}`);
+    assert(result.tests.rolltemplateCardPreset.valueColor === 'rgb(159, 49, 88)', `result-card theme did not style the result value: ${cardPresetDebug}`);
     assert(result.tests.rolltemplateCardPreset.emittedCssHasRootRule, 'result-card preset did not emit a Roll20 template-root CSS rule');
+    assert(result.tests.rolltemplateCardPreset.emittedCssHasThemeParts, 'result-card theme parts did not reach emitted Roll20 CSS');
     assert(!result.tests.rolltemplateCardPreset.inlineStyle, 'result-card preset leaked presentation into rendered inline HTML');
+    assert(result.tests.rolltemplateCardPreset.descendantInlineStyles.every((value) => !value), 'result-card theme leaked descendant presentation into inline HTML');
     assert(!result.tests.rolltemplateCardPreset.emittedHtmlHasInlineFill, 'result-card preset leaked presentation into emitted inline HTML');
     await page.screenshot({
       path: path.join(REPORT_DIR, 'rolltemplate-card-style-gallery.png'),
@@ -2441,9 +2480,13 @@ async function main() {
     result.tests.rolltemplateChatSync = await page.evaluate(() => {
       const row = document.querySelector('[data-testid="chat-list"] [data-r20-chat-rolltemplate="1"] .sheet-template-row');
       const root = document.querySelector('[data-testid="chat-list"] [data-r20-chat-rolltemplate="1"] .sheet-rolltemplate-default');
+      const title = document.querySelector('[data-testid="chat-list"] [data-r20-chat-rolltemplate="1"] .sheet-template-title');
+      const value = row?.querySelector('.inlinerollresult, strong, b') ?? row?.lastElementChild ?? null;
       const rootStyle = root ? getComputedStyle(root) : null;
       return {
         background: row ? getComputedStyle(row).backgroundColor : null,
+        titleBackground: title ? getComputedStyle(title).backgroundColor : null,
+        valueColor: value ? getComputedStyle(value).color : null,
         cardBackground: rootStyle?.backgroundColor ?? null,
         cardBorderColor: rootStyle?.borderTopColor ?? null,
         cardBorderWidth: rootStyle?.borderTopWidth ?? null,
@@ -2451,7 +2494,9 @@ async function main() {
         addedLabel: document.querySelectorAll('[data-testid="chat-list"] .sheet-result-label').length,
       };
     });
-    assert(result.tests.rolltemplateChatSync.background === 'rgb(253, 231, 239)', 'chat card did not reuse the visual editor CSS');
+    assert(result.tests.rolltemplateChatSync.background === 'rgb(255, 242, 246)', 'chat card did not reuse the themed row fill');
+    assert(result.tests.rolltemplateChatSync.titleBackground === 'rgb(217, 107, 145)', 'chat card did not reuse the themed title fill');
+    assert(result.tests.rolltemplateChatSync.valueColor === 'rgb(159, 49, 88)', 'chat card did not reuse the themed result value');
     assert(result.tests.rolltemplateChatSync.cardBackground === 'rgb(255, 246, 249)', 'chat card root did not reuse the visual editor fill');
     assert(result.tests.rolltemplateChatSync.cardBorderColor === 'rgb(217, 107, 145)', 'chat card root did not reuse the visual editor border');
     assert(result.tests.rolltemplateChatSync.cardBorderWidth === '2px', 'chat card root did not reuse the visual editor border width');
@@ -2502,7 +2547,7 @@ async function main() {
     assert(result.tests.rolltemplateCreate.rowCount === 1, 'new template did not create its default result row');
     assert(result.tests.rolltemplateCreate.rootBackground === 'rgb(255, 253, 253)', 'new template did not start with the paper card fill');
     assert(result.tests.rolltemplateCreate.rootBorder === 'rgb(217, 197, 205)', 'new template did not start with the paper card border');
-    assert(result.tests.rolltemplateCreate.titleBackground === 'rgb(217, 107, 145)', 'new template title did not start with the rose fill');
+    assert(result.tests.rolltemplateCreate.titleBackground === 'rgb(109, 85, 96)', 'new template title did not start with the paper header fill');
     assert(result.tests.rolltemplateCreate.titleColor === 'rgb(255, 255, 255)', 'new template title did not start with readable text');
     assert(result.tests.rolltemplateCreate.rowBackground === 'rgb(255, 253, 253)', 'new template row did not start with the paper fill');
     assert(result.tests.rolltemplateCreate.emittedTemplate, 'new template did not reach emitted HTML');

@@ -19,6 +19,11 @@ import {
 import { designStyleFieldForBlockType } from '@/lib/editor/designClassField';
 import { getLayerRole } from '@/lib/editor/layerRoles';
 import { findOwningRolltemplateId } from '@/lib/editor/rolltemplateScope';
+import {
+  collectResultCardThemeTargets,
+  getResultCardTheme,
+  type ResultCardTheme,
+} from '@/lib/editor/resultCardThemes';
 import { flushEmitPipeline } from '@/lib/preview/useEmitPipeline';
 import { useWorkspaceStore, WORKSPACE_KEYS, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { fieldDisplayLabel } from './fieldLabels';
@@ -166,6 +171,34 @@ export default function EditInspector() {
     queueMicrotask(() => flushEmitPipeline());
   }, [selectedId, workspace]);
 
+  const applyResultCardTheme = useCallback((themeId: ResultCardTheme['id']) => {
+    if (!selectedId || workspace !== 'html') return;
+    const adapter = getBlocklyAdapter();
+    if (adapter.getBlock('html', selectedId)?.type !== 'r20_rolltemplate_define') return;
+    const theme = getResultCardTheme(themeId);
+    const targets = collectResultCardThemeTargets(
+      adapter.listAllBlocks('html'),
+      selectedId,
+      (blockId) => adapter.getBlockField('html', blockId, 'CLASS') ?? '',
+    );
+    let htmlChanged = false;
+    let cssChanged = false;
+    for (const target of targets) {
+      const result = commitManagedDesignStyle(adapter, {
+        workspace: 'html',
+        blockId: target.blockId,
+        declarations: theme.parts[target.part],
+      });
+      htmlChanged = htmlChanged || result.htmlChanged;
+      cssChanged = cssChanged || result.cssChanged || result.cssBlockCreated;
+    }
+    if (!htmlChanged && !cssChanged) return;
+    const store = useWorkspaceStore.getState();
+    if (htmlChanged) store.bumpStructure('html', adapter.countBlocks('html'));
+    if (cssChanged) store.bumpStructure('css', adapter.countBlocks('css'));
+    queueMicrotask(() => flushEmitPipeline());
+  }, [selectedId, workspace]);
+
   const deleteSelected = useCallback(() => {
     if (!selectedId || !workspace) return;
     const adapter = getBlocklyAdapter();
@@ -255,6 +288,7 @@ export default function EditInspector() {
             onPatch={commitVisualStyle}
             beforeValues={beforeVisualStyles}
             onBeforePatch={commitBeforeVisualStyle}
+            onApplyResultCardTheme={applyResultCardTheme}
           />
         )}
 

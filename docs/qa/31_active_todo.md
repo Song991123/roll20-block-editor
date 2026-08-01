@@ -11420,3 +11420,35 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: complete the supported modern Sandbox upload after Chrome
   file-URL permission is available, then run the separate dedicated legacy-room
   current-payload check.
+# 2026-08-01 Coordinated result-card themes
+
+- `DONE UX`: selecting a result-card root now shows four coordinated whole-card
+  themes. One explicit click styles the outer card, headings, result rows, the
+  first structural label, and bold/semantic result values together instead of
+  changing only the outer border.
+- `DONE UNIVERSAL GUARD`: theme targeting follows the imported block tree and
+  semantic element/class roles. Unclassified body text remains untouched; no
+  third-party sheet name, source class family, or bundled example was added.
+- `DONE RENDER CONTRACT`: theme changes use the existing managed CSS path.
+  They add no presentation inline HTML, stay scoped under the owning
+  `.sheet-rolltemplate-NAME`, migrate with the template name, and appear in the
+  same result-card renderer used by the editor and chat history.
+- `DONE CREATION`: a newly created anonymous result card uses the same paper
+  theme definitions as the inspector. Theme source and initial card source can
+  no longer drift independently.
+- `VERIFIED LOCAL`: theme classification/application unit tests pass. Modern
+  Sandbox and legacy CSS sanitizers preserve the theme scope and palette.
+  Production build and edit-flow browser smoke pass with zero reported
+  console/page errors. Browser evidence confirms the rose root, title, row,
+  label, and value styles in both the card editor and chat output.
+- `VERIFIED PREVIEW/EDIT`: synthetic fixture-A/B remain pixel-exact at `0%`
+  mismatch in both modern and legacy modes after the theme work.
+- `DONE TEST STABILITY`: edit-flow multi-selection now waits for the first
+  iframe selection acknowledgement before issuing the additive click. This
+  removes the observed parent/iframe race without weakening the assertion.
+- `VERIFIED REGRESSION`: full `ci:verify` passes, including import/export,
+  theme tests, modern/legacy render modes, evidence/privacy, and UI-copy gates.
+  Edit-flow smoke also passes again against the fresh production build.
+- `TODO P0`: commit/push and verify GitHub Actions. Modern actual same-payload
+  Sandbox upload and broader anonymous imported-card structures remain separate
+  unverified work.

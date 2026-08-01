@@ -11827,3 +11827,21 @@ same-hash modern/legacy comparison.
   checks, production build, full `ci:verify`, and canonical edit-flow browser
   smoke pass. Actual modern Sandbox and dedicated legacy-room card paint remain open external
   evidence gates.
+# 2026-08-01 - Coordinated result-card themes
+
+- Replaced root-only result-card choices with four coordinated card themes.
+  An explicit theme action applies concrete managed CSS to the root, heading,
+  result row, first structural label, and semantic/bold result value.
+- Kept imported CSS unchanged until the user chooses a theme. Target discovery
+  uses the block tree plus generic semantic roles and leaves unclassified body
+  text alone.
+- Reused the same theme definitions when creating a new anonymous result card,
+  removing the separate hard-coded child palette.
+- Added modern/legacy sanitizer coverage and structural classification tests.
+- Browser smoke confirms editor-to-chat synchronization for the full rose
+  theme, no inline presentation leakage, and a visible coordinated-theme
+  picker. Synthetic Preview/Edit remains exact in modern and legacy modes.
+- Stabilized the existing iframe multi-selection smoke by waiting for the first
+  selection acknowledgement before the additive click.
+- Full `ci:verify` passes. Edit-flow smoke passes again against that fresh
+  production build; evidence/privacy and UI-copy guards remain green.

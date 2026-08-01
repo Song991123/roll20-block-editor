@@ -41,6 +41,11 @@ the entire history and generated evidence tree.
   instead of a result frame. Section background and
   section-decoration paint, title/label paint, image paint, and Roll-button icon
   paint plus modern/legacy sanitizer preservation are locally browser-verified.
+  Result-card roots now expose four coordinated themes that explicitly style
+  the card, generic headings, result rows, first structural labels, and
+  semantic/bold result values together. Unclassified imported body text is not
+  guessed or changed. The same theme definitions seed newly created cards and
+  the editor/chat browser smoke verifies the coordinated rose theme.
   This is not arbitrary-sheet actual Roll20 parity.
 - Actual Roll20's built-in default chat-template DOM and typography were
   measured in the dedicated one-member modern Sandbox. The local fallback now

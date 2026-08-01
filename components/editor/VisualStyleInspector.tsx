@@ -17,10 +17,15 @@ import {
 } from '@/lib/editor/stylePresets';
 import { hasTextDecorationControls } from '@/lib/editor/textDecorationStyle';
 import { hasImageStyleControls } from '@/lib/editor/imageStyle';
+import {
+  RESULT_CARD_THEMES,
+  type ResultCardTheme,
+} from '@/lib/editor/resultCardThemes';
 import { cn } from '@/lib/utils/cn';
 import BackgroundImageControls from './BackgroundImageControls';
 import ImageStyleControls from './ImageStyleControls';
 import RollButtonIconControls from './RollButtonIconControls';
+import ResultCardThemeControls from './ResultCardThemeControls';
 import SectionDecorationControls from './SectionDecorationControls';
 import TextDecorationControls from './TextDecorationControls';
 
@@ -32,6 +37,7 @@ type VisualStyleInspectorProps = {
   onPatch: (declarations: ManagedDesignDeclarations, state?: ManagedDesignState) => void;
   beforeValues?: Record<string, string>;
   onBeforePatch?: (declarations: ManagedDesignDeclarations) => void;
+  onApplyResultCardTheme?: (themeId: ResultCardTheme['id']) => void;
 };
 
 type LayoutMode = 'auto' | 'row' | 'column' | 'grid';
@@ -44,12 +50,21 @@ export default function VisualStyleInspector({
   onPatch,
   beforeValues = {},
   onBeforePatch,
+  onApplyResultCardTheme,
 }: VisualStyleInspectorProps) {
   const [activeState, setActiveState] = useState<ManagedDesignState>('base');
   const values = valuesByState[activeState] ?? {};
   const layoutMode = resolveLayoutMode(values);
   const presetGroup = getVisualStylePresetGroup(role, blockType, scope);
   const interactiveStates = role.kind === 'action' || presetGroup?.family === 'control';
+  const resultCardThemeId = presetGroup?.family === 'result-card'
+    ? RESULT_CARD_THEMES.find((theme) => presetMatches(values, {
+      id: theme.id,
+      label: theme.label,
+      description: theme.description,
+      declarations: theme.parts.root,
+    }))?.id ?? null
+    : null;
   const applyPatch = (declarations: ManagedDesignDeclarations) => onPatch(declarations, activeState);
   const clearActiveState = () => applyPatch(
     Object.fromEntries(Object.keys(values).map((property) => [property, null])),
@@ -104,7 +119,14 @@ export default function VisualStyleInspector({
         </StyleSection>
       )}
 
-      {presetGroup && (
+      {presetGroup?.family === 'result-card' && onApplyResultCardTheme && (
+        <ResultCardThemeControls
+          activeThemeId={resultCardThemeId}
+          onApply={onApplyResultCardTheme}
+        />
+      )}
+
+      {presetGroup && (presetGroup.family !== 'result-card' || !onApplyResultCardTheme) && (
         <StyleSection title={presetGroup.title}>
           <div className="grid grid-cols-2 gap-2" data-testid="design-style-presets">
             {presetGroup.presets.map((preset) => {

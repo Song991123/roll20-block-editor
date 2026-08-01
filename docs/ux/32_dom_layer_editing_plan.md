@@ -195,8 +195,15 @@ already-selected insertion position.
 - The template root itself is editable even though Roll20 does not expose a
   separate author class for it. Managed root presentation targets the emitted
   `.sheet-rolltemplate-NAME` class directly. A newly created template starts
-  with a generic paper card, rose title, and readable result row; no third-party
-  sheet design is bundled.
+  with one coordinated generic paper theme and a readable result row; no
+  third-party sheet design is bundled.
+- Root selection exposes coordinated whole-card themes. A theme applies only
+  after an explicit user action and writes concrete managed CSS to the root,
+  generic headings, result rows, the first structural label in each row, and
+  semantic or bold result values. Target discovery follows the imported block
+  tree; unclassified body copy is preserved instead of guessed. New anonymous
+  cards use the same theme definitions, so creation and later theme changes do
+  not maintain separate palettes.
 - Changing a template `NAME` through either inspector or the Blockly field
   migrates every managed descendant rule to the new
   `.sheet-rolltemplate-NAME` scope and migrates the managed root rule itself.
