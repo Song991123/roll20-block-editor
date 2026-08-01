@@ -50,8 +50,9 @@ const rendered = renderTemplateBody(
 
 assert.match(rendered, /sheet-result-card/);
 assert.match(rendered, /공격/);
-assert.match(rendered, /<span class="rt-total">20<\/span>/);
-assert.match(rendered, /<span class="rt-dice">\[20\]<\/span>/);
+assert.match(rendered, /class="inlinerollresult showtip tipsy-n-right fullcrit"/);
+assert.match(rendered, />20<\/span>/);
+assert.doesNotMatch(rendered, /rt-total|rt-dice|\[20\]/);
 assert.match(rendered, /sheet-label/);
 assert.match(rendered, /Critical/);
 assert.match(rendered, /&lt;img src=x&gt;/);

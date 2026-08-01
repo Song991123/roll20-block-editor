@@ -47,6 +47,13 @@ the entire history and generated evidence tree.
   matches its caption/row/inline-roll structure and passes browser smoke.
   DPR-normalized smoke reproduces exact table/caption geometry; text/edge
   pixel raster remains open and must not be called visual parity.
+- The current anonymous custom result-card proof measured Roll20's chat shell
+  at `340px`, its rolltemplate root at `279px`, and the painted card at
+  `283.2px`. ChatPane now exposes that full shell and custom inline fields use
+  Roll20's `.inlinerollresult` markup instead of the removed app-only
+  `total + [raw dice]` duplication. Exact-payload local smoke reports clipping
+  `false`; the full `ci:verify` gate passes. This is one synthetic legacy-room
+  proof, not universal chat parity.
 - One anonymous generated legacy fixture now has actual same-payload editor
   readback, render, worker, and roll proof in a new dedicated one-member test
   room. HTML/CSS readback is byte-identical; Translation is semantically

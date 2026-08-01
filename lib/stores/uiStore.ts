@@ -13,6 +13,7 @@ import {
   ROLLTEMPLATE_CANVAS_DEFAULT_WIDTH,
   SHEET_CANVAS_DEFAULT_WIDTH,
 } from '@/lib/preview/canvasDimensions';
+import { ROLL20_CHAT_PANEL_MIN_WIDTH } from '@/lib/dice/roll20ChatGeometry';
 
 export type SidebarLeftMode = 'blocks';
 export type SidebarRightTab = 'attrs' | 'code' | 'chat'; // D49 + chat (dice 굴림 결과)
@@ -141,7 +142,7 @@ const DEFAULT_STATE = {
   sidebarLeftCollapsed: false,
   sidebarRightTab: 'attrs' as SidebarRightTab,
   sidebarRightCollapsed: false,
-  sidebarRightWidth: 300,
+  sidebarRightWidth: ROLL20_CHAT_PANEL_MIN_WIDTH,
   codeSubTab: 'html' as CodeSubTab,
   treeWorkspaceTab: 'html' as WorkspaceKey,
   blocksSearch: '',

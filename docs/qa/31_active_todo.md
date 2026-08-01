@@ -1,3 +1,46 @@
+# 2026-08-01 Current result-card same-payload correction
+
+- `VERIFIED SOURCE BINDING`: the current anonymous payload imported at `100%`
+  match with `39` blocks, one worker block, and zero warnings. The app-emitted
+  legacy files used for the external check were HTML `1,508` bytes, CSS `1,381`
+  bytes, and Translation `143` bytes.
+- `VERIFIED EXTERNAL LEGACY`: a fresh dedicated-room safety check showed the
+  owner plus `0` invited players. Legacy sanitization was enabled. Roll20 read
+  back app-emitted HTML and CSS byte-identically and Translation semantically
+  identically, rendered the `760 x 320` authored root, changed the worker value
+  `0 -> 1`, and produced the custom result card in chat. No existing room was
+  opened or changed.
+- `MEASURED EXTERNAL`: the current lossless root comparison has `7,799 / 243,200`
+  pixels (`3.2068%`) above RGB-sum threshold `90`. This is one synthetic
+  fixture, not arbitrary-sheet parity.
+- `DONE RENDER FIX`: actual Roll20 measured a `340px` chat shell, `279px`
+  rolltemplate root, and `283.2px` painted custom card. The app used a `328px`
+  message shell and `267px` root, clipping the card. Chat now reserves the
+  measured `340px` shell and raises the app panel to at least `344px` while the
+  chat tab is visible; user-authored card CSS is unchanged.
+- `DONE INLINE-ROLL FIX`: custom `{{result}}` fields now use Roll20's
+  `.inlinerollresult` markup. The old local-only `total + [raw dice]` output
+  duplicated the visible value and omitted Roll20's inline-result paint.
+- `DONE EVIDENCE FIX`: chat smoke now records the full painted descendant
+  bounds, reports viewport clipping, optionally fails when clipping is present,
+  and captures the visible painted area instead of cropping to the narrower
+  rolltemplate root box.
+- `VERIFIED LOCAL`: the exact app-emitted payload reports message `340px`,
+  template root `279px`, painted card `283.2px`, clipping `false`, and zero
+  console/page errors. Focused rolltemplate test, lint, production build,
+  edit-flow smoke, and modern/legacy synthetic Preview/Edit smoke pass. The
+  four Preview/Edit comparisons remain exact at `0%` mismatch.
+- `VERIFIED REGRESSION`: the full `ci:verify` gate passes with the chat geometry,
+  rolltemplate renderer, import/export, modern/legacy render-mode, evidence,
+  private-data, and UI-copy checks included.
+- `BLOCKED MODERN`: the current modern Sandbox payload is still not freshly
+  applied. Its visible file chooser rejects supported `setFiles` before
+  transmission with `Not allowed`; no hidden-input or endpoint workaround was
+  used.
+- `TODO P0`: commit/push, verify GitHub Actions, then retry the modern visible
+  upload path. Keep section/result-card style controls and broader anonymous
+  structure coverage queued after renderer evidence.
+
 # 2026-08-01 Dedicated legacy same-payload runtime proof
 
 - `VERIFIED EXTERNAL SAFETY`: created a new dedicated legacy test room and

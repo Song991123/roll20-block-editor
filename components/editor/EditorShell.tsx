@@ -25,6 +25,7 @@ import { installAutosave } from '@/lib/persist/autosave';
 import { loadWorkspace, AUTOSAVE_KEY, type SavedRecord } from '@/lib/persist/indexeddb';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { useChatStore } from '@/lib/stores/chatStore';
+import { ROLL20_CHAT_PANEL_MIN_WIDTH } from '@/lib/dice/roll20ChatGeometry';
 import { useIsMobile } from './useIsMobile';
 import { WORKSPACE_KEYS, useWorkspaceStore } from '@/lib/stores/workspaceStore';
 import { MAX_SVG_BLOCKS } from '@/lib/blockly/renderPolicy';
@@ -201,9 +202,12 @@ export default function EditorShell() {
   // result, keep that one user-facing surface visible beside the same sheet.
   const previewChatVisible = previewFocus && rightTab === 'chat' && chatCount > 0;
   const leftWidth = previewFocus || leftCollapsed ? '0px' : 'var(--sidebar-left-w)';
+  const effectiveRightWidth = rightTab === 'chat'
+    ? Math.max(rightWidth, ROLL20_CHAT_PANEL_MIN_WIDTH)
+    : rightWidth;
   const rightWidthPx = (previewFocus && !previewChatVisible) || rightCollapsed
     ? '0px'
-    : `${rightWidth}px`;
+    : `${effectiveRightWidth}px`;
 
   // Keep one canonical Roll20 iframe mounted across preview and edit. In edit
   // mode the same pane is placed over the canvas slot while EditCanvas owns

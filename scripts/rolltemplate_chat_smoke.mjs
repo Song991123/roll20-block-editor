@@ -46,6 +46,7 @@ const VIEWPORT = { width: 2200, height: 1200 };
 const LOCAL_HTML_PATH = process.env.R20_ROLL_CHAT_HTML_PATH || '';
 const LOCAL_CSS_PATH = process.env.R20_ROLL_CHAT_CSS_PATH || '';
 const LOCAL_I18N_PATH = process.env.R20_ROLL_CHAT_I18N_PATH || '';
+const REQUIRE_UNCLIPPED = process.env.R20_ROLL_CHAT_REQUIRE_UNCLIPPED === '1';
 
 if (!Number.isFinite(DEVICE_SCALE_FACTOR) || DEVICE_SCALE_FACTOR <= 0) {
   throw new Error('--device-scale-factor must be a positive number');
@@ -271,11 +272,51 @@ async function clickRollAndReadChat(page, fixtureId) {
   });
   const templateScreenshotPath = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-chat-template.png`);
   const templateLocator = page.locator('[data-testid="chat-list"] [data-r20-chat-card] [class*="sheet-rolltemplate-"]').first();
+  let templateScreenshotClip = null;
   if (await templateLocator.count()) {
-    await templateLocator.screenshot({
-      path: templateScreenshotPath,
-      scale: 'css',
+    templateScreenshotClip = await templateLocator.evaluate((root) => {
+      const viewport = root.closest('[data-radix-scroll-area-viewport]');
+      const rects = [root, ...root.querySelectorAll('*')]
+        .map((node) => node.getBoundingClientRect())
+        .filter((rect) => rect.width > 0 && rect.height > 0);
+      if (!rects.length) return null;
+      const viewportRect = viewport?.getBoundingClientRect();
+      const left = Math.max(
+        Math.min(...rects.map((rect) => rect.left)),
+        viewportRect?.left ?? 0,
+      );
+      const top = Math.max(
+        Math.min(...rects.map((rect) => rect.top)),
+        viewportRect?.top ?? 0,
+      );
+      const right = Math.min(
+        Math.max(...rects.map((rect) => rect.right)),
+        viewportRect?.right ?? window.innerWidth,
+      );
+      const bottom = Math.min(
+        Math.max(...rects.map((rect) => rect.bottom)),
+        viewportRect?.bottom ?? window.innerHeight,
+      );
+      if (right <= left || bottom <= top) return null;
+      return {
+        x: left + window.scrollX,
+        y: top + window.scrollY,
+        width: right - left,
+        height: bottom - top,
+      };
     });
+    if (templateScreenshotClip) {
+      await page.screenshot({
+        path: templateScreenshotPath,
+        clip: templateScreenshotClip,
+        scale: 'css',
+      });
+    } else {
+      await templateLocator.screenshot({
+        path: templateScreenshotPath,
+        scale: 'css',
+      });
+    }
   }
   const cardCount = await page.locator('[data-testid="chat-list"] [data-r20-chat-card]').count();
   const cardInfo = await card.evaluate((el) => {
@@ -555,6 +596,42 @@ async function clickRollAndReadChat(page, fixtureId) {
       };
     };
     const template = el.querySelector('[class*="sheet-rolltemplate-"]');
+    const summarizeRect = (node) => {
+      if (!node) return null;
+      const rect = node.getBoundingClientRect();
+      return {
+        x: rect.x,
+        y: rect.y,
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+        right: rect.right,
+        bottom: rect.bottom,
+      };
+    };
+    const paintBounds = (root) => {
+      if (!root) return null;
+      const rects = [root, ...root.querySelectorAll('*')]
+        .map((node) => node.getBoundingClientRect())
+        .filter((rect) => rect.width > 0 && rect.height > 0);
+      if (!rects.length) return null;
+      const left = Math.min(...rects.map((rect) => rect.left));
+      const top = Math.min(...rects.map((rect) => rect.top));
+      const right = Math.max(...rects.map((rect) => rect.right));
+      const bottom = Math.max(...rects.map((rect) => rect.bottom));
+      return { x: left, y: top, left, top, width: right - left, height: bottom - top, right, bottom };
+    };
+    const chatList = el.closest('[data-testid="chat-list"]');
+    const chatViewport = chatList?.closest('[data-radix-scroll-area-viewport]') || chatList;
+    const templatePaintBounds = paintBounds(template);
+    const chatViewportRect = summarizeRect(chatViewport);
+    const templatePaintClipped = Boolean(
+      templatePaintBounds && chatViewportRect && (
+        templatePaintBounds.left < chatViewportRect.left - 0.5 ||
+        templatePaintBounds.right > chatViewportRect.right + 0.5
+      )
+    );
     const readPolicyDiagnostics = (root) => {
       const pane = el.closest('.r20-chat-pane');
       const attrs = {
@@ -606,6 +683,10 @@ async function clickRollAndReadChat(page, fixtureId) {
       hasTotal: Boolean(el.querySelector('.rt-total, strong')),
       width: Math.round(el.getBoundingClientRect().width),
       templateWidth: Math.round(template?.getBoundingClientRect().width ?? 0),
+      chatListRect: summarizeRect(chatList),
+      chatViewportRect,
+      templatePaintBounds,
+      templatePaintClipped,
       templateComputed: template
         ? {
             className: template.className,
@@ -658,6 +739,7 @@ async function clickRollAndReadChat(page, fixtureId) {
     };
   });
   cardInfo.cardCount = cardCount;
+  cardInfo.templateScreenshotClip = templateScreenshotClip;
   return {
     chosen,
     candidates: choice.candidates,
@@ -712,8 +794,8 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Scope: local static app preview iframe -> ChatPane only. This is not actual Roll20 chat parity.');
   lines.push('');
-  lines.push('| Fixture | Status | Reason | Click mode | Visible | Actionable | Chosen button | Chat kind | Cards | Message width | Template width | Roll20 shell | Template class | Debug label | Total/result | Functional errors | Resource issues |');
-  lines.push('| --- | --- | --- | --- | ---: | ---: | --- | --- | ---: | ---: | ---: | --- | --- | --- | --- | ---: | ---: |');
+  lines.push('| Fixture | Status | Reason | Click mode | Visible | Actionable | Chosen button | Chat kind | Cards | Message width | Template width | Paint clipped | Roll20 shell | Template class | Debug label | Total/result | Functional errors | Resource issues |');
+  lines.push('| --- | --- | --- | --- | ---: | ---: | --- | --- | ---: | ---: | ---: | --- | --- | --- | --- | --- | ---: | ---: |');
   for (const item of report.fixtures) {
     const chosen = item.chosen
       ? `${item.chosen.name || '(no name)'} / ${truncate(item.chosen.value, 60)}`
@@ -726,7 +808,7 @@ function renderMarkdown(report) {
       (item.pageErrors?.length ?? 0);
     const resourceIssues = item.consoleErrors?.filter(isResourceConsoleIssue).length ?? 0;
     lines.push(
-      `| \`${item.id}\` | ${status} | ${item.skipReason ?? ''} | ${item.clickMode ?? ''} | ${visibleCount} | ${actionableCount} | ${escapePipe(chosen)} | ${item.cardInfo?.kind ?? ''} | ${item.cardInfo?.cardCount ?? ''} | ${item.cardInfo?.width ?? ''} | ${item.cardInfo?.templateWidth ?? ''} | ${roll20ShellStatus(item.cardInfo)} | ${item.cardInfo?.hasTemplateClass ? 'yes' : 'no'} | ${item.cardInfo?.hasDebugTemplateLabel ? 'yes' : 'no'} | ${item.cardInfo?.hasTotal ? 'yes' : 'no'} | ${functionalErrors} | ${resourceIssues} |`,
+      `| \`${item.id}\` | ${status} | ${item.skipReason ?? ''} | ${item.clickMode ?? ''} | ${visibleCount} | ${actionableCount} | ${escapePipe(chosen)} | ${item.cardInfo?.kind ?? ''} | ${item.cardInfo?.cardCount ?? ''} | ${item.cardInfo?.width ?? ''} | ${item.cardInfo?.templateWidth ?? ''} | ${item.cardInfo?.templatePaintClipped ? 'yes' : 'no'} | ${roll20ShellStatus(item.cardInfo)} | ${item.cardInfo?.hasTemplateClass ? 'yes' : 'no'} | ${item.cardInfo?.hasDebugTemplateLabel ? 'yes' : 'no'} | ${item.cardInfo?.hasTotal ? 'yes' : 'no'} | ${functionalErrors} | ${resourceIssues} |`,
     );
   }
   const policyRows = report.fixtures
@@ -940,6 +1022,7 @@ async function main() {
           entry.cardInfo?.hasSpacer === true &&
           entry.cardInfo?.hasSenderLine === true &&
           entry.cardInfo?.hasTimestamp === true &&
+          (!REQUIRE_UNCLIPPED || entry.cardInfo?.templatePaintClipped === false) &&
           functionalConsoleErrors.filter((msg) => msg.type === 'error').length === 0 &&
           pageErrors.length === 0;
       } catch (err) {

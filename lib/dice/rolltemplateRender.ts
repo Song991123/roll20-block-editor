@@ -74,14 +74,7 @@ export function renderTemplateBody(
     }
     const f = map.get(expr);
     if (!f) return '';
-    if (f.detail) {
-      const det = f.detail;
-      const diceText = det.dice
-        .map((d) => `[${d.raw.join(', ')}]`)
-        .join(' + ');
-      const trailing = diceText ? ` <span class="rt-dice">${escapeHtml(diceText)}</span>` : '';
-      return `<span class="rt-total">${escapeHtml(String(det.total))}</span>${trailing}`;
-    }
+    if (f.detail) return defaultFieldValue(f);
     return escapeHtml(translateText(f.text, translations));
   });
   return applyDataI18n(rendered, translations);

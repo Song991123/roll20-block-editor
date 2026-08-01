@@ -23,6 +23,7 @@ import {
   extractRolltemplateBody,
   renderTemplateBody,
 } from '@/lib/dice/rolltemplateRender';
+import { ROLL20_CHAT_SHELL_WIDTH } from '@/lib/dice/roll20ChatGeometry';
 
 function formatTime(ts: number): string {
   const d = new Date(ts);
@@ -231,7 +232,7 @@ const roll20ChatShellCss = `
 }
 .r20-chat-pane[data-r20-chat-geometry-policy="roll20-chat-shell-width-340"] .r20-chat-card-group,
 .r20-chat-pane[data-r20-chat-geometry-policy="roll20-chat-shell-width-340"] .r20-chat-card-group .message {
-  width: 340px;
+  width: ${ROLL20_CHAT_SHELL_WIDTH}px;
 }
 .r20-chat-pane[data-r20-chat-geometry-policy="table-scale-x"] [class*="sheet-rolltemplate-"] table {
   transform: scaleX(0.981);
@@ -386,7 +387,7 @@ const roll20ChatShellCss = `
 }
 .r20-chat-pane .r20-chat-card-group {
   display: block;
-  width: 328px;
+  width: ${ROLL20_CHAT_SHELL_WIDTH}px;
   min-width: 0;
 }
 .r20-chat-pane .r20-chat-card-group .message + .message {
@@ -394,7 +395,7 @@ const roll20ChatShellCss = `
 }
 .r20-chat-pane .r20-chat-card-group .message {
   box-sizing: border-box;
-  width: 328px;
+  width: ${ROLL20_CHAT_SHELL_WIDTH}px;
   min-width: 0;
 }
 .r20-chat-pane .r20-chat-card-group [class*="sheet-rolltemplate-"] {

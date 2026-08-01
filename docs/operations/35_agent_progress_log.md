@@ -1,3 +1,34 @@
+# 2026-08-01 - Current result-card same-payload correction
+
+- Repeated the external legacy check with the current app-emitted anonymous
+  payload: import `100%`, `39` blocks, one worker block, zero warnings, emitted
+  HTML `1,508` bytes, CSS `1,381` bytes, Translation `143` bytes.
+- Used only the dedicated legacy room after a fresh owner-plus-zero-invited-
+  players gate. Roll20 read back HTML/CSS byte-identically and Translation
+  semantically identically, rendered the `760 x 320` root, executed the worker,
+  and rendered the custom result card.
+- The current lossless root comparison is `7,799 / 243,200` threshold pixels,
+  or `3.2068%` at RGB-sum threshold `90`. This remains fixture-level evidence.
+- Measured actual chat geometry directly: `340px` shell/message border box,
+  `279px` message content and rolltemplate root, `283.2px` painted card. Fixed
+  the app's stale `328px` shell and `267px` root, and enforce a `344px` minimum
+  app panel only while chat is shown.
+- Replaced custom-template `rt-total + rt-dice` substitution with Roll20-style
+  `.inlinerollresult`; local output no longer shows duplicated values such as
+  `12 [12]`.
+- Extended chat smoke with painted-bounds and viewport-clipping evidence. The
+  exact current payload now reports `340 / 279 / 283.2px`, clipping `false`, and
+  zero console/page errors. Its screenshot includes the complete right border
+  and inline-roll result.
+- Focused rolltemplate test, lint, production build, edit-flow smoke, and
+  modern/legacy synthetic Preview/Edit visual smoke pass. Preview/Edit remains
+  exact at `0%` mismatch in four synthetic comparisons.
+- Full `ci:verify` passes, including renderer, import/export, modern/legacy,
+  evidence/privacy, and UI-copy gates.
+- Fresh modern same-payload upload remains blocked before transmission by the
+  visible file chooser's `Not allowed` response. No unsupported workaround was
+  attempted.
+
 # 2026-08-01 - Dedicated legacy same-payload runtime proof
 
 - Created only a new isolated legacy destination, enabled Roll20's legacy
