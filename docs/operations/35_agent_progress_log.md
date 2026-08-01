@@ -19,8 +19,9 @@
   modern/legacy synthetic Preview/Edit visual smoke pass. Four visual
   comparisons remain exact at `0%` mismatch.
 - Full `ci:verify`, lint, and production build pass after the final
-  browser-smoke refinements. Remote CI remains to run. Actual modern Sandbox
-  upload is still separate and unproven.
+  browser-smoke refinements. Commit `9fbf908` is pushed to
+  `claude/design-reset`; GitHub CI run `30680689365` passed in `1m23s`.
+  Actual modern Sandbox upload is still separate and unproven.
 
 # 2026-08-01 - Coordinated section themes
 

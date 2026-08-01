@@ -21,11 +21,15 @@
   for two fixtures in both modern and legacy modes.
 - `VERIFIED REGRESSION`: full `ci:verify`, lint, and production build pass after
   the final browser-smoke refinements.
-- `VERIFY REMOTE`: push the coherent batch and check GitHub CI before marking
-  it remote-verified.
+- `VERIFIED REMOTE`: commit `9fbf908` is pushed to `claude/design-reset`.
+  GitHub CI run `30680689365` passed safety/unit verification, lint, and build
+  in `1m23s`.
 - `BLOCKED EXTERNAL MODERN`: the coordinated row output has not been freshly
   uploaded to the modern Roll20 Sandbox. Local browser evidence is not actual
   Roll20 parity.
+- `P1 NEXT VISUAL`: after the current render contract is closed, expand the
+  same managed-CSS path with richer Roll-button looks and section layout
+  recipes. Keep these explicit user choices; never overwrite imported design.
 
 # 2026-08-01 Coordinated section themes
 
