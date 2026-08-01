@@ -103,7 +103,7 @@ export const CATEGORIES: Record<BlockCategory, CategoryMeta> = {
     defaultExpanded: true,
     advanced: false,
     order: 4,
-    description: '주사위 굴리기 + 굴림 결과 틀',
+    description: '주사위 굴리기 + 결과 카드',
   },
   i18n: {
     id: 'i18n',

@@ -23,7 +23,7 @@ export const CATEGORIES: WidgetCategoryMeta[] = [
   { id: 'display', label: '표시', order: 2 },
   { id: 'dice', label: '굴림', order: 3 },
   { id: 'container', label: '컨테이너', order: 4 },
-  { id: 'rolltemplate', label: '굴림 결과 틀', order: 5 },
+  { id: 'rolltemplate', label: '주사위 결과 카드', order: 5 },
 ];
 
 export interface WidgetDef {

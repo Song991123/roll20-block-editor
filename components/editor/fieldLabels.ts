@@ -106,7 +106,7 @@ export const WIDGET_TYPE_DISPLAY: Record<string, string> = {
   heading: '큰 제목',
   label: '설명 글자',
   image: '그림',
-  'rolltemplate-header': '굴림 결과 제목',
+  'rolltemplate-header': '결과 카드 제목',
 };
 
 export function widgetTypeDisplayLabel(type: string, fallback: string): string {

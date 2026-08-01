@@ -35,7 +35,10 @@ the entire history and generated evidence tree.
   edit the outer card and common child presentation through managed CSS, and drop template-specific
   rows/text into flow. The persistent sheet iframe remains mounted separately,
   so card width cannot reflow the sheet. Blockly template-name changes migrate
-  root and descendant managed CSS to the new chat scope. Section background and
+  root and descendant managed CSS to the new chat scope. This editor is exposed
+  as the icon-labelled `주사위 결과` target beside `시트 디자인`; user-facing
+  creation, picker, gallery, and block labels call the surface a result card
+  instead of a result frame. Section background and
   section-decoration paint, title/label paint, image paint, and Roll-button icon
   paint plus modern/legacy sanitizer preservation are locally browser-verified.
   This is not arbitrary-sheet actual Roll20 parity.

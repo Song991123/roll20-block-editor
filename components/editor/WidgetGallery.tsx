@@ -104,7 +104,7 @@ export default function WidgetGallery() {
       toast(`'${displayName(preset)}'을(를) ${target === 'rolltemplate' ? '결과 카드' : '시트'}에 올렸어요.`, { duration: 1400 });
     } else {
       toast.error(target === 'rolltemplate'
-        ? '먼저 편집할 결과 틀을 만들어 주세요.'
+        ? '먼저 편집할 주사위 결과 카드를 만들어 주세요.'
         : '시트 작업 공간이 아직 준비되지 않았어요. 잠시 뒤 다시 시도해 주세요.');
     }
   };
@@ -118,7 +118,7 @@ export default function WidgetGallery() {
           <span className="flex-1" />
           <HelpTip label="자주 쓰는 조각 도움말" side="right">
             {target === 'rolltemplate'
-              ? '굴림 결과 카드에 넣을 조각들이에요.'
+              ? '주사위 결과 카드에 넣을 조각들이에요.'
               : '시트에 자주 올리는 조각들이에요.'}
           </HelpTip>
         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Blocks, Eye, Languages, PanelsLeftRight, PencilRuler, ShieldAlert, ShieldCheck, SlidersHorizontal, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Blocks, Dice5, Eye, FileText, Languages, PanelsLeftRight, PencilRuler, ShieldAlert, ShieldCheck, SlidersHorizontal, type LucideIcon } from 'lucide-react';
 import { useUiStore, type EditSubmode, type MainMode } from '@/lib/stores/uiStore';
 import { usePreviewStore, type Roll20CompatibilityMode } from '@/lib/stores/previewStore';
 import {
@@ -27,9 +27,9 @@ const MODES: Array<{
   { key: 'split', label: '나란히 보기', Icon: PanelsLeftRight, tooltip: '왼쪽엔 블록, 오른쪽엔 미리보기를 함께 놓고 작업해요.' },
 ];
 
-const SUBMODES: Array<{ key: EditSubmode; label: string; tooltip: string }> = [
-  { key: 'sheet', label: '시트', tooltip: '캐릭터 시트 화면을 편집해요.' },
-  { key: 'rolltemplate', label: '굴림 결과', tooltip: '주사위를 굴렸을 때 대화창에 뜨는 결과 말풍선을 편집해요.' },
+const SUBMODES: Array<{ key: EditSubmode; label: string; Icon: LucideIcon; tooltip: string }> = [
+  { key: 'sheet', label: '시트 디자인', Icon: FileText, tooltip: '캐릭터 시트 화면을 편집해요.' },
+  { key: 'rolltemplate', label: '주사위 결과', Icon: Dice5, tooltip: '주사위를 굴렸을 때 대화창에 뜨는 결과 카드를 편집해요.' },
 ];
 
 export default function MainAreaToolbar() {
@@ -117,6 +117,7 @@ export default function MainAreaToolbar() {
             >
               {SUBMODES.map((sub) => {
                 const isActive = editSubmode === sub.key;
+                const Icon = sub.Icon;
                 return (
                   <Tooltip key={sub.key}>
                     <TooltipTrigger asChild>
@@ -128,6 +129,7 @@ export default function MainAreaToolbar() {
                         className="r20-seg-btn"
                         data-testid={`edit-submode-${sub.key}`}
                       >
+                        <Icon className="h-4 w-4" aria-hidden="true" />
                         {sub.label}
                       </button>
                     </TooltipTrigger>

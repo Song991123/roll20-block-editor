@@ -11777,3 +11777,20 @@ same-hash modern/legacy comparison.
 - One first run stopped at the known timing-sensitive multi-selection setup;
   clean later execution passed the full flow. Actual modern Sandbox and
   dedicated legacy-room image paint remain open external gates.
+
+## 2026-08-01 - Dice-result editor discoverability
+
+- Audited the existing result-template path before adding another surface. It
+  already owns card/row presets, title/value/image styling, flow-only piece
+  insertion, the Roll20 chat renderer, and local chat-result synchronization.
+- Replaced the ambiguous compact target labels with icon-labelled
+  `시트 디자인` and `주사위 결과`. Standardized user-facing creation, picker,
+  gallery, category, inspector, and Blockly copy around `결과 카드` without
+  changing Rolltemplate syntax or execution.
+- Visually inspected the rebuilt result editor. The active card, result pieces,
+  layer tree, and right-side style controls remain visible together at the
+  canonical desktop viewport.
+- Lint, UI-copy guard, rolltemplate render test, 90 high-priority mapping
+  checks, production build, full `ci:verify`, and canonical edit-flow browser
+  smoke pass. Actual modern Sandbox and dedicated legacy-room card paint remain open external
+  evidence gates.

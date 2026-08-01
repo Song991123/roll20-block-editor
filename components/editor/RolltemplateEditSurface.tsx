@@ -139,7 +139,7 @@ export default function RolltemplateEditSurface() {
         if (blockId) adapter.deleteBlock('html', blockId);
       }
       state.bumpStructure('html', adapter.countBlocks('html'));
-      toast.error('결과 틀을 만들지 못했어요.');
+      toast.error('결과 카드를 만들지 못했어요.');
       return;
     }
 
@@ -161,7 +161,7 @@ export default function RolltemplateEditSurface() {
         adapter.deleteBlock('html', blockId);
       }
       state.bumpStructure('html', adapter.countBlocks('html'));
-      toast.error('결과 틀의 내용을 연결하지 못했어요.');
+      toast.error('결과 카드의 내용을 연결하지 못했어요.');
       return;
     }
 
@@ -222,7 +222,7 @@ export default function RolltemplateEditSurface() {
           data-testid="rolltemplate-create"
         >
           <MessageSquarePlus className="h-4 w-4" aria-hidden="true" />
-          결과 틀 만들기
+          주사위 결과 카드 만들기
         </button>
       </div>
     );

@@ -11348,3 +11348,30 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P1`: audit the existing result-template editor as a user-facing dice
   result designer, then fill missing card, row, value, and image controls
   without replacing Roll20's runtime template contract.
+
+## 2026-08-01 Dice Result Editor Discoverability
+
+- `AUDITED LOCAL`: the result-template editor was not absent. It already uses
+  the chat renderer, supports root-card and row presets, direct title/value
+  styling, image insertion/styling, flow-only piece drops, and local chat
+  synchronization. The main gap was that the small `굴림 결과` label did not
+  read as a design surface.
+- `DONE LOCAL`: the edit-target switch now presents icon-labelled
+  `시트 디자인` and `주사위 결과` choices. Inside the result editor, picker,
+  empty state, gallery feedback, inspector labels, category names, and Blockly
+  labels consistently use `주사위 결과 카드` or `결과 카드`.
+- `UNCHANGED`: Rolltemplate HTML, Mustache fields, Roll20 invocation syntax,
+  managed CSS scope, renderer, drag/drop behavior, and chat execution logic are
+  unchanged. This batch changes discovery and user-facing wording only.
+- `VERIFIED LOCAL`: lint, UI-copy guard, rolltemplate render test, 90
+  high-priority mapping checks, production build, full `ci:verify`, and
+  canonical edit-flow browser smoke pass. Browser proof covers card creation,
+  piece drop, and chat synchronization with the new visible entry labels.
+  Ignored evidence is under
+  `reports/edit-flow-rolltemplate-discovery-r1/`.
+- `VERIFY / OPEN EXTERNAL`: actual current-payload result-card paint in modern
+  Roll20 Sandbox and the dedicated legacy room remains unverified. Local chat
+  synchronization is not actual Roll20 visual parity.
+- `NEXT P0`: complete the supported modern Sandbox upload after Chrome
+  file-URL permission is available, then run the separate dedicated legacy-room
+  current-payload check.

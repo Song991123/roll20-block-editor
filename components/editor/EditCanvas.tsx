@@ -218,20 +218,20 @@ export default function EditCanvas() {
         data-testid="edit-surface-toolbar"
       >
         <span className="font-semibold text-foreground">
-          {editSubmode === 'rolltemplate' ? '굴림 결과 편집' : '시트 편집'}
+          {editSubmode === 'rolltemplate' ? '주사위 결과 카드 편집' : '시트 편집'}
         </span>
         {editSubmode === 'rolltemplate' && rolltemplateRoots.length > 0 && (
           <label className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-            <span>결과 틀</span>
+            <span>결과 카드</span>
             <select
               value={activeRolltemplateId ?? ''}
               onChange={(event) => setSelectedBlockId(event.target.value, 'tree')}
               className="h-7 max-w-48 rounded-full border border-border bg-[var(--bg-elevated-2)] px-2.5 text-xs font-semibold text-foreground outline-none focus:border-[var(--primary)]"
               data-testid="rolltemplate-picker"
-              aria-label="편집할 결과 틀"
+              aria-label="편집할 결과 카드"
             >
               {rolltemplateRoots.map((root, index) => {
-                const name = adapter.getBlockField('html', root.id, 'NAME')?.trim() || `결과 틀 ${index + 1}`;
+                const name = adapter.getBlockField('html', root.id, 'NAME')?.trim() || `결과 카드 ${index + 1}`;
                 return <option key={root.id} value={root.id}>{name}</option>;
               })}
             </select>
@@ -338,7 +338,7 @@ export default function EditCanvas() {
               }
             }}
             className="h-7 w-[84px] rounded-full border border-border bg-[var(--bg-elevated-2)] px-2.5 text-right text-xs text-foreground outline-none tabular-nums focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
-            aria-label={editSubmode === 'rolltemplate' ? '굴림 결과 캔버스 폭' : '시트 캔버스 폭'}
+            aria-label={editSubmode === 'rolltemplate' ? '주사위 결과 카드 폭' : '시트 캔버스 폭'}
             data-testid="edit-canvas-width-input"
           />
           px
