@@ -40,6 +40,11 @@ import {
   getSectionTheme,
   type SectionTheme,
 } from '@/lib/editor/sectionThemes';
+import {
+  collectSectionLayoutTargets,
+  getSectionLayout,
+  type SectionLayout,
+} from '@/lib/editor/sectionLayouts';
 import { hasDirectRollButtonIcon, isRollButtonType } from '@/lib/editor/stylePresets';
 import { flushEmitPipeline } from '@/lib/preview/useEmitPipeline';
 import { useWorkspaceStore, WORKSPACE_KEYS, type WorkspaceKey } from '@/lib/stores/workspaceStore';
@@ -159,6 +164,14 @@ export default function EditInspector() {
   // structureVersion invalidates descendants in the external Blockly model.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId, workspace, structureVersion, role, snapshot]);
+  const sectionLayoutEligible = useMemo(() => {
+    if (!selectedId || workspace !== 'html' || !role || !snapshot) return false;
+    if ((role.kind !== 'frame' && role.kind !== 'flow') || !role.canReceiveChildren) return false;
+    if (snapshot.childCount < 1 || controlGroupThemeEligible) return false;
+    return !findOwningRolltemplateId(getBlocklyAdapter().listAllBlocks('html'), selectedId);
+  // structureVersion invalidates descendants in the external Blockly model.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, workspace, structureVersion, role, snapshot, controlGroupThemeEligible]);
   const beforeVisualStyles = useMemo(() => {
     if (!visualStyleEnabled || !selectedId || workspace !== 'html') return {};
     return readManagedDesignStyle(
@@ -351,6 +364,41 @@ export default function EditInspector() {
     queueMicrotask(() => flushEmitPipeline());
   }, [selectedId, workspace]);
 
+  const applySectionLayout = useCallback((layoutId: SectionLayout['id']) => {
+    if (!selectedId || workspace !== 'html' || !sectionLayoutEligible) return;
+    const adapter = getBlocklyAdapter();
+    const selected = adapter.getBlock('html', selectedId);
+    if (!selected) return;
+    const selectedRole = getLayerRole(selected.type);
+    if (!selectedRole.canReceiveChildren) return;
+    const nodes = adapter.listAllBlocks('html');
+    if (findOwningRolltemplateId(nodes, selectedId)) return;
+
+    const layout = getSectionLayout(layoutId);
+    const targets = collectSectionLayoutTargets(
+      nodes,
+      selectedId,
+      (blockId) => adapter.getBlockField('html', blockId, 'CLASS') ?? '',
+    );
+    let htmlChanged = false;
+    let cssChanged = false;
+    for (const target of targets) {
+      if (!canManageDesignStyle(adapter, 'html', target.blockId)) continue;
+      const result = commitManagedDesignStyle(adapter, {
+        workspace: 'html',
+        blockId: target.blockId,
+        declarations: layout.parts[target.part],
+      });
+      htmlChanged = htmlChanged || result.htmlChanged;
+      cssChanged = cssChanged || result.cssChanged || result.cssBlockCreated;
+    }
+    if (!htmlChanged && !cssChanged) return;
+    const store = useWorkspaceStore.getState();
+    if (htmlChanged) store.bumpStructure('html', adapter.countBlocks('html'));
+    if (cssChanged) store.bumpStructure('css', adapter.countBlocks('css'));
+    queueMicrotask(() => flushEmitPipeline());
+  }, [selectedId, workspace, sectionLayoutEligible]);
+
   const deleteSelected = useCallback(() => {
     if (!selectedId || !workspace) return;
     const adapter = getBlocklyAdapter();
@@ -445,6 +493,8 @@ export default function EditInspector() {
             controlGroupThemeEligible={controlGroupThemeEligible}
             onApplyControlGroupTheme={applyControlGroupTheme}
             onApplyRollButtonTheme={applyRollButtonTheme}
+            sectionLayoutEligible={sectionLayoutEligible}
+            onApplySectionLayout={applySectionLayout}
           />
         )}
 

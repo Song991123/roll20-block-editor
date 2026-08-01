@@ -222,6 +222,12 @@ async function main() {
       '<div class="outside" style="width:180px; min-height:54px; padding:8px">Outside</div>',
       '<div class="group-one" style="padding:4px">Group A</div>',
       '<div class="group-two" style="padding:4px">Group B</div>',
+      '<section class="layout-proof" style="width:420px; padding:12px">',
+      '  <h3 class="layout-proof-title">Layout</h3>',
+      '  <div class="layout-proof-a" style="min-height:28px; padding:6px">Main A</div>',
+      '  <div class="layout-proof-b" style="min-height:28px; padding:6px">Side B</div>',
+      '  <div class="layout-proof-c" style="min-height:28px; padding:6px">Main C</div>',
+      '</section>',
       '<rolltemplate class="sheet-rolltemplate-default">',
       '  <div class="sheet-template-card">',
       '    <div class="sheet-template-title">{{name}}</div>',
@@ -258,6 +264,11 @@ async function main() {
       const outside = document.querySelector('.sheet-outside');
       const groupOne = document.querySelector('.sheet-group-one');
       const groupTwo = document.querySelector('.sheet-group-two');
+      const layoutProof = document.querySelector('.sheet-layout-proof');
+      const layoutProofTitle = document.querySelector('.sheet-layout-proof-title');
+      const layoutProofA = document.querySelector('.sheet-layout-proof-a');
+      const layoutProofB = document.querySelector('.sheet-layout-proof-b');
+      const layoutProofC = document.querySelector('.sheet-layout-proof-c');
       return {
         frameId: frameNode?.getAttribute('data-r20-block-id') ?? null,
         titleId: title?.getAttribute('data-r20-block-id') ?? null,
@@ -275,13 +286,124 @@ async function main() {
         outsideId: outside?.getAttribute('data-r20-block-id') ?? null,
         groupOneId: groupOne?.getAttribute('data-r20-block-id') ?? null,
         groupTwoId: groupTwo?.getAttribute('data-r20-block-id') ?? null,
+        layoutProofId: layoutProof?.getAttribute('data-r20-block-id') ?? null,
+        layoutProofTitleId: layoutProofTitle?.getAttribute('data-r20-block-id') ?? null,
+        layoutProofAId: layoutProofA?.getAttribute('data-r20-block-id') ?? null,
+        layoutProofBId: layoutProofB?.getAttribute('data-r20-block-id') ?? null,
+        layoutProofCId: layoutProofC?.getAttribute('data-r20-block-id') ?? null,
       };
     });
     assert(
       ids.frameId && ids.titleId && ids.labelId && ids.rowAId && ids.rowAInputId && ids.rowBId && ids.rowBInputId && ids.imageId && ids.tableId && ids.tableBodyId
-        && ids.tableRowId && ids.outsideId && ids.groupOneId && ids.groupTwoId,
+        && ids.tableRowId && ids.outsideId && ids.groupOneId && ids.groupTwoId
+        && ids.layoutProofId && ids.layoutProofTitleId && ids.layoutProofAId && ids.layoutProofBId && ids.layoutProofCId,
       `synthetic structural IDs were not emitted: ${JSON.stringify(ids)}`,
     );
+
+    const readLayoutProof = () => frame.evaluate((proofIds) => {
+      const root = document.querySelector(`[data-r20-block-id="${CSS.escape(proofIds.root)}"]`);
+      const title = document.querySelector(`[data-r20-block-id="${CSS.escape(proofIds.title)}"]`);
+      const a = document.querySelector(`[data-r20-block-id="${CSS.escape(proofIds.a)}"]`);
+      const b = document.querySelector(`[data-r20-block-id="${CSS.escape(proofIds.b)}"]`);
+      const c = document.querySelector(`[data-r20-block-id="${CSS.escape(proofIds.c)}"]`);
+      if (![root, title, a, b, c].every((node) => node instanceof HTMLElement)) return null;
+      const rootElement = root;
+      const rootRect = rootElement.getBoundingClientRect();
+      const position = (node) => {
+        const rect = node.getBoundingClientRect();
+        return {
+          left: Math.round((rect.left - rootRect.left) * 100) / 100,
+          top: Math.round((rect.top - rootRect.top) * 100) / 100,
+          width: Math.round(rect.width * 100) / 100,
+          height: Math.round(rect.height * 100) / 100,
+        };
+      };
+      const rootStyle = getComputedStyle(rootElement);
+      const titleStyle = getComputedStyle(title);
+      return {
+        display: rootStyle.display,
+        flexDirection: rootStyle.flexDirection,
+        gridTemplateColumns: rootStyle.gridTemplateColumns,
+        gap: rootStyle.gap,
+        titleGridColumn: titleStyle.gridColumn,
+        title: position(title),
+        a: position(a),
+        b: position(b),
+        c: position(c),
+      };
+    }, {
+      root: ids.layoutProofId,
+      title: ids.layoutProofTitleId,
+      a: ids.layoutProofAId,
+      b: ids.layoutProofBId,
+      c: ids.layoutProofCId,
+    });
+
+    const layoutProofCanvas = frame.locator(
+      `[data-r20-block-id="${ids.layoutProofId}"]`,
+    );
+    await layoutProofCanvas.scrollIntoViewIfNeeded();
+    await layoutProofCanvas.click({ position: { x: 4, y: 4 }, force: true });
+    const sectionSidebarLayout = page.locator('[data-testid="design-section-layout-sidebar"]');
+    const sectionStackLayout = page.locator('[data-testid="design-section-layout-stack"]');
+    await sectionSidebarLayout.waitFor({ state: 'visible', timeout: 10000 });
+    assert((await page.locator('[data-testid="design-section-layouts"]').count()) === 1, 'section layout gallery is missing for a flow container');
+    assert((await page.locator('[data-testid="design-control-group-themes"]').count()) === 0, 'ordinary section was misclassified as an input row');
+    await sectionSidebarLayout.click();
+    await frame.waitForFunction((rootId) => {
+      const root = document.querySelector(`[data-r20-block-id="${CSS.escape(rootId)}"]`);
+      if (!(root instanceof HTMLElement)) return false;
+      const style = getComputedStyle(root);
+      return style.display === 'grid'
+        && (style.gridTemplateColumns.match(/\d+(?:\.\d+)?px/g)?.length ?? 0) === 2;
+    }, ids.layoutProofId, { timeout: 10000 });
+    result.tests.sectionLayoutSidebar = await readLayoutProof();
+    const sidebarDebug = JSON.stringify(result.tests.sectionLayoutSidebar);
+    assert(result.tests.sectionLayoutSidebar?.display === 'grid', `sidebar layout did not use grid: ${sidebarDebug}`);
+    assert(result.tests.sectionLayoutSidebar?.gap === '12px', `sidebar layout gap did not render: ${sidebarDebug}`);
+    assert(result.tests.sectionLayoutSidebar?.titleGridColumn === '1 / -1', `section title did not span both columns: ${sidebarDebug}`);
+    assert(Math.abs(result.tests.sectionLayoutSidebar.a.top - result.tests.sectionLayoutSidebar.b.top) < 1, `sidebar columns did not share a row: ${sidebarDebug}`);
+    assert(result.tests.sectionLayoutSidebar.a.left < result.tests.sectionLayoutSidebar.b.left, `sidebar columns did not separate horizontally: ${sidebarDebug}`);
+    assert(result.tests.sectionLayoutSidebar.a.width > result.tests.sectionLayoutSidebar.b.width * 1.7, `sidebar width ratio is not 2:1: ${sidebarDebug}`);
+    assert(result.tests.sectionLayoutSidebar.c.top > result.tests.sectionLayoutSidebar.a.top, `third item did not flow to the next row: ${sidebarDebug}`);
+
+    result.tests.sectionLayoutOrder = await page.evaluate((rootId) => window.__perfHook
+      .getLayerSnapshot('html')
+      .filter((node) => node.layerParentId === rootId)
+      .map((node) => node.id), ids.layoutProofId);
+    assert(
+      JSON.stringify(result.tests.sectionLayoutOrder) === JSON.stringify([
+        ids.layoutProofTitleId,
+        ids.layoutProofAId,
+        ids.layoutProofBId,
+        ids.layoutProofCId,
+      ]),
+      `section layout changed HTML child order: ${JSON.stringify(result.tests.sectionLayoutOrder)}`,
+    );
+
+    await sectionStackLayout.click();
+    await frame.waitForFunction((rootId) => {
+      const root = document.querySelector(`[data-r20-block-id="${CSS.escape(rootId)}"]`);
+      if (!(root instanceof HTMLElement)) return false;
+      const style = getComputedStyle(root);
+      return style.display === 'flex' && style.flexDirection === 'column';
+    }, ids.layoutProofId, { timeout: 10000 });
+    result.tests.sectionLayoutStack = await readLayoutProof();
+    const stackDebug = JSON.stringify(result.tests.sectionLayoutStack);
+    assert(Math.abs(result.tests.sectionLayoutStack.a.left - result.tests.sectionLayoutStack.b.left) < 1, `stack items did not align vertically: ${stackDebug}`);
+    assert(result.tests.sectionLayoutStack.a.top < result.tests.sectionLayoutStack.b.top && result.tests.sectionLayoutStack.b.top < result.tests.sectionLayoutStack.c.top, `stack order did not follow HTML order: ${stackDebug}`);
+
+    await sectionSidebarLayout.click();
+    await frame.waitForFunction((rootId) => {
+      const root = document.querySelector(`[data-r20-block-id="${CSS.escape(rootId)}"]`);
+      return root instanceof HTMLElement && getComputedStyle(root).display === 'grid';
+    }, ids.layoutProofId, { timeout: 10000 });
+    result.tests.sectionLayoutEditFinal = await readLayoutProof();
+    await page.locator('[data-testid="design-section-layouts"]').scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: path.join(REPORT_DIR, 'section-layout-editor.png'),
+      fullPage: false,
+    });
 
     const groupOneRow = page.locator(
       `[data-testid="edit-layer-row"][data-r20-block-id="${ids.groupOneId}"]`,
@@ -861,9 +983,16 @@ async function main() {
     assert((await frameCollapseToggle.count()) === 1, 'container layer collapse toggle is missing');
     result.tests.layerCollapse = await page.evaluate(({ frameId, childId }) => ({
       beforeRows: document.querySelectorAll('[data-testid="edit-layer-row"]').length,
+      childVisibleBefore: Boolean(document.querySelector(
+        `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(childId)}"]`,
+      )),
       frameId,
       childId,
     }), { frameId: ids.frameId, childId: ids.rowAId });
+    assert(
+      result.tests.layerCollapse.childVisibleBefore,
+      'container descendant layer was not visible before collapse',
+    );
     await frameCollapseToggle.click();
     await page.waitForTimeout(150);
     result.tests.layerCollapse.collapsed = await page.evaluate(({ frameId, childId }) => {
@@ -880,10 +1009,6 @@ async function main() {
       };
     }, { frameId: ids.frameId, childId: ids.rowAId });
     assert(result.tests.layerCollapse.collapsed.state === '1', 'container layer did not collapse');
-    assert(
-      result.tests.layerCollapse.collapsed.visibleRows < result.tests.layerCollapse.beforeRows,
-      'collapsing a container did not hide descendant layer rows',
-    );
     assert(!result.tests.layerCollapse.collapsed.childVisible, 'collapsed descendant layer is still visible');
 
     const childInIframe = frame.locator(`[data-r20-block-id="${ids.rowAId}"]`).first();
@@ -2309,6 +2434,15 @@ async function main() {
     });
 
     await page.click('[data-testid="main-mode-preview"]');
+    result.tests.sectionLayoutPreview = await readLayoutProof();
+    assert(
+      JSON.stringify(result.tests.sectionLayoutPreview)
+        === JSON.stringify(result.tests.sectionLayoutEditFinal),
+      `section layout changed between Edit and Preview: ${JSON.stringify({
+        edit: result.tests.sectionLayoutEditFinal,
+        preview: result.tests.sectionLayoutPreview,
+      })}`,
+    );
     result.tests.sectionBackgroundPreview = await frame.evaluate((blockId) => {
       const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
       if (!(element instanceof HTMLElement)) return null;

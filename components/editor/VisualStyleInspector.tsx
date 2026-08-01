@@ -27,6 +27,11 @@ import {
   type SectionTheme,
 } from '@/lib/editor/sectionThemes';
 import {
+  SECTION_LAYOUTS,
+  sectionLayoutMatches,
+  type SectionLayout,
+} from '@/lib/editor/sectionLayouts';
+import {
   CONTROL_GROUP_THEMES,
   type ControlGroupTheme,
 } from '@/lib/editor/controlGroupThemes';
@@ -43,6 +48,7 @@ import RollButtonIconControls from './RollButtonIconControls';
 import RollButtonThemeControls from './RollButtonThemeControls';
 import ResultCardThemeControls from './ResultCardThemeControls';
 import SectionDecorationControls from './SectionDecorationControls';
+import SectionLayoutControls from './SectionLayoutControls';
 import SectionThemeControls from './SectionThemeControls';
 import TextDecorationControls from './TextDecorationControls';
 
@@ -59,6 +65,8 @@ type VisualStyleInspectorProps = {
   controlGroupThemeEligible?: boolean;
   onApplyControlGroupTheme?: (themeId: ControlGroupTheme['id']) => void;
   onApplyRollButtonTheme?: (themeId: RollButtonTheme['id']) => void;
+  sectionLayoutEligible?: boolean;
+  onApplySectionLayout?: (layoutId: SectionLayout['id']) => void;
 };
 
 type LayoutMode = 'auto' | 'row' | 'column' | 'grid';
@@ -76,6 +84,8 @@ export default function VisualStyleInspector({
   controlGroupThemeEligible = false,
   onApplyControlGroupTheme,
   onApplyRollButtonTheme,
+  sectionLayoutEligible = false,
+  onApplySectionLayout,
 }: VisualStyleInspectorProps) {
   const [activeState, setActiveState] = useState<ManagedDesignState>('base');
   const values = valuesByState[activeState] ?? {};
@@ -115,6 +125,9 @@ export default function VisualStyleInspector({
     ? ROLL_BUTTON_THEMES.find((theme) => (
       rollButtonThemeMatches(valuesByState, beforeValues, theme)
     ))?.id ?? null
+    : null;
+  const sectionLayoutId = sectionLayoutEligible
+    ? SECTION_LAYOUTS.find((layout) => sectionLayoutMatches(values, layout))?.id ?? null
     : null;
   const coordinatedThemeVisible = (
     presetGroup?.family === 'result-card' && Boolean(onApplyResultCardTheme)
@@ -196,6 +209,13 @@ export default function VisualStyleInspector({
         <RollButtonThemeControls
           activeThemeId={rollButtonThemeId}
           onApply={onApplyRollButtonTheme}
+        />
+      )}
+
+      {activeState === 'base' && sectionLayoutEligible && onApplySectionLayout && (
+        <SectionLayoutControls
+          activeLayoutId={sectionLayoutId}
+          onApply={onApplySectionLayout}
         />
       )}
 
