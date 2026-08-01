@@ -45,6 +45,11 @@ import {
   getSectionLayout,
   type SectionLayout,
 } from '@/lib/editor/sectionLayouts';
+import {
+  collectSectionCompositionTargets,
+  getSectionComposition,
+  type SectionComposition,
+} from '@/lib/editor/sectionCompositions';
 import { hasDirectRollButtonIcon, isRollButtonType } from '@/lib/editor/stylePresets';
 import { flushEmitPipeline } from '@/lib/preview/useEmitPipeline';
 import { useWorkspaceStore, WORKSPACE_KEYS, type WorkspaceKey } from '@/lib/stores/workspaceStore';
@@ -399,6 +404,41 @@ export default function EditInspector() {
     queueMicrotask(() => flushEmitPipeline());
   }, [selectedId, workspace, sectionLayoutEligible]);
 
+  const applySectionComposition = useCallback((compositionId: SectionComposition['id']) => {
+    if (!selectedId || workspace !== 'html' || !sectionLayoutEligible) return;
+    const adapter = getBlocklyAdapter();
+    const selected = adapter.getBlock('html', selectedId);
+    if (!selected) return;
+    const selectedRole = getLayerRole(selected.type);
+    if (!selectedRole.canReceiveChildren) return;
+    const nodes = adapter.listAllBlocks('html');
+    if (findOwningRolltemplateId(nodes, selectedId)) return;
+
+    const targets = collectSectionCompositionTargets(
+      nodes,
+      selectedId,
+      (blockId) => adapter.getBlockField('html', blockId, 'CLASS') ?? '',
+      getSectionComposition(compositionId),
+    );
+    let htmlChanged = false;
+    let cssChanged = false;
+    for (const target of targets) {
+      if (!canManageDesignStyle(adapter, 'html', target.blockId)) continue;
+      const result = commitManagedDesignStyle(adapter, {
+        workspace: 'html',
+        blockId: target.blockId,
+        declarations: target.declarations,
+      });
+      htmlChanged = htmlChanged || result.htmlChanged;
+      cssChanged = cssChanged || result.cssChanged || result.cssBlockCreated;
+    }
+    if (!htmlChanged && !cssChanged) return;
+    const store = useWorkspaceStore.getState();
+    if (htmlChanged) store.bumpStructure('html', adapter.countBlocks('html'));
+    if (cssChanged) store.bumpStructure('css', adapter.countBlocks('css'));
+    queueMicrotask(() => flushEmitPipeline());
+  }, [selectedId, workspace, sectionLayoutEligible]);
+
   const deleteSelected = useCallback(() => {
     if (!selectedId || !workspace) return;
     const adapter = getBlocklyAdapter();
@@ -495,6 +535,7 @@ export default function EditInspector() {
             onApplyRollButtonTheme={applyRollButtonTheme}
             sectionLayoutEligible={sectionLayoutEligible}
             onApplySectionLayout={applySectionLayout}
+            onApplySectionComposition={applySectionComposition}
           />
         )}
 

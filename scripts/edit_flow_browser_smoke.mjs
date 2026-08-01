@@ -325,7 +325,13 @@ async function main() {
         flexDirection: rootStyle.flexDirection,
         gridTemplateColumns: rootStyle.gridTemplateColumns,
         gap: rootStyle.gap,
+        backgroundColor: rootStyle.backgroundColor,
+        borderColor: rootStyle.borderColor,
+        boxShadow: rootStyle.boxShadow,
         titleGridColumn: titleStyle.gridColumn,
+        titleColor: titleStyle.color,
+        titleBorderLeftWidth: titleStyle.borderLeftWidth,
+        inlineStyle: rootElement.getAttribute('style') ?? '',
         title: position(title),
         a: position(a),
         b: position(b),
@@ -344,19 +350,41 @@ async function main() {
     );
     await layoutProofCanvas.scrollIntoViewIfNeeded();
     await layoutProofCanvas.click({ position: { x: 4, y: 4 }, force: true });
-    const sectionSidebarLayout = page.locator('[data-testid="design-section-layout-sidebar"]');
-    const sectionStackLayout = page.locator('[data-testid="design-section-layout-stack"]');
-    await sectionSidebarLayout.waitFor({ state: 'visible', timeout: 10000 });
-    assert((await page.locator('[data-testid="design-section-layouts"]').count()) === 1, 'section layout gallery is missing for a flow container');
+    const sectionMintSidebarComposition = page.locator(
+      '[data-testid="design-section-composition-mint-sidebar"]',
+    );
+    await sectionMintSidebarComposition.waitFor({ state: 'visible', timeout: 10000 });
+    assert((await page.locator('[data-testid="design-section-compositions"]').count()) === 1, 'section composition gallery is missing for a flow container');
+    const sectionFineTune = page.locator('[data-testid="design-section-fine-tune"]');
+    assert((await sectionFineTune.count()) === 1, 'section fine-tune controls are missing');
+    assert(await sectionFineTune.evaluate((element) => !element.open), 'section fine-tune controls should start collapsed');
+    assert((await page.locator('[data-testid="design-section-layouts"]:visible').count()) === 0, 'section layout gallery should start inside collapsed fine-tune controls');
+    assert((await page.locator('[data-testid="design-section-themes"]:visible').count()) === 0, 'section theme gallery should start inside collapsed fine-tune controls');
     assert((await page.locator('[data-testid="design-control-group-themes"]').count()) === 0, 'ordinary section was misclassified as an input row');
-    await sectionSidebarLayout.click();
+    await sectionMintSidebarComposition.click();
     await frame.waitForFunction((rootId) => {
       const root = document.querySelector(`[data-r20-block-id="${CSS.escape(rootId)}"]`);
       if (!(root instanceof HTMLElement)) return false;
       const style = getComputedStyle(root);
       return style.display === 'grid'
+        && style.backgroundColor === 'rgb(242, 251, 247)'
         && (style.gridTemplateColumns.match(/\d+(?:\.\d+)?px/g)?.length ?? 0) === 2;
     }, ids.layoutProofId, { timeout: 10000 });
+    result.tests.sectionCompositionMintSidebar = await readLayoutProof();
+    const compositionDebug = JSON.stringify(result.tests.sectionCompositionMintSidebar);
+    assert(result.tests.sectionCompositionMintSidebar?.backgroundColor === 'rgb(242, 251, 247)', `section composition did not paint the mint surface: ${compositionDebug}`);
+    assert(result.tests.sectionCompositionMintSidebar?.borderColor === 'rgb(134, 201, 179)', `section composition did not paint the mint border: ${compositionDebug}`);
+    assert(result.tests.sectionCompositionMintSidebar?.titleColor === 'rgb(36, 113, 91)', `section composition did not paint the title: ${compositionDebug}`);
+    assert(result.tests.sectionCompositionMintSidebar?.titleBorderLeftWidth === '4px', `section composition did not paint the title accent: ${compositionDebug}`);
+    assert(!/background|border|display|grid|gap|padding/i.test(result.tests.sectionCompositionMintSidebar?.inlineStyle ?? ''), 'section composition leaked managed presentation into inline HTML');
+    assert(await sectionMintSidebarComposition.getAttribute('aria-pressed') === 'true', 'applied section composition was not marked active');
+
+    await page.locator('[data-testid="design-section-fine-tune-toggle"]').click();
+    assert(await sectionFineTune.evaluate((element) => element.open), 'section fine-tune controls did not expand');
+    const sectionSidebarLayout = page.locator('[data-testid="design-section-layout-sidebar"]');
+    const sectionStackLayout = page.locator('[data-testid="design-section-layout-stack"]');
+    await sectionSidebarLayout.waitFor({ state: 'visible', timeout: 10000 });
+    assert((await page.locator('[data-testid="design-section-layouts"]').count()) === 1, 'section layout gallery is missing for a flow container');
     result.tests.sectionLayoutSidebar = await readLayoutProof();
     const sidebarDebug = JSON.stringify(result.tests.sectionLayoutSidebar);
     assert(result.tests.sectionLayoutSidebar?.display === 'grid', `sidebar layout did not use grid: ${sidebarDebug}`);
@@ -399,9 +427,12 @@ async function main() {
       return root instanceof HTMLElement && getComputedStyle(root).display === 'grid';
     }, ids.layoutProofId, { timeout: 10000 });
     result.tests.sectionLayoutEditFinal = await readLayoutProof();
-    await page.locator('[data-testid="design-section-layouts"]').scrollIntoViewIfNeeded();
+    await page.locator('[data-testid="design-section-fine-tune-toggle"]').click();
+    assert(await sectionFineTune.evaluate((element) => !element.open), 'section fine-tune controls did not collapse');
+    assert(await sectionMintSidebarComposition.getAttribute('aria-pressed') === 'true', 'section composition did not become active again after matching fine tuning');
+    await page.locator('[data-testid="design-section-compositions"]').scrollIntoViewIfNeeded();
     await page.screenshot({
-      path: path.join(REPORT_DIR, 'section-layout-editor.png'),
+      path: path.join(REPORT_DIR, 'section-composition-editor.png'),
       fullPage: false,
     });
 
@@ -1568,6 +1599,11 @@ async function main() {
     await page.locator(
       `[data-testid="edit-layer-row"][data-r20-block-id="${ids.frameId}"]`,
     ).click();
+    const sectionThemeFineTune = page.locator('[data-testid="design-section-fine-tune"]');
+    if ((await sectionThemeFineTune.count()) === 1
+      && await sectionThemeFineTune.evaluate((element) => !element.open)) {
+      await page.locator('[data-testid="design-section-fine-tune-toggle"]').click();
+    }
     const sectionRosePreset = page.locator('[data-testid="design-preset-section-rose"]');
     await sectionRosePreset.waitFor({ state: 'visible', timeout: 10000 });
     assert((await page.locator('[data-testid="design-section-themes"]').count()) === 1, 'coordinated section theme controls are missing');

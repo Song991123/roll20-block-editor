@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type CSSProperties, type KeyboardEvent } from 'react';
-import { Dice5, RotateCcw } from 'lucide-react';
+import { Dice5, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import type { LayerRole } from '@/lib/editor/layerRoles';
 import type {
   ManagedDesignDeclarations,
@@ -32,6 +32,11 @@ import {
   type SectionLayout,
 } from '@/lib/editor/sectionLayouts';
 import {
+  SECTION_COMPOSITIONS,
+  sectionCompositionMatches,
+  type SectionComposition,
+} from '@/lib/editor/sectionCompositions';
+import {
   CONTROL_GROUP_THEMES,
   type ControlGroupTheme,
 } from '@/lib/editor/controlGroupThemes';
@@ -48,6 +53,7 @@ import RollButtonIconControls from './RollButtonIconControls';
 import RollButtonThemeControls from './RollButtonThemeControls';
 import ResultCardThemeControls from './ResultCardThemeControls';
 import SectionDecorationControls from './SectionDecorationControls';
+import SectionCompositionControls from './SectionCompositionControls';
 import SectionLayoutControls from './SectionLayoutControls';
 import SectionThemeControls from './SectionThemeControls';
 import TextDecorationControls from './TextDecorationControls';
@@ -67,6 +73,7 @@ type VisualStyleInspectorProps = {
   onApplyRollButtonTheme?: (themeId: RollButtonTheme['id']) => void;
   sectionLayoutEligible?: boolean;
   onApplySectionLayout?: (layoutId: SectionLayout['id']) => void;
+  onApplySectionComposition?: (compositionId: SectionComposition['id']) => void;
 };
 
 type LayoutMode = 'auto' | 'row' | 'column' | 'grid';
@@ -86,6 +93,7 @@ export default function VisualStyleInspector({
   onApplyRollButtonTheme,
   sectionLayoutEligible = false,
   onApplySectionLayout,
+  onApplySectionComposition,
 }: VisualStyleInspectorProps) {
   const [activeState, setActiveState] = useState<ManagedDesignState>('base');
   const values = valuesByState[activeState] ?? {};
@@ -129,6 +137,16 @@ export default function VisualStyleInspector({
   const sectionLayoutId = sectionLayoutEligible
     ? SECTION_LAYOUTS.find((layout) => sectionLayoutMatches(values, layout))?.id ?? null
     : null;
+  const sectionCompositionId = sectionLayoutEligible
+    ? SECTION_COMPOSITIONS.find((compositionValue) => (
+      sectionCompositionMatches(values, compositionValue)
+    ))?.id ?? null
+    : null;
+  const sectionCompositionVisible = activeState === 'base'
+    && sectionLayoutEligible
+    && presetGroup?.family === 'section'
+    && !controlGroupThemeEligible
+    && Boolean(onApplySectionComposition && onApplySectionLayout && onApplySectionTheme);
   const coordinatedThemeVisible = (
     presetGroup?.family === 'result-card' && Boolean(onApplyResultCardTheme)
   ) || (
@@ -212,7 +230,42 @@ export default function VisualStyleInspector({
         />
       )}
 
-      {activeState === 'base' && sectionLayoutEligible && onApplySectionLayout && (
+      {sectionCompositionVisible && onApplySectionComposition && (
+        <SectionCompositionControls
+          activeCompositionId={sectionCompositionId}
+          onApply={onApplySectionComposition}
+        />
+      )}
+
+      {sectionCompositionVisible && onApplySectionLayout && onApplySectionTheme && (
+        <details
+          className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-2.5"
+          data-testid="design-section-fine-tune"
+        >
+          <summary
+            className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-[var(--text-secondary)]"
+            data-testid="design-section-fine-tune-toggle"
+          >
+            <SlidersHorizontal className="h-4 w-4 text-[var(--primary)]" aria-hidden="true" />
+            배치와 색 따로 바꾸기
+          </summary>
+          <div className="mt-4 space-y-4 border-t border-[var(--border-subtle)] pt-4">
+            <SectionLayoutControls
+              activeLayoutId={sectionLayoutId}
+              onApply={onApplySectionLayout}
+            />
+            <SectionThemeControls
+              activeThemeId={sectionThemeId}
+              onApply={onApplySectionTheme}
+            />
+          </div>
+        </details>
+      )}
+
+      {!sectionCompositionVisible
+        && activeState === 'base'
+        && sectionLayoutEligible
+        && onApplySectionLayout && (
         <SectionLayoutControls
           activeLayoutId={sectionLayoutId}
           onApply={onApplySectionLayout}
@@ -221,6 +274,7 @@ export default function VisualStyleInspector({
 
       {presetGroup?.family === 'section'
         && !controlGroupThemeEligible
+        && !sectionCompositionVisible
         && onApplySectionTheme && (
         <SectionThemeControls
           activeThemeId={sectionThemeId}
