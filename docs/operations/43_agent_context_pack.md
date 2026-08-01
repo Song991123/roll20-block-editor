@@ -52,7 +52,8 @@ the entire history and generated evidence tree.
   ordinary field labels/body/input layers from direct theme targeting. The
   same paper root definition seeds a newly created section box. Synthetic
   browser evidence verifies coordinated frame/title paint and preserved field
-  label paint in both render modes.
+  label paint in both render modes. Commit `937caa6` is pushed to
+  `claude/design-reset`, and GitHub CI run `30679762722` passed.
   This is not arbitrary-sheet actual Roll20 parity.
 - Actual Roll20's built-in default chat-template DOM and typography were
   measured in the dedicated one-member modern Sandbox. The local fallback now

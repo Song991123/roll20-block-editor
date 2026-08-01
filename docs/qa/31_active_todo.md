@@ -17,8 +17,10 @@
 - `VERIFIED LOCAL PARITY`: synthetic Preview/Edit comparison remains exact at
   `0%` mismatch for two fixtures in both modern and legacy modes.
 - `VERIFIED REGRESSION`: full `ci:verify`, lint, and production build pass
-  after the coordinated-theme UI copy and preview refinements. Remote push and
-  CI remain to be checked before promoting this item to remote-verified.
+  after the coordinated-theme UI copy and preview refinements.
+- `VERIFIED REMOTE`: commit `937caa6` is pushed to
+  `claude/design-reset`. GitHub CI run `30679762722` passed safety/unit
+  verification, lint, and build in `1m20s`.
 - `BLOCKED EXTERNAL MODERN`: these generic section themes have not been freshly
   uploaded to the modern Roll20 Sandbox. The supported visible chooser remains
   the only allowed route; local evidence is not actual Roll20 parity.

@@ -14,9 +14,11 @@
   modern/legacy synthetic Preview/Edit visual smoke pass. The four visual
   comparisons remain exact at `0%` mismatch.
 - Full `ci:verify`, lint, and production build pass after the final UI copy and
-  preview refinements. Remote CI remains to be checked. Modern actual Sandbox
-  upload remains blocked at the supported visible file chooser and is not
-  claimed from local evidence.
+  preview refinements. Commit `937caa6` is pushed to
+  `claude/design-reset`; GitHub CI run `30679762722` passed safety/unit
+  verification, lint, and build in `1m20s`.
+- Modern actual Sandbox upload remains blocked at the supported visible file
+  chooser and is not claimed from local evidence.
 
 # 2026-08-01 - Current result-card same-payload correction
 
