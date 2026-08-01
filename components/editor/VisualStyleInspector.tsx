@@ -16,8 +16,10 @@ import {
   type VisualStylePresetScope,
 } from '@/lib/editor/stylePresets';
 import { hasTextDecorationControls } from '@/lib/editor/textDecorationStyle';
+import { hasImageStyleControls } from '@/lib/editor/imageStyle';
 import { cn } from '@/lib/utils/cn';
 import BackgroundImageControls from './BackgroundImageControls';
+import ImageStyleControls from './ImageStyleControls';
 import RollButtonIconControls from './RollButtonIconControls';
 import SectionDecorationControls from './SectionDecorationControls';
 import TextDecorationControls from './TextDecorationControls';
@@ -138,6 +140,10 @@ export default function VisualStyleInspector({
 
       {activeState === 'base' && hasTextDecorationControls(blockType) && (
         <TextDecorationControls values={values} blockType={blockType} onPatch={applyPatch} />
+      )}
+
+      {activeState === 'base' && hasImageStyleControls(blockType) && (
+        <ImageStyleControls values={values} onPatch={applyPatch} />
       )}
 
       <StyleSection title="크기와 여백">

@@ -11319,3 +11319,32 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   is not actual Roll20 visual parity.
 - `NEXT P1`: add image/media fit, position, opacity, and corner controls using
   the same source-preserving visual workflow.
+
+## 2026-08-01 Image Presentation Controls
+
+- `DONE LOCAL`: direct image layers now expose original, fill, fit, and stretch
+  choices, a 3x3 focal-position picker, four opacity levels, and four corner
+  treatments. CSS-backed icon glyphs and non-image media roles are excluded.
+- `DONE LOCAL`: the controls write `object-fit`, `object-position`, `opacity`,
+  and `border-radius` through the selected image's stable managed class. Source
+  URL, alternative text, dimensions, DOM order, and unrelated inline
+  declarations remain unchanged.
+- `VERIFIED LOCAL`: focused design tests, lint, production build, full
+  `ci:verify`, and canonical edit-flow browser smoke pass. The browser proves
+  `contain`, right-bottom,
+  `0.5` opacity, and `8px` corners with byte-stable source field, preserved
+  alternative text and size declarations, exact Edit/Preview computed values,
+  and zero final console/page errors.
+- `VERIFIED LOCAL`: modern and legacy synthetic Preview/Edit comparison remains
+  exact at `0%` mismatch for all four captures. Ignored evidence is under
+  `reports/edit-flow-image-style-r6/` and
+  `reports/preview-edit-image-style-r1/`.
+- `VERIFY / TEST STABILITY`: one first browser run stopped in the existing
+  timing-sensitive canvas multi-selection setup before image checks. Later
+  runs reached the image checks; the final clean run passed.
+- `VERIFY / OPEN EXTERNAL`: actual current-payload image paint in modern
+  Roll20 Sandbox and a dedicated legacy room remains unverified. Local equality
+  is not actual Roll20 visual parity.
+- `NEXT P1`: audit the existing result-template editor as a user-facing dice
+  result designer, then fill missing card, row, value, and image controls
+  without replacing Roll20's runtime template contract.

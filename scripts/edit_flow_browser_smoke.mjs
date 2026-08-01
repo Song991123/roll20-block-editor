@@ -28,6 +28,10 @@ const SYNTHETIC_BACKGROUND_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Z4TQAAAAASUVORK5CYII=',
   'base64',
 );
+const SYNTHETIC_IMAGE_SVG = Buffer.from(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 96"><rect width="80" height="96" fill="#f4b5ca"/><rect x="80" width="80" height="96" fill="#f7d58a"/><rect x="160" width="80" height="96" fill="#8fd7c0"/><circle cx="205" cy="68" r="18" fill="#4d3f47"/></svg>',
+  'utf8',
+);
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -51,6 +55,14 @@ function startServer() {
           'cache-control': 'no-store',
         });
         response.end(SYNTHETIC_BACKGROUND_PNG);
+        return;
+      }
+      if (url === '/synthetic-image.svg') {
+        response.writeHead(200, {
+          'content-type': 'image/svg+xml',
+          'cache-control': 'no-store',
+        });
+        response.end(SYNTHETIC_IMAGE_SVG);
         return;
       }
       if (url.endsWith('/')) url += 'index.html';
@@ -80,6 +92,26 @@ async function main() {
   const server = await startServer();
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1480, height: 960 } });
+  await page.route('https://imgsrv.roll20.net/**', async (route) => {
+    const requestUrl = route.request().url();
+    if (requestUrl.includes('synthetic-background.png')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'image/png',
+        body: SYNTHETIC_BACKGROUND_PNG,
+      });
+      return;
+    }
+    if (requestUrl.includes('synthetic-image.svg')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'image/svg+xml',
+        body: SYNTHETIC_IMAGE_SVG,
+      });
+      return;
+    }
+    await route.continue();
+  });
   const consoleErrors = [];
   const pageErrors = [];
   page.on('console', (message) => {
@@ -175,11 +207,13 @@ async function main() {
     assert(!result.tests.editSurface.shadowEditHost, 'retired Shadow edit host is mounted');
     assert(result.tests.editSurface.layerPanel, 'layer panel is missing');
 
+    const syntheticImageUrl = `http://127.0.0.1:${PORT}${BASE_PATH}/synthetic-image.svg`;
     const syntheticHtml = [
       '<div class="frame" style="width:520px; min-height:220px; padding:16px">',
       '  <h2 class="title" style="font-size:18px; font-weight:700">Character</h2>',
       '  <div class="row-a" style="padding:8px"><label class="field-label">Name</label><input type="text" name="attr_a" value="A"></div>',
       '  <div class="row-b" style="padding:8px"><input type="text" name="attr_b" value="B"></div>',
+      `  <img class="portrait" src="${syntheticImageUrl}" alt="Synthetic portrait" style="width:160px; height:96px; object-fit:cover; object-position:center; opacity:0.9; border-radius:2px">`,
       '</div>',
       '<table class="sheet-table"><tbody><tr class="sheet-table-row">',
       '  <td class="sheet-table-cell-a"><input type="text" name="attr_table_a" value="A"></td>',
@@ -214,6 +248,7 @@ async function main() {
       const fieldLabel = document.querySelector('.sheet-field-label');
       const rowB = document.querySelector('.sheet-row-b');
       const rowBInput = document.querySelector('.sheet-row-b input');
+      const image = document.querySelector('.sheet-portrait');
       const table = document.querySelector('.sheet-table');
       const tableBody = document.querySelector('.sheet-table tbody');
       const tableRow = document.querySelector('.sheet-table-row');
@@ -229,6 +264,7 @@ async function main() {
         labelId: fieldLabel?.getAttribute('data-r20-block-id') ?? null,
         rowBId: rowB?.getAttribute('data-r20-block-id') ?? null,
         rowBInputId: rowBInput?.getAttribute('data-r20-block-id') ?? null,
+        imageId: image?.getAttribute('data-r20-block-id') ?? null,
         tableId: table?.getAttribute('data-r20-block-id') ?? null,
         tableBodyId: tableBody?.getAttribute('data-r20-block-id') ?? null,
         tableRowId: tableRow?.getAttribute('data-r20-block-id') ?? null,
@@ -240,7 +276,7 @@ async function main() {
       };
     });
     assert(
-      ids.frameId && ids.titleId && ids.labelId && ids.rowAId && ids.rowBId && ids.rowBInputId && ids.tableId && ids.tableBodyId
+      ids.frameId && ids.titleId && ids.labelId && ids.rowAId && ids.rowBId && ids.rowBInputId && ids.imageId && ids.tableId && ids.tableBodyId
         && ids.tableRowId && ids.outsideId && ids.groupOneId && ids.groupTwoId,
       `synthetic structural IDs were not emitted: ${JSON.stringify(ids)}`,
     );
@@ -1639,6 +1675,63 @@ async function main() {
     });
 
     await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.imageId}"]`,
+    ).click();
+    const imageStylePanel = page.locator('[data-testid="design-image-style"]');
+    await imageStylePanel.waitFor({ state: 'visible', timeout: 10000 });
+    await page.locator('[data-testid="design-image-fit-contain"]').click();
+    await page.locator('[data-testid="design-image-position-right-bottom"]').click();
+    await page.locator('[data-testid="design-image-opacity-0-5"]').click();
+    await page.locator('[data-testid="design-image-corner-8"]').click();
+    await page.waitForFunction(
+      () => {
+        const css = window.__perfHook.getEmitContent().css;
+        return css.includes('object-fit: contain')
+          && css.includes('object-position: right bottom')
+          && css.includes('opacity: 0.5')
+          && css.includes('border-radius: 8px');
+      },
+      null,
+      { timeout: 10000 },
+    );
+    await page.waitForTimeout(300);
+    result.tests.imageStyle = await frame.evaluate((blockId) => {
+      const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+      if (!(element instanceof HTMLImageElement)) return null;
+      const style = getComputedStyle(element);
+      return {
+        inlineStyle: element.getAttribute('style') ?? '',
+        src: element.getAttribute('src') ?? '',
+        alt: element.getAttribute('alt') ?? '',
+        objectFit: style.objectFit,
+        objectPosition: style.objectPosition,
+        opacity: style.opacity,
+        borderRadius: style.borderRadius,
+        width: style.width,
+        height: style.height,
+      };
+    }, ids.imageId);
+    result.tests.imageStyleModel = await page.evaluate((blockId) => (
+      window.__perfHook.getBlockFields('html', blockId)
+    ), ids.imageId);
+    const imageStyleDebug = JSON.stringify(result.tests.imageStyle);
+    const imageSourceField = result.tests.imageStyleModel?.find((field) => field.name === 'SRC')?.value;
+    assert(result.tests.imageStyle?.src.includes('synthetic-image.svg'), `rendered image source is missing: ${imageStyleDebug}`);
+    assert(imageSourceField === syntheticImageUrl, `image source field changed while styling: ${JSON.stringify(result.tests.imageStyleModel)}`);
+    assert(result.tests.imageStyle?.alt === 'Synthetic portrait', `image alt text changed while styling: ${imageStyleDebug}`);
+    assert(result.tests.imageStyle?.objectFit === 'contain', `image fit did not render: ${imageStyleDebug}`);
+    assert(result.tests.imageStyle?.objectPosition === '100% 100%', `image focus did not render: ${imageStyleDebug}`);
+    assert(result.tests.imageStyle?.opacity === '0.5', `image opacity did not render: ${imageStyleDebug}`);
+    assert(result.tests.imageStyle?.borderRadius === '8px', `image corner did not render: ${imageStyleDebug}`);
+    assert(/width\s*:\s*160px/i.test(result.tests.imageStyle?.inlineStyle ?? '') && /height\s*:\s*96px/i.test(result.tests.imageStyle?.inlineStyle ?? ''), `image dimension declarations changed while styling: ${imageStyleDebug}`);
+    assert(!/object-fit|object-position|opacity|border-radius/i.test(result.tests.imageStyle?.inlineStyle ?? ''), 'image presentation leaked into inline HTML');
+    await imageStylePanel.scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: path.join(REPORT_DIR, 'image-style-editor.png'),
+      fullPage: false,
+    });
+
+    await page.locator(
       `[data-testid="edit-layer-row"][data-r20-block-id="${ids.tableId}"]`,
     ).click();
     const tablePaperPreset = page.locator('[data-testid="design-preset-table-paper"]');
@@ -2019,6 +2112,26 @@ async function main() {
       JSON.stringify(result.tests.labelDecorationPreview)
         === JSON.stringify(result.tests.labelDecoration),
       `label decoration changed between edit and preview: ${JSON.stringify(result.tests.labelDecorationPreview)}`,
+    );
+    result.tests.imageStylePreview = await frame.evaluate((blockId) => {
+      const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+      if (!(element instanceof HTMLImageElement)) return null;
+      const style = getComputedStyle(element);
+      return {
+        inlineStyle: element.getAttribute('style') ?? '',
+        src: element.getAttribute('src') ?? '',
+        alt: element.getAttribute('alt') ?? '',
+        objectFit: style.objectFit,
+        objectPosition: style.objectPosition,
+        opacity: style.opacity,
+        borderRadius: style.borderRadius,
+        width: style.width,
+        height: style.height,
+      };
+    }, ids.imageId);
+    assert(
+      JSON.stringify(result.tests.imageStylePreview) === JSON.stringify(result.tests.imageStyle),
+      `image styling changed between edit and preview: ${JSON.stringify(result.tests.imageStylePreview)}`,
     );
     result.tests.rollButtonPreviewIconStyle = await rollButton.evaluate((button) => {
       const style = getComputedStyle(button, '::before');

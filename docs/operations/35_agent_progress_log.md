@@ -11757,3 +11757,23 @@ same-hash modern/legacy comparison.
   comparisons pass locally.
 - Actual modern Sandbox and dedicated legacy-room title/label paint remain open
   external evidence gates. No actual Roll20 parity claim is made.
+
+## 2026-08-01 - Image presentation controls
+
+- Added a direct-image panel with four fit choices, a 3x3 focal-position picker,
+  four opacity levels, and four corner treatments. Eligibility is explicit to
+  `r20_image`; CSS-backed icon glyphs do not receive `<img>` controls.
+- Kept all presentation in managed CSS. Browser proof confirms that source URL,
+  alternative text, width, height, and unrelated inline declarations survive
+  while the four touched properties leave inline HTML.
+- Extended the canonical edit-flow sheet with an anonymous generated image.
+  The smoke intercepts only that synthetic Roll20 image-proxy request, avoiding
+  external network dependence while retaining the same renderer path.
+- Final browser evidence reports matching Edit/Preview `contain`, right-bottom,
+  `0.5` opacity, `8px` radius, `160x96` dimensions, and zero console/page
+  errors. Modern and legacy synthetic Preview/Edit remains exact at `0%`
+  mismatch for four captures; focused tests, lint, production build, and full
+  `ci:verify` pass.
+- One first run stopped at the known timing-sensitive multi-selection setup;
+  clean later execution passed the full flow. Actual modern Sandbox and
+  dedicated legacy-room image paint remain open external gates.

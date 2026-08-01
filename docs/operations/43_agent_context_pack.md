@@ -19,7 +19,9 @@ the entire history and generated evidence tree.
   visual accent side/color/width, shadow, corner, and inner-spacing treatments.
   Direct title/label text blocks can choose plain/underline/side/band/tag
   treatment, palette/custom color, alignment, size, and weight without changing
-  their tag or text.
+  their tag or text. Direct image blocks can choose original/fill/fit/stretch,
+  a 3x3 focal position, opacity, and corner shape while preserving their source,
+  alternative text, and dimensions; CSS-backed icon glyphs are excluded.
   The authoring path accepts only HTTP(S), warns on HTTP, preserves imported complex
   backgrounds until explicit replacement. Direct Roll buttons expose built-in
   d20 icon visibility, size, text gap, opacity, and color without replacing
@@ -34,9 +36,9 @@ the entire history and generated evidence tree.
   rows/text into flow. The persistent sheet iframe remains mounted separately,
   so card width cannot reflow the sheet. Blockly template-name changes migrate
   root and descendant managed CSS to the new chat scope. Section background and
-  section-decoration paint, title/label paint, and Roll-button icon paint plus
-  modern/legacy sanitizer preservation are locally browser-verified. This is not
-  arbitrary-sheet actual Roll20 parity.
+  section-decoration paint, title/label paint, image paint, and Roll-button icon
+  paint plus modern/legacy sanitizer preservation are locally browser-verified.
+  This is not arbitrary-sheet actual Roll20 parity.
 - Actual Roll20's built-in default chat-template DOM and typography were
   measured in the dedicated one-member modern Sandbox. The local fallback now
   matches its caption/row/inline-roll structure and passes browser smoke.

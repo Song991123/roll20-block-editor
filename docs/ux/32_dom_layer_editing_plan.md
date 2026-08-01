@@ -155,6 +155,11 @@ already-selected insertion position.
 - Runtime text markers and unwrapped text-node emitters do not receive these
   controls. A layer must own a selectable emitted element before the editor
   offers element-level title/label decoration.
+- Direct `r20_image` blocks expose image fit, 3x3 focal position, opacity, and
+  corner controls. The panel edits only ordinary image presentation through
+  the stable managed class; source URL, alternative text, dimensions, and DOM
+  position remain unchanged. CSS-backed `r20_icon` glyphs are excluded because
+  they do not emit an `<img>` element.
 - Managed presentation rules can target the selected element, `::before`, or
   `::after`. Pseudo-element edits never strip the selected element's inline
   declarations. State selectors keep CSS order as pseudo-class then
