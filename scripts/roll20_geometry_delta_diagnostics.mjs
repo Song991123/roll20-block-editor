@@ -12,15 +12,17 @@
  */
 
 import { existsSync } from 'node:fs';
+import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
+const selfTest = args.includes('--self-test');
 const runDirArg = firstPositionalArg() ?? '';
 const runDir = path.resolve(runDirArg);
 const rawOutDir = readOption('--out-dir', '');
 
-if (!runDirArg) {
+if (!selfTest && !runDirArg) {
   console.error('Usage: node scripts/roll20_geometry_delta_diagnostics.mjs reports/roll20-actual-compare/<label> [--out-dir <writable-report-dir>]');
   process.exit(2);
 }
@@ -44,6 +46,11 @@ function firstPositionalArg() {
 }
 
 async function main() {
+  if (selfTest) {
+    await runSelfTest();
+    console.log('ROLL20 GEOMETRY DELTA DIAGNOSTICS SELF-TEST PASS');
+    return;
+  }
   const sameContext = await readJsonIfExists(sameContextFile);
   const fullRoot = await readJsonIfExists(fullRootFile);
   const localBaseline = await readJsonIfExists(localBaselineFile);
@@ -80,6 +87,7 @@ async function main() {
     fixtures,
     summary: {
       compared: fixtures.filter((fixture) => fixture.status === 'COMPARED').length,
+      rootOnly: fixtures.filter((fixture) => fixture.status === 'ROOT_ONLY').length,
       skipped: fixtures.filter((fixture) => fixture.status === 'SKIP').length,
       parityVerified: false,
     },
@@ -183,15 +191,18 @@ async function analyzeFullRootFixture(fixture, localBaselineFixture, payloadRoun
   const contentFindings = buildFindingsFromFullRootGeometry(fixture.targetGeometry);
   const topFindings = contentFindings.slice(0, 12);
   const selectorFindings = contentFindings;
+  const localCaptureRect = fixture.bestCandidate.captureTargetRect
+    ?? fixture.bestCandidate.rootRect
+    ?? null;
   const root = {
-    widthDelta: delta(fixture.bestCandidate.rootRect?.width, fixture.actual?.outputCss?.w ?? fixture.actual?.size?.w),
-    heightDelta: fixture.bestCandidate.rootHeightDelta ?? delta(fixture.bestCandidate.rootRect?.height, fixture.actual?.outputCss?.h ?? fixture.actual?.size?.h),
+    widthDelta: delta(localCaptureRect?.width, fixture.actual?.outputCss?.w ?? fixture.actual?.size?.w),
+    heightDelta: fixture.bestCandidate.rootHeightDelta ?? delta(localCaptureRect?.height, fixture.actual?.outputCss?.h ?? fixture.actual?.size?.h),
     fullHeightEvidence: true,
     width: null,
     height: {
       field: 'rect.height',
       actual: fixture.actual?.outputCss?.h ?? fixture.actual?.size?.h ?? null,
-      local: fixture.bestCandidate.rootRect?.height ?? fixture.bestCandidate.localSize?.h ?? null,
+      local: localCaptureRect?.height ?? fixture.bestCandidate.localSize?.h ?? null,
       delta: fixture.bestCandidate.rootHeightDelta ?? null,
     },
     boxSizing: null,
@@ -209,7 +220,7 @@ async function analyzeFullRootFixture(fixture, localBaselineFixture, payloadRoun
 
   return {
     fixtureId: fixture.fixtureId,
-    status: 'COMPARED',
+    status: actualTargetGeometry ? 'COMPARED' : 'ROOT_ONLY',
     evidenceSource: 'full-root-candidate-smoke',
     bestCandidate: {
       id: fixture.bestCandidate.id,
@@ -217,11 +228,13 @@ async function analyzeFullRootFixture(fixture, localBaselineFixture, payloadRoun
       nativeMismatchRatio: fixture.bestCandidate.nativeCompare?.mismatchRatio ?? null,
       computedStyleScore: fixture.bestCandidate.computedStyleScore ?? null,
     },
-    countsMatched: Boolean(
-      fixture.targetGeometry?.counts?.rows?.actual === fixture.targetGeometry?.counts?.rows?.local &&
-      fixture.targetGeometry?.counts?.images?.actual === fixture.targetGeometry?.counts?.images?.local &&
-      fixture.targetGeometry?.counts?.tables?.actual === fixture.targetGeometry?.counts?.tables?.local,
-    ),
+    countsMatched: actualTargetGeometry && fixture.targetGeometry?.status === 'COMPARED'
+      ? Boolean(
+          fixture.targetGeometry?.counts?.rows?.actual === fixture.targetGeometry?.counts?.rows?.local &&
+          fixture.targetGeometry?.counts?.images?.actual === fixture.targetGeometry?.counts?.images?.local &&
+          fixture.targetGeometry?.counts?.tables?.actual === fixture.targetGeometry?.counts?.tables?.local
+        )
+      : null,
     root,
     selectorFindings,
     topFindings,
@@ -654,7 +667,7 @@ function buildNextChecks({ root, topFindings, contentFindings, selectorFindings,
 }
 
 function renderMarkdown(report) {
-  const hasFullHeightEvidence = report.fixtures.some((fixture) => fixture.status === 'COMPARED' && fixture.root?.fullHeightEvidence);
+  const hasFullHeightEvidence = report.fixtures.some((fixture) => fixture.status !== 'SKIP' && fixture.root?.fullHeightEvidence);
   const lines = [
     '# Roll20 Geometry Delta Diagnostics',
     '',
@@ -667,17 +680,22 @@ function renderMarkdown(report) {
     '| --- | --- | --- | ---: | ---: | ---: | --- |',
   ];
   for (const fixture of report.fixtures) {
-    if (fixture.status !== 'COMPARED') {
+    if (fixture.status === 'SKIP') {
       lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} |  |  |  |  | ${fixture.reason ?? ''} |`);
       continue;
     }
     const top = [...(fixture.contentFindings ?? [])]
       .filter((item) => typeof item.rect?.heightDelta === 'number')
       .sort((a, b) => Math.abs(b.rect.heightDelta) - Math.abs(a.rect.heightDelta))[0] ?? fixture.contentFindings[0] ?? fixture.topFindings[0];
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.bestCandidate.id} | ${pct(fixture.bestCandidate.mismatchRatio)} | ${num(fixture.root.heightDelta)}px | ${fixture.countsMatched ? 'yes' : 'no'} | ${top ? `${top.selector}: height ${num(top.rect.heightDelta)}px, y ${num(top.rect.yDelta)}px` : ''} |`);
+    const countsMatched = fixture.countsMatched === true
+      ? 'yes'
+      : fixture.countsMatched === false
+        ? 'no'
+        : 'unknown';
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.bestCandidate.id} | ${pct(fixture.bestCandidate.mismatchRatio)} | ${num(fixture.root.heightDelta)}px | ${countsMatched} | ${top ? `${top.selector}: height ${num(top.rect.heightDelta)}px, y ${num(top.rect.yDelta)}px` : 'actual target geometry not captured'} |`);
   }
 
-  for (const fixture of report.fixtures.filter((item) => item.status === 'COMPARED')) {
+  for (const fixture of report.fixtures.filter((item) => item.status !== 'SKIP')) {
     lines.push('');
     lines.push(`## ${fixture.fixtureId}`);
     lines.push('');
@@ -794,6 +812,9 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('- Matching selector counts here do not prove visual parity.');
   lines.push('- Geometry deltas here are root-cause clues only.');
+  if (report.summary.rootOnly > 0) {
+    lines.push('- `ROOT_ONLY` means the authored-root dimensions were compared without an actual element-level geometry sidecar; selector and row geometry remain unknown.');
+  }
   if (hasFullHeightEvidence) {
     lines.push('- The stitched full-height Roll20 root evidence narrows this fixture to geometry work, but it still does not prove full-sheet visual parity.');
   } else {
@@ -904,6 +925,33 @@ function fmtSize(size) {
   return typeof width === 'number' && typeof height === 'number'
     ? `${Math.round(width)}x${Math.round(height)}`
     : '';
+}
+
+async function runSelfTest() {
+  const fixture = await analyzeFullRootFixture({
+    fixtureId: '__geometry-diagnostics-self-test-no-sidecar__',
+    actual: {
+      outputCss: { w: 420, h: 180 },
+      size: { w: 420, h: 180 },
+    },
+    bestCandidate: {
+      id: 'candidate',
+      mismatchRatio: 0.03,
+      rootRect: { x: 0, y: 0, width: 850, height: 200 },
+      captureTargetRect: { x: 0, y: 0, width: 420, height: 180 },
+      rootHeightDelta: 0,
+      localSize: { w: 420, h: 180 },
+      metrics: { targetGeometry: null },
+    },
+    targetGeometry: null,
+    baselineReference: null,
+  }, null, null);
+
+  assert.equal(fixture.status, 'ROOT_ONLY');
+  assert.equal(fixture.countsMatched, null);
+  assert.equal(fixture.root.widthDelta, 0);
+  assert.equal(fixture.root.heightDelta, 0);
+  assert.equal(fixture.targetGeometry.status, 'SKIP');
 }
 
 async function readJsonRequired(file) {

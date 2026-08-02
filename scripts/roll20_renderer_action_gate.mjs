@@ -259,6 +259,9 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
     const geometryFixture = findFixture(geometry, fixtureId);
     const targets = Object.fromEntries((statusFixture?.actualTargets ?? []).map((target) => [target.id, target.validation]));
     const attrClassSidecar = readAttrClassSidecarSync(runDir, fixtureId);
+    const trustedFullRootCandidate = fullRootFixture?.status === 'COMPARED'
+      ? fullRootFixture.recommendedCandidate ?? fullRootFixture.bestCandidate ?? null
+      : null;
 
     return {
       fixtureId,
@@ -286,14 +289,16 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
             belowValues: rootCutoffFixture.cutoff?.belowValues ?? [],
           }
         : null,
-      bestCandidate: fullRootFixture?.bestCandidate
+      bestCandidate: trustedFullRootCandidate
         ? {
-            id: fullRootFixture.bestCandidate.id,
-            mismatchRatio: fullRootFixture.bestCandidate.mismatchRatio,
-            mismatchPct: pctNumber(fullRootFixture.bestCandidate.mismatchRatio),
-            rootHeightDelta: fullRootFixture.bestCandidate.rootHeightDelta ?? null,
-            patch: candidatePatch(fullRootFixture.bestCandidate),
-            localSize: fullRootFixture.bestCandidate.localSize ?? null,
+            id: trustedFullRootCandidate.id,
+            mismatchRatio: trustedFullRootCandidate.mismatchRatio,
+            mismatchPct: pctNumber(trustedFullRootCandidate.mismatchRatio),
+            rootHeightDelta: trustedFullRootCandidate.rootHeightDelta ?? null,
+            patch: candidatePatch(trustedFullRootCandidate),
+            localSize: trustedFullRootCandidate.localSize ?? null,
+            evidenceKind: trustedFullRootCandidate.evidenceKind ?? 'diagnostic-candidate',
+            noChange: Boolean(trustedFullRootCandidate.noChange),
           }
         : null,
       closestRootHeightCandidate: fullRootFixture?.closestRootHeightCandidate
@@ -572,7 +577,10 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   }
 
   for (const fixture of compared) {
-    positiveFindings.push(`${fixture.fixtureId} best diagnostic candidate ${fixture.bestCandidate.id} at ${fixture.bestCandidate.mismatchPct}% with root delta ${num(fixture.bestCandidate.rootHeightDelta)}px`);
+    const evidenceLabel = fixture.bestCandidate.noChange
+      ? 'trusted no-change authored-root baseline'
+      : 'best diagnostic candidate';
+    positiveFindings.push(`${fixture.fixtureId} ${evidenceLabel} ${fixture.bestCandidate.id} at ${fixture.bestCandidate.mismatchPct}% with root delta ${num(fixture.bestCandidate.rootHeightDelta)}px`);
   }
   for (const fixture of compared.filter((item) => item.rootCutoff?.risk === 'HIGH')) {
     warnings.push(`${fixture.fixtureId} trusted full-root candidate result is excluded from reliable patch-family comparison because root-cutoff risk is HIGH.`);

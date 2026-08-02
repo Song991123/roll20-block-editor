@@ -8,23 +8,18 @@
  * sandbox-sanitize, and root-width/flow geometry causes before renderer changes.
  */
 
-import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
+import { buildSheetDoc } from '../lib/preview/buildDoc.ts';
 import { ROLL20_LAYOUT_SELECTORS } from './lib/roll20LayoutSelectors.mjs';
 
-const here = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(here, '..');
-const require = createRequire(import.meta.url);
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
+const selfTest = args.includes('--self-test');
 const threshold = Number(argOf('--threshold', '60'));
 const actualEvidenceMode = argOf('--actual-evidence', 'trusted');
 const rawOutDir = argOf('--out-dir', '');
-const rawBuildDir = argOf('--build-dir', '');
 const positionalArgs = positionalArguments(args);
 const runDir = path.resolve(positionalArgs[0] ?? '');
 const outDir = rawOutDir
@@ -32,14 +27,8 @@ const outDir = rawOutDir
   : path.join(runDir, actualEvidenceMode === 'scroll-metrics'
     ? 'full-root-candidate-smoke-scroll-metrics'
     : 'full-root-candidate-smoke');
-const buildOutRoot = rawBuildDir
-  ? path.resolve(rawBuildDir)
-  : rawOutDir
-    ? path.join(outDir, '.build')
-    : path.join(repoRoot, '.tmp/full-root-candidate-build');
-
-if (!positionalArgs[0]) {
-  console.error('Usage: node scripts/roll20_full_root_candidate_smoke.mjs reports/roll20-actual-compare/<label> [--actual-evidence trusted|scroll-metrics] [--out-dir <writable-report-dir>] [--build-dir <writable-build-dir>]');
+if (!selfTest && !positionalArgs[0]) {
+  console.error('Usage: tsx scripts/roll20_full_root_candidate_smoke.mjs reports/roll20-actual-compare/<label> [--actual-evidence trusted|scroll-metrics] [--out-dir <writable-report-dir>]');
   process.exit(2);
 }
 
@@ -64,8 +53,12 @@ function positionalArguments(rawArgs) {
 }
 
 async function main() {
+  if (selfTest) {
+    await runSelfTest();
+    console.log('ROLL20 FULL-ROOT CANDIDATE SELF-TEST PASS');
+    return;
+  }
   const baseline = await readJsonRequired(path.join(runDir, 'local-baseline-results.json'));
-  const { buildSheetDoc } = require(resolveBuildDocModule());
   if (typeof buildSheetDoc !== 'function') throw new Error('buildSheetDoc export missing');
 
   const browser = await chromium.launch({ headless: true });
@@ -126,6 +119,7 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
   const actualFile = actualEvidence?.screenshot ?? path.join(shotsDir, 'roll20-sandbox-root-full-dpr-corrected.png');
   const actualMetaFile = actualEvidence?.meta ?? actualFile.replace(/\.png$/i, '.json');
   const localPreviewFile = path.join(shotsDir, 'local-preview.png');
+  const localAuthoredRootFile = path.join(shotsDir, 'local-authored-root.png');
   if (!actualEvidence) {
     return {
       fixtureId,
@@ -140,13 +134,23 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
   await rm(artifactDir, { recursive: true, force: true });
   await mkdir(artifactDir, { recursive: true });
   const baselineFixture = baseline.fixtures?.find((fixture) => fixture.id === fixtureId) ?? null;
+  const authoredRootCapture = baselineFixture?.previewDom?.authoredRootCapture ?? null;
   const stateCandidate = baselineFixture?.previewDom?.stateCandidate ?? baselineFixture?.previewStateCandidate ?? null;
   const actualMeta = await readJsonIfExists(actualMetaFile);
+  const captureManifest = await readJsonIfExists(path.join(shotsDir, 'roll20-root-dpr-corrected-manifest.json'));
+  const actualDeviceScaleFactor = positiveNumber(captureManifest?.scale?.x) ?? 1;
   const actualStyleProbe = await readJsonIfExists(path.join(runDir, 'live-iframe-probe', `${fixtureId}-computed-styles.json`));
   const actualTargetGeometry = await readActualTargetGeometry(fixtureId);
   const actualSize = actualMeta?.outputSize ?? await imageSize(comparePage, actualFile);
-  const baselineReference = existsSync(localPreviewFile)
-    ? await compareExistingReference({ comparePage, localPreviewFile, actualFile, actualSize })
+  const localReferenceFile = existsSync(localAuthoredRootFile) ? localAuthoredRootFile : localPreviewFile;
+  const baselineReference = existsSync(localReferenceFile)
+    ? await compareExistingReference({
+        comparePage,
+        localReferenceFile,
+        referenceKind: existsSync(localAuthoredRootFile) ? 'authored-root' : 'sheet-wrapper-fallback',
+        actualFile,
+        actualSize,
+      })
     : null;
   const actualRootWidth = Number(actualStyleProbe?.root?.rect?.width ?? actualSize.w ?? 0) || null;
   const baselineRootWidth = Number(baselineFixture?.previewDom?.rect?.width ?? 0) || 850;
@@ -160,7 +164,10 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
   const attrClassVisibility = await readAttrClassVisibilityDiagnostic(fixtureId);
   const stateProbeValues = deriveAttrClassStateProbeValues({ payload, stateCandidate, maxCount: 14 });
 
-  const context = await browser.newContext({ viewport: { width: Math.max(1200, Math.round((actualRootWidth ?? 900) + 80)), height: 900 } });
+  const context = await browser.newContext({
+    viewport: { width: Math.max(1200, Math.round((actualRootWidth ?? 900) + 80)), height: 900 },
+    deviceScaleFactor: actualDeviceScaleFactor,
+  });
   const page = await context.newPage();
   const candidates = [];
   try {
@@ -216,6 +223,8 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
         buildSheetDoc,
         payload,
         stateCandidate,
+        authoredRootCapture,
+        captureDeviceScaleFactor: actualDeviceScaleFactor,
         actualFile,
         actualSize,
         artifactDir,
@@ -238,6 +247,9 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
   const stateBest = candidates
     .filter((candidate) => candidate.applyStateHint && !candidate.contextPatch)
     .reduce((best, candidate) => pickBetterCandidate(best, candidate), null);
+  const recommendedCandidate = actualEvidence.diagnosticOnly
+    ? null
+    : selectRecommendedRendererEvidence({ bestCandidate, baselineReference, actualSize });
 
   return {
     fixtureId,
@@ -254,6 +266,9 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
     localBaseline: {
       previewSize: baselineFixture?.previewDom?.rect ?? null,
       previewScreenshot: existsSync(localPreviewFile) ? localPreviewFile : null,
+      authoredRootScreenshot: existsSync(localAuthoredRootFile) ? localAuthoredRootFile : null,
+      authoredRootCapture,
+      captureDeviceScaleFactor: actualDeviceScaleFactor,
       stateHint: summarizeStateCandidate(stateCandidate),
       attrClassValues: attrClassValues.slice(0, 50),
       derivedStateProbeValues: stateProbeValues,
@@ -267,6 +282,7 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
     },
     baselineReference,
     bestCandidate: actualEvidence.diagnosticOnly ? null : bestCandidate,
+    recommendedCandidate,
     diagnosticBestCandidate: actualEvidence.diagnosticOnly ? bestCandidate : null,
     bestGeometryCandidate,
     closestRootHeightCandidate,
@@ -275,6 +291,27 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
     interpretation: interpret({ bestCandidate, bestGeometryCandidate, closestRootHeightCandidate, sourceBest, stateBest, baselineReference, actualTargetGeometry }),
     targetGeometry: compareTargetGeometry(actualTargetGeometry, (bestGeometryCandidate ?? closestRootHeightCandidate ?? bestCandidate)?.metrics?.targetGeometry),
   };
+}
+
+function selectRecommendedRendererEvidence({ bestCandidate, baselineReference, actualSize }) {
+  if (!bestCandidate && !baselineReference) return null;
+  if (baselineReference?.referenceKind === 'authored-root'
+    && (!bestCandidate || baselineReference.mismatchRatio <= bestCandidate.mismatchRatio)) {
+    return {
+      id: baselineReference.id,
+      evidenceKind: 'existing-product-baseline',
+      noChange: true,
+      roll20RendererModel: 'default',
+      contextPatch: null,
+      mismatchRatio: baselineReference.mismatchRatio,
+      localSize: baselineReference.localSize,
+      rootHeightDelta: delta(baselineReference.localSize?.h, actualSize?.h),
+      captureTarget: { kind: 'authored-root' },
+    };
+  }
+  return bestCandidate
+    ? { ...bestCandidate, evidenceKind: 'diagnostic-candidate', noChange: false }
+    : null;
 }
 
 function selectActualFullRootEvidence(shotsDir) {
@@ -409,22 +446,23 @@ function numOrNull(value) {
   return Number.isFinite(value) ? Number(value.toFixed(3)) : null;
 }
 
-async function compareExistingReference({ comparePage, localPreviewFile, actualFile, actualSize }) {
-  const localSize = await imageSize(comparePage, localPreviewFile);
+async function compareExistingReference({ comparePage, localReferenceFile, referenceKind, actualFile, actualSize }) {
+  const localSize = await imageSize(comparePage, localReferenceFile);
   const comparedSize = {
     w: Math.min(localSize.w, actualSize.w),
     h: Math.min(localSize.h, actualSize.h),
   };
   const compare = await compareImages(comparePage, {
-    localFile: localPreviewFile,
+    localFile: localReferenceFile,
     actualFile,
     comparedSize,
   });
   delete compare.overlayDataUrl;
   delete compare.dominantCropDataUrls;
   return {
-    id: 'local-baseline-preview',
-    screenshot: localPreviewFile,
+    id: `local-baseline-${referenceKind}`,
+    referenceKind,
+    screenshot: localReferenceFile,
     localSize,
     ...compare,
   };
@@ -438,6 +476,8 @@ async function renderCandidate({
   payload,
   baselineRootWidth,
   stateCandidate,
+  authoredRootCapture,
+  captureDeviceScaleFactor,
   applyStateHint,
   roll20SandboxSanitize,
   roll20RendererModel = 'default',
@@ -462,6 +502,8 @@ async function renderCandidate({
   if (contextPatch) await applyRenderContextPatch(page, contextPatch, payload);
   if (applyStateHint) await applyStateCandidate(page, stateCandidate);
   await page.waitForTimeout(300);
+
+  const captureTarget = await resolveCandidateCaptureTarget(page, authoredRootCapture);
 
   const metrics = await page.evaluate((layoutSelectors) => {
     const root = document.querySelector('.charactersheet.charsheet');
@@ -571,13 +613,13 @@ async function renderCandidate({
     }
   }, ROLL20_LAYOUT_SELECTORS);
 
-  const rootBox = await page.locator('.charactersheet.charsheet').boundingBox();
-  if (!rootBox) throw new Error(`candidate ${id} has no .charactersheet.charsheet`);
+  const captureTargetBox = await captureTarget.locator.boundingBox();
+  if (!captureTargetBox) throw new Error(`candidate ${id} has no visible ${captureTarget.kind} capture target`);
   const screenshot = path.join(artifactDir, `${id}.png`);
-  await page.locator('.charactersheet.charsheet').screenshot({ path: screenshot });
+  await captureTarget.locator.screenshot({ path: screenshot, scale: 'css' });
   const comparedSize = {
-    w: Math.min(Math.round(rootBox.width), actualSize.w),
-    h: Math.min(Math.round(rootBox.height), actualSize.h),
+    w: Math.min(Math.round(captureTargetBox.width), actualSize.w),
+    h: Math.min(Math.round(captureTargetBox.height), actualSize.h),
   };
   const compare = await compareImages(comparePage, {
     localFile: screenshot,
@@ -604,12 +646,86 @@ async function renderCandidate({
     dominantCrop,
     localSize: await imageSize(comparePage, screenshot),
     rootRect: metrics.rootRect,
-    rootHeightDelta: typeof metrics.rootRect?.height === 'number'
-      ? Number((metrics.rootRect.height - actualSize.h).toFixed(3))
+    captureTarget: captureTarget.evidence,
+    captureTargetRect: captureTargetBox,
+    captureDeviceScaleFactor,
+    rootHeightDelta: typeof captureTargetBox.height === 'number'
+      ? Number((captureTargetBox.height - actualSize.h).toFixed(3))
       : null,
     metrics,
     ...compare,
   };
+}
+
+async function resolveCandidateCaptureTarget(page, authoredRootCapture) {
+  const sheetRoot = page.locator('.charactersheet.charsheet');
+  if (await sheetRoot.count() !== 1) {
+    throw new Error('candidate document must contain exactly one .charactersheet.charsheet root');
+  }
+  const directChildren = sheetRoot.locator(':scope > *');
+  const childCount = await directChildren.count();
+  const expectedIndex = Number(authoredRootCapture?.childIndex);
+  if (authoredRootCapture?.status === 'CAPTURED'
+    && Number.isInteger(expectedIndex)
+    && expectedIndex >= 0
+    && expectedIndex < childCount) {
+    const locator = directChildren.nth(expectedIndex);
+    const identity = await readLocatorIdentity(locator);
+    const expectedTag = String(authoredRootCapture.tagName ?? '').toUpperCase();
+    const expectedClasses = classTokens(authoredRootCapture.className);
+    const actualClasses = new Set(classTokens(identity.className));
+    const identityMatches = (!expectedTag || identity.tagName === expectedTag)
+      && expectedClasses.every((token) => actualClasses.has(token));
+    if (!identityMatches) {
+      throw new Error(`authored-root identity changed at child ${expectedIndex}: expected ${expectedTag || '*'} ${expectedClasses.join('.')}, got ${identity.tagName} ${identity.className}`);
+    }
+    return {
+      locator,
+      kind: 'authored-root',
+      evidence: { kind: 'authored-root', childIndex: expectedIndex, ...identity },
+    };
+  }
+
+  const visibleChildren = [];
+  for (let index = 0; index < childCount; index += 1) {
+    const locator = directChildren.nth(index);
+    const box = await locator.boundingBox();
+    if (box && box.width > 0 && box.height > 0) visibleChildren.push({ index, locator });
+  }
+  if (visibleChildren.length === 1) {
+    const [{ index, locator }] = visibleChildren;
+    return {
+      locator,
+      kind: 'authored-root-inferred',
+      evidence: { kind: 'authored-root-inferred', childIndex: index, ...(await readLocatorIdentity(locator)) },
+    };
+  }
+  return {
+    locator: sheetRoot,
+    kind: 'sheet-wrapper-fallback',
+    evidence: {
+      kind: 'sheet-wrapper-fallback',
+      childCount,
+      visibleChildCount: visibleChildren.length,
+      reason: 'baseline authored-root identity unavailable or ambiguous',
+    },
+  };
+}
+
+async function readLocatorIdentity(locator) {
+  return locator.evaluate((element) => ({
+    tagName: element.tagName,
+    className: element.getAttribute('class') ?? '',
+  }));
+}
+
+function classTokens(value) {
+  return String(value ?? '').trim().split(/\s+/).filter(Boolean);
+}
+
+function positiveNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : null;
 }
 
 async function applyRenderContextPatch(page, patch, payload = null) {
@@ -1406,7 +1522,7 @@ function compareIndexed(actualItems, localItems) {
 function interpret({ bestCandidate, bestGeometryCandidate, closestRootHeightCandidate, sourceBest, stateBest, baselineReference, actualTargetGeometry }) {
   const notes = [];
   if (baselineReference && bestCandidate && baselineReference.mismatchRatio < bestCandidate.mismatchRatio - 0.005) {
-    notes.push(`existing app local-preview is closer than direct candidates by ${pct(bestCandidate.mismatchRatio - baselineReference.mismatchRatio)}; inspect app preview sizing/runtime before renderer CSS changes`);
+    notes.push(`existing app authored-root reference is closer than direct candidates by ${pct(bestCandidate.mismatchRatio - baselineReference.mismatchRatio)}; keep the current renderer until same-context evidence explains the raster difference`);
   }
   if (bestGeometryCandidate && bestCandidate && bestGeometryCandidate.id !== bestCandidate.id) {
     notes.push(`geometry-fit best is ${bestGeometryCandidate.id} (score ${num(bestGeometryCandidate.geometryFit?.score)}), but pixel best is ${bestCandidate.id}; do not patch from geometry alone`);
@@ -1484,7 +1600,7 @@ function summarizeGeometryFit({ actualSize, actualTargetGeometry, candidate }) {
   const statePanelHeightDelta = panelFindings.find((finding) => typeof finding.heightDelta === 'number')?.heightDelta ?? null;
   const statePanelComparedCount = panelFindings.filter((finding) => finding.status === 'COMPARED').length;
   const statePanelMissingCount = panelFindings.filter((finding) => finding.status === 'MISSING').length;
-  const rootHeightDelta = delta(candidate.metrics.rootRect.height, actualSize.h);
+  const rootHeightDelta = delta(candidate.captureTargetRect?.height, actualSize.h);
   const scoreParts = [rootHeightDelta, row0Delta, row3Delta, statePanelYDelta, statePanelHeightDelta]
     .filter((value) => typeof value === 'number')
     .map((value, index) => Math.abs(value) * (index === 0 ? 1 : 2));
@@ -1662,7 +1778,10 @@ function renderMarkdown(report) {
     lines.push(`Actual state: \`${JSON.stringify(fixture.actual.state ?? {})}\``);
     lines.push(`Local state hint: \`${JSON.stringify(fixture.localBaseline.stateHint ?? {})}\``);
     if (fixture.baselineReference) {
-      lines.push(`Existing app local-preview reference: ${pct(fixture.baselineReference.mismatchRatio)} at ${fmtSize(fixture.baselineReference.localSize)}.`);
+      lines.push(`Existing app ${fixture.baselineReference.referenceKind} reference: ${pct(fixture.baselineReference.mismatchRatio)} at ${fmtSize(fixture.baselineReference.localSize)}.`);
+    }
+    if (fixture.recommendedCandidate) {
+      lines.push(`Renderer decision: \`${fixture.recommendedCandidate.id}\` (${fixture.recommendedCandidate.noChange ? 'keep current renderer' : 'diagnostic candidate'}, ${pct(fixture.recommendedCandidate.mismatchRatio)}).`);
     }
     lines.push('');
     lines.push('| Candidate | Sandbox | State hint | Patch | Mismatch | Dominant diff | Dominant crop | Geometry score | Row0/Row3 delta | Root size | Height delta | Bounds | Screenshot | Overlay |');
@@ -1827,28 +1946,53 @@ async function writeDominantCropArtifacts({ artifactDir, candidateId, cropDataUr
   return result;
 }
 
-function resolveBuildDocModule() {
-  const outRoot = buildOutRoot;
-  const compiled = path.join(outRoot, 'lib/preview/buildDoc.js');
-  const tsPath = path.join(repoRoot, 'lib/preview/buildDoc.ts');
-  const tscJs = path.join(repoRoot, 'node_modules/typescript/lib/tsc.js');
-  if (!existsSync(tsPath)) throw new Error(`preview builder not found: ${tsPath}`);
-  if (!existsSync(tscJs)) throw new Error(`TypeScript compiler not found: ${tscJs}`);
-  execFileSync(process.execPath, [
-    tscJs,
-    '--module', 'commonjs',
-    '--moduleResolution', 'node',
-    '--target', 'ES2020',
-    '--outDir', outRoot,
-    '--rootDir', repoRoot,
-    'lib/preview/buildDoc.ts',
-    '--esModuleInterop',
-    '--skipLibCheck',
-    '--noEmit', 'false',
-    '--declaration', 'false',
-  ], { cwd: repoRoot, stdio: 'pipe' });
-  if (!existsSync(compiled)) throw new Error(`preview builder compile did not produce ${compiled}`);
-  return compiled;
+async function runSelfTest() {
+  if (typeof buildSheetDoc !== 'function') throw new Error('buildSheetDoc export missing');
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const context = await browser.newContext({
+      viewport: { width: 500, height: 300 },
+      deviceScaleFactor: 1.25,
+    });
+    const page = await context.newPage();
+    await page.setContent(`
+      <div class="charactersheet charsheet">
+        <script type="text/worker">void 0;</script>
+        <section class="sheet-proof extra" style="width:123px;height:45px"></section>
+      </div>
+    `);
+    const explicit = await resolveCandidateCaptureTarget(page, {
+      status: 'CAPTURED',
+      childIndex: 1,
+      tagName: 'SECTION',
+      className: 'sheet-proof',
+    });
+    const explicitBox = await explicit.locator.boundingBox();
+    if (explicit.kind !== 'authored-root'
+      || Math.round(explicitBox?.width ?? 0) !== 123
+      || Math.round(explicitBox?.height ?? 0) !== 45) {
+      throw new Error(`explicit authored-root selection failed: ${JSON.stringify({ kind: explicit.kind, explicitBox })}`);
+    }
+    const cssScalePng = await explicit.locator.screenshot({ scale: 'css' });
+    if (cssScalePng.readUInt32BE(16) !== 123 || cssScalePng.readUInt32BE(20) !== 45) {
+      throw new Error(`CSS-scale screenshot changed authored-root size: ${cssScalePng.readUInt32BE(16)}x${cssScalePng.readUInt32BE(20)}`);
+    }
+    const inferred = await resolveCandidateCaptureTarget(page, null);
+    if (inferred.kind !== 'authored-root-inferred' || inferred.evidence.childIndex !== 1) {
+      throw new Error(`inferred authored-root selection failed: ${JSON.stringify(inferred.evidence)}`);
+    }
+    const noChange = selectRecommendedRendererEvidence({
+      bestCandidate: { id: 'patched', mismatchRatio: 0.04, localSize: { w: 123, h: 45 }, rootHeightDelta: 0 },
+      baselineReference: { id: 'baseline', referenceKind: 'authored-root', mismatchRatio: 0.02, localSize: { w: 123, h: 45 } },
+      actualSize: { w: 123, h: 45 },
+    });
+    if (!noChange?.noChange || noChange.id !== 'baseline' || noChange.rootHeightDelta !== 0) {
+      throw new Error(`baseline recommendation failed: ${JSON.stringify(noChange)}`);
+    }
+    await context.close();
+  } finally {
+    await browser.close();
+  }
 }
 
 main().catch((error) => {

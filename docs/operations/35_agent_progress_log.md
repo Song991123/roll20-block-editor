@@ -15,6 +15,28 @@ or source-derived measurement here.
 - Remote CI: passed safety/unit verification, lint, and production build.
 - Worktree and project server state were clean after the run.
 
+## 2026-08-03 - Authored-Root Evidence Alignment
+
+- Repaired the full-root candidate runner to use the product's real document
+  builder and compare the exact authored top-level element selected by the
+  local baseline, instead of comparing a Roll20 wrapper against sheet content.
+- Matched the transient browser capture scale to the actual evidence manifest
+  and added self-tests for authored-root selection, CSS-scale screenshots, and
+  the trusted no-change recommendation.
+- The existing product authored-root baseline remains closer than the tested
+  generic CSS candidates, so the renderer-action gate now recommends no
+  production CSS change from this evidence.
+- Geometry diagnostics now report `ROOT_ONLY` when the actual element-level
+  geometry sidecar is absent. Empty local/actual collections can no longer be
+  mislabeled as matching selector or row evidence.
+- Focused candidate, geometry, renderer-action, and actual-status checks passed
+  against the current ignored synthetic run. The next actual evidence needed
+  is an element-level geometry/computed-style capture, not another speculative
+  renderer patch.
+- Claim boundary: authored-root size alignment is verified for the tested
+  synthetic legacy payloads. Residual pixel parity, modern actual verification,
+  and broad-sheet parity remain open.
+
 ## 2026-08-03 - Chat Evidence Applicability And Trust
 
 - Unified the Roll button/Rolltemplate capability check across actual status,
@@ -139,8 +161,8 @@ or source-derived measurement here.
 ## Open Gates
 
 1. Supported modern Custom Sheet Sandbox upload and actual-screen verification.
-2. Detailed legacy result-card typography/row comparison and renderer-action
-   classification after the trustworthy actual capture.
+2. Actual element-level geometry/computed-style evidence plus deterministic,
+   lossless same-state result-card capture before renderer changes.
 3. Broader anonymous mapping and edit coverage for uncommon structures.
 4. Future JavaScript workspace and lossless unsupported-source policy.
 5. Current-tree privacy cleanup, followed by an explicit Git-history decision.

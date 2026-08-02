@@ -23,9 +23,12 @@ belong in tracked documents.
   retry still returns `Not allowed`. No hidden input, endpoint, or existing-room
   workaround is allowed.
 - `PARTIAL`: local Preview/Edit and the dedicated legacy destination now have
-  same-payload root comparisons. Root dimensions and capture completeness
-  agree, but residual pixel differences still require an actual DOM/CSS
-  comparison before any parity claim. Modern comparison remains open.
+  same-payload root comparisons against the exact authored top-level element,
+  not the surrounding Roll20 wrapper. Authored-root dimensions and capture
+  completeness agree, and the current product baseline is closer than the
+  tested generic CSS candidates. Actual element-level geometry/computed-style
+  evidence is still missing, so diagnostics report `ROOT_ONLY` and the
+  renderer-action gate holds. Modern comparison remains open.
 - `PARTIAL ACTUAL`: Roll-capable and non-Roll payloads now share one chat
   applicability rule across status, capture planning, metric audit, and pixel
   diagnostics. Current foreground DOM/style/font evidence passes for the
