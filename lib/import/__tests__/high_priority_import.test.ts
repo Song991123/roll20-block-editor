@@ -137,7 +137,7 @@ function testValueSwitchPanelMinimal(): void {
         .sheet-era-input[value="pulp"]:checked ~ .sheet-era-panel-pulp { display: block; }
         .sheet-era-input[value="modern"]:checked ~ .sheet-era-panel-modern { display: block; }
       </style>
-      <input type="radio" class="sheet-era-input" name="attr_era" value="pulp">
+      <input type="radio" class="sheet-era-input" name="attr_era" value="pulp" checked="checked">
       <input type="radio" class="sheet-era-input" name="attr_era" value="modern">
       <div class="sheet-era-panel sheet-era-panel-pulp"><span>P</span></div>
       <div class="sheet-era-panel sheet-era-panel-modern"><span>M</span></div>
@@ -146,6 +146,7 @@ function testValueSwitchPanelMinimal(): void {
   const r = importSheet({ html });
   expectContains(r.html, 'r20_value_switch_panel', 'switch_panel matched');
   expectContains(r.html, '>era<', 'ATTR_NAME=era');
+  expectContains(r.html, '<field name="DEFAULT_VALUE">pulp</field>', 'checked value preserved');
   expectContains(r.html, 'r20_value_case', 'case present');
   expectContains(r.html, '>pulp<', 'VALUE=pulp');
   expectContains(r.html, '>modern<', 'VALUE=modern');

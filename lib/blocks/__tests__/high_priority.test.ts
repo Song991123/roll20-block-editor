@@ -476,7 +476,7 @@ function testValueSwitchTwoCases(): void {
   });
   const b = new FakeBlock({
     type: 'r20_value_switch_panel',
-    fields: { ATTR_NAME: 'era' },
+    fields: { ATTR_NAME: 'era', DEFAULT_VALUE: 'pulp' },
     children: { CASES: [case1, case2] },
   });
   const ctx = makeCtx();
@@ -486,6 +486,8 @@ function testValueSwitchTwoCases(): void {
   expectContains(code, `name="attr_era"`, 'radio name');
   expectContains(code, `value="pulp"`, 'case 1 value');
   expectContains(code, `value="modern"`, 'case 2 value');
+  expectContains(code, `value="pulp" checked="checked"`, 'default case remains checked');
+  assert(!code.includes(`value="modern" checked="checked"`), 'non-default case remains unchecked');
   expectContains(code, `.sheet-era-panel { display: none; }`, 'default hidden css');
   expectContains(
     code,
@@ -496,6 +498,16 @@ function testValueSwitchTwoCases(): void {
     code,
     `.sheet-era-input[value="modern"]:checked ~ .sheet-era-panel-modern { display: block; }`,
     'modern sibling rule',
+  );
+  expectContains(
+    code,
+    `<div data-r20-block-id="${case1.id}" class="sheet-era-panel sheet-era-panel-pulp">`,
+    'case 1 panel keeps editable block id',
+  );
+  expectContains(
+    code,
+    `<div data-r20-block-id="${case2.id}" class="sheet-era-panel sheet-era-panel-modern">`,
+    'case 2 panel keeps editable block id',
   );
 }
 

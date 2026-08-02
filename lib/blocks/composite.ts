@@ -427,6 +427,9 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
         .appendField('NAME')
         .appendField(new Blockly.FieldTextInput('era'), 'ATTR_NAME');
       b.appendDummyInput()
+        .appendField('처음 보일 값')
+        .appendField(new Blockly.FieldTextInput(''), 'DEFAULT_VALUE');
+      b.appendDummyInput()
         .appendField('추가 class')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendStatementInput('CASES').setCheck(null);
@@ -446,7 +449,7 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
         return '';
       }
       // 자식 r20_value_case 순회 — statement 시퀀스 chain.
-      type Case = { value: string; panel: string; className: string };
+      type Case = { blockId: string; value: string; panel: string; className: string };
       const cases: Case[] = [];
       let cur = b.getInputTargetBlock('CASES');
       while (cur) {
@@ -456,7 +459,7 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
           if (v) {
             const panel = ctx.statementToCode(cur, 'PANEL');
             const className = String(cur.getFieldValue('CLASS') ?? '').trim();
-            cases.push({ value: v, panel, className });
+            cases.push({ blockId: cur.id, value: v, panel, className });
           } else {
             ctx.warn(
               cur.id,
@@ -483,6 +486,11 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
         seen.add(c.value);
         return true;
       });
+      const rawDefaultValue = String(b.getFieldValue('DEFAULT_VALUE') ?? '').trim();
+      const sanitizedDefaultValue = rawDefaultValue.replace(/[^A-Za-z0-9_-]/g, '');
+      const defaultValue = uniq.some((c) => c.value === sanitizedDefaultValue)
+        ? sanitizedDefaultValue
+        : '';
       const cls = (suffix: string): string => `sheet-${attr}-${suffix}`;
       const switchClass = sheetClassList(
         cls('switch'),
@@ -499,7 +507,7 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
       const radioLines = uniq
         .map(
           (c) =>
-            `<input type="radio" class="${escapeAttr(cls('input'))}" name="${nameAttr}" value="${escapeAttr(c.value)}">`,
+            `<input type="radio" class="${escapeAttr(cls('input'))}" name="${nameAttr}" value="${escapeAttr(c.value)}"${c.value === defaultValue ? ' checked="checked"' : ''}>`,
         )
         .join('\n');
       const panelLines = uniq
@@ -510,7 +518,11 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
             cls('panel-' + c.value),
             c.className,
           );
-          return `<div class="${escapeAttr(panelClass)}">${inner}</div>`;
+          // The parent generator consumes case blocks directly, so the normal
+          // per-block emit wrapper never sees them. Preserve their editable
+          // DOM identity on the real panel element; export strips this internal
+          // attribute at the existing payload boundary.
+          return `<div data-r20-block-id="${escapeAttr(c.blockId)}" class="${escapeAttr(panelClass)}">${inner}</div>`;
         })
         .join('\n');
       const styleBlock = `<style>\n${cssLines.join('\n')}\n</style>`;
@@ -520,6 +532,13 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
       return `<div class="${escapeAttr(switchClass)}">\n${ctx.indent(inner)}\n</div>`;
     },
     inspectorSchema: [
+      {
+        name: 'DEFAULT_VALUE',
+        label: '처음 보일 값',
+        kind: 'text',
+        placeholder: 'pulp',
+        description: '시트를 처음 열었을 때 보여 줄 상태 값. 비워 두면 자동으로 선택하지 않습니다.',
+      },
       {
         name: 'ATTR_NAME',
         label: '속성 이름',

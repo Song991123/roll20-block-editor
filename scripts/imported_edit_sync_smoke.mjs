@@ -120,6 +120,69 @@ const BUILTIN_FIXTURES = [
     i18n: '{}',
     synthetic: true,
   },
+  {
+    id: 'synthetic-list-inside',
+    html: [
+      '<div class="sheet-structural-root">',
+      '  <ul class="sheet-structural-list sheet-list-source">',
+      '    <li class="sheet-list-moving"><span>Move item</span></li>',
+      '    <li><span>Source witness</span></li>',
+      '  </ul>',
+      '  <ul class="sheet-structural-list sheet-list-target">',
+      '    <li class="sheet-list-witness"><span>Target witness</span></li>',
+      '  </ul>',
+      '</div>',
+    ].join('\n'),
+    css: [
+      '.sheet-structural-root { width: 640px; min-height: 220px; padding: 16px; background: #fff; }',
+      '.sheet-structural-list { display: inline-block; width: 240px; min-height: 120px; margin: 0 12px 0 0; padding: 12px 12px 12px 32px; border: 1px solid #8aa; vertical-align: top; }',
+      '.sheet-structural-list li { min-height: 28px; }',
+    ].join('\n'),
+    i18n: '{}',
+    synthetic: true,
+  },
+  {
+    id: 'synthetic-table-inside',
+    html: [
+      '<div class="sheet-structural-root">',
+      '  <table class="sheet-structural-table sheet-table-source"><tbody>',
+      '    <tr class="sheet-table-moving"><td>Move row</td><td>A</td></tr>',
+      '    <tr><td>Source witness</td><td>B</td></tr>',
+      '  </tbody></table>',
+      '  <table class="sheet-structural-table sheet-table-target"><tbody>',
+      '    <tr class="sheet-table-witness"><td>Target witness</td><td>C</td></tr>',
+      '  </tbody></table>',
+      '</div>',
+    ].join('\n'),
+    css: [
+      '.sheet-structural-root { width: 720px; min-height: 220px; padding: 16px; background: #fff; }',
+      '.sheet-structural-table { display: inline-table; width: 300px; margin: 0 12px 0 0; border-collapse: collapse; vertical-align: top; }',
+      '.sheet-structural-table td { padding: 8px; border: 1px solid #b98; }',
+    ].join('\n'),
+    i18n: '{}',
+    synthetic: true,
+  },
+  {
+    id: 'synthetic-conditional-inside',
+    html: [
+      '<div class="sheet-mode-switch sheet-condition-root">',
+      '  <input type="radio" class="sheet-mode-input" name="attr_mode" value="a" checked="checked">',
+      '  <input type="radio" class="sheet-mode-input" name="attr_mode" value="b">',
+      '  <div class="sheet-mode-panel sheet-mode-panel-a sheet-condition-panel">',
+      '    <span class="sheet-condition-moving">Move content</span>',
+      '  </div>',
+      '  <div class="sheet-mode-panel sheet-mode-panel-b sheet-condition-panel">',
+      '    <span class="sheet-condition-witness">Target content</span>',
+      '  </div>',
+      '</div>',
+    ].join('\n'),
+    css: [
+      '.sheet-condition-root { width: 560px; min-height: 180px; padding: 16px; background: #fff; }',
+      '.sheet-condition-panel { min-height: 72px; margin-top: 8px; padding: 10px; border: 1px solid #9ab; }',
+    ].join('\n'),
+    i18n: '{}',
+    synthetic: true,
+  },
 ];
 
 const MIME = {
@@ -1741,8 +1804,44 @@ async function runImportedNonLeafLayerReorder(page, fixtureId) {
   };
 }
 
+const IMPORTED_LAYER_INSIDE_MOVE_SPECS = {
+  'synthetic-layer-siblings': {
+    structure: 'frame',
+    movingSelector: 'input[name="attr_layer_first"]',
+    witnessSelector: 'input[name="attr_layer_third"]',
+    containerSelector: '.sheet-layer-frame',
+    expectedMovingType: 'r20_text_input',
+    expectedTargetType: 'r20_div',
+  },
+  'synthetic-list-inside': {
+    structure: 'list',
+    movingSelector: '.sheet-list-moving',
+    witnessSelector: '.sheet-list-witness',
+    containerSelector: '.sheet-structural-list',
+    expectedMovingType: 'r20_list_item',
+    expectedTargetType: 'r20_list',
+  },
+  'synthetic-table-inside': {
+    structure: 'table',
+    movingSelector: '.sheet-table-moving',
+    witnessSelector: '.sheet-table-witness',
+    containerSelector: 'tbody',
+    expectedMovingType: 'r20_tr',
+    expectedTargetType: 'r20_tbody',
+  },
+  'synthetic-conditional-inside': {
+    structure: 'conditional',
+    movingSelector: '.sheet-condition-moving',
+    witnessSelector: '.sheet-condition-witness',
+    containerSelector: '.sheet-condition-panel',
+    expectedMovingType: 'r20_static_text',
+    expectedTargetType: 'r20_value_case',
+  },
+};
+
 async function runImportedLayerInsideMove(page, fixtureId) {
-  if (fixtureId !== 'synthetic-layer-siblings') {
+  const spec = IMPORTED_LAYER_INSIDE_MOVE_SPECS[fixtureId];
+  if (!spec) {
     return { pass: false, skipped: true, reason: 'no deterministic cross-container synthetic pair' };
   }
   await page.evaluate(() => {
@@ -1750,23 +1849,26 @@ async function runImportedLayerInsideMove(page, fixtureId) {
     window.__perfHook.setMainMode('edit');
   });
   const frame = await waitForPreviewSheetFrame(page);
-  const ids = await frame.evaluate(() => {
-    const moving = document.querySelector('input[name="attr_layer_first"]');
-    const witness = document.querySelector('input[name="attr_layer_third"]');
-    const source = moving?.closest('.sheet-layer-frame');
-    const target = witness?.closest('.sheet-layer-frame');
+  const ids = await frame.evaluate((query) => {
+    const moving = document.querySelector(query.movingSelector);
+    const witness = document.querySelector(query.witnessSelector);
+    const source = moving?.closest(query.containerSelector);
+    const target = witness?.closest(query.containerSelector);
     return {
       movingId: moving?.getAttribute('data-r20-block-id') || '',
       sourceId: source?.getAttribute('data-r20-block-id') || '',
       targetId: target?.getAttribute('data-r20-block-id') || '',
       witnessId: witness?.getAttribute('data-r20-block-id') || '',
+      movingTag: moving?.tagName.toLowerCase() || '',
+      sourceTag: source?.tagName.toLowerCase() || '',
+      targetTag: target?.tagName.toLowerCase() || '',
     };
-  });
+  }, spec);
   if (!ids.movingId || !ids.sourceId || !ids.targetId || !ids.witnessId || ids.sourceId === ids.targetId) {
     return { pass: false, skipped: false, reason: 'synthetic cross-container nodes missing', ids };
   }
 
-  const model = await page.evaluate(async (ids) => {
+  const model = await page.evaluate(async ({ ids, spec }) => {
     const layerBefore = window.__perfHook.getLayerSnapshot('html') || [];
     const movingBefore = layerBefore.find((node) => node.id === ids.movingId) || null;
     const movingRow = document.querySelector(
@@ -1807,9 +1909,11 @@ async function runImportedLayerInsideMove(page, fixtureId) {
     const emitted = window.__perfHook.getEmitContent();
     return {
       pass: movingBefore?.layerParentId === ids.sourceId
+        && movingBefore?.type === spec.expectedMovingType
         && mode === 'inside'
         && drop.defaultPrevented
-        && movingAfter?.layerParentId === ids.targetId,
+        && movingAfter?.layerParentId === ids.targetId
+        && targetAfter?.type === spec.expectedTargetType,
       mode,
       dropPrevented: drop.defaultPrevented,
       movingBefore,
@@ -1818,21 +1922,21 @@ async function runImportedLayerInsideMove(page, fixtureId) {
       emittedHtmlLength: emitted.html.length,
       staleDraggingBlockAfterDrop: document.body.dataset.r20LayerDraggingBlock ?? null,
     };
-  }, ids);
-  if (!model.pass) return { pass: false, skipped: false, ids, model };
+  }, { ids, spec });
+  if (!model.pass) return { pass: false, skipped: false, structure: spec.structure, query: spec, ids, model };
 
-  const readRendered = () => frame.evaluate(() => {
-    const moving = document.querySelector('input[name="attr_layer_first"]');
-    const witness = document.querySelector('input[name="attr_layer_third"]');
-    const movingFrame = moving?.closest('.sheet-layer-frame');
-    const witnessFrame = witness?.closest('.sheet-layer-frame');
+  const readRendered = () => frame.evaluate((query) => {
+    const moving = document.querySelector(query.movingSelector);
+    const witness = document.querySelector(query.witnessSelector);
+    const movingFrame = moving?.closest(query.containerSelector);
+    const witnessFrame = witness?.closest(query.containerSelector);
     return {
       sameContainer: Boolean(movingFrame && movingFrame === witnessFrame),
       movingParentId: movingFrame?.getAttribute('data-r20-block-id') || null,
       witnessParentId: witnessFrame?.getAttribute('data-r20-block-id') || null,
       movingPosition: moving ? getComputedStyle(moving).position : null,
     };
-  });
+  }, spec);
   const edit = await readRendered();
   await page.evaluate(() => window.__perfHook.setMainMode('preview'));
   await waitForFrameMode(frame, '0');
@@ -1847,6 +1951,8 @@ async function runImportedLayerInsideMove(page, fixtureId) {
       && edit.movingPosition !== 'absolute'
       && preview.movingPosition !== 'absolute',
     skipped: false,
+    structure: spec.structure,
+    query: spec,
     ids,
     model,
     edit,
@@ -1858,30 +1964,38 @@ async function runImportedLayerInsideMove(page, fixtureId) {
 
 async function verifyImportedLayerInsideMoveAfterReimport(page, move) {
   if (!move || move.skipped) return { pass: false, skipped: true, reason: move?.reason || 'inside move skipped' };
+  if (!move.query?.movingSelector || !move.query?.witnessSelector || !move.query?.containerSelector) {
+    return { pass: false, skipped: false, reason: 'inside move query missing' };
+  }
   await page.evaluate(() => window.__perfHook.setMainMode('preview'));
   const frame = await waitForPreviewSheetFrame(page);
   try {
-    await frame.waitForFunction(() => {
-      const moving = document.querySelector('input[name="attr_layer_first"]');
-      const witness = document.querySelector('input[name="attr_layer_third"]');
-      return Boolean(moving && witness && moving.closest('.sheet-layer-frame') === witness.closest('.sheet-layer-frame'));
-    }, null, { timeout: 15000 });
+    await frame.waitForFunction((query) => {
+      const moving = document.querySelector(query.movingSelector);
+      const witness = document.querySelector(query.witnessSelector);
+      return Boolean(
+        moving
+        && witness
+        && moving.closest(query.containerSelector) === witness.closest(query.containerSelector),
+      );
+    }, move.query, { timeout: 15000 });
   } catch {}
-  const rendered = await frame.evaluate(() => {
-    const moving = document.querySelector('input[name="attr_layer_first"]');
-    const witness = document.querySelector('input[name="attr_layer_third"]');
-    const movingFrame = moving?.closest('.sheet-layer-frame');
-    const witnessFrame = witness?.closest('.sheet-layer-frame');
+  const rendered = await frame.evaluate((query) => {
+    const moving = document.querySelector(query.movingSelector);
+    const witness = document.querySelector(query.witnessSelector);
+    const movingFrame = moving?.closest(query.containerSelector);
+    const witnessFrame = witness?.closest(query.containerSelector);
     return {
       movingFound: Boolean(moving),
       witnessFound: Boolean(witness),
       sameContainer: Boolean(movingFrame && movingFrame === witnessFrame),
       movingPosition: moving ? getComputedStyle(moving).position : null,
     };
-  });
+  }, move.query);
   return {
     pass: move.pass === true && rendered.sameContainer && rendered.movingPosition !== 'absolute',
     skipped: false,
+    structure: move.structure,
     rendered,
   };
 }
@@ -3115,7 +3229,7 @@ function renderMarkdown(report) {
   lines.push('Notes:');
   lines.push('- PASS means an imported visible node moved by the real edit pointer path, the same block id appeared at the same sheet-relative position in preview, emitted HTML/CSS contained absolute position data, a friendly widget dropped into a visible imported frame/flow container as non-absolute flow content, a second widget dropped in user-facing free mode as nested absolute content, post-edit sheet-root visual mismatch stayed within the configured budget, and the edited emit survived a re-import/emit cycle.');
   lines.push('- Interaction and resource status are separated. Use `--fail-on-resource-issues true` for visual-parity work where external images/fonts must load.');
-  lines.push('- Layer reorder is recorded when the imported Blockly graph and layer snapshot expose a safe adjacent leaf sibling pair. Non-leaf layer reorder records the stronger group/subtree case when a visible imported container with direct children has a safe adjacent sibling with matching layer parent/depth semantics. The anonymous cross-container fixture additionally moves an existing imported input into another frame and checks Preview plus re-import nesting. SKIP means no safe pair was found in that fixture; it is not a Roll20 parity claim.');
+  lines.push('- Layer reorder is recorded when the imported Blockly graph and layer snapshot expose a safe adjacent leaf sibling pair. Non-leaf layer reorder records the stronger group/subtree case when a visible imported container with direct children has a safe adjacent sibling with matching layer parent/depth semantics. Anonymous cross-container fixtures additionally move existing imported content between frames, lists, table sections, and conditional cases, then check Preview plus re-import nesting. SKIP means no safe pair was found in that fixture; it is not a Roll20 parity claim.');
   lines.push('- This intentionally does not claim every object/reparenting mode works; it guards the imported-sheet move/sync path that users were feeling as rollback/desync.');
   lines.push('- Screenshots and reports are local-only and ignored by Git.');
   lines.push('');
@@ -3209,7 +3323,7 @@ function fmtNonLeafLayerReorder(item) {
 function fmtLayerInsideMove(item, reimport) {
   if (!item) return 'missing';
   if (item.skipped) return `SKIP: ${item.reason || 'no pair'}`;
-  if (item.pass && reimport?.pass) return `inside frame, preview/re-import sync`;
+  if (item.pass && reimport?.pass) return `inside ${item.structure || 'frame'}, preview/re-import sync`;
   return `FAIL: ${item.reason || item.model?.reason || reimport?.reason || 'nesting drift'}`;
 }
 

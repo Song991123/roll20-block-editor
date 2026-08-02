@@ -1210,6 +1210,7 @@ function matchValueSwitchPanel(
   const panelClsRe = new RegExp('(?:^|\\s)sheet-' + escapeRegExp(attr) + '-panel-([\\w-]+)(?:\\s|$)');
   // 자식 element 들 중 input (radio) + panel div 추출.
   const radioValues: string[] = [];
+  let defaultValue = '';
   const panelByValue = new Map<string, { node: DomNode; className: string }>();
   for (const c of node.children) {
     if (c.type !== 'element') continue;
@@ -1217,7 +1218,10 @@ function matchValueSwitchPanel(
     const childCls = ca.class || '';
     if (c.tag === 'input' && inputClsRe.test(childCls)) {
       const v = ca.value || '';
-      if (v) radioValues.push(v);
+      if (v) {
+        radioValues.push(v);
+        if (!defaultValue && ('checked' in ca || ca.checked != null)) defaultValue = v;
+      }
       continue;
     }
     if (c.tag === 'div') {
@@ -1273,7 +1277,11 @@ function matchValueSwitchPanel(
   }
   return {
     blockType: 'r20_value_switch_panel',
-    fields: { ATTR_NAME: attr, CLASS: switchClass },
+    fields: {
+      ATTR_NAME: attr,
+      DEFAULT_VALUE: panelByValue.has(defaultValue) ? defaultValue : '',
+      CLASS: switchClass,
+    },
     children: { CASES: cases },
   };
 }
