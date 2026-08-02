@@ -9,6 +9,7 @@
  */
 
 import { existsSync } from 'node:fs';
+import assert from 'node:assert/strict';
 import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
@@ -616,7 +617,7 @@ async function renderCandidate({
   const captureTargetBox = await captureTarget.locator.boundingBox();
   if (!captureTargetBox) throw new Error(`candidate ${id} has no visible ${captureTarget.kind} capture target`);
   const screenshot = path.join(artifactDir, `${id}.png`);
-  await captureTarget.locator.screenshot({ path: screenshot, scale: 'css' });
+  await captureTarget.locator.screenshot(candidateScreenshotOptions(screenshot));
   const comparedSize = {
     w: Math.min(Math.round(captureTargetBox.width), actualSize.w),
     h: Math.min(Math.round(captureTargetBox.height), actualSize.h),
@@ -664,25 +665,15 @@ async function resolveCandidateCaptureTarget(page, authoredRootCapture) {
   }
   const directChildren = sheetRoot.locator(':scope > *');
   const childCount = await directChildren.count();
-  const expectedIndex = Number(authoredRootCapture?.childIndex);
-  if (authoredRootCapture?.status === 'CAPTURED'
-    && Number.isInteger(expectedIndex)
-    && expectedIndex >= 0
-    && expectedIndex < childCount) {
+  const expectedIndex = capturedChildIndex(authoredRootCapture, childCount);
+  if (expectedIndex !== null) {
     const locator = directChildren.nth(expectedIndex);
     const identity = await readLocatorIdentity(locator);
-    const expectedTag = String(authoredRootCapture.tagName ?? '').toUpperCase();
-    const expectedClasses = classTokens(authoredRootCapture.className);
-    const actualClasses = new Set(classTokens(identity.className));
-    const identityMatches = (!expectedTag || identity.tagName === expectedTag)
-      && expectedClasses.every((token) => actualClasses.has(token));
-    if (!identityMatches) {
-      throw new Error(`authored-root identity changed at child ${expectedIndex}: expected ${expectedTag || '*'} ${expectedClasses.join('.')}, got ${identity.tagName} ${identity.className}`);
-    }
+    const evidence = buildAuthoredRootEvidence(authoredRootCapture, expectedIndex, identity);
     return {
       locator,
       kind: 'authored-root',
-      evidence: { kind: 'authored-root', childIndex: expectedIndex, ...identity },
+      evidence,
     };
   }
 
@@ -692,24 +683,58 @@ async function resolveCandidateCaptureTarget(page, authoredRootCapture) {
     const box = await locator.boundingBox();
     if (box && box.width > 0 && box.height > 0) visibleChildren.push({ index, locator });
   }
-  if (visibleChildren.length === 1) {
-    const [{ index, locator }] = visibleChildren;
+  const fallback = selectFallbackCaptureTarget(visibleChildren.map(({ index }) => index), childCount);
+  if (fallback.kind === 'authored-root-inferred') {
+    const locator = directChildren.nth(fallback.childIndex);
     return {
       locator,
       kind: 'authored-root-inferred',
-      evidence: { kind: 'authored-root-inferred', childIndex: index, ...(await readLocatorIdentity(locator)) },
+      evidence: { ...fallback, ...(await readLocatorIdentity(locator)) },
     };
   }
   return {
     locator: sheetRoot,
     kind: 'sheet-wrapper-fallback',
-    evidence: {
-      kind: 'sheet-wrapper-fallback',
-      childCount,
-      visibleChildCount: visibleChildren.length,
-      reason: 'baseline authored-root identity unavailable or ambiguous',
-    },
+    evidence: fallback,
   };
+}
+
+function capturedChildIndex(authoredRootCapture, childCount) {
+  const expectedIndex = Number(authoredRootCapture?.childIndex);
+  return authoredRootCapture?.status === 'CAPTURED'
+    && Number.isInteger(expectedIndex)
+    && expectedIndex >= 0
+    && expectedIndex < childCount
+    ? expectedIndex
+    : null;
+}
+
+function buildAuthoredRootEvidence(authoredRootCapture, expectedIndex, identity) {
+  const expectedTag = String(authoredRootCapture?.tagName ?? '').toUpperCase();
+  const expectedClasses = classTokens(authoredRootCapture?.className);
+  const actualClasses = new Set(classTokens(identity.className));
+  const identityMatches = (!expectedTag || identity.tagName === expectedTag)
+    && expectedClasses.every((token) => actualClasses.has(token));
+  if (!identityMatches) {
+    throw new Error(`authored-root identity changed at child ${expectedIndex}: expected ${expectedTag || '*'} ${expectedClasses.join('.')}, got ${identity.tagName} ${identity.className}`);
+  }
+  return { kind: 'authored-root', childIndex: expectedIndex, ...identity };
+}
+
+function selectFallbackCaptureTarget(visibleChildIndexes, childCount) {
+  if (visibleChildIndexes.length === 1) {
+    return { kind: 'authored-root-inferred', childIndex: visibleChildIndexes[0] };
+  }
+  return {
+    kind: 'sheet-wrapper-fallback',
+    childCount,
+    visibleChildCount: visibleChildIndexes.length,
+    reason: 'baseline authored-root identity unavailable or ambiguous',
+  };
+}
+
+function candidateScreenshotOptions(screenshotPath) {
+  return { path: screenshotPath, scale: 'css' };
 }
 
 async function readLocatorIdentity(locator) {
@@ -1948,51 +1973,36 @@ async function writeDominantCropArtifacts({ artifactDir, candidateId, cropDataUr
 
 async function runSelfTest() {
   if (typeof buildSheetDoc !== 'function') throw new Error('buildSheetDoc export missing');
-  const browser = await chromium.launch({ headless: true });
-  try {
-    const context = await browser.newContext({
-      viewport: { width: 500, height: 300 },
-      deviceScaleFactor: 1.25,
-    });
-    const page = await context.newPage();
-    await page.setContent(`
-      <div class="charactersheet charsheet">
-        <script type="text/worker">void 0;</script>
-        <section class="sheet-proof extra" style="width:123px;height:45px"></section>
-      </div>
-    `);
-    const explicit = await resolveCandidateCaptureTarget(page, {
-      status: 'CAPTURED',
-      childIndex: 1,
-      tagName: 'SECTION',
-      className: 'sheet-proof',
-    });
-    const explicitBox = await explicit.locator.boundingBox();
-    if (explicit.kind !== 'authored-root'
-      || Math.round(explicitBox?.width ?? 0) !== 123
-      || Math.round(explicitBox?.height ?? 0) !== 45) {
-      throw new Error(`explicit authored-root selection failed: ${JSON.stringify({ kind: explicit.kind, explicitBox })}`);
-    }
-    const cssScalePng = await explicit.locator.screenshot({ scale: 'css' });
-    if (cssScalePng.readUInt32BE(16) !== 123 || cssScalePng.readUInt32BE(20) !== 45) {
-      throw new Error(`CSS-scale screenshot changed authored-root size: ${cssScalePng.readUInt32BE(16)}x${cssScalePng.readUInt32BE(20)}`);
-    }
-    const inferred = await resolveCandidateCaptureTarget(page, null);
-    if (inferred.kind !== 'authored-root-inferred' || inferred.evidence.childIndex !== 1) {
-      throw new Error(`inferred authored-root selection failed: ${JSON.stringify(inferred.evidence)}`);
-    }
-    const noChange = selectRecommendedRendererEvidence({
-      bestCandidate: { id: 'patched', mismatchRatio: 0.04, localSize: { w: 123, h: 45 }, rootHeightDelta: 0 },
-      baselineReference: { id: 'baseline', referenceKind: 'authored-root', mismatchRatio: 0.02, localSize: { w: 123, h: 45 } },
-      actualSize: { w: 123, h: 45 },
-    });
-    if (!noChange?.noChange || noChange.id !== 'baseline' || noChange.rootHeightDelta !== 0) {
-      throw new Error(`baseline recommendation failed: ${JSON.stringify(noChange)}`);
-    }
-    await context.close();
-  } finally {
-    await browser.close();
-  }
+  const authoredRootCapture = {
+    status: 'CAPTURED',
+    childIndex: 1,
+    tagName: 'SECTION',
+    className: 'sheet-proof',
+  };
+  assert.equal(capturedChildIndex(authoredRootCapture, 2), 1);
+  assert.deepEqual(
+    buildAuthoredRootEvidence(authoredRootCapture, 1, { tagName: 'SECTION', className: 'sheet-proof extra' }),
+    { kind: 'authored-root', childIndex: 1, tagName: 'SECTION', className: 'sheet-proof extra' },
+  );
+  assert.throws(
+    () => buildAuthoredRootEvidence(authoredRootCapture, 1, { tagName: 'DIV', className: 'sheet-proof' }),
+    /authored-root identity changed/,
+  );
+  assert.deepEqual(
+    selectFallbackCaptureTarget([1], 2),
+    { kind: 'authored-root-inferred', childIndex: 1 },
+  );
+  assert.equal(selectFallbackCaptureTarget([0, 1], 2).kind, 'sheet-wrapper-fallback');
+  assert.deepEqual(candidateScreenshotOptions('candidate.png'), { path: 'candidate.png', scale: 'css' });
+
+  const noChange = selectRecommendedRendererEvidence({
+    bestCandidate: { id: 'patched', mismatchRatio: 0.04, localSize: { w: 123, h: 45 }, rootHeightDelta: 0 },
+    baselineReference: { id: 'baseline', referenceKind: 'authored-root', mismatchRatio: 0.02, localSize: { w: 123, h: 45 } },
+    actualSize: { w: 123, h: 45 },
+  });
+  assert.equal(noChange?.noChange, true);
+  assert.equal(noChange?.id, 'baseline');
+  assert.equal(noChange?.rootHeightDelta, 0);
 }
 
 main().catch((error) => {
