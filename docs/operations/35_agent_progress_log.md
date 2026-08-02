@@ -15,6 +15,24 @@ or source-derived measurement here.
 - Remote CI: passed safety/unit verification, lint, and production build.
 - Worktree and project server state were clean after the run.
 
+## 2026-08-03 - Direct Resize On The Shared Sheet Surface
+
+- Added direct edge/corner resize handles to eligible single selections on the
+  parent-owned overlay above the persistent Roll20 iframe.
+- Pointer movement changes the real iframe element immediately without
+  rebuilding the sheet. Pointer-up commits touched dimensions once to managed
+  CSS, then removes the temporary inline preview before the next paint.
+- Absolute layers expose every edge and corner. Flow layers stay anchored and
+  expose right, bottom, and bottom-right handles; ordinary inline text and
+  table-row layouts remain excluded. Inline images keep box resize handles.
+- The edit-flow browser smoke proves immediate iframe feedback, no pointer-up
+  rollback, managed-CSS persistence, no emitted inline width/height, and equal
+  geometry after Preview/Edit mode switches. Focused unit tests, lint, and the
+  production build also pass.
+- Claim boundary: this is anonymous local synthetic browser coverage. Alignment,
+  multi-selection resize, broad imported-sheet usability, and actual Roll20
+  resize behavior remain outside this batch.
+
 ## 2026-08-03 - Modern Chooser Boundary And Plain UI Copy
 
 - Generated a fresh anonymous modern payload through the product export path

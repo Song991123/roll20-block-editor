@@ -82,8 +82,15 @@ belong in tracked documents.
   language, modern/legacy, and upload-rule control visible. Labels collapse to
   named icon controls with tooltips, and browser smoke checks clipping and
   horizontal overflow.
+- `DONE LOCAL`: eligible visual layers expose direct resize handles on the same
+  persistent iframe surface. The iframe element follows the pointer before
+  release; pointer-up writes width/height to managed CSS, removes the temporary
+  inline preview, and preserves identical geometry in Preview and Edit. Flow
+  layers keep their anchored edges, while absolute layers expose all edges and
+  corners. Ordinary inline text and table-row structure stay excluded, while
+  inline images remain directly resizable.
 - `PARTIAL`: continue usability review for dense imported structures, nested
-  absolute placement, keyboard selection, resize handles, and undo/redo.
+  absolute placement, keyboard selection, alignment, and undo/redo.
 
 ## P1 - User Experience
 
@@ -98,8 +105,8 @@ belong in tracked documents.
 - `PARTIAL`: the pastel shell and central editing controls have compact desktop
   browser coverage. Mobile drawers and broader viewport combinations remain to
   be reviewed without changing the Roll20 sheet render surface.
-- `TODO`: add resize and alignment affordances only where they preserve the
-  authored DOM and CSS contract.
+- `TODO`: add alignment affordances only where they preserve the authored DOM
+  and CSS contract.
 
 ## P1 - Copyright And Privacy
 

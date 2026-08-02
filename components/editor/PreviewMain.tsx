@@ -1,6 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 import { toast } from 'sonner';
 import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { useChatStore } from '@/lib/stores/chatStore';
@@ -32,6 +40,7 @@ import {
   isTrustedIframeMessage,
   parseIframeEditBridgeMessage,
   type IframeEditHitMessage,
+  type IframeEditRect,
   type IframeEditSelectionNode,
 } from '@/lib/preview/iframeEditBridge';
 import {
@@ -45,7 +54,17 @@ import {
   resolveIframeWidgetDropTarget,
   type IframeEditDropTarget,
 } from '@/lib/editor/iframeDropTarget';
-import { commitManagedDesignPosition } from '@/lib/editor/designPosition';
+import {
+  canManageDesignStyle,
+  commitManagedDesignPosition,
+  commitManagedDesignStyle,
+} from '@/lib/editor/designPosition';
+import {
+  managedResizeDeclarations,
+  resizeHandlesForGeometry,
+  resolveDesignResizeRect,
+  type DesignResizeHandle,
+} from '@/lib/editor/designResize';
 import { getLayerRole } from '@/lib/editor/layerRoles';
 import { dropIndicatorLabel, getDropIndicatorRect } from '@/lib/editor/dropIndicator';
 import {
@@ -60,6 +79,46 @@ type OptimisticFlowCommit = {
   containerBlockId: string | null;
   siblingBlockId: string | null;
 };
+
+type IframeResizeSession = {
+  pointerId: number;
+  blockId: string;
+  handle: DesignResizeHandle;
+  startClientX: number;
+  startClientY: number;
+  origin: IframeEditHitMessage;
+  currentRect: IframeEditRect;
+};
+
+type IframeResizePreview = {
+  blockId: string;
+  rect: IframeEditRect;
+};
+
+const RESIZE_HANDLE_STYLE: Record<DesignResizeHandle, {
+  left: string;
+  top: string;
+  transform: string;
+  cursor: CSSProperties['cursor'];
+  label: string;
+}> = {
+  nw: { left: '0%', top: '0%', transform: 'translate(-50%, -50%)', cursor: 'nwse-resize', label: '왼쪽 위' },
+  n: { left: '50%', top: '0%', transform: 'translate(-50%, -50%)', cursor: 'ns-resize', label: '위' },
+  ne: { left: '100%', top: '0%', transform: 'translate(-50%, -50%)', cursor: 'nesw-resize', label: '오른쪽 위' },
+  e: { left: '100%', top: '50%', transform: 'translate(-50%, -50%)', cursor: 'ew-resize', label: '오른쪽' },
+  se: { left: '100%', top: '100%', transform: 'translate(-50%, -50%)', cursor: 'nwse-resize', label: '오른쪽 아래' },
+  s: { left: '50%', top: '100%', transform: 'translate(-50%, -50%)', cursor: 'ns-resize', label: '아래' },
+  sw: { left: '0%', top: '100%', transform: 'translate(-50%, -50%)', cursor: 'nesw-resize', label: '왼쪽 아래' },
+  w: { left: '0%', top: '50%', transform: 'translate(-50%, -50%)', cursor: 'ew-resize', label: '왼쪽' },
+};
+
+function paintOverlayRect(node: HTMLDivElement | null, rect: IframeEditRect): void {
+  if (!node) return;
+  node.style.left = `${rect.left}px`;
+  node.style.top = `${rect.top}px`;
+  node.style.width = `${rect.width}px`;
+  node.style.height = `${rect.height}px`;
+}
 
 function inferMultiDragOrigin(
   origin: IframeEditHitMessage,
@@ -176,6 +235,12 @@ export default function PreviewMain() {
   const iframeEditDropTargetRef = useRef<IframeEditDropTarget | null>(null);
   const [iframeEditDragOrigin, setIframeEditDragOrigin] = useState<IframeEditHitMessage | null>(null);
   const iframeEditDragOriginRef = useRef<IframeEditHitMessage | null>(null);
+  const iframeEditOverlayRef = useRef<HTMLDivElement>(null);
+  const [iframeResizePreview, setIframeResizePreview] = useState<IframeResizePreview | null>(null);
+  const iframeResizeSessionRef = useRef<IframeResizeSession | null>(null);
+  const iframeResizeFrameRef = useRef<number | null>(null);
+  const pendingIframeResizePointerRef = useRef<{ x: number; y: number } | null>(null);
+  const pendingIframeResizeBlockRef = useRef<string | null>(null);
   const parentIframePointerIdRef = useRef<number | null>(null);
   const applyRevisionRef = useRef(0);
   const applySourcesRef = useRef(new Map<number, string>());
@@ -230,6 +295,12 @@ export default function PreviewMain() {
       iframeEditOverlayFrameRef.current = null;
     }
     pendingIframeEditStateRef.current = null;
+    if (iframeResizeFrameRef.current != null) {
+      window.cancelAnimationFrame(iframeResizeFrameRef.current);
+      iframeResizeFrameRef.current = null;
+    }
+    pendingIframeResizePointerRef.current = null;
+    iframeResizeSessionRef.current = null;
   }, []);
 
   // Pointer capture belongs to the iframe document. When the pointer is
@@ -327,6 +398,217 @@ export default function PreviewMain() {
         y: iframeEditOverlay.pointer.y - iframeEditDragOrigin.pointer.y,
       }
     : { x: 0, y: 0 };
+  const iframeEditVisibleRect = useMemo(() => (
+    iframeResizePreview && iframeResizePreview.blockId === iframeEditOverlay?.blockId
+      ? iframeResizePreview.rect
+      : iframeEditOverlay
+        ? {
+            left: iframeEditOverlay.rect.left + iframeEditDragDelta.x,
+            top: iframeEditOverlay.rect.top + iframeEditDragDelta.y,
+            width: iframeEditOverlay.rect.width,
+            height: iframeEditOverlay.rect.height,
+          }
+        : null
+  ), [
+    iframeEditDragDelta.x,
+    iframeEditDragDelta.y,
+    iframeEditOverlay,
+    iframeResizePreview,
+  ]);
+  const iframeResizeHandles = useMemo(() => {
+    if (
+      mainMode !== 'edit'
+      || renderMode !== 'iframe'
+      || iframeEditOverlay?.phase !== 'measure'
+      || iframeEditOverlay.blockId !== selectedId
+      || selectedIds.length !== 1
+    ) return [] as readonly DesignResizeHandle[];
+    const block = htmlLayerMap.get(iframeEditOverlay.blockId);
+    if (!block || getLayerRole(block.type).kind === 'runtime') return [];
+    if (!canManageDesignStyle(getBlocklyAdapter(), 'html', block.id)) return [];
+    return resizeHandlesForGeometry(iframeEditOverlay.subject);
+  }, [
+    htmlLayerMap,
+    iframeEditOverlay,
+    mainMode,
+    renderMode,
+    selectedId,
+    selectedIds.length,
+  ]);
+
+  const applyIframeResizePointer = useCallback((clientX: number, clientY: number) => {
+    const session = iframeResizeSessionRef.current;
+    if (!session) return null;
+    const viewportScale = Math.max(0.01, scale);
+    const nextRect = resolveDesignResizeRect(
+      session.origin.rect,
+      session.handle,
+      (clientX - session.startClientX) / viewportScale,
+      (clientY - session.startClientY) / viewportScale,
+      useUiStore.getState().snapEnabled ? 8 : 1,
+    );
+    session.currentRect = nextRect;
+    paintOverlayRect(iframeEditOverlayRef.current, nextRect);
+    const declarations = managedResizeDeclarations(
+      session.origin.subject,
+      session.origin.rect,
+      nextRect,
+      session.handle,
+    );
+    const previewMessage: Record<string, unknown> = {
+      type: 'r20:edit-resize-preview',
+      protocol: R20_IFRAME_EDIT_PROTOCOL,
+      bridgeId: iframeEditBridgeId,
+      blockId: session.blockId,
+    };
+    for (const property of ['width', 'height', 'left', 'top'] as const) {
+      const value = declarations[property];
+      if (typeof value !== 'string') continue;
+      const parsed = Number.parseFloat(value);
+      if (Number.isFinite(parsed)) previewMessage[property] = parsed;
+    }
+    iframeRef.current?.contentWindow?.postMessage(previewMessage, '*');
+    return nextRect;
+  }, [iframeEditBridgeId, scale]);
+
+  const queueIframeResizePointer = useCallback((clientX: number, clientY: number) => {
+    pendingIframeResizePointerRef.current = { x: clientX, y: clientY };
+    if (iframeResizeFrameRef.current != null) return;
+    iframeResizeFrameRef.current = window.requestAnimationFrame(() => {
+      iframeResizeFrameRef.current = null;
+      const pending = pendingIframeResizePointerRef.current;
+      pendingIframeResizePointerRef.current = null;
+      if (pending) applyIframeResizePointer(pending.x, pending.y);
+    });
+  }, [applyIframeResizePointer]);
+
+  const finishIframeResize = useCallback((
+    clientX: number,
+    clientY: number,
+    shouldCommit: boolean,
+  ) => {
+    if (iframeResizeFrameRef.current != null) {
+      window.cancelAnimationFrame(iframeResizeFrameRef.current);
+      iframeResizeFrameRef.current = null;
+    }
+    pendingIframeResizePointerRef.current = null;
+    const session = iframeResizeSessionRef.current;
+    if (!session) return;
+    if (shouldCommit) applyIframeResizePointer(clientX, clientY);
+    const finalRect = session.currentRect;
+    iframeResizeSessionRef.current = null;
+    let committed = false;
+    if (shouldCommit) {
+      const adapter = getBlocklyAdapter();
+      const result = commitManagedDesignStyle(adapter, {
+        workspace: 'html',
+        blockId: session.blockId,
+        declarations: managedResizeDeclarations(
+          session.origin.subject,
+          session.origin.rect,
+          finalRect,
+          session.handle,
+        ),
+      });
+      committed = result.changed;
+      if (committed) {
+        pendingIframeResizeBlockRef.current = session.blockId;
+        setIframeResizePreview({ blockId: session.blockId, rect: finalRect });
+        const store = useWorkspaceStore.getState();
+        if (result.htmlChanged) store.bumpStructure('html', adapter.countBlocks('html'));
+        if (result.cssChanged || result.cssBlockCreated) {
+          store.bumpStructure('css', adapter.countBlocks('css'));
+        }
+        queueMicrotask(() => flushEmitPipeline());
+      }
+    }
+    iframeRef.current?.contentWindow?.postMessage({
+      type: 'r20:edit-resize-finalize',
+      protocol: R20_IFRAME_EDIT_PROTOCOL,
+      bridgeId: iframeEditBridgeId,
+      blockId: session.blockId,
+      committed,
+    }, '*');
+    if (!committed) {
+      pendingIframeResizeBlockRef.current = null;
+      setIframeResizePreview(null);
+      paintOverlayRect(iframeEditOverlayRef.current, session.origin.rect);
+    }
+  }, [applyIframeResizePointer, iframeEditBridgeId]);
+
+  const startIframeResize = useCallback((
+    event: ReactPointerEvent<HTMLButtonElement>,
+    handle: DesignResizeHandle,
+  ) => {
+    if (
+      event.button !== 0
+      || !iframeEditOverlay
+      || !iframeResizeHandles.includes(handle)
+    ) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const originRect = iframeEditVisibleRect ?? iframeEditOverlay.rect;
+    iframeResizeSessionRef.current = {
+      pointerId: event.pointerId,
+      blockId: iframeEditOverlay.blockId,
+      handle,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      origin: { ...iframeEditOverlay, rect: originRect },
+      currentRect: originRect,
+    };
+    setIframeResizePreview({ blockId: iframeEditOverlay.blockId, rect: originRect });
+    applyIframeResizePointer(event.clientX, event.clientY);
+  }, [
+    applyIframeResizePointer,
+    iframeEditOverlay,
+    iframeEditVisibleRect,
+    iframeResizeHandles,
+  ]);
+
+  const moveIframeResize = useCallback((event: ReactPointerEvent<HTMLButtonElement>) => {
+    const session = iframeResizeSessionRef.current;
+    if (!session || session.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    event.stopPropagation();
+    queueIframeResizePointer(event.clientX, event.clientY);
+  }, [queueIframeResizePointer]);
+
+  const endIframeResize = useCallback((event: ReactPointerEvent<HTMLButtonElement>) => {
+    const session = iframeResizeSessionRef.current;
+    if (!session || session.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    event.stopPropagation();
+    finishIframeResize(event.clientX, event.clientY, true);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }, [finishIframeResize]);
+
+  const cancelIframeResize = useCallback((event: ReactPointerEvent<HTMLButtonElement>) => {
+    const session = iframeResizeSessionRef.current;
+    if (!session || session.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    event.stopPropagation();
+    finishIframeResize(event.clientX, event.clientY, false);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }, [finishIframeResize]);
+
+  useEffect(() => {
+    const session = iframeResizeSessionRef.current;
+    if (
+      !session
+      || (
+        mainMode === 'edit'
+        && renderMode === 'iframe'
+        && selectedId === session.blockId
+      )
+    ) return;
+    finishIframeResize(session.startClientX, session.startClientY, false);
+  }, [finishIframeResize, iframeLoadRevision, mainMode, renderMode, selectedId]);
 
   useEffect(() => {
     setRenderMode('iframe');
@@ -718,6 +1000,9 @@ export default function PreviewMain() {
           flushIframeEditState(null, null);
           setIframeEditDragOrigin(null);
           iframeEditDragOriginRef.current = null;
+          setIframeResizePreview(null);
+          iframeResizeSessionRef.current = null;
+          pendingIframeResizeBlockRef.current = null;
           lastAppliedAckRevisionRef.current = 0;
         }
         iframeEditBridgeIdRef.current = editMessage.bridgeId;
@@ -777,6 +1062,13 @@ export default function PreviewMain() {
           editMessage.subject.offsetParentBlockId
           && !htmlLayerMap.has(editMessage.subject.offsetParentBlockId)
         ) return;
+        if (
+          editMessage.phase === 'measure'
+          && pendingIframeResizeBlockRef.current === editMessage.blockId
+        ) {
+          pendingIframeResizeBlockRef.current = null;
+          setIframeResizePreview(null);
+        }
         const nextDropTarget = resolveIframeEditDropTarget(editMessage, {
           getBlock: (blockId) => htmlLayerMap.get(blockId) ?? null,
           canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
@@ -1763,7 +2055,9 @@ export default function PreviewMain() {
             )}
             {renderMode === 'iframe' && mainMode === 'edit' && iframeEditOverlay && (
               <div
-                aria-hidden="true"
+                ref={iframeEditOverlayRef}
+                role={iframeResizeHandles.length > 0 ? 'group' : undefined}
+                aria-label={iframeResizeHandles.length > 0 ? '선택한 요소 크기 조절' : undefined}
                 data-testid="iframe-edit-overlay"
                 data-r20-block-id={iframeEditOverlay.blockId}
                 data-r20-edit-phase={iframeEditOverlay.phase}
@@ -1772,13 +2066,52 @@ export default function PreviewMain() {
                 data-r20-offset-parent-block-id={iframeEditOverlay.subject.offsetParentBlockId ?? ''}
                 className="pointer-events-none absolute z-20 border-2 border-amber-500 bg-amber-400/10"
                 style={{
-                  left: `${iframeEditOverlay.rect.left + iframeEditDragDelta.x}px`,
-                  top: `${iframeEditOverlay.rect.top + iframeEditDragDelta.y}px`,
-                  width: `${iframeEditOverlay.rect.width}px`,
-                  height: `${iframeEditOverlay.rect.height}px`,
+                  left: `${iframeEditVisibleRect?.left ?? iframeEditOverlay.rect.left}px`,
+                  top: `${iframeEditVisibleRect?.top ?? iframeEditOverlay.rect.top}px`,
+                  width: `${iframeEditVisibleRect?.width ?? iframeEditOverlay.rect.width}px`,
+                  height: `${iframeEditVisibleRect?.height ?? iframeEditOverlay.rect.height}px`,
                   boxSizing: 'border-box',
+                  borderWidth: `${2 / Math.max(scale, 0.01)}px`,
                 }}
-              />
+              >
+                {iframeResizeHandles.map((handle) => {
+                  const handleStyle = RESIZE_HANDLE_STYLE[handle];
+                  const handleSize = 12 / Math.max(scale, 0.01);
+                  return (
+                    <button
+                      key={handle}
+                      type="button"
+                      data-testid={`iframe-resize-handle-${handle}`}
+                      data-r20-resize-handle={handle}
+                      aria-label={`${handleStyle.label}에서 크기 조절`}
+                      title={`${handleStyle.label}에서 크기 조절`}
+                      className="pointer-events-auto absolute m-0 box-border block p-0 shadow-sm"
+                      style={{
+                        left: handleStyle.left,
+                        top: handleStyle.top,
+                        transform: handleStyle.transform,
+                        cursor: handleStyle.cursor,
+                        width: `${handleSize}px`,
+                        height: `${handleSize}px`,
+                        minWidth: 0,
+                        minHeight: 0,
+                        touchAction: 'none',
+                        appearance: 'none',
+                        borderStyle: 'solid',
+                        borderWidth: `${1.5 / Math.max(scale, 0.01)}px`,
+                        borderColor: '#d45d84',
+                        borderRadius: `${2 / Math.max(scale, 0.01)}px`,
+                        background: '#fffafb',
+                      }}
+                      onPointerDown={(event) => startIframeResize(event, handle)}
+                      onPointerMove={moveIframeResize}
+                      onPointerUp={endIframeResize}
+                      onPointerCancel={cancelIframeResize}
+                      onLostPointerCapture={cancelIframeResize}
+                    />
+                  );
+                })}
+              </div>
             )}
             {renderMode === 'iframe' && mainMode === 'edit' && iframeEditDropTarget && (
               (() => {

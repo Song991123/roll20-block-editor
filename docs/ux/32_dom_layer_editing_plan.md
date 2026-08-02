@@ -110,6 +110,15 @@ already-selected insertion position.
 - User changes are written to the CSS workspace under the block's stable
   `sheet-r20-node-*` class. New visual edits must not add presentation
   declarations to the emitted HTML `style` attribute.
+- A single eligible visual selection exposes direct resize handles on the
+  parent-owned iframe overlay. Dragging applies a temporary size only to the
+  live iframe element; pointer-up commits touched dimensions once through the
+  same managed CSS rule and clears the temporary inline values. Absolute
+  layers may resize from every edge and corner, while flow layers keep their
+  leading position and resize from the trailing edges. Ordinary inline text and
+  table-row structures remain inspector-only because a box handle would
+  misrepresent their authored layout semantics; inline images retain box
+  handles because their rendered dimensions are explicit design data.
 - A touched property is removed from both the block's ordinary style field and
   its preserved imported `style` backup. Unrelated inline declarations,
   `data-*`, ARIA, and other preserved attributes remain intact.

@@ -6,7 +6,7 @@
  * smoke deliberately uses a synthetic sheet so no external sheet source or
  * derived evidence is retained. It verifies the user-facing interaction
  * contract: flow/free placement, canvas widget drop, layer insertion, cycle
- * protection, selection sync, and editable canvas width.
+ * protection, selection sync, direct resize, and editable canvas width.
  */
 
 import http from 'node:http';
@@ -1759,6 +1759,159 @@ async function main() {
     }, ids.rowBId);
     assert(result.tests.selectionSync.rowSelected, 'layer row selection did not update');
 
+    const resizeTargetId = ids.imageId;
+    await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${resizeTargetId}"]`,
+    ).click();
+    await page.waitForFunction(
+      (blockId) => window.__perfHook.getSelectedBlockId?.() === blockId,
+      resizeTargetId,
+    );
+    const resizeHandle = page.locator('[data-testid="iframe-resize-handle-se"]');
+    await resizeHandle.waitFor({ state: 'visible', timeout: 10000 });
+    const resizeBefore = await frame.evaluate((blockId) => {
+      const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+      if (!(element instanceof HTMLElement)) return null;
+      const rect = element.getBoundingClientRect();
+      return {
+        width: rect.width,
+        height: rect.height,
+        inlineStyle: element.getAttribute('style') ?? '',
+      };
+    }, resizeTargetId);
+    const resizeHandleBox = await resizeHandle.boundingBox();
+    assert(resizeBefore && resizeHandleBox, 'direct resize target or handle is missing');
+    await page.mouse.move(
+      resizeHandleBox.x + resizeHandleBox.width / 2,
+      resizeHandleBox.y + resizeHandleBox.height / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.move(
+      resizeHandleBox.x + resizeHandleBox.width / 2 + 48,
+      resizeHandleBox.y + resizeHandleBox.height / 2 + 32,
+      { steps: 4 },
+    );
+    await frame.waitForFunction(
+      (blockId) => document.body?.getAttribute('data-r20-resize-active') === blockId,
+      resizeTargetId,
+      { timeout: 5000 },
+    );
+    const resizeDuring = await frame.evaluate((blockId) => {
+      const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+      if (!(element instanceof HTMLElement)) return null;
+      const rect = element.getBoundingClientRect();
+      return {
+        width: rect.width,
+        height: rect.height,
+        inlineStyle: element.getAttribute('style') ?? '',
+        optimistic: document.body?.getAttribute('data-r20-resize-active') ?? null,
+      };
+    }, resizeTargetId);
+    assert(
+      resizeDuring
+        && resizeDuring.width > resizeBefore.width + 20
+        && resizeDuring.height > resizeBefore.height + 12,
+      `direct resize did not update the real iframe element before pointer-up: ${JSON.stringify({ resizeBefore, resizeDuring })}`,
+    );
+    assert(
+      /width\s*:.*!important/i.test(resizeDuring.inlineStyle)
+        && /height\s*:.*!important/i.test(resizeDuring.inlineStyle),
+      'direct resize did not use a temporary iframe-only visual size',
+    );
+    await page.mouse.up();
+    try {
+      await page.waitForFunction(
+        (blockId) => {
+          const fields = window.__perfHook.getBlockFields('html', blockId);
+          const classValue = Array.isArray(fields)
+            ? fields.find((field) => field.name === 'CLASS')?.value
+            : fields?.CLASS;
+          const designClass = String(classValue ?? '').split(/\s+/).find((name) => name.startsWith('sheet-r20-node-'));
+          const css = window.__perfHook.getEmitContent().css;
+          return Boolean(
+            designClass
+            && new RegExp(`\\.${designClass}(?:\\.${designClass})*[^{}]*\\{[^}]*width\\s*:`).test(css)
+            && new RegExp(`\\.${designClass}(?:\\.${designClass})*[^{}]*\\{[^}]*height\\s*:`).test(css),
+          );
+        },
+        resizeTargetId,
+        { timeout: 10000 },
+      );
+    } catch (error) {
+      const resizeCommitDebug = await page.evaluate((blockId) => ({
+        fields: window.__perfHook.getBlockFields('html', blockId),
+        css: window.__perfHook.getEmitContent().css.slice(-1600),
+        selectedId: window.__perfHook.getSelectedBlockId?.() ?? null,
+      }), resizeTargetId);
+      throw new Error(`direct resize CSS commit missing: ${JSON.stringify(resizeCommitDebug)}`, { cause: error });
+    }
+    await frame.waitForFunction(
+      () => !document.body?.hasAttribute('data-r20-resize-active'),
+      null,
+      { timeout: 10000 },
+    );
+    const resizeAfterEdit = await frame.evaluate((blockId) => {
+      const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+      if (!(element instanceof HTMLElement)) return null;
+      const rect = element.getBoundingClientRect();
+      return {
+        width: rect.width,
+        height: rect.height,
+        inlineStyle: element.getAttribute('style') ?? '',
+      };
+    }, resizeTargetId);
+    const resizeEmit = await page.evaluate((blockId) => {
+      const fields = window.__perfHook.getBlockFields('html', blockId);
+      return {
+        fields,
+        ...window.__perfHook.getEmitContent(),
+      };
+    }, resizeTargetId);
+    assert(resizeAfterEdit, 'resized element disappeared after CSS commit');
+    assert(
+      Math.abs(resizeAfterEdit.width - resizeDuring.width) <= 1.5
+        && Math.abs(resizeAfterEdit.height - resizeDuring.height) <= 1.5,
+      `resized element rolled back after pointer-up: ${JSON.stringify({ resizeDuring, resizeAfterEdit })}`,
+    );
+    assert(
+      !/width\s*:|height\s*:/i.test(resizeAfterEdit.inlineStyle),
+      `managed resize leaked into emitted inline HTML: ${resizeAfterEdit.inlineStyle}`,
+    );
+    assert(/width\s*:/.test(resizeEmit.css) && /height\s*:/.test(resizeEmit.css), 'managed resize did not persist in CSS');
+
+    await page.click('[data-testid="main-mode-preview"]');
+    await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '0');
+    const resizePreviewRect = await frame.evaluate((blockId) => {
+      const rect = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`)?.getBoundingClientRect();
+      return rect ? { width: rect.width, height: rect.height } : null;
+    }, resizeTargetId);
+    await page.click('[data-testid="preview-exit-edit"]');
+    await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '1');
+    const resizeEditRect = await frame.evaluate((blockId) => {
+      const rect = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`)?.getBoundingClientRect();
+      return rect ? { width: rect.width, height: rect.height } : null;
+    }, resizeTargetId);
+    result.tests.directResize = {
+      before: resizeBefore,
+      during: resizeDuring,
+      afterEdit: resizeAfterEdit,
+      preview: resizePreviewRect,
+      editAgain: resizeEditRect,
+      emittedCss: /width\s*:/.test(resizeEmit.css) && /height\s*:/.test(resizeEmit.css),
+    };
+    assert(
+      resizePreviewRect
+        && resizeEditRect
+        && Math.abs(resizePreviewRect.width - resizeAfterEdit.width) <= 0.5
+        && Math.abs(resizePreviewRect.height - resizeAfterEdit.height) <= 0.5
+        && Math.abs(resizeEditRect.width - resizePreviewRect.width) <= 0.5
+        && Math.abs(resizeEditRect.height - resizePreviewRect.height) <= 0.5,
+      `preview/edit resize geometry diverged: ${JSON.stringify(result.tests.directResize)}`,
+    );
+    await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.rowBId}"]`,
+    ).click();
+
     result.tests.editInspector = await page.evaluate(async () => {
       await new Promise((resolve) => requestAnimationFrame(resolve));
       const panel = document.querySelector('[data-testid="edit-inspector"]');
@@ -2262,7 +2415,12 @@ async function main() {
     assert(result.tests.imageStyle?.objectPosition === '100% 100%', `image focus did not render: ${imageStyleDebug}`);
     assert(result.tests.imageStyle?.opacity === '0.5', `image opacity did not render: ${imageStyleDebug}`);
     assert(result.tests.imageStyle?.borderRadius === '8px', `image corner did not render: ${imageStyleDebug}`);
-    assert(/width\s*:\s*160px/i.test(result.tests.imageStyle?.inlineStyle ?? '') && /height\s*:\s*96px/i.test(result.tests.imageStyle?.inlineStyle ?? ''), `image dimension declarations changed while styling: ${imageStyleDebug}`);
+    assert(
+      Math.abs(Number.parseFloat(result.tests.imageStyle?.width ?? '') - result.tests.directResize.afterEdit.width) <= 0.5
+        && Math.abs(Number.parseFloat(result.tests.imageStyle?.height ?? '') - result.tests.directResize.afterEdit.height) <= 0.5,
+      `image appearance controls changed the managed size: ${imageStyleDebug}`,
+    );
+    assert(!/width\s*:|height\s*:/i.test(result.tests.imageStyle?.inlineStyle ?? ''), `image resize returned to inline HTML: ${imageStyleDebug}`);
     assert(!/object-fit|object-position|opacity|border-radius/i.test(result.tests.imageStyle?.inlineStyle ?? ''), 'image presentation leaked into inline HTML');
     await imageStylePanel.scrollIntoViewIfNeeded();
     await page.screenshot({
@@ -3348,7 +3506,7 @@ async function main() {
         `- Status: ${result.pass ? 'PASS' : 'FAIL'}`,
         `- Console errors: ${consoleErrors.length}`,
         `- Page errors: ${pageErrors.length}`,
-        '- Coverage: flow/free placement, canvas widget and block gallery drops, layer edge auto-scroll, layer collapse/drag-hover expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, managed visual styles, preview Roll/chat, sheet width, and the dedicated rolltemplate card editor with click/style/drop/chat synchronization plus empty-workspace template creation.',
+        '- Coverage: flow/free placement, direct on-sheet resize, canvas widget and block gallery drops, layer edge auto-scroll, layer collapse/drag-hover expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, managed visual styles, preview Roll/chat, sheet width, and the dedicated rolltemplate card editor with click/style/drop/chat synchronization plus empty-workspace template creation.',
         '',
       ].join('\n'),
       'utf8',

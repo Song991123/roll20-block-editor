@@ -26,6 +26,10 @@ export type IframeEditNodeGeometry = {
   clientLeft: number;
   clientTop: number;
   position: string;
+  tagName?: string;
+  display?: string;
+  computedWidth?: number;
+  computedHeight?: number;
   offsetParentBlockId: string | null;
   offsetParentPosition: string;
 };
@@ -161,6 +165,14 @@ function isNodeGeometry(value: unknown): value is IframeEditNodeGeometry {
     && isFiniteCoordinate(value.clientTop)
     && typeof value.position === 'string'
     && value.position.length <= 64
+    && (value.tagName === undefined
+      || (typeof value.tagName === 'string' && value.tagName.length <= 64))
+    && (value.display === undefined
+      || (typeof value.display === 'string' && value.display.length <= 64))
+    && (value.computedWidth === undefined
+      || (isFiniteCoordinate(value.computedWidth) && value.computedWidth >= 0))
+    && (value.computedHeight === undefined
+      || (isFiniteCoordinate(value.computedHeight) && value.computedHeight >= 0))
     && (value.offsetParentBlockId === null
       || (typeof value.offsetParentBlockId === 'string' && value.offsetParentBlockId.length <= 256))
     && typeof value.offsetParentPosition === 'string'

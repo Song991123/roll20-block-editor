@@ -143,6 +143,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   var optimisticFlowSnapshot = null;
   var optimisticFlowCommit = null;
   var optimisticEditMove = null;
+  var optimisticEditResize = null;
   var selectedEditBlockIds = [];
   var pendingLivePatchChunks = null;
   // Parent retries an apply message for transport reliability. A delayed
@@ -166,9 +167,16 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     var offsetParentBlock = blockNodeOf(offsetParent);
     var offsetParentPosition = '';
     var position = '';
+    var display = '';
+    var computedWidth = NaN;
+    var computedHeight = NaN;
     try {
       offsetParentPosition = offsetParent ? window.getComputedStyle(offsetParent).position : '';
-      position = window.getComputedStyle(node).position;
+      var computedStyle = window.getComputedStyle(node);
+      position = computedStyle.position;
+      display = computedStyle.display;
+      computedWidth = parseFloat(computedStyle.width);
+      computedHeight = parseFloat(computedStyle.height);
     } catch (e) {}
     return {
       blockId: node.dataset.r20BlockId,
@@ -180,6 +188,10 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       clientLeft: Number(node.clientLeft) || 0,
       clientTop: Number(node.clientTop) || 0,
       position: position,
+      tagName: String(node.tagName || '').toLowerCase(),
+      display: display,
+      computedWidth: Number.isFinite(computedWidth) && computedWidth >= 0 ? computedWidth : undefined,
+      computedHeight: Number.isFinite(computedHeight) && computedHeight >= 0 ? computedHeight : undefined,
       offsetParentBlockId: offsetParentBlock && offsetParentBlock.dataset
         ? offsetParentBlock.dataset.r20BlockId || null
         : null,
@@ -482,6 +494,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       pendingEditMove = null;
       activeEditPointer = null;
       clearOptimisticEditMove();
+      clearOptimisticEditResize();
       rollbackOptimisticFlowMove();
       clearValidatedFlowTarget();
     }
@@ -686,6 +699,90 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     }
     return true;
   }
+  function inlinePropertySnapshot(node, property) {
+    return {
+      value: node.style.getPropertyValue(property),
+      priority: node.style.getPropertyPriority(property)
+    };
+  }
+  function restoreInlineProperty(node, property, snapshot) {
+    if (!snapshot || !snapshot.value) {
+      node.style.removeProperty(property);
+      return;
+    }
+    node.style.setProperty(property, snapshot.value, snapshot.priority || '');
+  }
+  function clearOptimisticEditResize() {
+    var resize = optimisticEditResize;
+    optimisticEditResize = null;
+    document.body.removeAttribute('data-r20-resize-active');
+    document.body.removeAttribute('data-r20-resize-committed');
+    if (!resize || !resize.node || !resize.node.isConnected) return false;
+    Object.keys(resize.properties).forEach(function (property) {
+      restoreInlineProperty(resize.node, property, resize.properties[property]);
+    });
+    scheduleResize();
+    return true;
+  }
+  function validResizeCoordinate(value, allowNegative) {
+    return typeof value === 'number'
+      && Number.isFinite(value)
+      && Math.abs(value) <= 10000000
+      && (allowNegative || value >= 0);
+  }
+  function applyOptimisticEditResize(data) {
+    if (!data || typeof data.blockId !== 'string') return false;
+    if (data.blockId.length < 1 || data.blockId.length > 256) return false;
+    var hasWidth = validResizeCoordinate(data.width, false);
+    var hasHeight = validResizeCoordinate(data.height, false);
+    var hasLeft = validResizeCoordinate(data.left, true);
+    var hasTop = validResizeCoordinate(data.top, true);
+    if (!hasWidth && !hasHeight && !hasLeft && !hasTop) return false;
+    var node = document.querySelector('[data-r20-block-id="' + cssEscape(data.blockId) + '"]');
+    if (!node || !node.style) return false;
+    if (!optimisticEditResize || optimisticEditResize.node !== node) {
+      clearOptimisticEditResize();
+      var properties = {};
+      ['width', 'height', 'left', 'top', 'right', 'bottom', 'transition', 'will-change'].forEach(function (property) {
+        properties[property] = inlinePropertySnapshot(node, property);
+      });
+      optimisticEditResize = {
+        node: node,
+        blockId: data.blockId,
+        properties: properties,
+        committed: false
+      };
+    }
+    if (hasWidth) node.style.setProperty('width', data.width + 'px', 'important');
+    if (hasHeight) node.style.setProperty('height', data.height + 'px', 'important');
+    if (hasLeft) {
+      node.style.setProperty('left', data.left + 'px', 'important');
+      node.style.setProperty('right', 'auto', 'important');
+    }
+    if (hasTop) {
+      node.style.setProperty('top', data.top + 'px', 'important');
+      node.style.setProperty('bottom', 'auto', 'important');
+    }
+    node.style.setProperty('transition', 'none', 'important');
+    node.style.setProperty('will-change', 'width, height, left, top', 'important');
+    document.body.setAttribute('data-r20-resize-active', data.blockId);
+    document.body.removeAttribute('data-r20-resize-committed');
+    scheduleResize();
+    return true;
+  }
+  function finalizeOptimisticEditResize(data) {
+    if (
+      !optimisticEditResize
+      || !data
+      || data.blockId !== optimisticEditResize.blockId
+      || data.committed !== true
+    ) {
+      clearOptimisticEditResize();
+      return;
+    }
+    optimisticEditResize.committed = true;
+    document.body.setAttribute('data-r20-resize-committed', '1');
+  }
   function applyOptimisticEditMove(pointer) {
     var move = optimisticEditMove;
     if (!move || !move.selectedNodes || !move.selectedNodes.length || !pointer) return false;
@@ -873,6 +970,12 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       pendingLivePatchChunks = null;
     }
     lastAppliedRevision = data.revision;
+    // Restore the pre-drag inline state before applying the authoritative HTML
+    // and managed CSS. Both operations run in one task, so no rollback frame is
+    // painted and an imported inline width cannot be reintroduced afterward.
+    if (optimisticEditResize && optimisticEditResize.committed) {
+      clearOptimisticEditResize();
+    }
     var htmlChanged = data.htmlKey !== lastAppliedHtmlKey;
     var usedOptimisticFlowPatch = htmlChanged && canApplyOptimisticFlowCommit(data.optimisticFlow);
     var attrs = htmlChanged && !usedOptimisticFlowPatch ? collectAttrs() : null;
@@ -1796,6 +1899,22 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   }, true);
   window.addEventListener('message', function (e) {
     if (e.source !== parent || !e.data) return;
+    if (
+      e.data.type === 'r20:edit-resize-preview'
+      && e.data.protocol === 1
+      && e.data.bridgeId === editBridgeId
+    ) {
+      applyOptimisticEditResize(e.data);
+      return;
+    }
+    if (
+      e.data.type === 'r20:edit-resize-finalize'
+      && e.data.protocol === 1
+      && e.data.bridgeId === editBridgeId
+    ) {
+      finalizeOptimisticEditResize(e.data);
+      return;
+    }
     if (
       e.data.type === 'r20:edit-drag-selection'
       && e.data.protocol === 1

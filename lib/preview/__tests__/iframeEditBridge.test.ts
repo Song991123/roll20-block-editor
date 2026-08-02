@@ -16,6 +16,10 @@ const subject = {
   clientLeft: 1,
   clientTop: 1,
   position: 'absolute',
+  tagName: 'div',
+  display: 'block',
+  computedWidth: 98,
+  computedHeight: 38,
   offsetParentBlockId: 'frame-1',
   offsetParentPosition: 'relative',
 };
@@ -139,6 +143,18 @@ assert.equal(parseIframeEditBridgeMessage({
   type: 'r20:edit-applied', protocol: 1, bridgeId, revision: 0, blockCount: 1,
 }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...hit, pointerId: 1.5 }), null);
+assert.equal(parseIframeEditBridgeMessage({
+  ...hit,
+  subject: { ...subject, computedWidth: Number.NaN },
+}), null);
+assert.equal(parseIframeEditBridgeMessage({
+  ...hit,
+  subject: { ...subject, display: 'x'.repeat(65) },
+}), null);
+assert.equal(parseIframeEditBridgeMessage({
+  ...hit,
+  subject: { ...subject, tagName: 'x'.repeat(65) },
+}), null);
 assert.equal(parseIframeEditBridgeMessage({ ...hit, modifiers: { ctrlKey: 'yes' } }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...multiHit, selection: [multiHit.selection[0], multiHit.selection[0]] }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...multiHit, selection: [] }), null);
