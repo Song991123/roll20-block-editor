@@ -1,5 +1,17 @@
 # 34. Requirements Gap Matrix
 
+## 2026-08-03 Canvas selection isolation
+
+- `VERIFIED LOCAL`: iframe structural-layer selection uses
+  `data-r20-selected`; friendly-widget selection uses a separate internal
+  marker. Late widget synchronization no longer erases a Ctrl/Cmd layer
+  selection.
+- `VERIFIED LOCAL`: three consecutive full edit-flow browser runs preserved
+  both selected layers through the forced collision case and completed the
+  following multi-object move with console/page errors `0/0`.
+- `CLAIM BOUNDARY`: local Figma-like selection stability improved. Actual
+  modern and legacy Roll20 render parity remains open and unchanged.
+
 ## 2026-08-03 Structural inside moves and conditional initial state
 
 - `VERIFIED LOCAL`: anonymous imported frame, list, table-section, and

@@ -115,6 +115,11 @@ the entire history and generated evidence tree.
   the current in-memory import/edit/preview/re-import smoke. No source copy or
   per-sheet report was retained; this is a narrow local regression result, not
   an all-sheet or actual Roll20 claim.
+  The iframe now keeps structural layer selection and friendly-widget
+  selection on separate DOM markers. The forced collision regression passed
+  three consecutive full edit-flow browser runs, including the following
+  multi-object move, with console/page errors `0/0`. This closes the known
+  local selection race only; actual modern/legacy Roll20 gates are unchanged.
 - Actual Roll20's built-in default chat-template DOM and typography were
   measured in the dedicated one-member modern Sandbox. The local fallback now
   matches its caption/row/inline-roll structure and passes browser smoke.

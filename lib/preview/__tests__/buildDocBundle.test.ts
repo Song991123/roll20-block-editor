@@ -259,6 +259,16 @@ assert.match(bundle.doc, /rollbackOptimisticFlowMove/);
 assert.match(bundle.doc, /selectedEditBlockIds/);
 assert.match(bundle.doc, /selectedNodes/);
 assert.match(bundle.doc, /selection: selection\.length > 1/);
+assert.match(
+  bundle.doc,
+  /querySelectorAll\('\[data-r20-widget-selected="1"\]'\)[\s\S]*?setAttribute\('data-r20-widget-selected', '1'\)/,
+  'friendly widgets keep a marker separate from structural layer selection',
+);
+assert.doesNotMatch(
+  bundle.doc,
+  /previousWidgets = document\.querySelectorAll\('\[data-r20-selected="1"\]'\)/,
+  'widget synchronization cannot clear structural layer selection',
+);
 assert.match(bundle.doc, /r20:edit-apply-chunk-start/);
 assert.match(bundle.doc, /r20:edit-apply-chunk/);
 assert.match(bundle.doc, /pendingLivePatchChunks/);

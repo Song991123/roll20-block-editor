@@ -77,6 +77,9 @@ invent separate DOM models.
 14. A valid `inside` hover over a collapsed container opens it after a short
     deliberate pause. Opening the panel row is preview-only navigation; the
     Blockly graph and emitted HTML change only after an accepted drop.
+15. Structural layer selection and friendly-widget selection use separate
+    iframe markers. Updating or clearing one selection channel must not erase
+    the other channel's visible state.
 
 ## Visual Language
 

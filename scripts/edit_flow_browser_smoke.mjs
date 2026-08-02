@@ -547,6 +547,20 @@ async function main() {
       `canvas multi-selection is not visible: ${JSON.stringify(result.tests.canvasMultiSelection)}`,
     );
 
+    await page.locator('[data-testid="preview-iframe"]').evaluate((iframe) => {
+      iframe.contentWindow?.postMessage({ type: 'r20:widget-select', widgetName: null }, '*');
+    });
+    await page.waitForTimeout(80);
+    result.tests.widgetSelectionIsolation = await frame.evaluate(({ firstId, secondId }) => ({
+      firstVisible: Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(firstId)}"][data-r20-selected="1"]`)),
+      secondVisible: Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(secondId)}"][data-r20-selected="1"]`)),
+    }), { firstId: ids.groupOneId, secondId: ids.groupTwoId });
+    assert(
+      result.tests.widgetSelectionIsolation.firstVisible
+        && result.tests.widgetSelectionIsolation.secondVisible,
+      `widget selection cleared layer selection: ${JSON.stringify(result.tests.widgetSelectionIsolation)}`,
+    );
+
     await page.click('[data-testid="edit-placement-free"]');
     const multiBefore = await frame.evaluate(({ firstId, secondId }) => {
       const read = (id) => {

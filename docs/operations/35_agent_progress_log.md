@@ -12065,3 +12065,21 @@ same-hash modern/legacy comparison.
   measurement is retained in this document or Git.
 - This remains local private-fixture evidence. Actual modern Sandbox and the
   separate dedicated legacy-room comparison are still open.
+
+## 2026-08-03 - Canvas selection isolation
+
+- Traced the intermittent post-grouping multi-selection failure to two iframe
+  selection channels sharing `data-r20-selected`. A later friendly-widget
+  synchronization message removed every structural layer highlight.
+- Gave friendly widgets their own internal selection marker while retaining the
+  same visual outline. Structural layer selection state and multi-drag lookup
+  remain on the existing marker and store contract.
+- Added a build-document regression and an explicit browser collision check:
+  select two rendered layers, send a widget-selection reset, require both
+  structural highlights to remain, then complete the existing multi-object
+  move and full edit-flow suite.
+- Focused test, production build, lint, and full `ci:verify` pass. Three
+  consecutive full browser runs pass with the isolation assertion true and
+  console/page errors `0/0`; every temporary server exited.
+- Actual modern Sandbox and dedicated legacy-room parity remain open. This is
+  local editor-selection evidence only.

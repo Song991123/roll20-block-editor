@@ -1,3 +1,18 @@
+# 2026-08-03 Canvas selection isolation
+
+- `FIXED PRODUCT`: structural layer selection and friendly-widget selection no
+  longer share one iframe DOM marker. A widget synchronization message cannot
+  clear the layer list or canvas multi-selection highlight.
+- `VERIFIED BROWSER`: the canonical full edit-flow smoke passed three
+  consecutive fresh runs. Each run explicitly sent a widget-selection reset
+  after selecting two rendered layers, kept both layer highlights, completed
+  the later multi-object move and structural flows, and reported console/page
+  errors `0/0`.
+- `VERIFIED REGRESSION`: focused build-document tests, full `ci:verify`, lint,
+  and production build pass. Temporary smoke servers exited after every run.
+- `CLAIM BOUNDARY`: this closes the known local selection race only. It does
+  not change the open modern Sandbox or dedicated legacy-room parity gates.
+
 # 2026-08-03 Protected local import regression refresh
 
 - `VERIFIED LOCAL`: one protected local HTML/CSS/translation input was read

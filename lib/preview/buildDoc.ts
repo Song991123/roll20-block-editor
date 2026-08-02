@@ -1897,9 +1897,9 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     }
     // spec 17 §8 — 캔버스에서 위젯 선택 → 미리보기 강조
     if (e.data.type === 'r20:widget-select') {
-      var previousWidgets = document.querySelectorAll('[data-r20-selected="1"]');
+      var previousWidgets = document.querySelectorAll('[data-r20-widget-selected="1"]');
       for (var previousWidgetIndex = 0; previousWidgetIndex < previousWidgets.length; previousWidgetIndex += 1) {
-        previousWidgets[previousWidgetIndex].removeAttribute('data-r20-selected');
+        previousWidgets[previousWidgetIndex].removeAttribute('data-r20-widget-selected');
       }
       var name = e.data.widgetName;
       if (!name) return;
@@ -1908,7 +1908,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
         '[name="attr_' + cssEscape(name) + '"]'
       );
       for (var i = 0; i < nodes.length; i++) {
-        nodes[i].setAttribute('data-r20-selected', '1');
+        nodes[i].setAttribute('data-r20-widget-selected', '1');
       }
       return;
     }
@@ -2246,7 +2246,8 @@ ${scope}[data-layer="custom"] :not([class]) {
 }
 
 /* spec 17 §8 — 캔버스에서 선택된 위젯 강조 */
-${scope} [data-r20-selected="1"] {
+${scope} [data-r20-selected="1"],
+${scope} [data-r20-widget-selected="1"] {
   outline: 2px solid #f59e0b;
   outline-offset: 1px;
 }
