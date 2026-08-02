@@ -21,6 +21,7 @@ import path from 'node:path';
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const REQUIRE_ACTUAL = args.includes('--require-actual');
 const REQUIRE_RENDERER_READY = args.includes('--require-renderer-ready');
+const SELF_TEST = args.includes('--self-test');
 const RUN_DIR_ARG = firstPositionalArg() ?? '';
 const OUT_DIR_ARG = readOption('--out-dir', '');
 const RUN_ROOT = path.resolve('reports/roll20-actual-compare');
@@ -79,9 +80,14 @@ async function main() {
   for (const fixtureId of await listFixtureIds(baselineDir)) {
     fixtures.push(await inspectFixture(runDir, fixtureId, diffReport));
   }
-  const chatCurrentMetrics = await readChatCurrentMetrics(runDir, fixtures.map((fixture) => fixture.fixtureId));
+  const chatCurrentMetrics = await readChatCurrentMetrics(
+    runDir,
+    fixtures.filter((fixture) => fixture.requiresChat).map((fixture) => fixture.fixtureId),
+  );
 
-  const allTargets = fixtures.flatMap((fixture) => fixture.actualTargets);
+  const allTargets = fixtures
+    .flatMap((fixture) => fixture.actualTargets)
+    .filter((target) => target.applicable !== false);
   const generatedTargets = allTargets.filter((target) => target.requiredForGeneratedSheetCheck);
   const observationTargets = allTargets.filter((target) => !target.requiredForGeneratedSheetCheck);
   const actualTargetCount = allTargets.length;
@@ -746,8 +752,20 @@ async function inspectFixture(runDir, fixtureId, diffReport) {
     path: rel(path.join(payload, name)),
     exists: existsSync(path.join(payload, name)),
   }));
+  const htmlFile = path.join(payload, 'sheet.html');
+  const requiresChat = existsSync(htmlFile)
+    ? fixtureRequiresChat(await fs.readFile(htmlFile, 'utf8'))
+    : false;
+  const targets = TARGETS.map((target) => target.id === 'chat'
+    ? {
+        ...target,
+        applicable: requiresChat,
+        requiredForGeneratedSheetCheck: requiresChat,
+      }
+    : { ...target, applicable: true });
   return {
     fixtureId,
+    requiresChat,
     localBaselineReady: existsSync(localPreview) && existsSync(localEdit),
     payloadReady: payloadFiles.every((file) => file.exists),
     localScreenshots: {
@@ -755,11 +773,35 @@ async function inspectFixture(runDir, fixtureId, diffReport) {
       edit: fileStatus(localEdit),
     },
     payloadFiles,
-    actualTargets: await Promise.all(TARGETS.map((target) => inspectTarget(fixtureId, screenshots, target, diffReport))),
+    actualTargets: await Promise.all(targets.map((target) => inspectTarget(fixtureId, screenshots, target, diffReport))),
   };
 }
 
 async function inspectTarget(fixtureId, screenshots, target, diffReport) {
+  if (target.applicable === false) {
+    return {
+      id: target.id,
+      evidence: target.evidence,
+      screenshot: fileStatus(path.join(screenshots, target.filename)),
+      preferredScreenshot: null,
+      preferredScreenshots: [],
+      fallbackScreenshot: null,
+      rawExists: false,
+      exists: false,
+      validation: {
+        ok: true,
+        kind: 'not-applicable',
+        note: 'payload has no Roll button or Rolltemplate',
+      },
+      diffStatus: 'NOT_APPLICABLE',
+      applicable: false,
+      requiredForGeneratedSheetCheck: false,
+      bestMismatchRatio: null,
+      pixelEvidenceAuthoritative: false,
+      captureQuality: null,
+      note: 'not applicable',
+    };
+  }
   const preferredFiles = (target.preferredFilenames ?? (target.preferredFilename ? [target.preferredFilename] : []))
     .map((filename) => path.join(screenshots, filename));
   const preferredFile = preferredFiles.find((file) => existsSync(file)) ?? preferredFiles[0] ?? null;
@@ -780,6 +822,7 @@ async function inspectTarget(fixtureId, screenshots, target, diffReport) {
     exists,
     validation,
     diffStatus: exists ? (diffItem?.status ?? 'NOT_RUN') : (rawExists ? 'SUSPECT' : 'NOT_RUN'),
+    applicable: true,
     requiredForGeneratedSheetCheck: Boolean(target.requiredForGeneratedSheetCheck),
     bestMismatchRatio: exists ? (diffItem?.result?.best?.mismatchRatio ?? null) : null,
     pixelEvidenceAuthoritative: exists
@@ -885,6 +928,12 @@ async function validateChatEvidence(screenshots, file) {
     kind: 'chat-screenshot-only',
     note: 'Roll20 chat screenshot exists, but no DOM sidecar proves which rolltemplate/message rendered',
   };
+}
+
+function fixtureRequiresChat(html) {
+  const source = String(html ?? '');
+  return /<rolltemplate\b/i.test(source)
+    || /<(?:button|input)\b[^>]*\btype\s*=\s*["']roll["']/i.test(source);
 }
 
 function validateChatForeground(domEvidence) {
@@ -1183,7 +1232,9 @@ function renderMarkdown(report) {
     const targetStatus = Object.fromEntries(
       fixture.actualTargets.map((target) => [
         target.id,
-        target.exists
+        target.applicable === false
+          ? 'N/A'
+          : target.exists
           ? (target.diffStatus === 'DIFFED' && target.pixelEvidenceAuthoritative !== true
             ? 'DIFFED_UNTRUSTED_CAPTURE'
             : target.diffStatus)
@@ -1357,7 +1408,22 @@ function firstPositionalArg() {
   return args.find((arg, index) => !arg.startsWith('--') && !args[index - 1]?.startsWith('--'));
 }
 
-main().catch((error) => {
+async function selfTest() {
+  const cases = [
+    ['rolltemplate', '<rolltemplate class="sheet-rolltemplate-proof"></rolltemplate>', true],
+    ['roll button', '<button type="roll" name="roll_check">Roll</button>', true],
+    ['roll input', '<input name="roll_check" type="roll">', true],
+    ['ordinary button', '<button type="action" name="act_mark">Mark</button>', false],
+    ['plain layout', '<div><input type="text"></div>', false],
+  ];
+  for (const [name, html, expected] of cases) {
+    const actual = fixtureRequiresChat(html);
+    if (actual !== expected) throw new Error(`${name}: expected ${expected}, got ${actual}`);
+  }
+  console.log('ROLL20 ACTUAL STATUS SELF-TEST PASS');
+}
+
+(SELF_TEST ? selfTest() : main()).catch((error) => {
   const message = error?.message ?? String(error);
   console.error(`ROLL20 ACTUAL STATUS OPEN\n${message}`);
   console.error('No actual-screen parity is promoted when the evidence run is missing.');

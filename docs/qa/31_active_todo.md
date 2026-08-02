@@ -12,16 +12,21 @@ belong in tracked documents.
   the supported Custom Sheet Sandbox file chooser. Confirm initial sheet state,
   translation, worker behavior, Roll button output, result-card rendering,
   assets, and intrinsic sheet size. Keep all evidence ignored and local.
-- `VERIFY EXTERNAL`: repeat the same generated-payload contract in a newly
-  created dedicated legacy-enabled test room. Custom Sheet Sandbox does not
-  prove legacy behavior.
+- `DONE ACTUAL SYNTHETIC`: a dedicated owner-only legacy-enabled test room
+  rendered fresh anonymous payloads with the expected wrapper, translation,
+  controls, flow/table layout, intrinsic roots, action-driven Sheet Worker
+  state change, Roll execution, and custom result card. Lossless root segments,
+  full-root stitching, DOM evidence, and actual-status checks remain ignored
+  local evidence. This proves the tested synthetic contract, not every sheet.
 - `BLOCKED EXTERNAL`: the current automated modern upload path is stopped at
-  the browser file-selection permission boundary. No hidden input, endpoint,
-  or existing-room workaround is allowed.
-- `TODO`: compare local Preview/Edit against the two actual Roll20 destinations
-  with the same generated payload and classify differences by wrapper,
-  baseline CSS, authored CSS, state/default attributes, translation, worker,
-  result-card/chat, assets, or viewport/crop.
+  the browser file-selection permission boundary. A fresh visible chooser
+  retry still returns `Not allowed`. No hidden input, endpoint, or existing-room
+  workaround is allowed.
+- `PARTIAL`: local Preview/Edit and the dedicated legacy destination now have
+  same-payload root comparisons. Root dimensions and capture completeness
+  agree, but residual pixel differences still require an actual DOM/CSS
+  comparison before any parity claim. Modern comparison and detailed chat
+  typography/row diagnostics remain open.
 
 ## P0 - Universal Import And Export
 

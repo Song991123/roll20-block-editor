@@ -61,6 +61,7 @@ const tasks = [
   'test:roll20-room-members',
   'test:roll20-runtime-evidence',
   'test:roll20-actual-geometry',
+  'test:roll20-actual-status',
   'test:roll20-chat-renderer-targets',
   'test:roll20-chat-template-scope',
   'test:roll20-asset-relink',

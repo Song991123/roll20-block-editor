@@ -21,16 +21,31 @@ const files = {
     '<div class="sheet-sandbox-proof" style="width:420px;min-height:180px;padding:16px">',
     '  <label data-i18n="name"></label>',
     '  <input type="text" name="attr_name" value="">',
-    '  <button type="roll" name="roll_check" value="&amp;{template:default} {{name=Sandbox proof}} {{result=[[1d20]]}}">Roll</button>',
-    '  <script type="text/worker">on(\'clicked:roll_check\', function () { setAttrs({ clicked: \'1\' }); });</script>',
+    '  <input type="hidden" name="attr_clicked" value="0">',
+    '  <div class="sheet-proof-actions">',
+    '    <button type="roll" name="roll_check" value="&amp;{template:proof} {{name=Sandbox proof}} {{result=[[1d20]]}}">Roll</button>',
+    '    <button type="action" name="act_mark" data-i18n="mark"></button>',
+    '  </div>',
+    '  <script type="text/worker">on(\'clicked:mark\', function () { setAttrs({ clicked: \'1\' }); });</script>',
     '</div>',
+    '<rolltemplate class="sheet-rolltemplate-proof">',
+    '  <div class="sheet-proof-card">',
+    '    <div class="sheet-proof-title">{{name}}</div>',
+    '    <div class="sheet-proof-row"><span data-i18n="result"></span><strong>{{result}}</strong></div>',
+    '  </div>',
+    '</rolltemplate>',
   ].join('\n'),
   'fixture-A/source.css': [
     '.sheet-sandbox-proof { background: #fff0f5; border: 2px solid #d96b91; box-sizing: border-box; color: #3b2730; }',
     '.sheet-sandbox-proof label { display: block; font-weight: 700; }',
-    '.sheet-sandbox-proof button[type="roll"] { display: block; margin-top: 12px; }',
+    '.sheet-sandbox-proof .sheet-proof-actions { display: flex; align-items: center; gap: 8px; margin-top: 12px; }',
+    '.sheet-sandbox-proof .sheet-proof-actions button { margin: 0; }',
+    '.sheet-rolltemplate-proof .sheet-proof-card { width: 280px; overflow: hidden; border: 2px solid #d96b91; border-radius: 6px; background: #fffafc; color: #3b2730; }',
+    '.sheet-rolltemplate-proof .sheet-proof-title { padding: 10px 12px; background: #d96b91; color: #ffffff; font-size: 17px; font-weight: 700; }',
+    '.sheet-rolltemplate-proof .sheet-proof-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; }',
+    '.sheet-rolltemplate-proof .sheet-proof-row strong { color: #9f3158; font-size: 20px; }',
   ].join('\n'),
-  'fixture-A/source.i18n': JSON.stringify({ name: 'Name' }),
+  'fixture-A/source.i18n': JSON.stringify({ name: 'Name', result: 'Result', mark: 'Mark' }),
   'fixture-A/manifest.json': JSON.stringify({
     id: 'fixture-A',
     synthetic: true,
@@ -87,11 +102,29 @@ async function main() {
     if (!files['fixture-A/source.html'].includes('type="text/worker"')) {
       throw new Error('synthetic worker marker missing');
     }
+    if (!files['fixture-A/source.html'].includes('<rolltemplate')) {
+      throw new Error('synthetic Rolltemplate marker missing');
+    }
+    if (!files['fixture-A/source.html'].includes('&amp;{template:proof}')) {
+      throw new Error('synthetic Roll button template marker missing');
+    }
+    if (!files['fixture-A/source.html'].includes('type="action" name="act_mark"')) {
+      throw new Error('synthetic action button marker missing');
+    }
+    if (!files['fixture-A/source.html'].includes("on('clicked:mark'")) {
+      throw new Error('synthetic action worker event missing');
+    }
     if (!files['fixture-A/source.css'].includes('#fff0f5')) {
       throw new Error('synthetic CSS marker missing');
     }
     if (JSON.parse(files['fixture-A/source.i18n']).name !== 'Name') {
       throw new Error('synthetic translation marker missing');
+    }
+    if (JSON.parse(files['fixture-A/source.i18n']).result !== 'Result') {
+      throw new Error('synthetic Rolltemplate translation marker missing');
+    }
+    if (JSON.parse(files['fixture-A/source.i18n']).mark !== 'Mark') {
+      throw new Error('synthetic action translation marker missing');
     }
     if (JSON.parse(files['fixture-A/manifest.json']).synthetic !== true) {
       throw new Error('synthetic manifest marker missing');

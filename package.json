@@ -75,6 +75,7 @@
     "test:roll20-computed-style-context": "node scripts/roll20_computed_style_context_diagnostics.mjs --self-test",
     "test:roll20-runtime-evidence": "node scripts/roll20_runtime_evidence_compare.mjs --self-test",
     "test:roll20-actual-geometry": "node scripts/roll20_actual_geometry_gate.mjs --self-test",
+    "test:roll20-actual-status": "node scripts/roll20_actual_status.mjs --self-test",
     "compare:roll20-runtime-evidence": "node scripts/roll20_runtime_evidence_compare.mjs",
     "gate:roll20-payload-fidelity": "node scripts/roll20_payload_fidelity_gate.mjs",
     "status:roll20-actual": "node scripts/roll20_actual_status.mjs",

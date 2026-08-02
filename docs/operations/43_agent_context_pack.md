@@ -13,7 +13,10 @@ contain private source evidence or historical test dumps.
 - Modern and legacy compatibility paths are separate.
 - Structural layer and friendly-widget selection channels are isolated.
 - Public product assets contain no bundled real sheet sample.
-- Actual modern Sandbox and dedicated legacy-room parity remain open.
+- Actual modern Sandbox remains open. A dedicated legacy-room synthetic
+  baseline now covers full-root rendering, translation, controls, Worker
+  action state, Roll execution, and result-card output; detailed chat paint
+  diagnostics and broad-sheet parity remain open.
 - Modern automated upload is stopped at the supported file-selection permission
   boundary; do not bypass it.
 - Generated evidence and external validation inputs remain ignored, local, and

@@ -15,6 +15,26 @@ or source-derived measurement here.
 - Remote CI: passed safety/unit verification, lint, and production build.
 - Worktree and project server state were clean after the run.
 
+## 2026-08-03 - Dedicated Legacy Actual Verification
+
+- Extended the anonymous synthetic runtime payload with a real Roll action,
+  custom result card, translated action button, and supported action-triggered
+  Sheet Worker state change.
+- In a newly created owner-only legacy-enabled test room, verified wrapper and
+  root rendering, translation, controls, flow/table layout, full-height root
+  capture, Worker state mutation, Roll execution, and result-card output.
+- Corrected the actual-status gate so payloads with no Roll button or
+  Rolltemplate do not require irrelevant chat screenshots. Added its self-test
+  to the shared CI safety suite.
+- Local Preview/Edit remained exact for both modern and legacy synthetic modes.
+  Actual legacy full-root evidence passed the stitch and status gates. Fine
+  chat typography/row diagnostics and the renderer-action gate remain open.
+- Modern Custom Sheet Sandbox is still blocked at the supported browser file
+  chooser: the visible chooser opens, but local-file transfer returns
+  `Not allowed`. No hidden upload path was used.
+- Claim boundary: current anonymous legacy payloads only. Modern actual-screen
+  verification and broad all-sheet parity are not complete.
+
 ## 2026-08-03 - Compact Edit Toolbar
 
 - Replaced wrapping edit-toolbar text actions with accessible icon controls
@@ -91,7 +111,8 @@ or source-derived measurement here.
 ## Open Gates
 
 1. Supported modern Custom Sheet Sandbox upload and actual-screen verification.
-2. Separate dedicated legacy-enabled test-room verification.
+2. Detailed legacy result-card typography/row comparison and renderer-action
+   classification after the trustworthy actual capture.
 3. Broader anonymous mapping and edit coverage for uncommon structures.
 4. Future JavaScript workspace and lossless unsupported-source policy.
 5. Current-tree privacy cleanup, followed by an explicit Git-history decision.
