@@ -30,7 +30,10 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 - Do not commit real or derived Roll20 sheet assets, public examples, local fixtures, generated reports, source screenshots, or third-party reference images.
 - Do not bundle copyrighted/public Roll20 sheets as in-app samples or seeded demo content. The product must support user import, user-authored sheets, and local ignored verification fixtures instead.
 - Third-party sheets fetched for external validation must be ephemeral. Do not retain their source identity, URLs, code, media, screenshots, fixtures, or derived per-sheet reports in Git, docs, logs, portfolio material, or permanent local reports. Remove temporary copies after extracting a generic fix; keep only synthetic regression tests that cannot identify the source.
-- Do not record source-identifying details in TODOs, progress logs, handoffs, or chat summaries either. Use anonymous labels such as `fixture-A` and generic behavior findings; never preserve creator names, sheet names, source URLs, distinctive markup, image/font URLs, or source-derived measurements.
+- Do not record source-identifying details in TODOs, progress logs, handoffs, or
+  chat summaries either. Keep only generic behavior findings; never preserve
+  creator names, sheet names, source fixture labels, source URLs, distinctive
+  markup, image/font URLs, machine paths, or source-derived measurements.
 - Roll20 preview/edit/export must support both modern and legacy Roll20 paths as separate render contracts. Keep the legacy sanitizer distinct from modern authored-class preservation, switch preview/edit/HTML/CSS/manifest/verification destination together, and never use evidence from one mode to pass the other.
 - The product goal is universal mapping: imported HTML, CSS, translation/i18n, and future worker JS must map to editable blocks/layers without hard-coding one commissioned sheet or one reference sheet family.
 - Commit only from the active Next/React worktree (`web-push-main/`). Confirm with `git rev-parse --show-toplevel` before committing.
@@ -87,6 +90,7 @@ Do not say these unless the exact current report proves them:
 
 Run these unless the task is documentation-only and the user explicitly says not to:
 
+- `corepack pnpm run guard:docs-privacy`
 - `corepack pnpm run lint`
 - `corepack pnpm run build`
 

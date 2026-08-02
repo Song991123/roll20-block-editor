@@ -58,6 +58,8 @@
     "smoke:legacy-fixture-visual": "node scripts/roll20_legacy_fixture_visual_smoke.mjs",
     "smoke:payload-roundtrip": "node scripts/roll20_payload_roundtrip_visual_smoke.mjs",
     "guard:roll20-evidence": "node scripts/roll20_actual_evidence_guard.mjs",
+    "guard:docs-privacy": "node scripts/tracked_docs_privacy_guard.mjs",
+    "test:docs-privacy": "node scripts/tracked_docs_privacy_guard.mjs --self-test",
     "guard:roll20-renderer-model": "node scripts/roll20_renderer_model_guard.mjs",
     "guard:ui-copy": "node scripts/ui_copy_guard.mjs",
     "ci:verify": "node scripts/ci_verify.mjs",

@@ -24,7 +24,7 @@ This repo may be public while the product is still stabilizing. Treat the public
   - `reports/roll20-actual-compare/`
   - `.tmp/`
   - `docs/portfolio/private/`
-- Even local operational notes must stay anonymous: use fixture IDs and generic findings only. Do not put creator/sheet names, source URLs, distinctive snippets, asset URLs, screenshots, or source-derived measurements in TODOs, progress logs, handoffs, or portfolio material.
+- Even local operational notes must contain generic findings only. Do not put fixture labels, creator/sheet names, source URLs, distinctive snippets, asset URLs, screenshots, or source-derived measurements in TODOs, progress logs, handoffs, or portfolio material.
 - Roll20 room screenshots, sandbox screenshots, exported custom sheet zips, and room/sheet names are verification evidence, not public assets.
 - Public examples must be synthetic and copyright-safe. `public/examples/` is ignored until such examples are intentionally created.
 - If the project later becomes private, this rule can be revisited, but public branches should still avoid redistributing third-party sheet assets.

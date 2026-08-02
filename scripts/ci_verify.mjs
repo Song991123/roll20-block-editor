@@ -16,6 +16,8 @@ if (!pnpm) {
 
 const tasks = [
   'test:server-hygiene',
+  'test:docs-privacy',
+  'guard:docs-privacy',
   'test:chat-diagnostics',
   'test:rolltemplate-render',
   'test:asset-refs',

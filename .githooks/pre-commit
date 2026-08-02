@@ -40,4 +40,5 @@ case "$root" in
     ;;
 esac
 
+node "$root/scripts/tracked_docs_privacy_guard.mjs" --staged >/dev/null
 node "$root/scripts/roll20_renderer_model_guard.mjs" >/dev/null
