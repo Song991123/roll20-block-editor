@@ -15,6 +15,25 @@ or source-derived measurement here.
 - Remote CI: passed safety/unit verification, lint, and production build.
 - Worktree and project server state were clean after the run.
 
+## 2026-08-03 - Unified Source History
+
+- Added chronological undo selection across HTML, CSS, translation, Page JS,
+  and Worker workspaces. Cross-workspace events sharing one user-action group
+  now undo together, while redo follows the actual undo order.
+- Managed position and style commits use Blockly event groups. Multi-selection
+  movement adds one outer group, so three selected layers remain one history
+  step instead of several CSS field edits.
+- Stopped unrelated inline-style normalization when none of the managed
+  properties are present. CSS-only updates now keep the current HTML structure
+  interactive while the broader font/image paint-ready cycle finishes.
+- The full edit-flow browser smoke moves three layers by 1px and then 10px,
+  undoes both steps, redoes both steps, and proves the final Preview/Edit
+  geometry is identical. Console and page error collections are empty, and the
+  temporary server exits.
+- Claim boundary: anonymous local synthetic history coverage. Browser
+  roundtrips for flow reparenting, direct resize, and inspector changes remain,
+  as do actual modern Roll20 verification and broad-sheet parity.
+
 ## 2026-08-03 - Absolute Selection Keyboard Nudge
 
 - Added one-pixel arrow-key and ten-pixel Shift-arrow movement for eligible
@@ -29,9 +48,9 @@ or source-derived measurement here.
   browser smoke pass. The browser run verifies three-layer movement, immediate
   iframe timing, managed CSS, Preview/Edit geometry equality, zero console/page
   errors, and temporary-server cleanup.
-- Claim boundary: this is anonymous local synthetic coverage. Unified undo/redo
-  across HTML and CSS workspaces, dense imported-sheet ergonomics, and actual
-  Roll20 interaction remain open.
+- Claim boundary: this is anonymous local synthetic coverage. Broader history
+  cases, dense imported-sheet ergonomics, and actual Roll20 interaction remain
+  open.
 
 ## 2026-08-03 - Nested Select Option-Group Mapping
 

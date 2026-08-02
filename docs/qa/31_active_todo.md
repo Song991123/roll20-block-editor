@@ -118,9 +118,16 @@ belong in tracked documents.
   is inside the rendered sheet or on a layer row, paints in the iframe before
   the model round trip, writes managed CSS, and stays geometrically identical
   after Preview/Edit switches.
+- `DONE LOCAL`: editor history chooses the newest recorded action across HTML,
+  CSS, translation, Page JS, and Worker workspaces. Managed position/style
+  writes share one Blockly event group, and multi-selection movement has one
+  outer user-action group. Browser coverage moves three layers twice, undoes
+  both steps independently, redoes both steps independently, and returns to
+  identical Preview/Edit geometry with zero console or page errors.
 - `PARTIAL`: continue usability review for dense imported structures, nested
-  coordinate systems, layer-panel keyboard selection, and unified HTML/CSS
-  undo/redo transactions.
+  coordinate systems, and layer-panel keyboard selection. Extend browser
+  history coverage from the current multi-layer movement proof to flow
+  reparenting, direct resize, and inspector changes.
 
 ## P1 - User Experience
 

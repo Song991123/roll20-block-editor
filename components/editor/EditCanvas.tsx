@@ -110,6 +110,13 @@ function buildLayerPath(nodes: BlockSnapshot[], selectedId: string | null): Bloc
 }
 
 const LAYER_MINI_CHILD_SLOTS = 4;
+const EDIT_HISTORY_WORKSPACES = [
+  'html',
+  'css',
+  'i18n',
+  'js',
+  'worker',
+] as const satisfies readonly WorkspaceKey[];
 
 export default function EditCanvas() {
   const editSubmode = useUiStore((s) => s.editSubmode);
@@ -160,6 +167,9 @@ export default function EditCanvas() {
     setCanvasWidthDraft(String(clamped));
   }, [canvasWidth, editSubmode, setCanvasWidth]);
   const structureVersion = useWorkspaceStore((s) => s.workspaces.html.structureVersion);
+  const historyVersion = useWorkspaceStore((s) => EDIT_HISTORY_WORKSPACES
+    .map((key) => s.workspaces[key].structureVersion)
+    .join(':'));
   const adapter = getBlocklyAdapter();
   const htmlNodes = useMemo(() => {
     void structureVersion;
@@ -179,22 +189,26 @@ export default function EditCanvas() {
     if (!selectedInsideActive) setSelectedBlockId(activeRolltemplateId, 'tree');
   }, [activeRolltemplateId, editSubmode, htmlNodes, selectedBlockId, setSelectedBlockId]);
   const canUndo = useMemo(() => {
-    void structureVersion;
-    return adapter.canUndo('html');
-  }, [adapter, structureVersion]);
+    void historyVersion;
+    return adapter.canUndoLatest(EDIT_HISTORY_WORKSPACES);
+  }, [adapter, historyVersion]);
   const canRedo = useMemo(() => {
-    void structureVersion;
-    return adapter.canRedo('html');
-  }, [adapter, structureVersion]);
+    void historyVersion;
+    return adapter.canRedoLatest(EDIT_HISTORY_WORKSPACES);
+  }, [adapter, historyVersion]);
   const runHistoryAction = useCallback((action: 'undo' | 'redo') => {
-    const changed = action === 'undo' ? adapter.undo('html') : adapter.redo('html');
-    if (!changed) return;
+    const changedKeys = action === 'undo'
+      ? adapter.undoLatest(EDIT_HISTORY_WORKSPACES)
+      : adapter.redoLatest(EDIT_HISTORY_WORKSPACES);
+    if (changedKeys.length === 0) return;
     const store = useWorkspaceStore.getState();
-    store.bumpStructure('html', adapter.countBlocks('html'));
+    for (const key of changedKeys) {
+      store.bumpStructure(key, adapter.countBlocks(key));
+    }
     // History actions are commit points, just like a completed pointer drop.
     // Publish the same render surface immediately instead of waiting for the
     // debounce window or a later unrelated edit.
-    flushEmitPipeline();
+    queueMicrotask(() => flushEmitPipeline());
     const selectedId = useWorkspaceStore.getState().selectedBlockId;
     if (selectedId && !adapter.getBlock('html', selectedId)) {
       store.setSelectedBlockId(null, 'tree');

@@ -296,6 +296,27 @@ already-selected insertion position.
   prove that every third-party template helper or actual modern/legacy Roll20
   chat renderer is visually identical.
 
+## Unified Editor History
+
+- The edit toolbar reads one chronological history across HTML, CSS,
+  translation, Page JS, and Worker workspaces instead of assuming every visual
+  action belongs to HTML.
+- A managed visual change uses one Blockly event group for its HTML class hook,
+  removed inline declarations, managed CSS rule, and any selected siblings.
+  One user movement therefore requires one undo even when several blocks and
+  both HTML/CSS workspaces changed.
+- Undo records the exact affected workspace group. Redo follows the order in
+  which the user undid actions, rather than incorrectly sorting by the actions'
+  original timestamps. A new recorded mutation invalidates that shared redo
+  branch.
+- Full paint readiness and structural readiness are distinct. A CSS-only patch
+  keeps keyboard editing available because the iframe DOM is still current;
+  an unapplied HTML tree pauses keyboard movement until its apply ACK arrives.
+- Current browser proof covers two grouped three-layer keyboard moves followed
+  by two undos and two redos. Flow reparenting, direct resize, and inspector
+  history need equivalent browser roundtrips before broad history coverage is
+  complete.
+
 ## Verification Boundary
 
 Local tests cover classification, cycle protection, before/inside/after layer
@@ -304,8 +325,8 @@ synchronization, multi-object free transform, keyboard nudging, six-way
 alignment math, and horizontal/vertical equal-gap distribution. The browser
 smoke also proves Ctrl selection -> iframe multi-highlight -> layer-panel third
 selection -> shared free movement -> iframe and layer-panel keyboard nudges ->
-Preview/Edit position equality -> same-parent vertical distribution -> top
-alignment -> persisted managed CSS. Distribution keeps the outer rendered
+two-step undo/redo -> Preview/Edit position equality -> same-parent vertical
+distribution -> top alignment -> persisted managed CSS. Distribution keeps the outer rendered
 bounds, while alignment and nudging keep position out of inline HTML. Grouping
 keeps the model parent, iframe parent, and emitted HTML aligned.
 Anonymous imported cross-container cases prove existing content can move

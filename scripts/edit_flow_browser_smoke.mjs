@@ -6,7 +6,7 @@
  * smoke deliberately uses a synthetic sheet so no external sheet source or
  * derived evidence is retained. It verifies the user-facing interaction
  * contract: flow/free placement, canvas widget drop, layer insertion, cycle
- * protection, selection sync, keyboard nudging, direct resize,
+ * protection, selection sync, keyboard nudging with unified undo/redo, direct resize,
  * multi-selection alignment and distribution, and editable canvas width.
  */
 
@@ -825,6 +825,7 @@ async function main() {
       return sorted.slice(1).map((item, index) => item.top - (sorted[index].top + sorted[index].height));
     };
     const keyboardBefore = await readArrangementGeometry();
+    const keyboardBeforeSource = await page.evaluate(() => window.__perfHook.getEmitContent());
     assert(
       keyboardBefore.every((item) => item?.position === 'absolute'),
       `keyboard nudge targets are not absolute layers: ${JSON.stringify(keyboardBefore)}`,
@@ -834,6 +835,31 @@ async function main() {
       Number(document.body?.getAttribute('data-r20-keyboard-nudge-count') ?? '0') >= 1
       && !document.body?.hasAttribute('data-r20-keyboard-nudge-active')
     ), null, { timeout: 10000 });
+    const keyboardNudgeContinuity = await page.evaluate(({ beforeHtml, beforeCss }) => {
+      const emit = window.__perfHook.getEmitContent();
+      return {
+        htmlChanged: emit.html !== beforeHtml,
+        cssChanged: emit.css !== beforeCss,
+        selectedRows: document.querySelectorAll('[data-testid="edit-layer-row"][data-r20-layer-selected="1"]').length,
+        renderReady: document
+          .querySelector('[data-r20-render-ready]')
+          ?.getAttribute('data-r20-render-ready') ?? null,
+        structureReady: document
+          .querySelector('[data-r20-structure-ready]')
+          ?.getAttribute('data-r20-structure-ready') ?? null,
+      };
+    }, {
+      beforeHtml: keyboardBeforeSource.html,
+      beforeCss: keyboardBeforeSource.css,
+    });
+    result.tests.keyboardNudgeContinuity = keyboardNudgeContinuity;
+    assert(
+      !keyboardNudgeContinuity.htmlChanged
+        && keyboardNudgeContinuity.cssChanged
+        && keyboardNudgeContinuity.selectedRows === 3
+        && keyboardNudgeContinuity.structureReady === '1',
+      `CSS-only keyboard movement interrupted structural editing: ${JSON.stringify(keyboardNudgeContinuity)}`,
+    );
     await page.locator(
       `[data-testid="edit-layer-row"][data-r20-block-id="${ids.groupTwoId}"]`,
     ).press('Shift+ArrowDown');
@@ -841,6 +867,13 @@ async function main() {
       Number(document.body?.getAttribute('data-r20-keyboard-nudge-count') ?? '0') >= 2
       && !document.body?.hasAttribute('data-r20-keyboard-nudge-active')
     ), null, { timeout: 10000 });
+    const secondNudgeCount = await frame.evaluate(() => (
+      Number(document.body?.getAttribute('data-r20-keyboard-nudge-count') ?? '0')
+    ));
+    assert(
+      secondNudgeCount >= 2,
+      `layer-row keyboard nudge was not delivered: ${JSON.stringify(keyboardNudgeContinuity)}`,
+    );
     const keyboardAfterEdit = await readArrangementGeometry();
     const keyboardEmit = await page.evaluate(() => window.__perfHook.getEmitContent());
     const keyboardMetrics = await frame.evaluate(() => ({
@@ -868,6 +901,53 @@ async function main() {
         && keyboardMetrics.applyEpoch >= keyboardMetrics.nudgeEpoch,
       `keyboard nudge was not applied optimistically before the authoritative patch: ${JSON.stringify(keyboardMetrics)}`,
     );
+    const waitForArrangement = (expected) => frame.waitForFunction(({ blockIds, positions }) => (
+      blockIds.every((id, index) => {
+        const rect = document
+          .querySelector(`[data-r20-block-id="${CSS.escape(id)}"]`)
+          ?.getBoundingClientRect();
+        return Boolean(
+          rect
+          && Math.abs(rect.left - positions[index].left) <= 0.5
+          && Math.abs(rect.top - positions[index].top) <= 0.5,
+        );
+      })
+    ), { blockIds: arrangementIds, positions: expected }, { timeout: 10000 });
+    const undoButton = page.locator('[data-testid="edit-history-undo"]');
+    const redoButton = page.locator('[data-testid="edit-history-redo"]');
+    assert(await undoButton.isEnabled(), 'unified undo was disabled after keyboard movement');
+    await undoButton.click();
+    const afterFirstUndoExpected = keyboardBefore.map((item) => ({
+      left: item.left + 1,
+      top: item.top,
+    }));
+    await waitForArrangement(afterFirstUndoExpected);
+    const keyboardUndoStep = await readArrangementGeometry();
+    await undoButton.click();
+    await waitForArrangement(keyboardBefore);
+    const keyboardUndoAll = await readArrangementGeometry();
+    assert(await redoButton.isEnabled(), 'unified redo was disabled after two keyboard undos');
+    await redoButton.click();
+    await waitForArrangement(afterFirstUndoExpected);
+    const keyboardRedoStep = await readArrangementGeometry();
+    await redoButton.click();
+    await waitForArrangement(keyboardAfterEdit);
+    const keyboardRedoAll = await readArrangementGeometry();
+    assert(
+      keyboardUndoStep.every((item, index) => (
+        Math.abs(item.left - keyboardBefore[index].left - 1) <= 0.5
+        && Math.abs(item.top - keyboardBefore[index].top) <= 0.5
+      ))
+        && keyboardUndoAll.every((item, index) => (
+          Math.abs(item.left - keyboardBefore[index].left) <= 0.5
+          && Math.abs(item.top - keyboardBefore[index].top) <= 0.5
+        ))
+        && keyboardRedoAll.every((item, index) => (
+          Math.abs(item.left - keyboardAfterEdit[index].left) <= 0.5
+          && Math.abs(item.top - keyboardAfterEdit[index].top) <= 0.5
+        )),
+      `unified keyboard history did not roundtrip all selected layers: ${JSON.stringify({ keyboardBefore, keyboardUndoStep, keyboardUndoAll, keyboardRedoStep, keyboardRedoAll })}`,
+    );
     await page.click('[data-testid="main-mode-preview"]');
     await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '0');
     const keyboardPreview = await readArrangementGeometry();
@@ -889,6 +969,10 @@ async function main() {
       preview: keyboardPreview,
       editAgain: keyboardEditAgain,
       metrics: keyboardMetrics,
+      undoStep: keyboardUndoStep,
+      undoAll: keyboardUndoAll,
+      redoStep: keyboardRedoStep,
+      redoAll: keyboardRedoAll,
     };
     await alignmentToolbar.waitFor({ state: 'visible', timeout: 10000 });
     const alignmentBefore = keyboardEditAgain;

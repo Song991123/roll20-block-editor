@@ -59,6 +59,7 @@ export function removePreservedStyleDeclarations(
   properties: readonly string[],
 ): string {
   const removed = new Set(properties.map((property) => property.toLowerCase()));
+  let removedAny = false;
   const entries = parsePreservedAttributes(raw).flatMap(([name, value]): Array<[string, string]> => {
     if (name.toLowerCase() !== 'style') return [[name, value]];
     const declarations: string[] = [];
@@ -67,12 +68,16 @@ export function removePreservedStyleDeclarations(
       if (separator <= 0) continue;
       const property = chunk.slice(0, separator).trim().toLowerCase();
       const declarationValue = chunk.slice(separator + 1).trim();
-      if (property && declarationValue && !removed.has(property)) {
+      if (!property || !declarationValue) continue;
+      if (removed.has(property)) {
+        removedAny = true;
+      } else {
         declarations.push(`${property}:${declarationValue}`);
       }
     }
     return declarations.length ? [[name, declarations.join(';')]] : [];
   });
+  if (!removedAny) return raw;
   return entries.length ? JSON.stringify(entries) : '';
 }
 

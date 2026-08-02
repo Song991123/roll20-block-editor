@@ -167,10 +167,17 @@ export interface BlocklyAdapter {
   nestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean;
   /** Group contiguous sibling layers in a new generic HTML container. */
   groupBlocksInContainer(key: WorkspaceKey, blockIds: string[]): string | null;
+  /** Treat every Blockly mutation inside the callback as one user action. */
+  runInEventGroup<T>(action: () => T): T;
   canUndo(key: WorkspaceKey): boolean;
   canRedo(key: WorkspaceKey): boolean;
   undo(key: WorkspaceKey): boolean;
   redo(key: WorkspaceKey): boolean;
+  /** Global editor history: choose the most recent action across workspaces. */
+  canUndoLatest(keys: readonly WorkspaceKey[]): boolean;
+  canRedoLatest(keys: readonly WorkspaceKey[]): boolean;
+  undoLatest(keys: readonly WorkspaceKey[]): WorkspaceKey[];
+  redoLatest(keys: readonly WorkspaceKey[]): WorkspaceKey[];
   onChange(key: WorkspaceKey, listener: () => void): () => void;
 }
 
@@ -217,15 +224,48 @@ function isBlockSvg(block: Blockly.Block | null | undefined): block is Blockly.B
   return Boolean(block && block.rendered && typeof (block as Blockly.BlockSvg).initSvg === 'function');
 }
 
+type UnifiedHistoryTransaction = {
+  sequence: number;
+  group: string;
+  keys: WorkspaceKey[];
+};
+
+type HistoryCandidate = {
+  key: WorkspaceKey;
+  event: Blockly.Events.Abstract;
+  sequence: number;
+};
+
 class DefaultAdapter implements BlocklyAdapter {
   private workspaces: Partial<Record<WorkspaceKey, Blockly.Workspace>> = {};
+  private historyListeners: Partial<
+    Record<WorkspaceKey, (event: Blockly.Events.Abstract) => void>
+  > = {};
+  private historySequence = 0;
+  private eventSequences = new WeakMap<Blockly.Events.Abstract, number>();
+  private groupSequences = new Map<string, number>();
+  private redoTransactions: UnifiedHistoryTransaction[] = [];
 
   registerWorkspace(key: WorkspaceKey, ws: Blockly.Workspace): void {
+    this.unregisterWorkspace(key);
     this.workspaces[key] = ws;
+    const listener = (event: Blockly.Events.Abstract) => {
+      if (event.recordUndo === false || event.isUiEvent) return;
+      this.sequenceForEvent(event);
+      // A new recorded mutation starts a new branch of global history.
+      this.redoTransactions = [];
+    };
+    this.historyListeners[key] = listener;
+    ws.addChangeListener(listener);
   }
 
   unregisterWorkspace(key: WorkspaceKey): void {
+    const ws = this.workspaces[key];
+    const listener = this.historyListeners[key];
+    if (ws && listener) ws.removeChangeListener(listener);
+    delete this.historyListeners[key];
     delete this.workspaces[key];
+    this.redoTransactions = [];
   }
 
   getWorkspace(key: WorkspaceKey): Blockly.Workspace | null {
@@ -1002,6 +1042,17 @@ class DefaultAdapter implements BlocklyAdapter {
     }
   }
 
+  runInEventGroup<T>(action: () => T): T {
+    const existingGroup = Blockly.Events.getGroup();
+    if (existingGroup) return action();
+    Blockly.Events.setGroup(true);
+    try {
+      return action();
+    } finally {
+      Blockly.Events.setGroup(false);
+    }
+  }
+
   canUndo(key: WorkspaceKey): boolean {
     return (this.workspaces[key]?.getUndoStack().length ?? 0) > 0;
   }
@@ -1022,6 +1073,98 @@ class DefaultAdapter implements BlocklyAdapter {
     if (!ws || !this.canRedo(key)) return false;
     ws.undo(true);
     return true;
+  }
+
+  canUndoLatest(keys: readonly WorkspaceKey[]): boolean {
+    return this.latestHistoryCandidate(keys, 'undo') !== null;
+  }
+
+  canRedoLatest(keys: readonly WorkspaceKey[]): boolean {
+    const transaction = this.redoTransactions.at(-1);
+    return Boolean(transaction && this.canReplayTransaction(transaction, keys));
+  }
+
+  undoLatest(keys: readonly WorkspaceKey[]): WorkspaceKey[] {
+    const candidate = this.latestHistoryCandidate(keys, 'undo');
+    if (!candidate) return [];
+    const group = candidate.event.group ?? '';
+    const affected = group
+      ? keys.filter((key) => {
+          const event = this.topHistoryEvent(key, 'undo');
+          return Boolean(
+            event
+            && event.group === group
+            && this.sequenceForEvent(event) === candidate.sequence,
+          );
+        })
+      : [candidate.key];
+    if (affected.length === 0) return [];
+
+    for (const key of affected) this.workspaces[key]?.undo(false);
+    this.redoTransactions.push({
+      sequence: candidate.sequence,
+      group,
+      keys: [...affected],
+    });
+    return [...affected];
+  }
+
+  redoLatest(keys: readonly WorkspaceKey[]): WorkspaceKey[] {
+    const transaction = this.redoTransactions.at(-1);
+    if (!transaction || !this.canReplayTransaction(transaction, keys)) return [];
+    this.redoTransactions.pop();
+    for (const key of transaction.keys) this.workspaces[key]?.undo(true);
+    return [...transaction.keys];
+  }
+
+  private sequenceForEvent(event: Blockly.Events.Abstract): number {
+    const existing = this.eventSequences.get(event);
+    if (existing !== undefined) return existing;
+    const group = event.group ?? '';
+    let sequence = group ? this.groupSequences.get(group) : undefined;
+    if (sequence === undefined) {
+      sequence = ++this.historySequence;
+      if (group) this.groupSequences.set(group, sequence);
+    }
+    this.eventSequences.set(event, sequence);
+    return sequence;
+  }
+
+  private topHistoryEvent(
+    key: WorkspaceKey,
+    direction: 'undo' | 'redo',
+  ): Blockly.Events.Abstract | null {
+    const ws = this.workspaces[key];
+    if (!ws) return null;
+    const stack = direction === 'undo' ? ws.getUndoStack() : ws.getRedoStack();
+    return stack.at(-1) ?? null;
+  }
+
+  private latestHistoryCandidate(
+    keys: readonly WorkspaceKey[],
+    direction: 'undo' | 'redo',
+  ): HistoryCandidate | null {
+    let latest: HistoryCandidate | null = null;
+    for (const key of keys) {
+      const event = this.topHistoryEvent(key, direction);
+      if (!event) continue;
+      const sequence = this.sequenceForEvent(event);
+      if (!latest || sequence > latest.sequence) latest = { key, event, sequence };
+    }
+    return latest;
+  }
+
+  private canReplayTransaction(
+    transaction: UnifiedHistoryTransaction,
+    requestedKeys: readonly WorkspaceKey[],
+  ): boolean {
+    const requested = new Set(requestedKeys);
+    return transaction.keys.length > 0 && transaction.keys.every((key) => {
+      if (!requested.has(key)) return false;
+      const event = this.topHistoryEvent(key, 'redo');
+      if (!event || this.sequenceForEvent(event) !== transaction.sequence) return false;
+      return !transaction.group || event.group === transaction.group;
+    });
   }
 
   onChange(key: WorkspaceKey, listener: () => void): () => void {

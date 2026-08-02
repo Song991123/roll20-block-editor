@@ -56,4 +56,10 @@ assert(stripped.includes('["style","color:red"]'), 'unmanaged style declaration 
 assert(!stripped.includes('position'), 'managed position removed from preserved style');
 assert(!stripped.includes('padding'), 'managed presentation removed from preserved style');
 
+const untouchedStyle = '[["style","padding: 4px"],["data-hook","keep-format"]]';
+assert(
+  removePreservedStyleDeclarations(untouchedStyle, ['position', 'left', 'top']) === untouchedStyle,
+  'unrelated preserved style remains byte-for-byte unchanged',
+);
+
 console.log('preservedAttributes.test PASS');

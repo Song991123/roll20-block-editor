@@ -98,6 +98,11 @@ type OptimisticFlowCommit = {
   siblingBlockId: string | null;
 };
 
+type AppliedSource = {
+  sourceKey: string;
+  htmlKey: string;
+};
+
 type IframeResizeSession = {
   pointerId: number;
   blockId: string;
@@ -270,6 +275,7 @@ export default function PreviewMain() {
   const [viewportWidth, setViewportWidth] = useState(0);
   const [iframeEditBridgeId, setIframeEditBridgeId] = useState<string | null>(null);
   const [iframeReadySourceKey, setIframeReadySourceKey] = useState<string | null>(null);
+  const [iframeAppliedHtmlKey, setIframeAppliedHtmlKey] = useState<string | null>(null);
   const [iframeLoadRevision, setIframeLoadRevision] = useState(0);
   const iframeEditBridgeIdRef = useRef<string | null>(null);
   const lastAppliedAckRevisionRef = useRef(0);
@@ -291,7 +297,7 @@ export default function PreviewMain() {
   const pendingIframeResizeBlockRef = useRef<string | null>(null);
   const parentIframePointerIdRef = useRef<number | null>(null);
   const applyRevisionRef = useRef(0);
-  const applySourcesRef = useRef(new Map<number, string>());
+  const applySourcesRef = useRef(new Map<number, AppliedSource>());
   const lastAppliedSourceRef = useRef<string | null>(null);
   const pendingApplySourceRef = useRef<string | null>(null);
   const pendingOptimisticFlowCommitRef = useRef<OptimisticFlowCommit | null>(null);
@@ -580,18 +586,20 @@ export default function PreviewMain() {
 
     let moved = false;
     let managedCssChanged = false;
-    placements.forEach((placement, index) => {
-      if (!placement) return;
-      const committed = commitManagedDesignPosition(adapter, {
-        workspace: 'html',
-        blockId: selection[index].geometry.blockId,
-        left: placement.left,
-        top: placement.top,
-        containingBlockId: placement.containingBlockId,
-        containingBlockNeedsRelative: placement.containingBlockNeedsRelative,
+    adapter.runInEventGroup(() => {
+      placements.forEach((placement, index) => {
+        if (!placement) return;
+        const committed = commitManagedDesignPosition(adapter, {
+          workspace: 'html',
+          blockId: selection[index].geometry.blockId,
+          left: placement.left,
+          top: placement.top,
+          containingBlockId: placement.containingBlockId,
+          containingBlockNeedsRelative: placement.containingBlockNeedsRelative,
+        });
+        moved = committed.moved || moved;
+        managedCssChanged = committed.reason === 'managed-css' || managedCssChanged;
       });
-      moved = committed.moved || moved;
-      managedCssChanged = committed.reason === 'managed-css' || managedCssChanged;
     });
     if (!moved) return;
 
@@ -873,6 +881,12 @@ export default function PreviewMain() {
   const iframeRenderReady = renderMode !== 'iframe'
     || isEmpty
     || iframeReadySourceKey === liveHtmlKey;
+  // CSS-only patches do not invalidate the rendered DOM. Keep keyboard
+  // editing available while fonts/assets finish their broader paint-ready
+  // cycle, but pause it while a new HTML tree is still unapplied.
+  const iframeStructureReady = renderMode !== 'iframe'
+    || isEmpty
+    || iframeAppliedHtmlKey === liveHtmlKey;
 
   // spec 21 Phase A — Shadow DOM 모드 mount.
   // host element 에 Shadow Root attach → buildSheetParts(html, css) 인젝션.
@@ -1208,11 +1222,11 @@ export default function PreviewMain() {
               && rawData.htmlKey !== ''
               && rawData.htmlKey !== liveHtmlKey)
         ) return;
-        setIframeReadySourceKey(
-          typeof rawData.htmlKey === 'string' && rawData.htmlKey !== ''
-            ? rawData.htmlKey
-            : liveHtmlKey,
-        );
+        const readyHtmlKey = typeof rawData.htmlKey === 'string' && rawData.htmlKey !== ''
+          ? rawData.htmlKey
+          : liveHtmlKey;
+        setIframeReadySourceKey(readyHtmlKey);
+        setIframeAppliedHtmlKey(readyHtmlKey);
         return;
       }
       const editMessage = parseIframeEditBridgeMessage(e.data);
@@ -1225,6 +1239,7 @@ export default function PreviewMain() {
           iframeResizeSessionRef.current = null;
           pendingIframeResizeBlockRef.current = null;
           lastAppliedAckRevisionRef.current = 0;
+          setIframeAppliedHtmlKey(null);
         }
         iframeEditBridgeIdRef.current = editMessage.bridgeId;
         setIframeReadySourceKey(null);
@@ -1236,8 +1251,8 @@ export default function PreviewMain() {
       }
       if (editMessage?.type === 'r20:edit-applied') {
         if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
-        const appliedSource = applySourcesRef.current.get(editMessage.revision);
-        if (!appliedSource) return;
+        const applied = applySourcesRef.current.get(editMessage.revision);
+        if (!applied) return;
         // A delayed ACK from an older source must not invalidate the current
         // render-ready state or clear the newer pending source.
         if (editMessage.revision < lastAppliedAckRevisionRef.current) {
@@ -1245,10 +1260,11 @@ export default function PreviewMain() {
           return;
         }
         setIframeReadySourceKey(null);
+        setIframeAppliedHtmlKey(applied.htmlKey);
         markEditorTiming('apply-acked-parent');
-        lastAppliedSourceRef.current = appliedSource;
+        lastAppliedSourceRef.current = applied.sourceKey;
         applySourcesRef.current.delete(editMessage.revision);
-        if (pendingApplySourceRef.current === appliedSource) {
+        if (pendingApplySourceRef.current === applied.sourceKey) {
           pendingApplySourceRef.current = null;
           setPendingApplyRevision(0);
         }
@@ -1275,7 +1291,7 @@ export default function PreviewMain() {
       if (editMessage?.type === 'r20:edit-nudge') {
         if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
         const ui = useUiStore.getState();
-        if (ui.mainMode !== 'edit' || ui.editSubmode !== 'sheet' || !iframeRenderReady) return;
+        if (ui.mainMode !== 'edit' || ui.editSubmode !== 'sheet' || !iframeStructureReady) return;
         const selectedBlockIds = useWorkspaceStore.getState().selectedBlockIds;
         if (editMessage.selection.length !== selectedBlockIds.length) return;
         const selectedSet = new Set(selectedBlockIds);
@@ -1391,102 +1407,104 @@ export default function PreviewMain() {
           const ui = useUiStore.getState();
           const committedDropTarget = nextDropTarget ?? iframeEditDropTargetRef.current;
           let moved = false;
-          if (ui.editPlacementMode === 'flow') {
-            markEditorTiming('commit-start');
-            moved = commitIframeFlowDrop(editMessage.subject.blockId, committedDropTarget, adapter);
-          } else {
-            markEditorTiming('commit-start');
-            const dragOrigin = iframeEditDragOriginRef.current;
-            const origin = dragOrigin ? inferMultiDragOrigin(dragOrigin, editMessage) : null;
-            const lookup = {
-              getBlock: (blockId: string) => htmlLayerMap.get(blockId) ?? null,
-              canNestInContainer: (blockId: string) => adapter.canNestInContainer('html', blockId),
-              canNestBlockInContainer: (movingBlockId: string, targetBlockId: string) => adapter.canNestBlockInContainer(
-                'html',
-                movingBlockId,
-                targetBlockId,
-              ),
-            };
-            const originSelection = origin?.selection ?? [];
-            const endSelection = editMessage.selection ?? [];
-            const originBlockId = origin?.subject.blockId ?? null;
-            const canMoveAsGroup = originSelection.length > 1
-              && endSelection.length === originSelection.length
-              && originBlockId !== null
-              && originSelection.some((selected) => selected.geometry.blockId === originBlockId)
-              && originSelection.every((selected) => endSelection.some(
-                (endSelected) => endSelected.geometry.blockId === selected.geometry.blockId,
-              ));
-            if (canMoveAsGroup && origin) {
-              let managedCssChanged = false;
-              const placements = originSelection.map((selected) => {
-                const endSelected = endSelection.find(
-                  (candidate) => candidate.geometry.blockId === selected.geometry.blockId,
-                );
-                return endSelected
-                  ? resolveIframeMultiFreePlacement(
-                      selected,
-                      endSelected,
-                      origin.pointer,
-                      editMessage.pointer,
-                      lookup,
-                      ui.snapEnabled ? 8 : 1,
-                    )
-                  : null;
-              });
-              if (placements.every((placement) => placement !== null)) {
-                placements.forEach((placement, index) => {
-                  if (!placement) return;
-                  const blockId = originSelection[index].geometry.blockId;
-                  const committed = commitManagedDesignPosition(adapter, {
-                    workspace: 'html',
-                    blockId,
-                    left: placement.left,
-                    top: placement.top,
-                    containingBlockId: placement.containingBlockId,
-                    containingBlockNeedsRelative: placement.containingBlockNeedsRelative,
-                  });
-                  moved = committed.moved || moved;
-                  managedCssChanged = committed.reason === 'managed-css' || managedCssChanged;
-                });
-              }
-              if (managedCssChanged) {
-                useWorkspaceStore.getState().bumpStructure('css', adapter.countBlocks('css'));
-              }
+          adapter.runInEventGroup(() => {
+            if (ui.editPlacementMode === 'flow') {
+              markEditorTiming('commit-start');
+              moved = commitIframeFlowDrop(editMessage.subject.blockId, committedDropTarget, adapter);
             } else {
-              const placement = origin
-                ? resolveIframeFreePlacement(origin, editMessage, lookup, ui.snapEnabled ? 8 : 1)
-                : null;
-              if (placement) {
-                const subject = htmlLayerMap.get(editMessage.subject.blockId) ?? null;
-                const currentParentId = subject?.layerParentId ?? null;
-                let structureMoved = true;
-                if (placement.containingBlockId && currentParentId !== placement.containingBlockId) {
-                  structureMoved = adapter.nestBlockInContainer(
-                    'html',
-                    editMessage.subject.blockId,
-                    placement.containingBlockId,
+              markEditorTiming('commit-start');
+              const dragOrigin = iframeEditDragOriginRef.current;
+              const origin = dragOrigin ? inferMultiDragOrigin(dragOrigin, editMessage) : null;
+              const lookup = {
+                getBlock: (blockId: string) => htmlLayerMap.get(blockId) ?? null,
+                canNestInContainer: (blockId: string) => adapter.canNestInContainer('html', blockId),
+                canNestBlockInContainer: (movingBlockId: string, targetBlockId: string) => adapter.canNestBlockInContainer(
+                  'html',
+                  movingBlockId,
+                  targetBlockId,
+                ),
+              };
+              const originSelection = origin?.selection ?? [];
+              const endSelection = editMessage.selection ?? [];
+              const originBlockId = origin?.subject.blockId ?? null;
+              const canMoveAsGroup = originSelection.length > 1
+                && endSelection.length === originSelection.length
+                && originBlockId !== null
+                && originSelection.some((selected) => selected.geometry.blockId === originBlockId)
+                && originSelection.every((selected) => endSelection.some(
+                  (endSelected) => endSelected.geometry.blockId === selected.geometry.blockId,
+                ));
+              if (canMoveAsGroup && origin) {
+                let managedCssChanged = false;
+                const placements = originSelection.map((selected) => {
+                  const endSelected = endSelection.find(
+                    (candidate) => candidate.geometry.blockId === selected.geometry.blockId,
                   );
-                } else if (!placement.containingBlockId && currentParentId) {
-                  structureMoved = adapter.moveBlockToRoot('html', editMessage.subject.blockId);
-                }
-                if (structureMoved) {
-                  const committed = commitManagedDesignPosition(adapter, {
-                    workspace: 'html',
-                    blockId: editMessage.subject.blockId,
-                    left: placement.left,
-                    top: placement.top,
-                    containingBlockId: placement.containingBlockId,
-                    containingBlockNeedsRelative: placement.containingBlockNeedsRelative,
+                  return endSelected
+                    ? resolveIframeMultiFreePlacement(
+                        selected,
+                        endSelected,
+                        origin.pointer,
+                        editMessage.pointer,
+                        lookup,
+                        ui.snapEnabled ? 8 : 1,
+                      )
+                    : null;
+                });
+                if (placements.every((placement) => placement !== null)) {
+                  placements.forEach((placement, index) => {
+                    if (!placement) return;
+                    const blockId = originSelection[index].geometry.blockId;
+                    const committed = commitManagedDesignPosition(adapter, {
+                      workspace: 'html',
+                      blockId,
+                      left: placement.left,
+                      top: placement.top,
+                      containingBlockId: placement.containingBlockId,
+                      containingBlockNeedsRelative: placement.containingBlockNeedsRelative,
+                    });
+                    moved = committed.moved || moved;
+                    managedCssChanged = committed.reason === 'managed-css' || managedCssChanged;
                   });
-                  moved = committed.moved;
-                  if (committed.reason === 'managed-css') {
-                    useWorkspaceStore.getState().bumpStructure('css', adapter.countBlocks('css'));
+                }
+                if (managedCssChanged) {
+                  useWorkspaceStore.getState().bumpStructure('css', adapter.countBlocks('css'));
+                }
+              } else {
+                const placement = origin
+                  ? resolveIframeFreePlacement(origin, editMessage, lookup, ui.snapEnabled ? 8 : 1)
+                  : null;
+                if (placement) {
+                  const subject = htmlLayerMap.get(editMessage.subject.blockId) ?? null;
+                  const currentParentId = subject?.layerParentId ?? null;
+                  let structureMoved = true;
+                  if (placement.containingBlockId && currentParentId !== placement.containingBlockId) {
+                    structureMoved = adapter.nestBlockInContainer(
+                      'html',
+                      editMessage.subject.blockId,
+                      placement.containingBlockId,
+                    );
+                  } else if (!placement.containingBlockId && currentParentId) {
+                    structureMoved = adapter.moveBlockToRoot('html', editMessage.subject.blockId);
+                  }
+                  if (structureMoved) {
+                    const committed = commitManagedDesignPosition(adapter, {
+                      workspace: 'html',
+                      blockId: editMessage.subject.blockId,
+                      left: placement.left,
+                      top: placement.top,
+                      containingBlockId: placement.containingBlockId,
+                      containingBlockNeedsRelative: placement.containingBlockNeedsRelative,
+                    });
+                    moved = committed.moved;
+                    if (committed.reason === 'managed-css') {
+                      useWorkspaceStore.getState().bumpStructure('css', adapter.countBlocks('css'));
+                    }
                   }
                 }
               }
             }
-          }
+          });
           markEditorTiming('commit-end');
           const optimisticFlowCommit: OptimisticFlowCommit | null =
             moved && ui.editPlacementMode === 'flow' && committedDropTarget
@@ -1954,10 +1972,10 @@ export default function PreviewMain() {
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [appendBlock, canvasWidthAuto, editSubmode, flushIframeEditState, htmlLayerMap, iframeDocumentSrcdoc, iframeRenderReady, liveHtmlKey, nudgeIframeSelection, queueIframeEditState, renderSourceKey, setAutoCanvasWidth, setHoveredWidgetId, setSelected, setSelectedWidgetId]);
+  }, [appendBlock, canvasWidthAuto, editSubmode, flushIframeEditState, htmlLayerMap, iframeDocumentSrcdoc, iframeRenderReady, iframeStructureReady, liveHtmlKey, nudgeIframeSelection, queueIframeEditState, renderSourceKey, setAutoCanvasWidth, setHoveredWidgetId, setSelected, setSelectedWidgetId]);
 
   useEffect(() => {
-    if (!iframeEditBridgeId || !iframeKeyboardNudgeSelection || !iframeRenderReady) return;
+    if (!iframeEditBridgeId || !iframeKeyboardNudgeSelection || !iframeStructureReady) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (
         event.defaultPrevented
@@ -1988,7 +2006,7 @@ export default function PreviewMain() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [iframeEditBridgeId, iframeKeyboardNudgeSelection, iframeRenderReady]);
+  }, [iframeEditBridgeId, iframeKeyboardNudgeSelection, iframeStructureReady]);
 
   useEffect(() => {
     if (!iframeEditBridgeId) return;
@@ -2001,7 +2019,10 @@ export default function PreviewMain() {
     applySourcesRef.current.forEach((_source, sourceRevision) => {
       if (sourceRevision < revision) applySourcesRef.current.delete(sourceRevision);
     });
-    applySourcesRef.current.set(revision, renderSourceKey);
+    applySourcesRef.current.set(revision, {
+      sourceKey: renderSourceKey,
+      htmlKey: liveHtmlKey,
+    });
     pendingApplySourceRef.current = renderSourceKey;
     // A persistent iframe first reports the empty/default document width. Let
     // each applied sheet source report its own intrinsic width while manual
@@ -2078,7 +2099,7 @@ export default function PreviewMain() {
     return () => {
       if (retryTimer !== null) window.clearTimeout(retryTimer);
     };
-  }, [iframeEditBridgeId, iframeLoadRevision, lastApplyAck, livePatch, renderSourceKey]);
+  }, [iframeEditBridgeId, iframeLoadRevision, lastApplyAck, liveHtmlKey, livePatch, renderSourceKey]);
 
   useEffect(() => {
     if (!iframeEditBridgeId) return;
@@ -2202,6 +2223,7 @@ export default function PreviewMain() {
       className="relative flex h-full min-h-0 flex-col"
       data-r20-edit-bridge-ready={iframeEditBridgeId ? '1' : '0'}
       data-r20-render-ready={renderMode !== 'iframe' || isEmpty || iframeRenderReady ? '1' : '0'}
+      data-r20-structure-ready={iframeStructureReady ? '1' : '0'}
       data-r20-apply-pending={pendingApplyRevision || ''}
       data-r20-apply-acked={lastApplyAck || ''}
       aria-busy={renderMode === 'iframe' && !isEmpty && !iframeRenderReady ? true : undefined}
@@ -2294,6 +2316,7 @@ export default function PreviewMain() {
                 srcDoc={iframeDocumentSrcdoc}
                 onLoad={() => {
                   setIframeReadySourceKey(null);
+                  setIframeAppliedHtmlKey(null);
                   setIframeLoadRevision((value) => value + 1);
                 }}
                 className="block w-full border-0"

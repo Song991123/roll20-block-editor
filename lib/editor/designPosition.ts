@@ -68,7 +68,7 @@ type DesignPositionAdapter = Pick<
   | 'hasBlockField'
   | 'listAllBlocks'
   | 'setBlockField'
->;
+> & Partial<Pick<BlocklyAdapter, 'runInEventGroup'>>;
 
 type ManagedStyleTarget = {
   className: string;
@@ -77,6 +77,16 @@ type ManagedStyleTarget = {
 };
 
 export function commitManagedDesignPosition(
+  adapter: DesignPositionAdapter,
+  request: DesignPositionRequest,
+): DesignPositionResult {
+  return runInDesignEventGroup(
+    adapter,
+    () => commitManagedDesignPositionUngrouped(adapter, request),
+  );
+}
+
+function commitManagedDesignPositionUngrouped(
   adapter: DesignPositionAdapter,
   request: DesignPositionRequest,
 ): DesignPositionResult {
@@ -218,6 +228,16 @@ export function commitManagedDesignStyle(
   adapter: DesignPositionAdapter,
   request: DesignStyleRequest,
 ): DesignStyleResult {
+  return runInDesignEventGroup(
+    adapter,
+    () => commitManagedDesignStyleUngrouped(adapter, request),
+  );
+}
+
+function commitManagedDesignStyleUngrouped(
+  adapter: DesignPositionAdapter,
+  request: DesignStyleRequest,
+): DesignStyleResult {
   const { workspace, blockId, state = 'base', part = 'self' } = request;
   if (!adapter.getBlock(workspace, blockId)) return styleFailure('missing-block');
   const target = resolveManagedStyleTarget(adapter, workspace, blockId);
@@ -311,6 +331,10 @@ export function commitManagedDesignStyle(
     htmlChanged,
     cssChanged,
   };
+}
+
+function runInDesignEventGroup<T>(adapter: DesignPositionAdapter, action: () => T): T {
+  return adapter.runInEventGroup ? adapter.runInEventGroup(action) : action();
 }
 
 export function migrateManagedRolltemplateStyleScope(
@@ -674,13 +698,20 @@ function parseCssDeclarations(style: string): Record<string, string> {
 function removeCssDeclarations(style: string, properties: string[]): string {
   const removed = new Set(properties.map((property) => property.toLowerCase()));
   const kept = new Map<string, string>();
+  let removedAny = false;
   for (const chunk of style.split(';')) {
     const separator = chunk.indexOf(':');
     if (separator <= 0) continue;
     const property = chunk.slice(0, separator).trim().toLowerCase();
     const value = chunk.slice(separator + 1).trim();
-    if (property && value && !removed.has(property)) kept.set(property, value);
+    if (!property || !value) continue;
+    if (removed.has(property)) {
+      removedAny = true;
+    } else {
+      kept.set(property, value);
+    }
   }
+  if (!removedAny) return style;
   return Array.from(kept.entries())
     .map(([property, value]) => `${property}: ${value}`)
     .join('; ');
