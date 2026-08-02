@@ -122,6 +122,7 @@ async function main() {
     outputOverride: OUT_DIR_ARG ? outDir : null,
     snippets: entries.map((entry) => entry.snippetRelativePath),
     activationCheckSnippets: entries.map((entry) => entry.activationCheckSnippetRelativePath),
+    persistenceCheckSnippets: entries.map((entry) => entry.persistenceCheckSnippetRelativePath),
   }, null, 2));
 }
 
@@ -215,6 +216,13 @@ async function writeFixtureSnippet(runDir, fixtureId, outDir, options = {}) {
   });
   const activationCheckFile = path.join(outDir, `${safeName(fixtureId)}-activation-check-snippet.js`);
   await fs.writeFile(activationCheckFile, activationCheckSnippet, 'utf8');
+  const persistenceCheckSnippet = renderPersistenceCheckSnippet({
+    fixtureId,
+    payload,
+    expectedRuntimeMode,
+  });
+  const persistenceCheckFile = path.join(outDir, `${safeName(fixtureId)}-persistence-check-snippet.js`);
+  await fs.writeFile(persistenceCheckFile, persistenceCheckSnippet, 'utf8');
 
   return {
     fixtureId,
@@ -222,6 +230,8 @@ async function writeFixtureSnippet(runDir, fixtureId, outDir, options = {}) {
     snippetRelativePath: path.relative(process.cwd(), snippetFile),
     activationCheckSnippetPath: activationCheckFile,
     activationCheckSnippetRelativePath: path.relative(process.cwd(), activationCheckFile),
+    persistenceCheckSnippetPath: persistenceCheckFile,
+    persistenceCheckSnippetRelativePath: path.relative(process.cwd(), persistenceCheckFile),
     options: {
       applySettings: Boolean(options.applySettings),
       resumeUpload: options.resumeUpload !== false,
@@ -697,6 +707,162 @@ function renderActivationCheckSnippet({ fixtureId, activationHints, expectedRunt
 })();`;
 }
 
+function classifyPersistedPayloadText(expectedValue, observedValue, key) {
+  const expected = String(expectedValue ?? '');
+  const observed = String(observedValue ?? '');
+  const normalizeNewlines = (value) => value.replace(/\r\n?/g, '\n');
+  const stableJson = (value) => {
+    if (Array.isArray(value)) return value.map(stableJson);
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(Object.keys(value).sort().map((name) => [name, stableJson(value[name])]));
+    }
+    return value;
+  };
+  const exactMatch = observed === expected;
+  const newlineNormalizedMatch = normalizeNewlines(observed) === normalizeNewlines(expected);
+  let jsonParseOk = null;
+  let jsonSemanticMatch = null;
+  if (key === 'translation') {
+    try {
+      const observedJson = JSON.parse(observed);
+      const expectedJson = JSON.parse(expected);
+      jsonParseOk = true;
+      jsonSemanticMatch = JSON.stringify(stableJson(observedJson)) === JSON.stringify(stableJson(expectedJson));
+    } catch {
+      jsonParseOk = false;
+      jsonSemanticMatch = false;
+    }
+  }
+  return {
+    status: exactMatch
+      ? 'exact-match'
+      : newlineNormalizedMatch
+        ? 'newline-normalized-match'
+        : jsonSemanticMatch
+          ? 'json-semantic-match'
+          : 'mismatch',
+    exactMatch,
+    newlineNormalizedMatch,
+    jsonParseOk,
+    jsonSemanticMatch,
+  };
+}
+
+function renderPersistenceCheckSnippet({ fixtureId, payload, expectedRuntimeMode = 'modern' }) {
+  const literal = JSON.stringify({
+    fixtureId,
+    expectedRuntimeMode,
+    payload: {
+      html: {
+        base64: payload.html.base64,
+        sha256: payload.html.sha256,
+      },
+      css: {
+        base64: payload.css.base64,
+        sha256: payload.css.sha256,
+      },
+      translation: {
+        base64: payload.translation.base64,
+        sha256: payload.translation.sha256,
+      },
+    },
+  }, null, 2);
+  return `// Read-only Roll20 settings persistence check for ${fixtureId}
+// Run only after a visible whole-document replacement, save, and page reload.
+// This checker never writes settings and reports no room or campaign identity.
+(async () => {
+  const DATA = ${literal};
+  const FIELD_SPECS = [
+    { key: 'html', selector: 'textarea[name="customcharsheet_layout"]' },
+    { key: 'css', selector: 'textarea[name="customcharsheet_style"]' },
+    { key: 'translation', selector: 'textarea[name="customcharsheet_translation"]' },
+  ];
+  const classifyPersistedPayloadText = ${classifyPersistedPayloadText.toString()};
+  const decodeText = (base64) => {
+    const binary = atob(String(base64 || '').replace(/[^A-Za-z0-9+/=]/g, ''));
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+    return new TextDecoder().decode(bytes);
+  };
+  const sha256Hex = async (value) => {
+    if (!globalThis.crypto?.subtle || typeof TextEncoder !== 'function') return null;
+    const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+    return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+  };
+  const countOccurrences = (text, expected) => {
+    if (!expected) return text === '' ? 1 : 0;
+    let count = 0;
+    let offset = 0;
+    while ((offset = text.indexOf(expected, offset)) >= 0) {
+      count += 1;
+      offset += expected.length;
+    }
+    return count;
+  };
+  const checks = [];
+  for (const spec of FIELD_SPECS) {
+    const field = document.querySelector(spec.selector);
+    if (!field || !('value' in field)) {
+      checks.push({ key: spec.key, status: 'field-missing' });
+      continue;
+    }
+    const expected = decodeText(DATA.payload[spec.key].base64);
+    const observed = String(field.value ?? '');
+    const classification = classifyPersistedPayloadText(expected, observed, spec.key);
+    checks.push({
+      key: spec.key,
+      ...classification,
+      expectedSha256: DATA.payload[spec.key].sha256,
+      observedSha256: await sha256Hex(observed),
+      expectedLength: expected.length,
+      observedLength: observed.length,
+      expectedOccurrenceCount: countOccurrences(observed, expected),
+    });
+  }
+  const onRoll20 = location.hostname === 'app.roll20.net';
+  const missingFields = checks.filter((check) => check.status === 'field-missing').map((check) => check.key);
+  const mismatches = checks.filter((check) => check.status === 'mismatch').map((check) => check.key);
+  const normalizedOnly = checks.filter((check) => check.status === 'newline-normalized-match').map((check) => check.key);
+  const jsonNormalizedOnly = checks.filter((check) => check.status === 'json-semantic-match').map((check) => check.key);
+  const status = !onRoll20
+    ? 'NOT_ROLL20'
+    : missingFields.length
+      ? 'SETTINGS_FIELDS_MISSING'
+      : mismatches.length
+        ? 'PERSISTED_PAYLOAD_MISMATCH'
+        : jsonNormalizedOnly.length
+          ? 'PERSISTED_PAYLOAD_JSON_NORMALIZED'
+        : normalizedOnly.length
+          ? 'PERSISTED_PAYLOAD_NEWLINE_NORMALIZED'
+          : 'PERSISTED_PAYLOAD_EXACT_MATCH';
+  const result = {
+    fixtureId: DATA.fixtureId,
+    expectedRuntimeMode: DATA.expectedRuntimeMode,
+    status,
+    pass: [
+      'PERSISTED_PAYLOAD_EXACT_MATCH',
+      'PERSISTED_PAYLOAD_NEWLINE_NORMALIZED',
+      'PERSISTED_PAYLOAD_JSON_NORMALIZED',
+    ].includes(status),
+    missingFields,
+    mismatches,
+    normalizedOnly,
+    jsonNormalizedOnly,
+    checks,
+    next: status === 'PERSISTED_PAYLOAD_EXACT_MATCH'
+      ? 'Proceed to the rendered character activation check.'
+      : status === 'PERSISTED_PAYLOAD_JSON_NORMALIZED'
+        ? 'Roll20 preserved translation values but normalized JSON formatting. Proceed with the semantic match recorded.'
+      : status === 'PERSISTED_PAYLOAD_NEWLINE_NORMALIZED'
+        ? 'Inspect the newline-only difference, then proceed only when it is expected.'
+        : 'Do not capture render evidence. Replace every visible editor as a whole document, save, reload, and run this check again.',
+  };
+  if (typeof console.table === 'function') console.table(checks);
+  console.log('Roll20 persisted payload check:', result);
+  return result;
+})();`;
+}
+
 function renderSnippet({ fixtureId, payload, validation, activationHints, options = {} }) {
   const expectedRuntimeMode = options.expectedRuntimeMode || 'modern';
   const literal = JSON.stringify({
@@ -963,13 +1129,8 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     const okHost = location.hostname === 'app.roll20.net';
     const hasSandboxInputs = Boolean(document.querySelector('#sheetHtml, #sheetCss, #sheetTranslation'));
     const hasManifestTextarea = Boolean(document.querySelector('textarea[name="customcharsheet_json"], [name="customcharsheet_json"]'));
-    const hasCampaignSettingsFields = Boolean(
-      document.querySelector('textarea[name="customcharsheet_layout"]') &&
-      document.querySelector('textarea[name="customcharsheet_style"]') &&
-      document.querySelector('textarea[name="customcharsheet_translation"]'),
-    );
-    if (!okHost || (!hasSandboxInputs && !hasManifestTextarea && !hasCampaignSettingsFields)) {
-      throw new Error('Open the Roll20 Custom Sheet Sandbox editor/tools or campaign settings page before running this snippet.');
+    if (!okHost || (!hasSandboxInputs && !hasManifestTextarea)) {
+      throw new Error('Open the Roll20 Custom Sheet Sandbox editor/tools or Sandbox settings page before running this snippet.');
     }
   };
   const inferCampaignId = () => {
@@ -1456,15 +1617,17 @@ function renderReadme(report) {
     'The resumable state also keeps only per-file expected/browser SHA-256 metadata across page reloads. The activation result is `UPLOAD_FILE_HASH_NOT_PROVEN` until HTML, CSS, and translation all have `fileHashStatus: match`; a visible marker without all three matches is not same-payload evidence.',
     'Before dispatch, the helper hashes both the decoded source bytes and `File.arrayBuffer()` with browser Web Crypto. Each result reports `expectedSha256`, `sourceBytesSha256`, `fileBytesSha256`, and `fileHashStatus`; a mismatch blocks the file-input handler and endpoint fallback. `unavailable` is not a hash match and must not be promoted to same-payload evidence.',
     '',
-    'After settings save and editor reload, run the matching `*-activation-check-snippet.js` on `https://app.roll20.net/editor`. It returns `VISIBLE_MATCH`, `RUNTIME_MODE_MISMATCH`, `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE`, `CHARACTER_DIALOG_NO_SHEET_BODY`, `CHAT_TEMPLATE_ONLY`, `ROLL20_EDITOR_PARSE_ERROR`, or `NOT_PROVEN`. The expected modern/legacy mode comes from `sheet.json` unless `--expected-runtime-mode modern|legacy` overrides it. Capture Roll20 sheet-root evidence only after `VISIBLE_MATCH`, a matching runtime mode, and a visual check that the visible sheet belongs to the intended fixture.',
+    'For a dedicated legacy test-room settings page, replace each visible HTML/CSS/translation editor as a whole document, save, reload, and run the matching `*-persistence-check-snippet.js`. It is read-only and rejects missing, appended, truncated, or otherwise different persisted source before render evidence is captured.',
+    '',
+    'After persistence is proven and the editor reloads, run the matching `*-activation-check-snippet.js` on `https://app.roll20.net/editor`. It returns `VISIBLE_MATCH`, `RUNTIME_MODE_MISMATCH`, `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE`, `CHARACTER_DIALOG_NO_SHEET_BODY`, `CHAT_TEMPLATE_ONLY`, `ROLL20_EDITOR_PARSE_ERROR`, or `NOT_PROVEN`. The expected modern/legacy mode comes from `sheet.json` unless `--expected-runtime-mode modern|legacy` overrides it. Capture Roll20 sheet-root evidence only after `VISIBLE_MATCH`, a matching runtime mode, and a visual check that the visible sheet belongs to the intended fixture.',
     '',
     'After upload, capture Roll20 sandbox root/chat evidence and rerun the status/diff gates.',
     '',
-    '| Fixture | Runtime mode | Upload snippet | Activation check | Apply settings | Campaign id | HTML bytes | CSS bytes | Translation bytes | Translation JSON | Settings field manifest |',
-    '| --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | --- | --- |',
+    '| Fixture | Runtime mode | Upload snippet | Persistence check | Activation check | Apply settings | Campaign id | HTML bytes | CSS bytes | Translation bytes | Translation JSON | Settings field manifest |',
+    '| --- | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | --- | --- |',
   ];
   for (const entry of report.entries) {
-    lines.push(`| ${entry.fixtureId} | ${entry.options?.expectedRuntimeMode || 'modern'} | \`${entry.snippetRelativePath}\` | \`${entry.activationCheckSnippetRelativePath}\` | ${entry.options?.applySettings ? 'YES' : 'NO'} | ${entry.options?.endpointCampaignId || '-'} | ${entry.payloadBytes.html} | ${entry.payloadBytes.css} | ${entry.payloadBytes.translation} | ${entry.validation.translation.ok ? 'PASS' : 'FAIL'} | ${entry.validation.settingsFieldManifest.ok ? 'PASS' : 'FAIL'} |`);
+    lines.push(`| ${entry.fixtureId} | ${entry.options?.expectedRuntimeMode || 'modern'} | \`${entry.snippetRelativePath}\` | \`${entry.persistenceCheckSnippetRelativePath}\` | \`${entry.activationCheckSnippetRelativePath}\` | ${entry.options?.applySettings ? 'YES' : 'NO'} | ${entry.options?.endpointCampaignId || '-'} | ${entry.payloadBytes.html} | ${entry.payloadBytes.css} | ${entry.payloadBytes.translation} | ${entry.validation.translation.ok ? 'PASS' : 'FAIL'} | ${entry.validation.settingsFieldManifest.ok ? 'PASS' : 'FAIL'} |`);
   }
   lines.push('');
   return `${lines.join('\n')}\n`;
@@ -1539,11 +1702,17 @@ function runSelfTest() {
       textTokens: ['Self'],
     },
   });
+  const persistenceCheckSnippet = renderPersistenceCheckSnippet({
+    fixtureId: 'self-test',
+    payload,
+    expectedRuntimeMode: 'legacy',
+  });
   const readme = renderReadme({
     generatedAt: new Date(0).toISOString(),
     entries: [{
       fixtureId: 'self-test',
       snippetRelativePath: 'reports/self-test.js',
+      persistenceCheckSnippetRelativePath: 'reports/self-test-persistence-check-snippet.js',
       activationCheckSnippetRelativePath: 'reports/self-test-activation-check-snippet.js',
       options: { applySettings: true, endpointCampaignId: '12345', expectedRuntimeMode: 'legacy' },
       payloadBytes: { html: 0, css: 0, translation: 2 },
@@ -1554,10 +1723,35 @@ function runSelfTest() {
     }],
   });
   const failures = [];
+  const exactPersistence = classifyPersistedPayloadText('alpha\n', 'alpha\n', 'html');
+  const appendedPersistence = classifyPersistedPayloadText('alpha\n', 'old\nalpha\n', 'html');
+  const newlinePersistence = classifyPersistedPayloadText('alpha\n', 'alpha\r\n', 'css');
+  const normalizedJsonPersistence = classifyPersistedPayloadText(
+    '{"alpha":"one","beta":"two"}',
+    '{\n  "beta": "two",\n  "alpha": "one"\n}',
+    'translation',
+  );
+  const changedJsonPersistence = classifyPersistedPayloadText(
+    '{"alpha":"one"}',
+    '{"alpha":"changed"}',
+    'translation',
+  );
+  const invalidJsonPersistence = classifyPersistedPayloadText(
+    '{"alpha":"one"}',
+    '{"alpha":"one"}{"beta":"two"}',
+    'translation',
+  );
+  if (exactPersistence.status !== 'exact-match') failures.push('exact persisted source was not accepted');
+  if (appendedPersistence.status !== 'mismatch') failures.push('appended persisted source was not rejected');
+  if (newlinePersistence.status !== 'newline-normalized-match') failures.push('line-ending-only persistence difference was not classified');
+  if (normalizedJsonPersistence.status !== 'json-semantic-match') failures.push('translation formatting-only difference was not accepted semantically');
+  if (changedJsonPersistence.status !== 'mismatch') failures.push('changed translation value was not rejected');
+  if (invalidJsonPersistence.status !== 'mismatch' || invalidJsonPersistence.jsonParseOk !== false) failures.push('concatenated translation JSON was not rejected');
   try {
     new Function(snippet);
     new Function(applySnippet);
     new Function(activationCheckSnippet);
+    new Function(persistenceCheckSnippet);
   } catch (error) {
     failures.push(`generated snippet syntax error: ${error?.message || error}`);
   }
@@ -1595,9 +1789,16 @@ function runSelfTest() {
   if (!snippet.includes("const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'")) failures.push('generated snippet missing base64 decoder fallback');
   if (!snippet.includes('jsoninfo: parsed')) failures.push('generated snippet missing jsoninfo wrapper builder');
   if (!snippet.includes('input[name="customcharsheet_json"]')) failures.push('generated snippet missing narrow manifest input selector');
-  if (!snippet.includes('textarea[name="customcharsheet_layout"]')) failures.push('generated snippet missing campaign settings layout selector');
-  if (!snippet.includes('textarea[name="customcharsheet_style"]')) failures.push('generated snippet missing campaign settings style selector');
-  if (!snippet.includes('textarea[name="customcharsheet_translation"]')) failures.push('generated snippet missing campaign settings translation selector');
+  if (snippet.includes('textarea[name="customcharsheet_layout"]')) failures.push('Sandbox upload snippet should not target legacy campaign settings fields');
+  if (!persistenceCheckSnippet.includes('textarea[name="customcharsheet_layout"]')) failures.push('persistence checker missing campaign settings layout selector');
+  if (!persistenceCheckSnippet.includes('textarea[name="customcharsheet_style"]')) failures.push('persistence checker missing campaign settings style selector');
+  if (!persistenceCheckSnippet.includes('textarea[name="customcharsheet_translation"]')) failures.push('persistence checker missing campaign settings translation selector');
+  if (!persistenceCheckSnippet.includes('PERSISTED_PAYLOAD_EXACT_MATCH')) failures.push('persistence checker missing exact-match status');
+  if (!persistenceCheckSnippet.includes('PERSISTED_PAYLOAD_MISMATCH')) failures.push('persistence checker missing mismatch status');
+  if (!persistenceCheckSnippet.includes('PERSISTED_PAYLOAD_JSON_NORMALIZED')) failures.push('persistence checker missing JSON semantic-match status');
+  if (!persistenceCheckSnippet.includes('jsonSemanticMatch')) failures.push('persistence checker missing JSON semantic comparison');
+  if (!persistenceCheckSnippet.includes('expectedOccurrenceCount')) failures.push('persistence checker missing append/duplicate evidence');
+  if (!persistenceCheckSnippet.includes('This checker never writes settings')) failures.push('persistence checker missing read-only contract');
   if (snippet.includes('.ace_text-input[name="customcharsheet_json"]')) failures.push('generated snippet still writes Ace text input as a manifest field');
   if (!snippet.includes('ROLL20_EDITOR_PARSE_ERROR')) failures.push('generated snippet missing editor parse-error activation status');
   if (!snippet.includes('roll20EditorParseError')) failures.push('generated snippet missing editor parse-error detector');
@@ -1625,6 +1826,7 @@ function runSelfTest() {
   if (!readme.includes('settings-page `{ sheet, userOptions, jsoninfo }` wrapper')) failures.push('generated README text does not describe wrapper');
   if (!readme.includes('Activation check')) failures.push('generated README missing activation check column');
   if (!readme.includes('*-activation-check-snippet.js')) failures.push('generated README missing activation check instruction');
+  if (!readme.includes('*-persistence-check-snippet.js')) failures.push('generated README missing persistence check instruction');
   if (!readme.includes('Apply settings')) failures.push('generated README missing apply settings column');
   if (!readme.includes('--out-dir <ignored-local-folder>')) failures.push('generated README missing output override instruction');
   if (!readme.includes('--payload-dir <ignored-local-folder>')) failures.push('generated README missing direct payload instruction');

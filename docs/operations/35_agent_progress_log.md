@@ -15,6 +15,26 @@ or source-derived measurement here.
 - Remote CI: passed safety/unit verification, lint, and production build.
 - Worktree and project server state were clean after the run.
 
+## 2026-08-03 - Complete Legacy Payload Replacement Evidence
+
+- Repeated the exact-one participant preflight in the dedicated legacy test
+  destination before each room entry. No existing user room was modified.
+- A visible editor fill initially appended a new anonymous payload to the old
+  one. The resulting mixed sheet and failed translation were rejected as bad
+  input application rather than mislabeled as a renderer defect.
+- Replaced HTML, CSS, and translation as whole documents, saved, reloaded, and
+  confirmed that previous synthetic content was absent. HTML/CSS persisted
+  exactly; Roll20 reformatted translation JSON while preserving its values.
+- Added a generated read-only persisted-payload checker for legacy settings and
+  restricted the upload helper to its supported Sandbox controls. The checker
+  distinguishes exact source, line-ending normalization, JSON formatting-only
+  normalization, missing fields, and real mismatch.
+- Both current anonymous legacy payloads now have element-level actual geometry
+  evidence. Focused diagnostics retain the existing renderer baseline and make
+  no production CSS change.
+- Claim boundary: modern Sandbox upload, deterministic lossless chat capture,
+  and broad-sheet parity remain open.
+
 ## 2026-08-03 - Actual Control Geometry Evidence
 
 - Extended the local baseline, export-payload, same-context, and full-root
@@ -26,14 +46,14 @@ or source-derived measurement here.
 - Current Roll20 participant preflight accepts the visible member count first
   and a visible one-player card count only as a fallback. Conflicting sources
   stop the run.
-- A fresh read-only probe in the dedicated owner-only legacy test room supplied
-  actual control geometry for one anonymous synthetic payload. Hidden controls
-  remain in structure/state evidence but are excluded from visual offset
-  ranking.
+- Fresh read-only probes in the dedicated owner-only legacy test room supplied
+  actual element geometry for both current anonymous synthetic payloads.
+  Hidden controls remain in structure/state evidence but are excluded from
+  visual offset ranking.
 - The tested visible controls are close enough that current evidence still
-  favors no production renderer CSS change. Another synthetic payload and the
-  modern Sandbox still lack equivalent actual element evidence.
-- Claim boundary: one anonymous legacy control surface only. This is not broad
+  favors no production renderer CSS change. The modern Sandbox still lacks
+  equivalent actual element evidence.
+- Claim boundary: two anonymous legacy control surfaces only. This is not broad
   sheet parity and does not complete modern verification.
 
 ## 2026-08-03 - Authored-Root Evidence Alignment

@@ -67,6 +67,21 @@ proof of solitude.
 - A successful file selection or settings save is not render proof. Continue to
   the rendered character iframe and interaction checks.
 
+### Visible Settings Replacement
+
+- In a dedicated legacy test room, select the entire visible HTML, CSS, or
+  translation editor before entering the replacement document. Typing or
+  filling without whole-document selection may append to the previous payload.
+- Save, reload the settings page, and run the generated read-only persisted
+  payload check before opening a character for capture.
+- HTML and CSS must match exactly or differ only by line-ending normalization.
+  Translation JSON may differ in formatting only when parsed keys and values
+  are semantically identical.
+- Missing fields, duplicated source, truncation, invalid translation JSON, or
+  any semantic mismatch means stop and replace all three documents again.
+- Do not classify a render difference until persisted input identity passes;
+  a visible Save confirmation alone is not input-fidelity evidence.
+
 ## Required Checks
 
 Use the same generated payload for local and actual comparison.

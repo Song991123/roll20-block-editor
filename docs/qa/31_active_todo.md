@@ -26,12 +26,16 @@ belong in tracked documents.
   same-payload root comparisons against the exact authored top-level element,
   not the surrounding Roll20 wrapper. Authored-root dimensions and capture
   completeness agree, and the current product baseline is closer than the
-  tested generic CSS candidates. One anonymous legacy payload now also has
-  actual label, input, Roll-button, and action-button geometry/computed-style
-  evidence; collection counts agree and the remaining visible control deltas
-  do not justify a global renderer patch. A second synthetic payload remains
-  `ROOT_ONLY`, the renderer-action gate holds, and modern comparison remains
-  open.
+  tested generic CSS candidates. Both current anonymous legacy payloads now
+  have actual element geometry/computed-style evidence for their applicable
+  structure and controls; collection counts agree and the remaining visible
+  deltas do not justify a global renderer patch. The renderer-action gate
+  holds, broad-sheet parity is not proven, and modern comparison remains open.
+- `DONE TOOLING`: generated handoffs now include a read-only persisted-payload
+  check for dedicated legacy settings. It distinguishes exact HTML/CSS,
+  newline normalization, translation JSON formatting normalization, missing
+  fields, and real source mismatch. The Sandbox upload helper no longer treats
+  legacy campaign settings fields as a supported upload destination.
 - `PARTIAL ACTUAL`: Roll-capable and non-Roll payloads now share one chat
   applicability rule across status, capture planning, metric audit, and pixel
   diagnostics. Current foreground DOM/style/font evidence passes for the

@@ -24,10 +24,14 @@ contain private source evidence or historical test dumps.
 - Full-root diagnostics now compare the exact authored top-level element rather
   than the surrounding Roll20 wrapper. Authored-root dimensions agree for the
   current ignored synthetic legacy run, and the existing product baseline is
-  closer than the tested generic CSS candidates. One anonymous payload now has
-  actual control-level geometry/computed-style evidence, including form and
-  Roll/action controls. Another payload remains `ROOT_ONLY`, so the evidence
+  closer than the tested generic CSS candidates. Both current anonymous legacy
+  payloads now have actual element geometry/computed-style evidence for their
+  applicable structure and controls. Collection counts agree and the evidence
   still does not justify a global renderer patch.
+- Legacy settings handoffs include a read-only persisted-payload checker.
+  Visible code editors must be replaced as whole documents; after save/reload,
+  HTML/CSS source and translation JSON meaning must match before render capture.
+  The Sandbox upload helper does not target legacy campaign settings.
 - Modern automated upload is stopped at the supported file-selection permission
   boundary; do not bypass it.
 - Generated evidence and external validation inputs remain ignored, local, and
