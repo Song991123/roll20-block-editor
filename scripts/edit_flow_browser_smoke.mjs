@@ -207,6 +207,60 @@ async function main() {
     assert(!result.tests.editSurface.shadowEditHost, 'retired Shadow edit host is mounted');
     assert(result.tests.editSurface.layerPanel, 'layer panel is missing');
 
+    await page.setViewportSize({ width: 1280, height: 720 });
+    result.tests.compactEditToolbar = await page.evaluate(() => {
+      const toolbar = document.querySelector('[data-testid="edit-surface-toolbar"]');
+      if (!(toolbar instanceof HTMLElement)) return { found: false };
+      const toolbarRect = toolbar.getBoundingClientRect();
+      const controls = [
+        'edit-canvas-snap-toggle',
+        'edit-placement-flow',
+        'edit-placement-free',
+        'edit-canvas-width-input',
+        'edit-zoom-fit',
+        'edit-zoom-100',
+      ].map((testid) => {
+        const node = document.querySelector(`[data-testid="${testid}"]`);
+        if (!(node instanceof HTMLElement)) return { testid, found: false };
+        const rect = node.getBoundingClientRect();
+        return {
+          testid,
+          found: true,
+          ariaLabel: node.getAttribute('aria-label') ?? '',
+          text: node.textContent?.trim() ?? '',
+          top: rect.top,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height,
+        };
+      });
+      return {
+        found: true,
+        clientHeight: toolbar.clientHeight,
+        scrollHeight: toolbar.scrollHeight,
+        clientWidth: toolbar.clientWidth,
+        scrollWidth: toolbar.scrollWidth,
+        controls,
+        allControlsInsideRow: controls.every((control) => control.found
+          && control.width > 0
+          && control.height > 0
+          && control.top >= toolbarRect.top - 0.5
+          && control.bottom <= toolbarRect.bottom + 0.5),
+      };
+    });
+    assert(result.tests.compactEditToolbar.found, 'compact edit toolbar is missing');
+    assert(result.tests.compactEditToolbar.clientHeight === 36, 'compact edit toolbar changed the stable canvas offset');
+    assert(
+      result.tests.compactEditToolbar.scrollHeight <= 36,
+      `compact edit toolbar wrapped or overflowed vertically: ${JSON.stringify(result.tests.compactEditToolbar)}`,
+    );
+    assert(result.tests.compactEditToolbar.allControlsInsideRow, `compact edit toolbar controls escaped the row: ${JSON.stringify(result.tests.compactEditToolbar)}`);
+    assert(
+      result.tests.compactEditToolbar.controls.every((control) => control.ariaLabel.length > 0),
+      `compact edit toolbar control lost its accessible name: ${JSON.stringify(result.tests.compactEditToolbar.controls)}`,
+    );
+    await page.setViewportSize({ width: 1480, height: 960 });
+
     const syntheticImageUrl = `http://127.0.0.1:${PORT}${BASE_PATH}/synthetic-image.svg`;
     const syntheticHtml = [
       '<div class="frame" style="width:520px; min-height:220px; padding:16px">',

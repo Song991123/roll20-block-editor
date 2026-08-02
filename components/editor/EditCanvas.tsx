@@ -2,7 +2,21 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent as ReactDragEvent } from 'react';
-import { ChevronDown, ChevronRight, CircleHelp, Layers, Redo2, Search, Undo2, Ungroup } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  CircleHelp,
+  Grid3X3,
+  Layers,
+  Maximize2,
+  Move,
+  Redo2,
+  Ruler,
+  Rows3,
+  Search,
+  Undo2,
+  Ungroup,
+} from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { toast } from 'sonner';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
@@ -215,14 +229,14 @@ export default function EditCanvas() {
       data-edit-render-owner={editSubmode === 'rolltemplate' ? 'chat-renderer' : 'persistent-iframe'}
     >
       <div
-        className="r20-strip flex h-9 shrink-0 items-center gap-3 border-b border-[var(--border-subtle)] px-3 text-xs"
+        className="r20-strip flex h-9 shrink-0 items-center gap-2 overflow-x-auto border-b border-[var(--border-subtle)] px-3 text-xs whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         data-testid="edit-surface-toolbar"
       >
-        <span className="font-semibold text-foreground">
+        <span className="shrink-0 font-semibold text-foreground">
           {editSubmode === 'rolltemplate' ? '주사위 결과 카드 편집' : '시트 편집'}
         </span>
         {editSubmode === 'rolltemplate' && rolltemplateRoots.length > 0 && (
-          <label className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+          <label className="flex min-w-0 shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
             <span>결과 카드</span>
             <select
               value={activeRolltemplateId ?? ''}
@@ -238,7 +252,7 @@ export default function EditCanvas() {
             </select>
           </label>
         )}
-        <div className="ml-auto flex items-center gap-1" role="group" aria-label="편집 기록">
+        <div className="ml-auto flex shrink-0 items-center gap-1" role="group" aria-label="편집 기록">
           <button
             type="button"
             onClick={() => runHistoryAction('undo')}
@@ -268,53 +282,65 @@ export default function EditCanvas() {
               type="button"
               onClick={toggleSnap}
               className={cn(
-                'rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors active:scale-95',
+                'grid h-7 w-7 shrink-0 place-items-center rounded-full border transition-colors active:scale-95',
                 snapEnabled
                   ? 'border-[var(--primary-strong)] bg-[var(--primary-strong)] text-white'
                   : 'border-border bg-[var(--bg-elevated-2)] text-muted-foreground hover:bg-[var(--bg-hover)]',
               )}
-              title="움직일 때 8px 격자 칸에 착 붙게 맞춰요"
+              title={`격자 맞춤 ${snapEnabled ? '끄기' : '켜기'} — 움직일 때 8px 단위로 맞춰요`}
+              aria-label={`격자 맞춤 ${snapEnabled ? '끄기' : '켜기'}`}
+              aria-pressed={snapEnabled}
               data-testid="edit-canvas-snap-toggle"
             >
-              격자 {snapEnabled ? '켬' : '끔'}
+              <Grid3X3 className="h-4 w-4" aria-hidden="true" />
             </button>
             <div
-              className="flex items-center overflow-hidden rounded-full border border-border bg-[var(--bg-elevated-2)]"
+              className="flex h-7 shrink-0 items-center overflow-hidden rounded-full border border-border bg-[var(--bg-elevated-2)]"
+              role="group"
+              aria-label="요소 배치 방식"
               data-testid="edit-placement-mode"
             >
               <button
                 type="button"
                 onClick={() => setEditPlacementMode('flow')}
                 className={cn(
-                  'px-2.5 py-0.5 text-xs font-medium transition-colors',
+                  'grid h-7 w-7 place-items-center transition-colors',
                   editPlacementMode === 'flow'
                     ? 'bg-[var(--primary-strong)] text-white'
                     : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
                 )}
-                title="줄 맞춰 놓기 — 주변 요소와 나란히 정렬돼요."
+                title="흐름에 맞춰 놓기 — 주변 요소와 순서대로 배치해요"
+                aria-label="흐름에 맞춰 놓기"
+                aria-pressed={editPlacementMode === 'flow'}
                 data-testid="edit-placement-flow"
               >
-                줄 맞춰
+                <Rows3 className="h-4 w-4" aria-hidden="true" />
               </button>
               <button
                 type="button"
                 onClick={() => setEditPlacementMode('free')}
                 className={cn(
-                  'px-2.5 py-0.5 text-xs font-medium transition-colors',
+                  'grid h-7 w-7 place-items-center transition-colors',
                   editPlacementMode === 'free'
                     ? 'bg-[var(--primary-strong)] text-white'
                     : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
                 )}
-                title="자유롭게 놓기 — 원하는 자리에 그대로 놓여요."
+                title="자유롭게 놓기 — 원하는 자리에 그대로 배치해요"
+                aria-label="자유롭게 놓기"
+                aria-pressed={editPlacementMode === 'free'}
                 data-testid="edit-placement-free"
               >
-                자유롭게
+                <Move className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
           </>
         )}
-        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          {editSubmode === 'rolltemplate' ? '카드 너비' : '시트 너비'}
+        <label
+          className="flex h-7 shrink-0 items-center gap-1 text-xs text-muted-foreground"
+          title={editSubmode === 'rolltemplate' ? '결과 카드 너비' : '시트 너비'}
+        >
+          <Ruler className="h-4 w-4" aria-hidden="true" />
+          <span className="sr-only">{editSubmode === 'rolltemplate' ? '카드 너비' : '시트 너비'}</span>
           <input
             ref={canvasWidthInputRef}
             type="number"
@@ -338,40 +364,46 @@ export default function EditCanvas() {
                 event.currentTarget.blur();
               }
             }}
-            className="h-7 w-[84px] rounded-full border border-border bg-[var(--bg-elevated-2)] px-2.5 text-right text-xs text-foreground outline-none tabular-nums focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
+            className="h-7 w-[72px] rounded-full border border-border bg-[var(--bg-elevated-2)] px-2 text-right text-xs text-foreground outline-none tabular-nums focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
             aria-label={editSubmode === 'rolltemplate' ? '주사위 결과 카드 폭' : '시트 캔버스 폭'}
             data-testid="edit-canvas-width-input"
           />
           px
         </label>
         <div
-          className="flex items-center overflow-hidden rounded-full border border-border bg-[var(--bg-elevated-2)]"
+          className="flex h-7 shrink-0 items-center overflow-hidden rounded-full border border-border bg-[var(--bg-elevated-2)]"
+          role="group"
+          aria-label="시트 확대"
           data-testid="edit-zoom-control"
         >
           <button
             type="button"
             onClick={() => setPreviewZoom('fit')}
             className={cn(
-              'px-2.5 py-0.5 text-xs font-medium transition-colors',
+              'grid h-7 w-7 place-items-center transition-colors',
               zoom === 'fit'
                 ? 'bg-[var(--primary-strong)] text-white'
                 : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
             )}
             title="시트 전체가 한눈에 들어오게 맞춰요."
+            aria-label="화면에 맞추기"
+            aria-pressed={zoom === 'fit'}
             data-testid="edit-zoom-fit"
           >
-            맞춤
+            <Maximize2 className="h-4 w-4" aria-hidden="true" />
           </button>
           <button
             type="button"
             onClick={() => setPreviewZoom(1)}
             className={cn(
-              'px-2.5 py-0.5 text-xs font-medium transition-colors',
+              'h-7 min-w-12 px-2 text-xs font-semibold transition-colors',
               zoom === 1
                 ? 'bg-[var(--primary-strong)] text-white'
                 : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
             )}
             title="실제 Roll20 크기 그대로 봐요."
+            aria-label="실제 크기 100%"
+            aria-pressed={zoom === 1}
             data-testid="edit-zoom-100"
           >
             100%

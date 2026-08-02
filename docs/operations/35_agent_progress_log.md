@@ -10,9 +10,23 @@ or source-derived measurement here.
 ## Current Branch
 
 - Branch: `claude/design-reset`
-- Latest verified product commit before this documentation cleanup: `9c32d10`
+- Read the current branch tip from Git; do not rely on a cached commit hash in
+  this handoff file.
 - Remote CI: passed safety/unit verification, lint, and production build.
 - Worktree and project server state were clean after the run.
+
+## 2026-08-03 - Compact Edit Toolbar
+
+- Replaced wrapping edit-toolbar text actions with accessible icon controls
+  while preserving tooltips, pressed state, width entry, and the stable canvas
+  offset.
+- Extended the edit-flow browser smoke to verify one-row geometry and
+  accessible names at a compact desktop viewport before continuing through the
+  existing drag, grouping, and Preview/Edit checks.
+- Focused browser smoke, full `ci:verify`, lint, production build, document
+  privacy guard, and diff checks passed. Temporary test servers exited.
+- Claim boundary: local toolbar usability only. Actual Roll20 modern and legacy
+  parity remains open.
 
 ## 2026-08-03 - Canvas Selection Isolation
 

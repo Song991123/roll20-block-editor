@@ -49,6 +49,9 @@ belong in tracked documents.
   separate iframe markers. Three consecutive full browser runs preserved
   multi-selection through the forced collision case and later multi-object
   movement with no console or page errors.
+- `DONE LOCAL`: the edit toolbar keeps its stable single-row canvas offset at
+  a compact desktop viewport. Dense text controls use accessible icon buttons,
+  and the edit-flow browser smoke checks vertical overflow and control names.
 - `PARTIAL`: continue usability review for dense imported structures, nested
   absolute placement, keyboard selection, resize handles, and undo/redo.
 
