@@ -9,6 +9,8 @@ export type DropIndicatorRect = {
 
 const MIN_INDICATOR_THICKNESS = 2;
 const MAX_INDICATOR_THICKNESS = 12;
+const DEFAULT_AUTO_SCROLL_EDGE = 48;
+const DEFAULT_AUTO_SCROLL_STEP = 18;
 
 function finiteOrZero(value: number): number {
   return Number.isFinite(value) ? value : 0;
@@ -46,4 +48,35 @@ export function dropIndicatorLabel(mode: DropIndicatorMode): string {
   if (mode === 'inside') return '안에 넣기';
   if (mode === 'before') return '앞에 놓기';
   return '뒤에 놓기';
+}
+
+/**
+ * Scroll a long virtualized layer list while a dragged row stays near an edge.
+ * The closer the pointer gets to the edge, the faster the list advances.
+ */
+export function getLayerPanelAutoScrollDelta(
+  pointerY: number,
+  bounds: { top: number; bottom: number },
+  edgeSize = DEFAULT_AUTO_SCROLL_EDGE,
+  maxStep = DEFAULT_AUTO_SCROLL_STEP,
+): number {
+  const top = finiteOrZero(bounds.top);
+  const bottom = finiteOrZero(bounds.bottom);
+  const height = Math.max(0, bottom - top);
+  if (height === 0 || !Number.isFinite(pointerY)) return 0;
+
+  const edge = Math.max(1, Math.min(Math.abs(finiteOrZero(edgeSize)), height / 2));
+  const step = Math.max(1, Math.round(Math.abs(finiteOrZero(maxStep))));
+  const topDistance = pointerY - top;
+  if (topDistance < edge) {
+    const strength = Math.min(1, Math.max(0, (edge - topDistance) / edge));
+    return -Math.max(1, Math.round(step * strength));
+  }
+
+  const bottomDistance = bottom - pointerY;
+  if (bottomDistance < edge) {
+    const strength = Math.min(1, Math.max(0, (edge - bottomDistance) / edge));
+    return Math.max(1, Math.round(step * strength));
+  }
+  return 0;
 }

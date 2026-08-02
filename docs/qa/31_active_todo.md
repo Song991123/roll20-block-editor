@@ -1,3 +1,29 @@
+# 2026-08-02 Long-layer drag navigation
+
+- `DONE PRODUCT`: dragging a layer row near the top or bottom of the
+  virtualized layer list now scrolls the list continuously. Speed increases
+  toward the edge and stops on drop, drag end, or leaving the panel.
+- `DONE PRODUCT`: holding a valid `inside` target over a collapsed container
+  for 450 ms opens that container before drop. The hover alone changes only
+  panel visibility; Blockly structure changes only after an accepted drop.
+- `DONE VIRTUALIZATION SAFETY`: panel-level drop/end cleanup now removes the
+  active dragged-block identity even when auto-scroll unmounts the source row.
+  A later drop can no longer inherit a stale layer ID.
+- `VERIFIED UNIT`: drop-indicator tests cover upper edge, lower edge, neutral
+  center, invalid pointer input, and minimum scroll speed.
+- `VERIFIED BROWSER`: canonical edit-flow smoke measured an overflowing list
+  moving from `0` to `204px`, remaining at `204px` after drop, and retaining no
+  stale drag identity. A collapsed frame opened on hover and exposed its known
+  child. Existing flow/free movement, before/inside/after, table guards,
+  grouping, emitted HTML/CSS, and final Preview synchronization also passed.
+- `VERIFIED CLEAN RUNTIME`: browser smoke reported zero console errors and zero
+  page errors. Its temporary server exited; server hygiene found zero project
+  and CDP listeners afterward.
+- `VERIFIED REGRESSION`: full `ci:verify`, lint, and production build pass.
+  Evidence/privacy and plain-Korean UI-copy guards remain green.
+- `OPEN EXTERNAL`: this local interaction evidence does not change actual
+  Roll20 modern evidence (`0/4`) or prove arbitrary imported-sheet parity.
+
 # 2026-08-01 Section-design actual Roll20 retry
 
 - `DONE LOCAL PAYLOAD`: the anonymous Sandbox generator can now carry any of

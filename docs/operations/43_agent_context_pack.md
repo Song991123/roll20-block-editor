@@ -87,6 +87,13 @@ the entire history and generated evidence tree.
   full mint composition and exact Edit/Preview computed output. Commit
   `d481a48` is pushed to `claude/design-reset`; GitHub CI run `30682502247`
   passed. Actual modern and legacy Roll20 paint remains unverified.
+  The virtualized layer panel now auto-scrolls near its top/bottom edge and
+  opens a collapsed valid container after a deliberate inside hover. Parent-
+  level cleanup removes drag identity even when scrolling unmounts the source
+  row. Canonical browser smoke measured `204px` movement, immediate stop on
+  drop, no stale identity, successful hover expansion, zero console/page
+  errors, and preserved flow/free/table/Edit-to-Preview behavior. This is local
+  editor evidence, not actual Roll20 parity.
 - Actual Roll20's built-in default chat-template DOM and typography were
   measured in the dedicated one-member modern Sandbox. The local fallback now
   matches its caption/row/inline-roll structure and passes browser smoke.

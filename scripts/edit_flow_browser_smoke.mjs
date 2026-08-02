@@ -1008,6 +1008,63 @@ async function main() {
     assert(result.tests.freeCanvasWidgetDrop.position === 'absolute', 'free placement widget became flow content');
     assert(result.tests.freeCanvasWidgetDrop.parentBlockId === null, 'free placement widget silently entered a hidden structural target');
 
+    result.tests.layerAutoScroll = await page.evaluate(async () => {
+      const scroll = document.querySelector('[data-testid="edit-layer-scroll"]');
+      if (!(scroll instanceof HTMLElement)) return { found: false };
+      const moving = scroll.querySelector('[data-testid="edit-layer-row"]');
+      if (!(moving instanceof HTMLElement)) return { found: false, reason: 'missing draggable layer row' };
+      scroll.scrollTop = 0;
+      const rect = scroll.getBoundingClientRect();
+      const dataTransfer = new DataTransfer();
+      const movingId = moving.getAttribute('data-r20-block-id') || 'synthetic-layer-drag';
+      dataTransfer.setData('application/x-r20-layer-block', movingId);
+      const dragstart = new DragEvent('dragstart', { bubbles: true, cancelable: true });
+      Object.defineProperty(dragstart, 'dataTransfer', { value: dataTransfer });
+      moving.dispatchEvent(dragstart);
+      const dragover = new DragEvent('dragover', {
+        bubbles: true,
+        cancelable: true,
+        clientX: rect.left + rect.width / 2,
+        clientY: rect.bottom - 2,
+      });
+      Object.defineProperty(dragover, 'dataTransfer', { value: dataTransfer });
+      moving.dispatchEvent(dragover);
+      await new Promise((resolve) => setTimeout(resolve, 180));
+      const movedTop = scroll.scrollTop;
+      const drop = new DragEvent('drop', { bubbles: true, cancelable: true });
+      Object.defineProperty(drop, 'dataTransfer', { value: dataTransfer });
+      scroll.dispatchEvent(drop);
+      const staleDraggingBlockAfterDrop = document.body.dataset.r20LayerDraggingBlock ?? null;
+      const dragend = new DragEvent('dragend', { bubbles: true, cancelable: true });
+      Object.defineProperty(dragend, 'dataTransfer', { value: dataTransfer });
+      moving.dispatchEvent(dragend);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const stoppedTop = scroll.scrollTop;
+      scroll.scrollTop = 0;
+      scroll.dispatchEvent(new Event('scroll', { bubbles: true }));
+      return {
+        found: true,
+        overflow: scroll.scrollHeight > scroll.clientHeight,
+        movedTop,
+        stoppedTop,
+        staleDraggingBlockAfterDrop,
+      };
+    });
+    assert(result.tests.layerAutoScroll.found, 'layer scroll surface is missing');
+    assert(result.tests.layerAutoScroll.overflow, 'layer smoke list does not overflow');
+    assert(
+      result.tests.layerAutoScroll.movedTop > 0,
+      `layer list did not auto-scroll near its lower edge: ${JSON.stringify(result.tests.layerAutoScroll)}`,
+    );
+    assert(
+      result.tests.layerAutoScroll.stoppedTop === result.tests.layerAutoScroll.movedTop,
+      `layer list kept auto-scrolling after drop: ${JSON.stringify(result.tests.layerAutoScroll)}`,
+    );
+    assert(
+      result.tests.layerAutoScroll.staleDraggingBlockAfterDrop === null,
+      `layer drag identity survived a virtualized drop: ${JSON.stringify(result.tests.layerAutoScroll)}`,
+    );
+
     const frameCollapseToggle = page.locator(
       `[data-testid="edit-layer-collapse-toggle"][data-r20-block-id="${ids.frameId}"]`,
     );
@@ -1041,6 +1098,47 @@ async function main() {
     }, { frameId: ids.frameId, childId: ids.rowAId });
     assert(result.tests.layerCollapse.collapsed.state === '1', 'container layer did not collapse');
     assert(!result.tests.layerCollapse.collapsed.childVisible, 'collapsed descendant layer is still visible');
+
+    result.tests.layerCollapse.autoExpandedOnDrag = await page.evaluate(async ({ frameId, movingId, childId }) => {
+      const target = document.querySelector(
+        `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(frameId)}"]`,
+      );
+      if (!(target instanceof HTMLElement)) return { found: false };
+      const rect = target.getBoundingClientRect();
+      const dataTransfer = new DataTransfer();
+      dataTransfer.setData('application/x-r20-layer-block', movingId);
+      const dragover = new DragEvent('dragover', {
+        bubbles: true,
+        cancelable: true,
+        clientX: rect.left + rect.width / 2,
+        clientY: rect.top + rect.height / 2,
+      });
+      Object.defineProperty(dragover, 'dataTransfer', { value: dataTransfer });
+      target.dispatchEvent(dragover);
+      await new Promise((resolve) => setTimeout(resolve, 560));
+      const toggle = document.querySelector(
+        `[data-testid="edit-layer-collapse-toggle"][data-r20-block-id="${CSS.escape(frameId)}"]`,
+      );
+      const child = document.querySelector(
+        `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(childId)}"]`,
+      );
+      const dragend = new DragEvent('dragend', { bubbles: true, cancelable: true });
+      Object.defineProperty(dragend, 'dataTransfer', { value: dataTransfer });
+      target.dispatchEvent(dragend);
+      return {
+        found: true,
+        state: toggle?.getAttribute('data-r20-layer-collapsed') ?? null,
+        childVisible: Boolean(child),
+      };
+    }, { frameId: ids.frameId, movingId: ids.outsideId, childId: ids.rowAId });
+    assert(result.tests.layerCollapse.autoExpandedOnDrag.found, 'collapsed drop container is missing');
+    assert(
+      result.tests.layerCollapse.autoExpandedOnDrag.state === '0'
+        && result.tests.layerCollapse.autoExpandedOnDrag.childVisible,
+      `collapsed drop container did not open on hover: ${JSON.stringify(result.tests.layerCollapse.autoExpandedOnDrag)}`,
+    );
+    await frameCollapseToggle.click();
+    await page.waitForTimeout(150);
 
     const childInIframe = frame.locator(`[data-r20-block-id="${ids.rowAId}"]`).first();
     await childInIframe.click();
@@ -1108,11 +1206,13 @@ async function main() {
     result.tests.layerDropModes = await page.evaluate(async ({ movingId, targetId }) => {
       const target = document.querySelector(`[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(targetId)}"]`);
       if (!target) return { modes: [], reason: 'missing target layer row' };
-      const rect = target.getBoundingClientRect();
       const modes = [];
       const settle = () => new Promise((resolve) => requestAnimationFrame(
         () => requestAnimationFrame(resolve),
       ));
+      target.scrollIntoView({ block: 'center' });
+      await settle();
+      const rect = target.getBoundingClientRect();
       for (const ratio of [0.1, 0.5, 0.9]) {
         const dataTransfer = new DataTransfer();
         dataTransfer.setData('application/x-r20-layer-block', movingId);
@@ -1359,6 +1459,8 @@ async function main() {
           `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(targetId)}"]`,
         );
         if (!target) return { found: false, mode: null, defaultPrevented: false };
+        target.scrollIntoView({ block: 'center' });
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         const rect = target.getBoundingClientRect();
         const dataTransfer = new DataTransfer();
         dataTransfer.setData('application/x-r20-layer-block', draggedId);
@@ -1414,6 +1516,8 @@ async function main() {
       const moving = document.querySelector(`[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(movingId)}"]`);
       const target = document.querySelector(`[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(targetId)}"]`);
       if (!moving || !target) return { moved: false, reason: 'missing moving or target layer row' };
+      target.scrollIntoView({ block: 'center' });
+      await new Promise((resolve) => requestAnimationFrame(resolve));
       const rect = target.getBoundingClientRect();
       const dataTransfer = new DataTransfer();
       dataTransfer.setData('application/x-r20-layer-block', movingId);
@@ -3113,7 +3217,7 @@ async function main() {
         `- Status: ${result.pass ? 'PASS' : 'FAIL'}`,
         `- Console errors: ${consoleErrors.length}`,
         `- Page errors: ${pageErrors.length}`,
-        '- Coverage: flow/free placement, canvas widget and block gallery drops, layer collapse/expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, managed visual styles, preview Roll/chat, sheet width, and the dedicated rolltemplate card editor with click/style/drop/chat synchronization plus empty-workspace template creation.',
+        '- Coverage: flow/free placement, canvas widget and block gallery drops, layer edge auto-scroll, layer collapse/drag-hover expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, managed visual styles, preview Roll/chat, sheet width, and the dedicated rolltemplate card editor with click/style/drop/chat synchronization plus empty-workspace template creation.',
         '',
       ].join('\n'),
       'utf8',

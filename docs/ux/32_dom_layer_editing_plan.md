@@ -70,6 +70,13 @@ invent separate DOM models.
     every selected top-level layer without reparenting it. Pointer-up must use
     the stable rendered selection IDs when iframe messages arrive out of order,
     then commit each layer's managed position back to its existing parent.
+13. A virtualized layer list scrolls while a layer stays near its upper or
+    lower edge. Drop, drag end, and panel exit stop the scroll, and parent-level
+    cleanup clears drag identity even when virtualization unmounts the source
+    row.
+14. A valid `inside` hover over a collapsed container opens it after a short
+    deliberate pause. Opening the panel row is preview-only navigation; the
+    Blockly graph and emitted HTML change only after an accepted drop.
 
 ## Visual Language
 

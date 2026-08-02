@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import type { BlockSnapshot } from '@/lib/blockly/adapter';
 import { canMoveLayerDrop, getLayerRole, type LayerDropMode } from '@/lib/editor/layerRoles';
+import { getLayerPanelAutoScrollDelta } from '@/lib/editor/dropIndicator';
 import {
   listRolltemplateRoots,
   listRolltemplateScope,
@@ -401,6 +402,8 @@ function EditLayerPanel({
   onSearchChange: (value: string) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const autoScrollFrameRef = useRef<number | null>(null);
+  const autoScrollDeltaRef = useRef(0);
   // The Figma-style layer tree represents rendered HTML objects. CSS and
   // translation remain editable in their dedicated code/block workspaces;
   // mixing them into this tree made drop targets look like visual layers when
@@ -414,6 +417,50 @@ function EditLayerPanel({
   const bumpStructure = useWorkspaceStore((s) => s.bumpStructure);
   const structureVersion = useWorkspaceStore((s) => s.workspaces[tab].structureVersion);
   const [collapsedLayerIds, setCollapsedLayerIds] = useState<Set<string>>(() => new Set());
+
+  const stopAutoScroll = useCallback(() => {
+    autoScrollDeltaRef.current = 0;
+    if (autoScrollFrameRef.current !== null) cancelAnimationFrame(autoScrollFrameRef.current);
+    autoScrollFrameRef.current = null;
+  }, []);
+
+  const runAutoScroll = useCallback(() => {
+    if (autoScrollFrameRef.current !== null || autoScrollDeltaRef.current === 0) return;
+    const tick = () => {
+      const scroll = scrollRef.current;
+      const delta = autoScrollDeltaRef.current;
+      if (!scroll || delta === 0) {
+        autoScrollFrameRef.current = null;
+        return;
+      }
+      const previous = scroll.scrollTop;
+      scroll.scrollTop += delta;
+      if (scroll.scrollTop === previous) {
+        autoScrollFrameRef.current = null;
+        return;
+      }
+      autoScrollFrameRef.current = requestAnimationFrame(tick);
+    };
+    autoScrollFrameRef.current = requestAnimationFrame(tick);
+  }, []);
+
+  const updateAutoScroll = useCallback((event: ReactDragEvent<HTMLDivElement>) => {
+    if (!event.dataTransfer.types.includes('application/x-r20-layer-block')) {
+      stopAutoScroll();
+      return;
+    }
+    const bounds = event.currentTarget.getBoundingClientRect();
+    autoScrollDeltaRef.current = getLayerPanelAutoScrollDelta(event.clientY, bounds);
+    if (autoScrollDeltaRef.current === 0) stopAutoScroll();
+    else runAutoScroll();
+  }, [runAutoScroll, stopAutoScroll]);
+
+  const finishLayerDrag = useCallback(() => {
+    stopAutoScroll();
+    delete document.body.dataset.r20LayerDraggingBlock;
+  }, [stopAutoScroll]);
+
+  useEffect(() => stopAutoScroll, [stopAutoScroll]);
 
   const allNodes = useMemo(() => {
     void structureVersion;
@@ -660,7 +707,19 @@ function EditLayerPanel({
           </div>
         </div>
       )}
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto" data-testid="edit-layer-scroll">
+      <div
+        ref={scrollRef}
+        className="min-h-0 flex-1 overflow-auto"
+        data-testid="edit-layer-scroll"
+        onDragOverCapture={updateAutoScroll}
+        onDragLeave={(event) => {
+          const relatedTarget = event.relatedTarget;
+          if (relatedTarget instanceof Node && event.currentTarget.contains(relatedTarget)) return;
+          stopAutoScroll();
+        }}
+        onDropCapture={finishLayerDrag}
+        onDragEndCapture={finishLayerDrag}
+      >
         {visibleNodes.length === 0 ? (
           <div className="px-3 py-8 text-center text-sm leading-relaxed text-muted-foreground">
             {editSubmode === 'rolltemplate' ? '결과 카드에 아직 내용이 없어요.' : '아직 보여줄 레이어가 없어요.'}
@@ -732,6 +791,7 @@ const EditLayerRow = memo(function EditLayerRow({
 }) {
   const [dropMode, setDropMode] = useState<LayerDropMode | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const autoExpandTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const role = useMemo(() => {
     const base = getLayerRole(node.type);
     return {
@@ -750,6 +810,18 @@ const EditLayerRow = memo(function EditLayerRow({
     },
     [role.canReceiveChildren],
   );
+  const cancelAutoExpand = useCallback(() => {
+    if (autoExpandTimerRef.current !== null) clearTimeout(autoExpandTimerRef.current);
+    autoExpandTimerRef.current = null;
+  }, []);
+  const queueAutoExpand = useCallback(() => {
+    if (!collapsed || node.childCount === 0 || autoExpandTimerRef.current !== null) return;
+    autoExpandTimerRef.current = setTimeout(() => {
+      autoExpandTimerRef.current = null;
+      onToggleCollapse(node.id);
+    }, 450);
+  }, [collapsed, node.childCount, node.id, onToggleCollapse]);
+  useEffect(() => cancelAutoExpand, [cancelAutoExpand]);
   return (
     <div
       draggable
@@ -790,9 +862,11 @@ const EditLayerRow = memo(function EditLayerRow({
       onDragLeave={(e) => {
         const relatedTarget = e.relatedTarget;
         if (relatedTarget instanceof Node && e.currentTarget.contains(relatedTarget)) return;
+        cancelAutoExpand();
         setDropMode(null);
       }}
       onDragEnd={() => {
+        cancelAutoExpand();
         setDropMode(null);
         setIsDragging(false);
         delete document.body.dataset.r20LayerDraggingBlock;
@@ -815,9 +889,12 @@ const EditLayerRow = memo(function EditLayerRow({
         }
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
+        if (mode === 'inside') queueAutoExpand();
+        else cancelAutoExpand();
         setDropMode(mode);
       }}
       onDrop={(e) => {
+        cancelAutoExpand();
         const draggedId =
           document.body.dataset.r20LayerDraggingBlock ||
           e.dataTransfer.getData('application/x-r20-layer-block');

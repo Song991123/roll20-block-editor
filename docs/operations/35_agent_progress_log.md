@@ -11986,3 +11986,23 @@ same-hash modern/legacy comparison.
 - Generator self-tests, full `ci:verify`, lint, production build, and privacy
   guards pass. Pushed commit `3cfb145`; GitHub CI run `30682895953` passed in
   `1m22s`.
+
+## 2026-08-02 - Long-layer drag navigation
+
+- Added proportional top/bottom auto-scroll to the existing virtualized layer
+  panel without a new dependency or a second drag model.
+- Added delayed expansion for collapsed containers while a valid layer is held
+  over their `inside` drop zone. Hover does not mutate the Blockly graph.
+- Found and fixed a virtualization-specific identity leak: scrolling could
+  unmount the source row before its `dragend`, leaving the old block ID for a
+  later drop. Panel-level drop/end cleanup now owns that final reset.
+- Updated the canonical edit-flow smoke to prove list movement and stop,
+  identity cleanup, hover expansion, and non-interference with exact drop-zone,
+  table, reorder, grouping, free-placement, and Preview-sync checks.
+- Browser result: `204px` auto-scroll, `204px` after stop, stale ID `null`,
+  collapsed state changed to open with the known child visible, console/page
+  errors `0/0`. Temporary smoke server closed; server hygiene returned clean.
+- Full `ci:verify`, lint, and production build pass; evidence/privacy and UI-
+  copy guards remain green.
+- Actual modern Roll20 evidence remains `0/4`; this batch makes no external
+  visual-parity claim.
