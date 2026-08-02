@@ -14,8 +14,10 @@ import {
   AlignCenterVertical,
   AlignEndHorizontal,
   AlignEndVertical,
+  AlignHorizontalDistributeCenter,
   AlignStartHorizontal,
   AlignStartVertical,
+  AlignVerticalDistributeCenter,
   type LucideIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -77,7 +79,9 @@ import {
 import {
   designSelectionBounds,
   resolveDesignAlignment,
+  resolveDesignDistribution,
   type DesignAlignmentMode,
+  type DesignDistributionMode,
 } from '@/lib/editor/designAlignment';
 import { getLayerRole } from '@/lib/editor/layerRoles';
 import { dropIndicatorLabel, getDropIndicatorRect } from '@/lib/editor/dropIndicator';
@@ -137,6 +141,15 @@ const ALIGNMENT_CONTROLS: readonly {
   { mode: 'top', label: '위쪽 맞춤', Icon: AlignStartHorizontal },
   { mode: 'vertical-center', label: '세로 가운데 맞춤', Icon: AlignCenterHorizontal },
   { mode: 'bottom', label: '아래쪽 맞춤', Icon: AlignEndHorizontal },
+];
+
+const DISTRIBUTION_CONTROLS: readonly {
+  mode: DesignDistributionMode;
+  label: string;
+  Icon: LucideIcon;
+}[] = [
+  { mode: 'horizontal', label: '가로 간격 맞춤', Icon: AlignHorizontalDistributeCenter },
+  { mode: 'vertical', label: '세로 간격 맞춤', Icon: AlignVerticalDistributeCenter },
 ];
 
 function paintOverlayRect(node: HTMLDivElement | null, rect: IframeEditRect): void {
@@ -516,13 +529,11 @@ export default function PreviewMain() {
       : null
   ), [iframeAlignmentSelection]);
 
-  const alignIframeSelection = useCallback((mode: DesignAlignmentMode) => {
+  const commitIframeSelectionDeltas = useCallback((
+    deltas: ReturnType<typeof resolveDesignAlignment>,
+  ) => {
     const selection = iframeAlignmentSelection;
     if (!selection) return;
-    const deltas = resolveDesignAlignment(selection.map((item) => ({
-      blockId: item.geometry.blockId,
-      rect: item.geometry.rect,
-    })), mode);
     if (
       deltas.length !== selection.length
       || deltas.every((item) => Math.abs(item.deltaX) < 0.001 && Math.abs(item.deltaY) < 0.001)
@@ -589,6 +600,24 @@ export default function PreviewMain() {
     if (managedCssChanged) store.bumpStructure('css', adapter.countBlocks('css'));
     queueMicrotask(() => flushEmitPipeline());
   }, [htmlLayerMap, iframeAlignmentSelection]);
+  const alignIframeSelection = useCallback((mode: DesignAlignmentMode) => {
+    const selection = iframeAlignmentSelection;
+    if (!selection) return;
+    commitIframeSelectionDeltas(resolveDesignAlignment(selection.map((item) => ({
+      blockId: item.geometry.blockId,
+      rect: item.geometry.rect,
+    })), mode));
+  }, [commitIframeSelectionDeltas, iframeAlignmentSelection]);
+  const distributeIframeSelection = useCallback((mode: DesignDistributionMode) => {
+    const selection = iframeAlignmentSelection;
+    if (!selection || selection.length < 3) return;
+    commitIframeSelectionDeltas(resolveDesignDistribution(selection.map((item) => ({
+      blockId: item.geometry.blockId,
+      rect: item.geometry.rect,
+    })), mode));
+  }, [commitIframeSelectionDeltas, iframeAlignmentSelection]);
+  const iframeDistributionEnabled = (iframeAlignmentSelection?.length ?? 0) >= 3;
+  const iframeArrangementToolbarWidth = iframeDistributionEnabled ? 254 : 188;
 
   const applyIframeResizePointer = useCallback((clientX: number, clientY: number) => {
     const session = iframeResizeSessionRef.current;
@@ -2233,11 +2262,11 @@ export default function PreviewMain() {
                       Math.min(
                         Math.max(
                           4 / Math.max(scale, 0.01),
-                          canvasWidth - 188 / Math.max(scale, 0.01),
+                          canvasWidth - iframeArrangementToolbarWidth / Math.max(scale, 0.01),
                         ),
                         iframeAlignmentBounds.left
                           + iframeAlignmentBounds.width / 2
-                          - 94 / Math.max(scale, 0.01),
+                          - iframeArrangementToolbarWidth / 2 / Math.max(scale, 0.01),
                       ),
                     )}px`,
                     top: `${Math.max(
@@ -2274,6 +2303,51 @@ export default function PreviewMain() {
                         event.stopPropagation();
                       }}
                       onClick={() => alignIframeSelection(mode)}
+                    >
+                      <Icon
+                        aria-hidden="true"
+                        style={{
+                          width: `${16 / Math.max(scale, 0.01)}px`,
+                          height: `${16 / Math.max(scale, 0.01)}px`,
+                        }}
+                      />
+                    </button>
+                  ))}
+                  {iframeDistributionEnabled && (
+                    <span
+                      aria-hidden="true"
+                      className="bg-rose-200"
+                      style={{
+                        width: `${1 / Math.max(scale, 0.01)}px`,
+                        height: `${18 / Math.max(scale, 0.01)}px`,
+                        margin: `0 ${2 / Math.max(scale, 0.01)}px`,
+                      }}
+                    />
+                  )}
+                  {iframeDistributionEnabled && DISTRIBUTION_CONTROLS.map(({ mode, label, Icon }) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      aria-label={label}
+                      title={label}
+                      data-testid={`iframe-distribute-${mode}`}
+                      data-r20-distribution-mode={mode}
+                      className="grid place-items-center text-teal-700 transition-colors hover:bg-teal-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600"
+                      style={{
+                        width: `${28 / Math.max(scale, 0.01)}px`,
+                        height: `${28 / Math.max(scale, 0.01)}px`,
+                        minWidth: 0,
+                        minHeight: 0,
+                        padding: 0,
+                        border: 0,
+                        borderRadius: `${4 / Math.max(scale, 0.01)}px`,
+                        backgroundColor: 'transparent',
+                      }}
+                      onPointerDown={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                      }}
+                      onClick={() => distributeIframeSelection(mode)}
                     >
                       <Icon
                         aria-hidden="true"

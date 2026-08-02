@@ -6,8 +6,8 @@
  * smoke deliberately uses a synthetic sheet so no external sheet source or
  * derived evidence is retained. It verifies the user-facing interaction
  * contract: flow/free placement, canvas widget drop, layer insertion, cycle
- * protection, selection sync, direct resize, multi-selection alignment, and
- * editable canvas width.
+ * protection, selection sync, direct resize, multi-selection alignment and
+ * distribution, and editable canvas width.
  */
 
 import http from 'node:http';
@@ -340,6 +340,7 @@ async function main() {
       '<div class="outside" style="width:180px; min-height:54px; padding:8px">Outside</div>',
       '<div class="group-one" style="padding:4px">Group A</div>',
       '<div class="group-two" style="padding:4px">Group B</div>',
+      '<div class="group-three" style="padding:4px">Group C</div>',
       '<section class="layout-proof" style="width:420px; padding:12px">',
       '  <h3 class="layout-proof-title">Layout</h3>',
       '  <div class="layout-proof-a" style="min-height:28px; padding:6px">Main A</div>',
@@ -357,6 +358,7 @@ async function main() {
       '.sheet-rolltemplate-default .sheet-template-card { width: 100%; background: #fff; border: 1px solid #d7a5b6; }',
       '.sheet-rolltemplate-default .sheet-template-title { padding: 8px 10px; font-weight: 700; }',
       '.sheet-rolltemplate-default .sheet-template-row { display: flex; justify-content: space-between; padding: 8px 10px; }',
+      '.sheet-group-one { margin-bottom: 18px; }',
     ].join('\n');
     await page.evaluate(
       ({ html, css }) => window.__perfHook.importSheet({ html, css, i18n: '{}' }),
@@ -382,6 +384,7 @@ async function main() {
       const outside = document.querySelector('.sheet-outside');
       const groupOne = document.querySelector('.sheet-group-one');
       const groupTwo = document.querySelector('.sheet-group-two');
+      const groupThree = document.querySelector('.sheet-group-three');
       const layoutProof = document.querySelector('.sheet-layout-proof');
       const layoutProofTitle = document.querySelector('.sheet-layout-proof-title');
       const layoutProofA = document.querySelector('.sheet-layout-proof-a');
@@ -404,6 +407,7 @@ async function main() {
         outsideId: outside?.getAttribute('data-r20-block-id') ?? null,
         groupOneId: groupOne?.getAttribute('data-r20-block-id') ?? null,
         groupTwoId: groupTwo?.getAttribute('data-r20-block-id') ?? null,
+        groupThreeId: groupThree?.getAttribute('data-r20-block-id') ?? null,
         layoutProofId: layoutProof?.getAttribute('data-r20-block-id') ?? null,
         layoutProofTitleId: layoutProofTitle?.getAttribute('data-r20-block-id') ?? null,
         layoutProofAId: layoutProofA?.getAttribute('data-r20-block-id') ?? null,
@@ -413,7 +417,7 @@ async function main() {
     });
     assert(
       ids.frameId && ids.titleId && ids.labelId && ids.rowAId && ids.rowAInputId && ids.rowBId && ids.rowBInputId && ids.imageId && ids.tableId && ids.tableBodyId
-        && ids.tableRowId && ids.outsideId && ids.groupOneId && ids.groupTwoId
+        && ids.tableRowId && ids.outsideId && ids.groupOneId && ids.groupTwoId && ids.groupThreeId
         && ids.layoutProofId && ids.layoutProofTitleId && ids.layoutProofAId && ids.layoutProofBId && ids.layoutProofCId,
       `synthetic structural IDs were not emitted: ${JSON.stringify(ids)}`,
     );
@@ -554,32 +558,61 @@ async function main() {
       fullPage: false,
     });
 
+    const preGroupCanvasFirst = frame.locator(`[data-r20-block-id="${ids.groupOneId}"]`);
+    const preGroupCanvasSecond = frame.locator(`[data-r20-block-id="${ids.groupTwoId}"]`);
+    await preGroupCanvasFirst.click({ force: true });
+    await preGroupCanvasSecond.click({ modifiers: ['Control'], force: true });
+    await frame.waitForFunction(({ firstId, secondId }) => (
+      Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(firstId)}"][data-r20-selected="1"]`))
+      && Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(secondId)}"][data-r20-selected="1"]`))
+    ), {
+      firstId: ids.groupOneId,
+      secondId: ids.groupTwoId,
+    }, { timeout: 10000 });
+    result.tests.canvasMultiSelection = await frame.evaluate(({ firstId, secondId }) => ({
+      firstVisible: Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(firstId)}"][data-r20-selected="1"]`)),
+      secondVisible: Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(secondId)}"][data-r20-selected="1"]`)),
+    }), { firstId: ids.groupOneId, secondId: ids.groupTwoId });
+    assert(
+      result.tests.canvasMultiSelection.firstVisible
+        && result.tests.canvasMultiSelection.secondVisible,
+      `canvas multi-selection is not visible: ${JSON.stringify(result.tests.canvasMultiSelection)}`,
+    );
+
     const groupOneRow = page.locator(
       `[data-testid="edit-layer-row"][data-r20-block-id="${ids.groupOneId}"]`,
     );
     const groupTwoRow = page.locator(
       `[data-testid="edit-layer-row"][data-r20-block-id="${ids.groupTwoId}"]`,
     );
+    const groupThreeRow = page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.groupThreeId}"]`,
+    );
     await groupOneRow.click();
     await groupTwoRow.dispatchEvent('click', { bubbles: true, ctrlKey: true });
+    await groupThreeRow.dispatchEvent('click', { bubbles: true, ctrlKey: true });
     await page.waitForTimeout(120);
-    result.tests.layerMultiSelection = await frame.evaluate(({ firstId, secondId }) => ({
+    result.tests.layerMultiSelection = await frame.evaluate(({ firstId, secondId, thirdId }) => ({
       selectedIds: [...document.querySelectorAll('[data-r20-selected="1"]')]
         .map((node) => node.getAttribute('data-r20-block-id'))
         .filter(Boolean),
       firstVisible: Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(firstId)}"][data-r20-selected="1"]`)),
       secondVisible: Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(secondId)}"][data-r20-selected="1"]`)),
-    }), { firstId: ids.groupOneId, secondId: ids.groupTwoId });
+      thirdVisible: Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(thirdId)}"][data-r20-selected="1"]`)),
+    }), { firstId: ids.groupOneId, secondId: ids.groupTwoId, thirdId: ids.groupThreeId });
     assert(
-      result.tests.layerMultiSelection.firstVisible && result.tests.layerMultiSelection.secondVisible,
+      result.tests.layerMultiSelection.firstVisible
+        && result.tests.layerMultiSelection.secondVisible
+        && result.tests.layerMultiSelection.thirdVisible,
       `iframe multi-selection is not visible: ${JSON.stringify(result.tests.layerMultiSelection)}`,
     );
     await page.locator('[data-testid="edit-layer-group-selection"]').click();
     await page.waitForTimeout(900);
-    result.tests.layerGrouping = await page.evaluate(({ firstId, secondId }) => {
+    result.tests.layerGrouping = await page.evaluate(({ firstId, secondId, thirdId }) => {
       const graph = window.__perfHook.getLayerSnapshot('html');
       const first = graph.find((node) => node.id === firstId);
       const second = graph.find((node) => node.id === secondId);
+      const third = graph.find((node) => node.id === thirdId);
       const groupId = first?.layerParentId ?? null;
       const group = groupId ? graph.find((node) => node.id === groupId) : null;
       const emitted = window.__perfHook.getEmitContent().html;
@@ -588,26 +621,33 @@ async function main() {
         groupType: group?.type ?? null,
         firstParent: first?.layerParentId ?? null,
         secondParent: second?.layerParentId ?? null,
+        thirdParent: third?.layerParentId ?? null,
         emittedNested: Boolean(groupId)
-          && emitted.indexOf(`data-r20-block-id="${firstId}"`) > emitted.indexOf(`data-r20-block-id="${groupId}"`),
+          && [firstId, secondId, thirdId].every(
+            (id) => emitted.indexOf(`data-r20-block-id="${id}"`) > emitted.indexOf(`data-r20-block-id="${groupId}"`),
+          ),
       };
-    }, { firstId: ids.groupOneId, secondId: ids.groupTwoId });
-    const renderedGrouping = await frame.evaluate(({ firstId, secondId, groupId }) => {
+    }, { firstId: ids.groupOneId, secondId: ids.groupTwoId, thirdId: ids.groupThreeId });
+    const renderedGrouping = await frame.evaluate(({ firstId, secondId, thirdId, groupId }) => {
       const firstNode = document.querySelector(`[data-r20-block-id="${CSS.escape(firstId)}"]`);
       const secondNode = document.querySelector(`[data-r20-block-id="${CSS.escape(secondId)}"]`);
+      const thirdNode = document.querySelector(`[data-r20-block-id="${CSS.escape(thirdId)}"]`);
       const groupNode = groupId
         ? document.querySelector(`[data-r20-block-id="${CSS.escape(groupId)}"]`)
         : null;
       return {
         firstFound: Boolean(firstNode),
         secondFound: Boolean(secondNode),
+        thirdFound: Boolean(thirdNode),
         groupFound: Boolean(groupNode),
         renderedParent: firstNode?.parentElement?.closest('[data-r20-block-id]')?.getAttribute('data-r20-block-id') ?? null,
         renderedSecondParent: secondNode?.parentElement?.closest('[data-r20-block-id]')?.getAttribute('data-r20-block-id') ?? null,
+        renderedThirdParent: thirdNode?.parentElement?.closest('[data-r20-block-id]')?.getAttribute('data-r20-block-id') ?? null,
       };
     }, {
       firstId: ids.groupOneId,
       secondId: ids.groupTwoId,
+      thirdId: ids.groupThreeId,
       groupId: result.tests.layerGrouping.groupId,
     });
     result.tests.layerGrouping = { ...result.tests.layerGrouping, ...renderedGrouping };
@@ -615,72 +655,62 @@ async function main() {
     assert(result.tests.layerGrouping.groupType === 'r20_element_container', 'layer grouping used the wrong HTML container');
     assert(
       result.tests.layerGrouping.firstParent === result.tests.layerGrouping.groupId
-        && result.tests.layerGrouping.secondParent === result.tests.layerGrouping.groupId,
-      `layer grouping did not preserve both model parents: ${JSON.stringify(result.tests.layerGrouping)}`,
+        && result.tests.layerGrouping.secondParent === result.tests.layerGrouping.groupId
+        && result.tests.layerGrouping.thirdParent === result.tests.layerGrouping.groupId,
+      `layer grouping did not preserve model parents: ${JSON.stringify(result.tests.layerGrouping)}`,
     );
     assert(
       result.tests.layerGrouping.renderedParent === result.tests.layerGrouping.groupId
-        && result.tests.layerGrouping.renderedSecondParent === result.tests.layerGrouping.groupId,
+        && result.tests.layerGrouping.renderedSecondParent === result.tests.layerGrouping.groupId
+        && result.tests.layerGrouping.renderedThirdParent === result.tests.layerGrouping.groupId,
       `layer grouping did not update the iframe surface: ${JSON.stringify(result.tests.layerGrouping)}`,
     );
     assert(result.tests.layerGrouping.emittedNested, 'layer grouping did not update emitted HTML');
 
     const canvasFirst = frame.locator(`[data-r20-block-id="${ids.groupOneId}"]`);
     const canvasSecond = frame.locator(`[data-r20-block-id="${ids.groupTwoId}"]`);
+    const canvasThird = frame.locator(`[data-r20-block-id="${ids.groupThreeId}"]`);
     assert(
-      await canvasFirst.count() === 1 && await canvasSecond.count() === 1,
+      await canvasFirst.count() === 1
+        && await canvasSecond.count() === 1
+        && await canvasThird.count() === 1,
       'canvas multi-selection targets are missing',
     );
-    let canvasMultiSelected = false;
-    for (let attempt = 0; attempt < 3 && !canvasMultiSelected; attempt += 1) {
-      await canvasFirst.click({ force: true });
-      try {
-        await frame.waitForFunction((firstId) => Boolean(
-          document.querySelector(`[data-r20-block-id="${CSS.escape(firstId)}"][data-r20-selected="1"]`),
-        ), ids.groupOneId, { timeout: 1200 });
-      } catch {
-        await page.waitForTimeout(80);
-        continue;
-      }
-      await canvasSecond.click({ modifiers: ['Control'], force: true });
-      try {
-        await frame.waitForFunction(({ firstId, secondId }) => (
-          Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(firstId)}"][data-r20-selected="1"]`))
-          && Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(secondId)}"][data-r20-selected="1"]`))
-        ), { firstId: ids.groupOneId, secondId: ids.groupTwoId }, { timeout: 1200 });
-        canvasMultiSelected = true;
-      } catch {
-        await page.waitForTimeout(80);
-      }
-    }
-    result.tests.canvasMultiSelection = await frame.evaluate(({ firstId, secondId }) => ({
-      selectedIds: [...document.querySelectorAll('[data-r20-selected="1"]')]
-        .map((node) => node.getAttribute('data-r20-block-id'))
-        .filter(Boolean),
-      firstVisible: Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(firstId)}"][data-r20-selected="1"]`)),
-      secondVisible: Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(secondId)}"][data-r20-selected="1"]`)),
-    }), { firstId: ids.groupOneId, secondId: ids.groupTwoId });
-    assert(
-      result.tests.canvasMultiSelection.firstVisible && result.tests.canvasMultiSelection.secondVisible,
-      `canvas multi-selection is not visible: ${JSON.stringify(result.tests.canvasMultiSelection)}`,
-    );
+    await groupOneRow.dispatchEvent('click', { bubbles: true });
+    await groupTwoRow.dispatchEvent('click', { bubbles: true, ctrlKey: true });
+    await groupThreeRow.dispatchEvent('click', { bubbles: true, ctrlKey: true });
+    await frame.waitForFunction(({ firstId, secondId, thirdId }) => (
+      Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(firstId)}"][data-r20-selected="1"]`))
+      && Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(secondId)}"][data-r20-selected="1"]`))
+      && Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(thirdId)}"][data-r20-selected="1"]`))
+    ), {
+      firstId: ids.groupOneId,
+      secondId: ids.groupTwoId,
+      thirdId: ids.groupThreeId,
+    }, { timeout: 10000 });
+    result.tests.layerThirdSelection = await frame.evaluate(() => (
+      document.querySelectorAll('[data-r20-selected="1"]').length
+    ));
+    assert(result.tests.layerThirdSelection >= 3, 'layer panel did not restore all three selections');
 
     await page.locator('[data-testid="preview-iframe"]').evaluate((iframe) => {
       iframe.contentWindow?.postMessage({ type: 'r20:widget-select', widgetName: null }, '*');
     });
     await page.waitForTimeout(80);
-    result.tests.widgetSelectionIsolation = await frame.evaluate(({ firstId, secondId }) => ({
+    result.tests.widgetSelectionIsolation = await frame.evaluate(({ firstId, secondId, thirdId }) => ({
       firstVisible: Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(firstId)}"][data-r20-selected="1"]`)),
       secondVisible: Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(secondId)}"][data-r20-selected="1"]`)),
-    }), { firstId: ids.groupOneId, secondId: ids.groupTwoId });
+      thirdVisible: Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(thirdId)}"][data-r20-selected="1"]`)),
+    }), { firstId: ids.groupOneId, secondId: ids.groupTwoId, thirdId: ids.groupThreeId });
     assert(
       result.tests.widgetSelectionIsolation.firstVisible
-        && result.tests.widgetSelectionIsolation.secondVisible,
+        && result.tests.widgetSelectionIsolation.secondVisible
+        && result.tests.widgetSelectionIsolation.thirdVisible,
       `widget selection cleared layer selection: ${JSON.stringify(result.tests.widgetSelectionIsolation)}`,
     );
 
     await page.click('[data-testid="edit-placement-free"]');
-    const multiBefore = await frame.evaluate(({ firstId, secondId }) => {
+    const multiBefore = await frame.evaluate(({ firstId, secondId, thirdId }) => {
       const read = (id) => {
         const node = document.querySelector(`[data-r20-block-id="${CSS.escape(id)}"]`);
         const rect = node?.getBoundingClientRect();
@@ -689,10 +719,14 @@ async function main() {
       return {
         first: read(firstId),
         second: read(secondId),
+        third: read(thirdId),
       };
-    }, { firstId: ids.groupOneId, secondId: ids.groupTwoId });
+    }, { firstId: ids.groupOneId, secondId: ids.groupTwoId, thirdId: ids.groupThreeId });
     const multiDragTarget = await canvasSecond.boundingBox();
-    assert(multiDragTarget && multiBefore.first && multiBefore.second, 'multi-drag targets are missing');
+    assert(
+      multiDragTarget && multiBefore.first && multiBefore.second && multiBefore.third,
+      'multi-drag targets are missing',
+    );
     await page.mouse.move(
       multiDragTarget.x + multiDragTarget.width / 2,
       multiDragTarget.y + multiDragTarget.height / 2,
@@ -704,24 +738,29 @@ async function main() {
       { steps: 4 },
     );
     await page.waitForTimeout(60);
-    const multiDuring = await frame.evaluate(({ firstId, secondId }) => {
+    const multiDuring = await frame.evaluate(({ firstId, secondId, thirdId }) => {
       const read = (id) => {
         const node = document.querySelector(`[data-r20-block-id="${CSS.escape(id)}"]`);
         const rect = node?.getBoundingClientRect();
         return rect ? { left: rect.left, top: rect.top } : null;
       };
-      return { first: read(firstId), second: read(secondId) };
-    }, { firstId: ids.groupOneId, secondId: ids.groupTwoId });
-    assert(multiDuring.first && multiDuring.second, 'multi-drag visual targets disappeared');
+      return { first: read(firstId), second: read(secondId), third: read(thirdId) };
+    }, { firstId: ids.groupOneId, secondId: ids.groupTwoId, thirdId: ids.groupThreeId });
+    assert(
+      multiDuring.first && multiDuring.second && multiDuring.third,
+      'multi-drag visual targets disappeared',
+    );
     const duringDeltaFirst = multiDuring.first.left - multiBefore.first.left;
     const duringDeltaSecond = multiDuring.second.left - multiBefore.second.left;
+    const duringDeltaThird = multiDuring.third.left - multiBefore.third.left;
     assert(
-      Math.abs(duringDeltaFirst - duringDeltaSecond) < 1,
-      `multi-drag did not move both layers together: ${JSON.stringify({ multiBefore, multiDuring })}`,
+      Math.abs(duringDeltaFirst - duringDeltaSecond) < 1
+        && Math.abs(duringDeltaFirst - duringDeltaThird) < 1,
+      `multi-drag did not move every layer together: ${JSON.stringify({ multiBefore, multiDuring })}`,
     );
     await page.mouse.up();
     await page.waitForTimeout(900);
-    const multiAfter = await frame.evaluate(({ firstId, secondId }) => {
+    const multiAfter = await frame.evaluate(({ firstId, secondId, thirdId }) => {
       const read = (id) => {
         const node = document.querySelector(`[data-r20-block-id="${CSS.escape(id)}"]`);
         const rect = node?.getBoundingClientRect();
@@ -730,12 +769,17 @@ async function main() {
       return {
         first: read(firstId),
         second: read(secondId),
+        third: read(thirdId),
       };
-    }, { firstId: ids.groupOneId, secondId: ids.groupTwoId });
+    }, { firstId: ids.groupOneId, secondId: ids.groupTwoId, thirdId: ids.groupThreeId });
     const emittedMulti = await page.evaluate(() => window.__perfHook.getEmitContent());
-    assert(multiAfter.first && multiAfter.second, 'multi-drag committed targets disappeared');
+    assert(
+      multiAfter.first && multiAfter.second && multiAfter.third,
+      'multi-drag committed targets disappeared',
+    );
     const afterDeltaFirst = multiAfter.first.left - multiBefore.first.left;
     const afterDeltaSecond = multiAfter.second.left - multiBefore.second.left;
+    const afterDeltaThird = multiAfter.third.left - multiBefore.third.left;
     result.tests.canvasMultiMove = {
       before: multiBefore,
       during: multiDuring,
@@ -744,11 +788,14 @@ async function main() {
       emittedCss: emittedMulti.css,
       duringDeltaFirst,
       duringDeltaSecond,
+      duringDeltaThird,
       afterDeltaFirst,
       afterDeltaSecond,
+      afterDeltaThird,
     };
     assert(
       Math.abs(afterDeltaFirst - afterDeltaSecond) < 1
+        && Math.abs(afterDeltaFirst - afterDeltaThird) < 1
         && Math.abs(afterDeltaFirst) >= 16,
       `multi-drag did not persist as a group move: ${JSON.stringify(result.tests.canvasMultiMove)}`,
     );
@@ -756,87 +803,125 @@ async function main() {
     const alignmentToolbar = page.locator('[data-testid="iframe-alignment-toolbar"]');
     await alignmentToolbar.waitFor({ state: 'visible', timeout: 10000 });
     assert(
-      await alignmentToolbar.getAttribute('data-r20-alignment-count') === '2',
+      await alignmentToolbar.getAttribute('data-r20-alignment-count') === '3',
       'multi-selection alignment toolbar has the wrong selection count',
     );
-    const readAlignmentGeometry = () => frame.evaluate(({ firstId, secondId }) => {
-      const read = (id) => {
-        const node = document.querySelector(`[data-r20-block-id="${CSS.escape(id)}"]`);
-        const rect = node?.getBoundingClientRect();
-        return rect ? {
-          left: rect.left,
-          top: rect.top,
-          width: rect.width,
-          height: rect.height,
-          position: getComputedStyle(node).position,
-          inlineStyle: node.getAttribute('style') ?? '',
-        } : null;
-      };
-      return { first: read(firstId), second: read(secondId) };
-    }, { firstId: ids.groupOneId, secondId: ids.groupTwoId });
-    const alignmentBefore = await readAlignmentGeometry();
+    const arrangementIds = [ids.groupOneId, ids.groupTwoId, ids.groupThreeId];
+    const readArrangementGeometry = () => frame.evaluate((blockIds) => blockIds.map((id) => {
+      const node = document.querySelector(`[data-r20-block-id="${CSS.escape(id)}"]`);
+      const rect = node?.getBoundingClientRect();
+      return rect ? {
+        blockId: id,
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+        position: getComputedStyle(node).position,
+        inlineStyle: node.getAttribute('style') ?? '',
+      } : null;
+    }), arrangementIds);
+    const verticalGaps = (items) => {
+      const sorted = [...items].sort((a, b) => a.top - b.top);
+      return sorted.slice(1).map((item, index) => item.top - (sorted[index].top + sorted[index].height));
+    };
+    const alignmentBefore = await readArrangementGeometry();
     assert(
-      alignmentBefore.first?.position === 'absolute'
-        && alignmentBefore.second?.position === 'absolute'
-        && Math.abs(alignmentBefore.first.top - alignmentBefore.second.top) >= 1,
+      alignmentBefore.every((item) => item?.position === 'absolute')
+        && new Set(alignmentBefore.map((item) => Math.round(item.top))).size > 1,
       `alignment targets are not distinct absolute layers: ${JSON.stringify(alignmentBefore)}`,
     );
+    const gapsBefore = verticalGaps(alignmentBefore);
+    assert(
+      Math.abs(gapsBefore[0] - gapsBefore[1]) >= 1,
+      `distribution targets do not start with distinct gaps: ${JSON.stringify(gapsBefore)}`,
+    );
+    const verticalDistribution = page.locator('[data-testid="iframe-distribute-vertical"]');
+    await verticalDistribution.waitFor({ state: 'visible', timeout: 10000 });
+    await verticalDistribution.click();
+    await frame.waitForFunction((blockIds) => {
+      const items = blockIds.map((id) => document
+        .querySelector(`[data-r20-block-id="${CSS.escape(id)}"]`)
+        ?.getBoundingClientRect()).filter(Boolean).sort((a, b) => a.top - b.top);
+      if (items.length !== blockIds.length) return false;
+      const gaps = items.slice(1).map(
+        (item, index) => item.top - (items[index].top + items[index].height),
+      );
+      return Math.max(...gaps) - Math.min(...gaps) <= 0.5;
+    }, arrangementIds, { timeout: 10000 });
+    const distributionAfterEdit = await readArrangementGeometry();
+    const gapsAfter = verticalGaps(distributionAfterEdit);
+    const sortedBefore = [...alignmentBefore].sort((a, b) => a.top - b.top);
+    const sortedAfter = [...distributionAfterEdit].sort((a, b) => a.top - b.top);
+    assert(
+      Math.max(...gapsAfter) - Math.min(...gapsAfter) <= 0.5
+        && Math.abs(sortedAfter[0].top - sortedBefore[0].top) <= 0.5
+        && Math.abs(
+          sortedAfter.at(-1).top + sortedAfter.at(-1).height
+            - sortedBefore.at(-1).top - sortedBefore.at(-1).height,
+        ) <= 0.5,
+      `vertical distribution changed outer bounds or kept uneven gaps: ${JSON.stringify({ gapsBefore, gapsAfter })}`,
+    );
     await page.locator('[data-testid="iframe-align-top"]').click();
-    await frame.waitForFunction(({ firstId, secondId }) => {
-      const first = document.querySelector(`[data-r20-block-id="${CSS.escape(firstId)}"]`)?.getBoundingClientRect();
-      const second = document.querySelector(`[data-r20-block-id="${CSS.escape(secondId)}"]`)?.getBoundingClientRect();
-      return Boolean(first && second && Math.abs(first.top - second.top) <= 0.5);
-    }, { firstId: ids.groupOneId, secondId: ids.groupTwoId }, { timeout: 10000 });
-    const alignmentAfterEdit = await readAlignmentGeometry();
-    const alignmentModel = await page.evaluate(({ firstId, secondId }) => {
+    await frame.waitForFunction((blockIds) => {
+      const tops = blockIds.map((id) => document
+        .querySelector(`[data-r20-block-id="${CSS.escape(id)}"]`)
+        ?.getBoundingClientRect().top);
+      return tops.every(Number.isFinite) && Math.max(...tops) - Math.min(...tops) <= 0.5;
+    }, arrangementIds, { timeout: 10000 });
+    const alignmentAfterEdit = await readArrangementGeometry();
+    const alignmentModel = await page.evaluate((blockIds) => {
       const graph = window.__perfHook.getLayerSnapshot('html');
       const emitted = window.__perfHook.getEmitContent();
       return {
-        firstParent: graph.find((node) => node.id === firstId)?.layerParentId ?? null,
-        secondParent: graph.find((node) => node.id === secondId)?.layerParentId ?? null,
+        parents: blockIds.map((id) => graph.find((node) => node.id === id)?.layerParentId ?? null),
         emittedCss: emitted.css,
       };
-    }, { firstId: ids.groupOneId, secondId: ids.groupTwoId });
+    }, arrangementIds);
     assert(
-      alignmentAfterEdit.first && alignmentAfterEdit.second
-        && Math.abs(alignmentAfterEdit.first.top - alignmentAfterEdit.second.top) <= 0.5,
+      Math.max(...alignmentAfterEdit.map((item) => item.top))
+        - Math.min(...alignmentAfterEdit.map((item) => item.top)) <= 0.5,
       `top alignment did not persist in Edit: ${JSON.stringify(alignmentAfterEdit)}`,
     );
     assert(
-      !/(?:^|;)\s*(?:position|left|top)\s*:/i.test(alignmentAfterEdit.first.inlineStyle)
-        && !/(?:^|;)\s*(?:position|left|top)\s*:/i.test(alignmentAfterEdit.second.inlineStyle),
+      alignmentAfterEdit.every(
+        (item) => !/(?:^|;)\s*(?:position|left|top)\s*:/i.test(item.inlineStyle),
+      ),
       `alignment leaked position into inline HTML: ${JSON.stringify(alignmentAfterEdit)}`,
     );
     assert(
-      alignmentModel.firstParent === result.tests.layerGrouping.groupId
-        && alignmentModel.secondParent === result.tests.layerGrouping.groupId,
+      alignmentModel.parents.every((parentId) => parentId === result.tests.layerGrouping.groupId),
       `alignment changed the HTML parent: ${JSON.stringify(alignmentModel)}`,
     );
     assert(/position\s*:\s*absolute/i.test(alignmentModel.emittedCss), 'alignment did not remain in emitted managed CSS');
 
     await page.click('[data-testid="main-mode-preview"]');
     await page.waitForTimeout(120);
-    const alignmentPreview = await readAlignmentGeometry();
+    const alignmentPreview = await readArrangementGeometry();
     assert(
-      alignmentPreview.first && alignmentPreview.second
-        && Math.abs(alignmentPreview.first.top - alignmentPreview.second.top) <= 0.5,
+      Math.max(...alignmentPreview.map((item) => item.top))
+        - Math.min(...alignmentPreview.map((item) => item.top)) <= 0.5,
       `Preview geometry differs after alignment: ${JSON.stringify(alignmentPreview)}`,
     );
     await page.click('[data-testid="preview-exit-edit"]');
     await alignmentToolbar.waitFor({ state: 'visible', timeout: 10000 });
-    const alignmentEditAgain = await readAlignmentGeometry();
+    const alignmentEditAgain = await readArrangementGeometry();
     assert(
-      alignmentEditAgain.first && alignmentEditAgain.second
-        && Math.abs(alignmentEditAgain.first.top - alignmentEditAgain.second.top) <= 0.5,
+      Math.max(...alignmentEditAgain.map((item) => item.top))
+        - Math.min(...alignmentEditAgain.map((item) => item.top)) <= 0.5,
       `Edit geometry changed after Preview roundtrip: ${JSON.stringify(alignmentEditAgain)}`,
     );
+    result.tests.canvasDistribution = {
+      before: alignmentBefore,
+      afterEdit: distributionAfterEdit,
+      gapsBefore,
+      gapsAfter,
+    };
     result.tests.canvasAlignment = {
       before: alignmentBefore,
       afterEdit: alignmentAfterEdit,
       preview: alignmentPreview,
       editAgain: alignmentEditAgain,
-      firstParent: alignmentModel.firstParent,
-      secondParent: alignmentModel.secondParent,
+      parents: alignmentModel.parents,
     };
 
     // This is the user-facing path: move a real rendered node over another

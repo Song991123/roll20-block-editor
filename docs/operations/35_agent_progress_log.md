@@ -15,6 +15,23 @@ or source-derived measurement here.
 - Remote CI: passed safety/unit verification, lint, and production build.
 - Worktree and project server state were clean after the run.
 
+## 2026-08-03 - Equal-Gap Multi-Selection Distribution
+
+- Added horizontal and vertical gap controls for three or more absolute visual
+  siblings that already satisfy the safe alignment contract.
+- Distribution sorts by rendered position, keeps the outer selection bounds,
+  and moves inner layers until the visible box gaps are equal. Parentage, HTML
+  order, and cross-axis positions remain unchanged.
+- The controls reuse the existing measured iframe selection and managed-CSS
+  commit path; no new store or dependency was added.
+- Unit coverage checks both axes and shuffled selection order. The edit-flow
+  browser smoke checks two-item canvas selection, a third layer-panel selection,
+  shared three-item free movement, unequal-to-equal vertical gaps, stable outer
+  bounds, managed CSS, and subsequent Preview/Edit alignment parity.
+- Claim boundary: this is anonymous local synthetic coverage. Dense imported
+  sheets, nested coordinate systems, keyboard workflows, and actual Roll20
+  interaction remain outside this batch.
+
 ## 2026-08-03 - Safe Multi-Selection Alignment
 
 - Added one measured multi-selection frame and six icon actions above the same

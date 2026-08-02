@@ -94,8 +94,13 @@ belong in tracked documents.
   Unit coverage checks all six calculations. Browser coverage checks that a
   top alignment keeps the same parent and HTML order, writes managed CSS rather
   than inline position, and remains identical after Preview/Edit switches.
+- `DONE LOCAL`: three or more layers eligible for alignment also expose
+  horizontal and vertical equal-gap distribution. Unit coverage checks both
+  axes and selection-order independence. Browser coverage checks uneven gaps
+  becoming equal while outer bounds, parentage, managed-CSS persistence, and
+  the shared Preview/Edit surface remain intact.
 - `PARTIAL`: continue usability review for dense imported structures, nested
-  absolute placement, keyboard selection, distribution, and undo/redo.
+  absolute placement, keyboard selection, and undo/redo.
 
 ## P1 - User Experience
 
@@ -113,6 +118,7 @@ belong in tracked documents.
 - `DONE LOCAL`: alignment actions are shown only for same-parent absolute
   selections whose logical and rendered coordinate parents agree. Flow, table,
   list, mixed-parent, and mixed-coordinate selections remain structure-driven.
+  Three or more eligible layers add horizontal and vertical gap controls.
 
 ## P1 - Copyright And Privacy
 

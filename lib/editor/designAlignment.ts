@@ -11,6 +11,10 @@ export const DESIGN_ALIGNMENT_MODES = [
 
 export type DesignAlignmentMode = (typeof DESIGN_ALIGNMENT_MODES)[number];
 
+export const DESIGN_DISTRIBUTION_MODES = ['horizontal', 'vertical'] as const;
+
+export type DesignDistributionMode = (typeof DESIGN_DISTRIBUTION_MODES)[number];
+
 export type DesignAlignmentItem = {
   blockId: string;
   rect: IframeEditRect;
@@ -61,6 +65,42 @@ export function resolveDesignAlignment(
       blockId: item.blockId,
       deltaX: roundPixels(deltaX),
       deltaY: roundPixels(deltaY),
+    };
+  });
+}
+
+export function resolveDesignDistribution(
+  items: readonly DesignAlignmentItem[],
+  mode: DesignDistributionMode,
+): DesignAlignmentDelta[] {
+  const bounds = designSelectionBounds(items);
+  if (!bounds || items.length < 3) return [];
+  const horizontal = mode === 'horizontal';
+  const sorted = [...items].sort((a, b) => {
+    const delta = (horizontal ? a.rect.left : a.rect.top)
+      - (horizontal ? b.rect.left : b.rect.top);
+    return delta || a.blockId.localeCompare(b.blockId);
+  });
+  const totalSize = sorted.reduce(
+    (sum, item) => sum + (horizontal ? item.rect.width : item.rect.height),
+    0,
+  );
+  const span = horizontal ? bounds.width : bounds.height;
+  const gap = (span - totalSize) / (sorted.length - 1);
+  const targetStart = new Map<string, number>();
+  let cursor = horizontal ? bounds.left : bounds.top;
+  sorted.forEach((item) => {
+    targetStart.set(item.blockId, cursor);
+    cursor += (horizontal ? item.rect.width : item.rect.height) + gap;
+  });
+
+  return items.map((item) => {
+    const start = horizontal ? item.rect.left : item.rect.top;
+    const delta = roundPixels((targetStart.get(item.blockId) ?? start) - start);
+    return {
+      blockId: item.blockId,
+      deltaX: horizontal ? delta : 0,
+      deltaY: horizontal ? 0 : delta,
     };
   });
 }

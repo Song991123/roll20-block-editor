@@ -84,8 +84,10 @@ invent separate DOM models.
     visual layer is absolutely positioned, shares one logical parent, and uses
     that same parent as its rendered offset parent. Alignment uses the measured
     selection bounds, preserves HTML order and parentage, and commits position
-    through managed CSS. Flow, table, list, mixed-parent, and mixed-coordinate
-    selections do not receive these actions.
+    through managed CSS. Three or more eligible layers also expose horizontal
+    and vertical distribution. Distribution preserves the outer selection
+    bounds and makes the gaps between rendered boxes equal. Flow, table, list,
+    mixed-parent, and mixed-coordinate selections do not receive these actions.
 
 ## Visual Language
 
@@ -130,7 +132,8 @@ already-selected insertion position.
   `data-*`, ARIA, and other preserved attributes remain intact.
 - Eligible absolute multi-selections show one dashed selection frame and six
   compact icon controls for left, horizontal center, right, top, vertical
-  center, and bottom alignment. The frame is parent-owned UI above the same
+  center, and bottom alignment. A selection of three or more adds horizontal
+  and vertical gap controls. The frame is parent-owned UI above the same
   persistent iframe; it never enters emitted HTML or sheet CSS.
 - Managed presentation declarations merge with managed position declarations.
   Moving a styled object must not erase its fill, spacing, border, or type
@@ -291,11 +294,14 @@ already-selected insertion position.
 
 Local tests cover classification, cycle protection, before/inside/after layer
 operations, flow versus free placement, grouping preconditions, selection
-synchronization, multi-object free transform, and six-way alignment math. The
-browser smoke also proves Ctrl selection -> iframe multi-highlight -> shared
-free movement -> same-parent top alignment -> persisted managed CSS, with no
-position leak into inline HTML and equal geometry after Preview/Edit switches.
-Grouping keeps the model parent, iframe parent, and emitted HTML aligned.
+synchronization, multi-object free transform, six-way alignment math, and
+horizontal/vertical equal-gap distribution. The browser smoke also proves Ctrl
+selection -> iframe multi-highlight -> layer-panel third selection -> shared
+free movement -> same-parent vertical distribution -> top alignment ->
+persisted managed CSS. Distribution keeps the outer rendered bounds, while
+alignment keeps no position in inline HTML and has equal geometry after
+Preview/Edit switches. Grouping keeps the model parent, iframe parent, and
+emitted HTML aligned.
 Anonymous imported cross-container cases prove existing content can move
 between frames, lists, table bodies, and value-switch cases, keep the same
 target parent in Edit and Preview, and retain that nesting after emit ->
