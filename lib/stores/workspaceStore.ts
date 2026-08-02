@@ -253,7 +253,13 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
 
   resetWorkspace: (w) =>
     set((s) => ({
-      workspaces: { ...s.workspaces, [w]: { ...emptyMeta } },
+      workspaces: {
+        ...s.workspaces,
+        [w]: {
+          ...emptyMeta,
+          structureVersion: s.workspaces[w].structureVersion + 1,
+        },
+      },
     })),
 
   clearAll: () => {
@@ -267,14 +273,19 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
         /* adapter 미연결 / 미초기화 — 메타 reset 만으로도 UX 충분. */
       }
     }
-    set({
-      workspaces: {
-        html: { ...emptyMeta },
-        css: { ...emptyMeta },
-        i18n: { ...emptyMeta },
-        js: { ...emptyMeta },
-        worker: { ...emptyMeta },
-      },
+    set((state) => ({
+      workspaces: Object.fromEntries(
+        WORKSPACE_KEYS.map((key) => [
+          key,
+          {
+            ...emptyMeta,
+            // This value is an identity token for emitted workspace caches.
+            // Resetting it to zero lets a later sheet with the same block
+            // count reuse CSS/HTML emitted for the previous sheet.
+            structureVersion: state.workspaces[key].structureVersion + 1,
+          },
+        ]),
+      ) as Record<WorkspaceKey, WorkspaceMeta>,
       emitCache: { html: '', css: '', i18n: '', js: '', worker: '' },
       emitWarnings: [],
       lastClearedAt: Date.now(),
@@ -283,7 +294,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
       selectionOrigin: null,
       sheetWidgets: [],
       rolltemplateWidgets: [],
-    });
+    }));
   },
 
   setEmitCache: (out) =>

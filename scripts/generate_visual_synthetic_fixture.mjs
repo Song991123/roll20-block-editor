@@ -51,6 +51,7 @@ const files = {
     id: 'fixture-A',
     synthetic: true,
     legacyMode: 'modern',
+    sandboxPreparationExpectation: 'change',
   }),
   'fixture-B/source.html': [
     '<div class="sheet-layout-proof" style="width:760px;min-height:320px;padding:16px">',
@@ -92,6 +93,7 @@ const files = {
     synthetic: true,
     legacyMode: 'modern',
     purpose: 'generic layout/control regression',
+    sandboxPreparationExpectation: 'identity',
   }),
   'fixture-C/source.html': [
     '<div class="advanced-proof" style="width:680px;min-height:300px;padding:16px">',
@@ -144,6 +146,7 @@ const files = {
     synthetic: true,
     legacyMode: 'modern',
     purpose: 'conditional state and nested CSS regression',
+    sandboxPreparationExpectation: 'change',
     expected: {
       normal: {
         checkedControlNames: ['attr_show_details'],
@@ -194,6 +197,7 @@ const files = {
     synthetic: true,
     legacyMode: 'modern',
     purpose: 'grouped and uncommon form-state regression',
+    sandboxPreparationExpectation: 'change',
     expected: {
       normal: {
         checkedControlNames: ['attr_mode'],
@@ -260,6 +264,7 @@ const files = {
     synthetic: true,
     legacyMode: 'modern',
     purpose: 'nested select option-group regression',
+    sandboxPreparationExpectation: 'identity',
     expected: {
       normal: {
         selectedControlValues: { attr_role: 'current' },
@@ -412,6 +417,12 @@ async function main() {
     }
     if (!files['fixture-E/source.html'].includes('<optgroup')) {
       throw new Error('option group fixture structure missing');
+    }
+    for (const fixtureId of ['fixture-B', 'fixture-E']) {
+      const manifest = JSON.parse(files[`${fixtureId}/manifest.json`]);
+      if (manifest.sandboxPreparationExpectation !== 'identity') {
+        throw new Error(`${fixtureId} must prove identity-safe Sandbox preparation`);
+      }
     }
     const optionGroupManifest = JSON.parse(files['fixture-E/manifest.json']);
     const optionGroupExpectationFailures = fixtureExpectationFailures({

@@ -87,6 +87,8 @@ export interface BlocklyAdapter {
   registerWorkspace(key: WorkspaceKey, ws: Blockly.Workspace): void;
   unregisterWorkspace(key: WorkspaceKey): void;
   getWorkspace(key: WorkspaceKey): Blockly.Workspace | null;
+  /** Monotonic identity for wholesale workspace replacement/hydration. */
+  getWorkspaceGeneration(key: WorkspaceKey): number;
   /** Return the rendered workspace only; headless model workspaces return null. */
   getWorkspaceSvg(key: WorkspaceKey): Blockly.WorkspaceSvg | null;
   listAllBlocks(key: WorkspaceKey): BlockSnapshot[];
@@ -238,6 +240,13 @@ type HistoryCandidate = {
 
 class DefaultAdapter implements BlocklyAdapter {
   private workspaces: Partial<Record<WorkspaceKey, Blockly.Workspace>> = {};
+  private workspaceGenerations: Record<WorkspaceKey, number> = {
+    html: 0,
+    css: 0,
+    i18n: 0,
+    js: 0,
+    worker: 0,
+  };
   private historyListeners: Partial<
     Record<WorkspaceKey, (event: Blockly.Events.Abstract) => void>
   > = {};
@@ -249,6 +258,7 @@ class DefaultAdapter implements BlocklyAdapter {
   registerWorkspace(key: WorkspaceKey, ws: Blockly.Workspace): void {
     this.unregisterWorkspace(key);
     this.workspaces[key] = ws;
+    this.workspaceGenerations[key] += 1;
     const listener = (event: Blockly.Events.Abstract) => {
       if (event.recordUndo === false || event.isUiEvent) return;
       this.sequenceForEvent(event);
@@ -265,11 +275,16 @@ class DefaultAdapter implements BlocklyAdapter {
     if (ws && listener) ws.removeChangeListener(listener);
     delete this.historyListeners[key];
     delete this.workspaces[key];
+    if (ws) this.workspaceGenerations[key] += 1;
     this.redoTransactions = [];
   }
 
   getWorkspace(key: WorkspaceKey): Blockly.Workspace | null {
     return this.workspaces[key] ?? null;
+  }
+
+  getWorkspaceGeneration(key: WorkspaceKey): number {
+    return this.workspaceGenerations[key];
   }
 
   getWorkspaceSvg(key: WorkspaceKey): Blockly.WorkspaceSvg | null {
@@ -531,6 +546,7 @@ class DefaultAdapter implements BlocklyAdapter {
         callOriginalSetResizesEnabled(true);
       }
       Blockly.Events.enable();
+      this.workspaceGenerations[key] += 1;
     }
   }
 
@@ -607,6 +623,7 @@ class DefaultAdapter implements BlocklyAdapter {
         callOriginalSetResizesEnabled(true);
       }
       Blockly.Events.enable();
+      this.workspaceGenerations[key] += 1;
     }
   }
 

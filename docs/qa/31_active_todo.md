@@ -19,10 +19,11 @@ belong in tracked documents.
   full-root stitching, DOM evidence, and actual-status checks remain ignored
   local evidence. This proves the tested synthetic contract, not every sheet.
 - `BLOCKED EXTERNAL`: the current automated modern upload path is stopped at
-  the browser file-selection permission boundary. A fresh visible chooser
-  retry for a newly exported anonymous modern payload still returns
-  `Not allowed` before any file is transferred. No hidden input, endpoint, or
-  existing-room workaround is allowed.
+  the browser file-selection permission boundary. A fresh dedicated Sandbox
+  accepted and persisted an anonymous manifest, launched its visible upload
+  tools, and then returned `Not allowed` when the supported HTML chooser tried
+  to select the newly exported file. No file was transferred. No hidden input,
+  endpoint, or existing-room workaround is allowed.
 - `PARTIAL`: local Preview/Edit and the dedicated legacy destination now have
   same-payload root comparisons against the exact authored top-level element,
   not the surrounding Roll20 wrapper. Authored-root dimensions and capture
@@ -59,6 +60,12 @@ belong in tracked documents.
   modern/legacy combinations, and the Sandbox preparation smoke passes all
   five separate expected states. This remains local synthetic evidence, not
   actual Roll20 parity.
+- `DONE LOCAL`: sequential full-sheet replacement now has an explicit cache
+  identity at both the workspace-store and Blockly hydration boundaries. One
+  browser session imports all five anonymous fixtures in order and verifies
+  that each normal preview CSS hash matches the latest synchronous emit, so a
+  previous sheet cannot silently repaint the next sheet. The current run is
+  complete for every current anonymous fixture with zero console or page errors.
 
 ## P0 - Universal Import And Export
 

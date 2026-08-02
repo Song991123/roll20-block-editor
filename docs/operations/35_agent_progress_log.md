@@ -15,6 +15,27 @@ or source-derived measurement here.
 - Remote CI: passed safety/unit verification, lint, and production build.
 - Worktree and project server state were clean after the run.
 
+## 2026-08-03 - Sequential Import Render Cache Integrity
+
+- Reproduced a real cross-sheet failure in one browser session: replacing a
+  sheet could update HTML while a delayed emit replayed CSS from the immediately
+  preceding sheet.
+- Whole-workspace reset versions are now monotonic, and every Blockly
+  registration or full hydration carries a separate generation identity used
+  by the emit cache. Empty-state effects also clear cached workspace results.
+- The Sandbox preparation smoke compares the CSS generated immediately after
+  import with the CSS actually mounted in normal preview. Five sequential
+  anonymous imports now all match with zero console or page errors.
+- Preview and Edit remain pixel-exact in all ten current modern/legacy fixture
+  combinations. CSSOM and canonical-DOM hashes distinguish semantic sanitizer
+  changes from formatting-only serialization.
+- A fresh dedicated modern Sandbox accepted and persisted an anonymous
+  manifest and launched its visible upload tools. The supported file chooser
+  was denied before transfer, so modern actual rendering remains unverified and
+  no bypass was attempted.
+- Claim boundary: this closes the current local stale-render regression. It
+  does not prove broad-sheet or actual modern Roll20 parity.
+
 ## 2026-08-03 - Unified Source History
 
 - Added chronological undo selection across HTML, CSS, translation, Page JS,

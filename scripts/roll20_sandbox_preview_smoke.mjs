@@ -87,13 +87,22 @@ async function loadFixture(id) {
   const dir = path.join(FIXTURES_DIR, id);
   const html = await readMaybe(path.join(dir, 'source.html'));
   if (!html) throw new Error(`fixture ${id} is missing source.html under ${FIXTURES_DIR}`);
+  const manifest = await readJsonMaybe(path.join(dir, 'manifest.json'));
   return {
     id,
     html,
     css: await readMaybe(path.join(dir, 'source.css')),
     i18n: await readMaybe(path.join(dir, 'source.i18n')),
-    expected: (await readJsonMaybe(path.join(dir, 'manifest.json')))?.expected ?? null,
+    verifyLatestImportedCss: manifest?.synthetic === true,
+    expected: manifest?.expected ?? null,
+    sandboxPreparationExpectation: normalizeSandboxPreparationExpectation(
+      manifest?.sandboxPreparationExpectation,
+    ),
   };
+}
+
+function normalizeSandboxPreparationExpectation(value) {
+  return value === 'change' || value === 'identity' ? value : 'any';
 }
 
 async function loadFixtures() {
@@ -109,6 +118,8 @@ async function loadFixtures() {
       css: await readMaybe(process.env.R20_SANDBOX_SMOKE_CSS_PATH),
       i18n: await readMaybe(process.env.R20_SANDBOX_SMOKE_I18N_PATH),
       expected: null,
+      verifyLatestImportedCss: false,
+      sandboxPreparationExpectation: 'any',
     }];
   }
   if (FIXTURE_ID) return [await loadFixture(FIXTURE_ID)];
@@ -147,6 +158,13 @@ async function warmPerfHook(page) {
 async function importFixture(page, fixture) {
   return page.evaluate(async ({ html, css, i18n }) => {
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const contentHash = (value) => {
+      let hash = 0x811c9dc5;
+      for (let index = 0; index < value.length; index += 1) {
+        hash = Math.imul(hash ^ value.charCodeAt(index), 0x01000193) >>> 0;
+      }
+      return hash.toString(16).padStart(8, '0');
+    };
     window.__perfHook.clearAll();
     await sleep(700);
     let last = null;
@@ -155,11 +173,16 @@ async function importFixture(page, fixture) {
       if (last.blockCount > 0) break;
       await sleep(500);
     }
+    const importedCss = String(window.__perfHook.getEmitContent().css ?? '').trim();
     window.__perfHook.setMainMode('preview');
     window.__perfHook.setPreviewRenderMode('iframe');
     window.__perfHook.setPreviewZoom(1);
     window.__perfHook.setRoll20SandboxSanitize(false);
-    return last;
+    return {
+      ...last,
+      emittedCssBytes: new TextEncoder().encode(importedCss).length,
+      emittedCssHash: contentHash(importedCss),
+    };
   }, fixture);
 }
 
@@ -177,8 +200,40 @@ async function summarizePreview(page) {
       const frame = await getPreviewFrame(page);
       return await frame.evaluate(() => {
         const root = document.querySelector('.charactersheet.charsheet');
-        const css = document.querySelector('#r20-user')?.textContent ?? '';
+        const userStyle = document.querySelector('#r20-user');
+        const css = userStyle?.textContent ?? '';
         const rootHtml = root?.innerHTML ?? '';
+        const contentHash = (value) => {
+          let hash = 0x811c9dc5;
+          for (let index = 0; index < value.length; index += 1) {
+            hash = Math.imul(hash ^ value.charCodeAt(index), 0x01000193) >>> 0;
+          }
+          return hash.toString(16).padStart(8, '0');
+        };
+        const canonicalDom = (node) => {
+          if (node.nodeType === Node.TEXT_NODE) {
+            const text = String(node.nodeValue ?? '').replace(/\s+/g, ' ').trim();
+            return text ? `#text:${text}` : '';
+          }
+          if (node.nodeType !== Node.ELEMENT_NODE) return '';
+          const element = node;
+          const attributes = Array.from(element.attributes)
+            .map((attribute) => `${attribute.name}=${attribute.value.replace(/\s+/g, ' ').trim()}`)
+            .sort()
+            .join('|');
+          const children = Array.from(element.childNodes).map(canonicalDom).join('');
+          return `<${element.localName}|${attributes}>${children}</${element.localName}>`;
+        };
+        let appliedCssRules = '';
+        let appliedCssRuleCount = 0;
+        try {
+          const rules = Array.from(userStyle?.sheet?.cssRules ?? []);
+          appliedCssRules = rules.map((rule) => rule.cssText).join('\n');
+          appliedCssRuleCount = rules.length;
+        } catch {
+          // Inline preview CSS is same-origin. Keep a stable empty diagnostic
+          // if a browser ever refuses CSSOM access instead of failing capture.
+        }
         const elements = Array.from(root?.querySelectorAll('*') ?? []);
         const isVisible = (el) => {
           const style = getComputedStyle(el);
@@ -232,7 +287,12 @@ async function summarizePreview(page) {
         return {
           sandboxMode: document.body.getAttribute('data-roll20-sandbox-sanitize') ?? '',
           rootInnerBytes: new TextEncoder().encode(rootHtml).length,
+          rootInnerHash: contentHash(rootHtml),
+          rootSemanticHash: contentHash(root ? canonicalDom(root) : ''),
           userCssBytes: new TextEncoder().encode(css).length,
+          userCssHash: contentHash(css),
+          userCssRuleCount: appliedCssRuleCount,
+          userCssRuleHash: contentHash(appliedCssRules),
           colgroupCount: root?.querySelectorAll('colgroup, col').length ?? 0,
           rolltemplateCount: root?.querySelectorAll('rolltemplate').length ?? 0,
           sourceWorkerScriptCount: root?.querySelectorAll('script[type="text/worker"]').length ?? 0,
@@ -302,6 +362,12 @@ async function validateFixture(page, fixture) {
   );
 
   checks.normalPreview = await summarizePreview(page);
+  if (
+    fixture.verifyLatestImportedCss &&
+    checks.importedFixture.emittedCssHash !== checks.normalPreview.userCssHash
+  ) {
+    failures.push('normal preview CSS does not match the latest imported sheet');
+  }
 
   await page.evaluate(() => {
     window.__perfHook.setRoll20SandboxSanitize(true);
@@ -329,13 +395,17 @@ async function validateFixture(page, fixture) {
 
   if (checks.normalPreview.sandboxMode !== '0') failures.push('normal preview sandbox marker mismatch');
   if (checks.sandboxPreview.sandboxMode !== '1') failures.push('sandbox preview marker mismatch');
-  if (
-    checks.normalPreview.rootInnerBytes === checks.sandboxPreview.rootInnerBytes &&
-    checks.normalPreview.userCssBytes === checks.sandboxPreview.userCssBytes &&
-    checks.normalPreview.colgroupCount === checks.sandboxPreview.colgroupCount &&
-    checks.normalPreview.sourceWorkerScriptCount === checks.sandboxPreview.sourceWorkerScriptCount
-  ) {
+  const sandboxPreparationChanged =
+    checks.normalPreview.rootSemanticHash !== checks.sandboxPreview.rootSemanticHash ||
+    checks.normalPreview.userCssRuleHash !== checks.sandboxPreview.userCssRuleHash ||
+    checks.normalPreview.userCssRuleCount !== checks.sandboxPreview.userCssRuleCount ||
+    checks.normalPreview.colgroupCount !== checks.sandboxPreview.colgroupCount ||
+    checks.normalPreview.sourceWorkerScriptCount !== checks.sandboxPreview.sourceWorkerScriptCount;
+  if (fixture.sandboxPreparationExpectation === 'change' && !sandboxPreparationChanged) {
     failures.push('sandbox preview did not produce a measurable sanitized render change');
+  }
+  if (fixture.sandboxPreparationExpectation === 'identity' && sandboxPreparationChanged) {
+    failures.push('sandbox preview changed content marked as identity-safe');
   }
   if (checks.sandboxPreview.colgroupCount > checks.normalPreview.colgroupCount) {
     failures.push('sandbox preview increased stripped table structure count');

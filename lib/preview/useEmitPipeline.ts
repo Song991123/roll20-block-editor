@@ -40,10 +40,13 @@ type CachedWorkspaceEmit = {
 // cost, especially when CSS/i18n/worker trees were large but unchanged.
 const emittedWorkspaceCache = new Map<WorkspaceKey, CachedWorkspaceEmit>();
 
-function workspaceSignature(state: ReturnType<typeof useWorkspaceStore.getState>): string {
+function workspaceSignature(
+  adapter: ReturnType<typeof getBlocklyAdapter>,
+  state: ReturnType<typeof useWorkspaceStore.getState>,
+): string {
   return WORKSPACE_KEYS.map((key) => {
     const workspace = state.workspaces[key];
-    return `${key}:${workspace.structureVersion}:${workspace.blockCount}`;
+    return `${key}:${adapter.getWorkspaceGeneration(key)}:${workspace.structureVersion}:${workspace.blockCount}`;
   }).join('|');
 }
 
@@ -55,7 +58,7 @@ function emitCachedWorkspaces(
   for (const key of WORKSPACE_KEYS) {
     const workspace = adapter.getWorkspace(key);
     const meta = state.workspaces[key];
-    const signature = `${meta.structureVersion}:${meta.blockCount}`;
+    const signature = `${adapter.getWorkspaceGeneration(key)}:${meta.structureVersion}:${meta.blockCount}`;
     const cached = emittedWorkspaceCache.get(key);
     if (cached && cached.workspace === workspace && cached.signature === signature) {
       results[key] = cached.result;
@@ -77,7 +80,8 @@ export function flushEmitPipeline(): void {
   markEditorTiming('flush-enter');
   flushVersion += 1;
   const state = useWorkspaceStore.getState();
-  immediateFlushSignature = workspaceSignature(state);
+  const adapter = getBlocklyAdapter();
+  immediateFlushSignature = workspaceSignature(adapter, state);
   const counts = WORKSPACE_KEYS.map((key) => state.workspaces[key].blockCount);
   if (counts.every((count) => count === 0)) {
     emittedWorkspaceCache.clear();
@@ -86,7 +90,6 @@ export function flushEmitPipeline(): void {
     return;
   }
 
-  const adapter = getBlocklyAdapter();
   markEditorTiming('emit-immediate-start');
   const result = emitCachedWorkspaces(adapter, state);
   markEditorTiming('emit-immediate-end');
@@ -111,6 +114,8 @@ export function useEmitPipeline(): void {
 
   useEffect(() => {
     if (htmlCount + cssCount + i18nCount + jsCount + workerCount === 0) {
+      emittedWorkspaceCache.clear();
+      immediateFlushSignature = null;
       setEmitCache({ html: '', css: '', i18n: '', js: '', worker: '' });
       setEmitWarnings([]);
       return;
@@ -120,10 +125,7 @@ export function useEmitPipeline(): void {
     // iframe can apply the new HTML immediately. The structure-version effect
     // still runs afterward; skip that one duplicate delayed emit for the same
     // workspace snapshot instead of paying the debounce window twice.
-    const signature = WORKSPACE_KEYS.map((key) => {
-      const workspace = useWorkspaceStore.getState().workspaces[key];
-      return `${key}:${workspace.structureVersion}:${workspace.blockCount}`;
-    }).join('|');
+    const signature = workspaceSignature(getBlocklyAdapter(), useWorkspaceStore.getState());
     if (immediateFlushSignature === signature) {
       immediateFlushSignature = null;
       return;
