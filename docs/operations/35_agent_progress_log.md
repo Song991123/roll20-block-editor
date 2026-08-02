@@ -12004,5 +12004,7 @@ same-hash modern/legacy comparison.
   errors `0/0`. Temporary smoke server closed; server hygiene returned clean.
 - Full `ci:verify`, lint, and production build pass; evidence/privacy and UI-
   copy guards remain green.
+- Pushed product commit `08f13bf` to `claude/design-reset`; GitHub CI run
+  `30752787415` passed safety/unit verification, lint, and build in `1m21s`.
 - Actual modern Roll20 evidence remains `0/4`; this batch makes no external
   visual-parity claim.

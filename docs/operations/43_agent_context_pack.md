@@ -93,7 +93,8 @@ the entire history and generated evidence tree.
   row. Canonical browser smoke measured `204px` movement, immediate stop on
   drop, no stale identity, successful hover expansion, zero console/page
   errors, and preserved flow/free/table/Edit-to-Preview behavior. This is local
-  editor evidence, not actual Roll20 parity.
+  editor evidence, not actual Roll20 parity. Commit `08f13bf` is pushed to
+  `claude/design-reset`; GitHub CI run `30752787415` passed.
 - Actual Roll20's built-in default chat-template DOM and typography were
   measured in the dedicated one-member modern Sandbox. The local fallback now
   matches its caption/row/inline-roll structure and passes browser smoke.

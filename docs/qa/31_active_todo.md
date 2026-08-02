@@ -21,6 +21,9 @@
   and CDP listeners afterward.
 - `VERIFIED REGRESSION`: full `ci:verify`, lint, and production build pass.
   Evidence/privacy and plain-Korean UI-copy guards remain green.
+- `VERIFIED REMOTE`: commit `08f13bf` is pushed to `claude/design-reset`.
+  GitHub CI run `30752787415` passed safety/unit verification, lint, and build
+  in `1m21s`.
 - `OPEN EXTERNAL`: this local interaction evidence does not change actual
   Roll20 modern evidence (`0/4`) or prove arbitrary imported-sheet parity.
 
