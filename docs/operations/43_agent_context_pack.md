@@ -111,6 +111,10 @@ the entire history and generated evidence tree.
   console/page errors `0/0`. Commit `3bf5b30` is pushed to
   `claude/design-reset`; GitHub CI run `30753965883` passed. Arbitrary
   protected sheets and actual modern/legacy Roll20 remain open.
+  After that fix, one protected local HTML/CSS/translation input also passed
+  the current in-memory import/edit/preview/re-import smoke. No source copy or
+  per-sheet report was retained; this is a narrow local regression result, not
+  an all-sheet or actual Roll20 claim.
 - Actual Roll20's built-in default chat-template DOM and typography were
   measured in the dedicated one-member modern Sandbox. The local fallback now
   matches its caption/row/inline-roll structure and passes browser smoke.

@@ -12052,3 +12052,16 @@ same-hash modern/legacy comparison.
   Temporary servers are closed.
 - Actual modern Sandbox and dedicated legacy-room rendering remain unverified;
   this batch makes no actual Roll20 parity claim.
+
+## 2026-08-03 - Protected local import regression refresh
+
+- Read one protected HTML/CSS/translation input directly through the existing
+  in-memory local-input path after the structural-edit correction. The source
+  files were not copied or modified.
+- Canonical import, layer operations, flow/free insertion, Edit/Preview sync,
+  and canonical re-import stability passed without browser errors.
+- Deleted the ignored per-sheet report immediately after extracting only the
+  generic pass state. No source identity, content, URL, or source-derived
+  measurement is retained in this document or Git.
+- This remains local private-fixture evidence. Actual modern Sandbox and the
+  separate dedicated legacy-room comparison are still open.

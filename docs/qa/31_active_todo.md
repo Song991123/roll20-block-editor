@@ -1,3 +1,16 @@
+# 2026-08-03 Protected local import regression refresh
+
+- `VERIFIED LOCAL`: one protected local HTML/CSS/translation input was read
+  directly in memory after the structural-edit fix. Its canonical import,
+  layer operations, flow and free insertion, Edit/Preview synchronization, and
+  canonical emit -> re-import stability passed without browser errors.
+- `PRIVACY COMPLETE`: no source was copied into the active repository. The
+  ignored per-sheet report was deleted after extracting only the generic pass
+  state; source identity, content, URLs, and source-derived measurements are
+  not retained in Git or agent documents.
+- `CLAIM BOUNDARY`: this is one private local regression, not evidence for all
+  sheets or actual modern/legacy Roll20 visual parity.
+
 # 2026-08-03 Imported structural inside moves and conditional defaults
 
 - `DONE TEST CONTRACT`: the canonical imported-edit smoke now includes three
