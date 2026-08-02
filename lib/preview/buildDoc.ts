@@ -1168,7 +1168,10 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       if (nm.indexOf('attr_') !== 0) continue;
       var key = nm.substring(5);
       var val;
-      if (n.tagName === 'INPUT' && (n.type === 'checkbox' || n.type === 'radio')) {
+      if (n.tagName === 'SELECT' && n.multiple) {
+        val = Array.prototype.filter.call(n.options, function (option) { return option.selected; })
+          .map(function (option) { return option.value; });
+      } else if (n.tagName === 'INPUT' && (n.type === 'checkbox' || n.type === 'radio')) {
         val = n.checked ? (n.value || '1') : '';
       } else {
         val = n.value || '';
@@ -1351,19 +1354,36 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       (sheetWorkerHandlers[evt] = sheetWorkerHandlers[evt] || []).push(fn);
     });
   }
+  function sheetAttrSelector(name) {
+    var attrName = 'attr_' + cssEscape(name);
+    return 'input[name="' + attrName + '"],select[name="' + attrName + '"],textarea[name="' + attrName + '"]';
+  }
   function readSheetAttr(name) {
-    var el = document.querySelector('[name="attr_' + cssEscape(name) + '"]');
-    if (!el) return '';
+    var selector = sheetAttrSelector(name);
+    var nodes = document.querySelectorAll(selector);
+    if (!nodes.length) return '';
+    var el = nodes[0];
     if (el.type === 'checkbox') return el.checked ? (el.value || '1') : '0';
-    if (el.type === 'radio') return el.checked ? (el.value || '') : '';
+    if (el.type === 'radio') {
+      for (var i = 0; i < nodes.length; i++) {
+        if (nodes[i].type === 'radio' && nodes[i].checked) return nodes[i].value || '';
+      }
+      return '';
+    }
     return el.value == null ? '' : String(el.value);
   }
   function writeSheetAttr(name, value) {
-    var nodes = document.querySelectorAll('[name="attr_' + cssEscape(name) + '"]');
+    var nodes = document.querySelectorAll(sheetAttrSelector(name));
     var changed = false;
     for (var i = 0; i < nodes.length; i++) {
       var el = nodes[i];
-      if (el.type === 'checkbox') {
+      if (el.tagName === 'SELECT' && el.multiple && Array.isArray(value)) {
+        for (var optionIndex = 0; optionIndex < el.options.length; optionIndex += 1) {
+          var nextSelected = value.indexOf(el.options[optionIndex].value) >= 0;
+          if (el.options[optionIndex].selected !== nextSelected) changed = true;
+          el.options[optionIndex].selected = nextSelected;
+        }
+      } else if (el.type === 'checkbox') {
         var nextChecked = String(value) === String(el.value || '1') || value === true || value === 1 || value === '1';
         if (el.checked !== nextChecked || (nextChecked && el.getAttribute('checked') !== 'checked') || (!nextChecked && el.hasAttribute('checked'))) changed = true;
         el.checked = nextChecked;
@@ -1394,7 +1414,10 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (rawName.indexOf('attr_') !== 0) return;
     var key = rawName.substring(5);
     var value;
-    if (el.tagName === 'INPUT' && (el.type === 'checkbox' || el.type === 'radio')) {
+    if (el.tagName === 'SELECT' && el.multiple) {
+      value = Array.prototype.filter.call(el.options, function (option) { return option.selected; })
+        .map(function (option) { return option.value; });
+    } else if (el.tagName === 'INPUT' && (el.type === 'checkbox' || el.type === 'radio')) {
       value = el.checked ? (el.value || '1') : '';
     } else {
       value = el.value == null ? '' : String(el.value);

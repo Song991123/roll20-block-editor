@@ -194,8 +194,32 @@ async function summarizePreview(page) {
           tagCounts[tag] = (tagCounts[tag] ?? 0) + 1;
         });
         const selectedControlValues = {};
+        const selectedOptionValues = {};
+        const defaultSelectedOptionValues = {};
         elements.filter((el) => el.tagName.toLowerCase() === 'select' && el.getAttribute('name'))
-          .forEach((el) => { selectedControlValues[el.getAttribute('name')] = el.value; });
+          .forEach((el) => {
+            selectedControlValues[el.getAttribute('name')] = el.value;
+            selectedOptionValues[el.getAttribute('name')] = Array.from(el.selectedOptions)
+              .map((option) => option.value);
+            defaultSelectedOptionValues[el.getAttribute('name')] = Array.from(el.options)
+              .filter((option) => option.defaultSelected)
+              .map((option) => option.value);
+          });
+        const controls = elements.filter((el) => el.matches('input[name], select[name], textarea[name]'));
+        const controlValues = {};
+        const checkedControlValues = {};
+        controls.forEach((el) => {
+          const name = el.getAttribute('name');
+          if (el.tagName.toLowerCase() === 'input' && el.type === 'radio') {
+            if (!(name in controlValues)) controlValues[name] = '';
+            if (el.checked) controlValues[name] = el.value;
+          } else {
+            controlValues[name] = el.value;
+          }
+          if (el.tagName.toLowerCase() === 'input' && el.checked) {
+            (checkedControlValues[name] ??= []).push(el.value);
+          }
+        });
         const i18nElements = elements.filter((el) => el.hasAttribute('data-i18n'));
         return {
           sandboxMode: document.body.getAttribute('data-roll20-sandbox-sanitize') ?? '',
@@ -205,11 +229,25 @@ async function summarizePreview(page) {
           rolltemplateCount: root?.querySelectorAll('rolltemplate').length ?? 0,
           sourceWorkerScriptCount: root?.querySelectorAll('script[type="text/worker"]').length ?? 0,
           ordinaryScriptCount: root?.querySelectorAll('script:not([type="text/worker"])').length ?? 0,
+          nonControlAttrNameCount: elements.filter((el) =>
+            el.getAttribute('name')?.startsWith('attr_')
+            && !el.matches('input, select, textarea')).length,
           checkedControlNames: elements
             .filter((el) => el.tagName.toLowerCase() === 'input' && el.checked && el.getAttribute('name'))
             .map((el) => el.getAttribute('name'))
             .sort(),
+          checkedControlValues,
           selectedControlValues,
+          selectedOptionValues,
+          defaultSelectedOptionValues,
+          controlValues,
+          disabledControlNames: Array.from(new Set(controls.filter((el) => el.disabled)
+            .map((el) => el.getAttribute('name')))).sort(),
+          readOnlyControlNames: Array.from(new Set(controls.filter((el) => el.readOnly)
+            .map((el) => el.getAttribute('name')))).sort(),
+          multipleControlNames: Array.from(new Set(controls.filter((el) =>
+            el.tagName.toLowerCase() === 'select' && el.multiple)
+            .map((el) => el.getAttribute('name')))).sort(),
           tagCounts,
           visibleText: root?.innerText ?? '',
           visibleI18nKeys: i18nElements.filter(isVisible).map((el) => el.getAttribute('data-i18n')).sort(),

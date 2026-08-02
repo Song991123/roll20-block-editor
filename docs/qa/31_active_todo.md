@@ -48,14 +48,15 @@ belong in tracked documents.
   comparison finds matching template class/row count but different rendered
   content, so a deterministic same-state recapture plus a lossless source PNG
   is still required for chat pixel conclusions.
-- `DONE LOCAL CURRENT SYNTHETIC`: three anonymous fixtures now cover ordinary
+- `DONE LOCAL CURRENT SYNTHETIC`: four anonymous fixtures now cover ordinary
   controls, Roll/runtime content, tables, lists, repeating structure, checked
-  and selected defaults, conditional visibility, translation, ordinary Page
-  JS removal, custom properties, and nested `@layer` / `@supports` /
-  `@container` CSS. Preview and Edit are pixel-exact in modern and legacy mode,
-  and the Sandbox preparation smoke checks its allow-list changes against a
-  separate expected state. This remains local synthetic evidence, not actual
-  Roll20 parity.
+  and selected defaults, grouped radios, multi-select state, readonly and
+  disabled controls, conditional visibility, translation, Worker `getAttrs`,
+  ordinary Page JS removal, custom properties, and nested `@layer` /
+  `@supports` / `@container` CSS. Preview and Edit are pixel-exact in modern
+  and legacy mode, and the Sandbox preparation smoke checks its allow-list
+  changes against a separate expected state. This remains local synthetic
+  evidence, not actual Roll20 parity.
 
 ## P0 - Universal Import And Export
 
@@ -67,9 +68,9 @@ belong in tracked documents.
   be reported as the same operation.
 - `PARTIAL`: anonymous synthetic coverage now combines table/list/form,
   conditional visibility, repeating sections, nested conditional CSS, custom
-  properties, default control state, and inert Page JS in one browser path.
-  Continue with uncommon form semantics, fonts, user-owned assets, malformed
-  selectors, and unsupported worker syntax.
+  properties, grouped control state, readonly/disabled state, and inert Page JS
+  in one browser path. Continue with remaining uncommon form semantics, fonts,
+  user-owned assets, malformed selectors, and unsupported worker syntax.
 - `TODO`: give future JavaScript work its own inert source workspace and block
   mapping. Ordinary page scripts must remain invisible and non-executable in
   Preview/Edit.

@@ -281,6 +281,23 @@ or source-derived measurement here.
 - Local browser smoke covers movement, stop-on-drop, container opening, and the
   existing flow/free/table contracts.
 
+## 2026-08-03 - Grouped Form State Preservation
+
+- Corrected preserved-attribute targeting for generated radio labels so source
+  input attributes return to the nested input instead of leaking onto its
+  wrapper.
+- Restricted the local Sheet Worker attribute bridge to real form controls and
+  made grouped radio reads return the checked member.
+- Preserved every selected value from a multi-select across persistent iframe
+  patches and the Shadow fallback instead of restoring only `select.value`.
+- Added a fourth anonymous fixture covering grouped radios, multi-select state,
+  readonly and disabled controls, and Worker `getAttrs` initialization.
+- All four fixtures passed Preview/Edit comparison with zero differing pixels
+  in modern and legacy modes. All four also passed local Sandbox preparation
+  with no console or page errors.
+- Claim boundary: local anonymous render/runtime coverage only. Supported
+  modern Sandbox upload and broad actual Roll20 parity remain open.
+
 ## Current Product State
 
 - Preview and Edit share one persistent Roll20 iframe.

@@ -171,6 +171,15 @@ function testModernHtmlPreservesClasses(): void {
   assert(!r.warnings.some((w) => w.code === 'html-class-prefixed'), 'modern mode has no class-prefix warning');
 }
 
+function testHtmlPreservesMultiSelectState(): void {
+  const r = sanitizeRoll20SandboxHtml(
+    '<select name="attr_tags" multiple size="3"><option value="one" selected>One</option><option value="three" selected>Three</option></select>',
+    { prefixClasses: false, rewriteUrls: false },
+  );
+  expectContains(r.html, ' multiple', 'multi-select attribute preserved');
+  assert((r.html.match(/ selected/g) ?? []).length === 2, 'multiple selected options preserved');
+}
+
 function testHtmlRuntimeAndUrlHandling(): void {
   const r = sanitizeRoll20SandboxHtml(`
     <script type="text/worker">on("change:x", function(){})</script>
@@ -196,6 +205,7 @@ const tests: Array<[string, () => void]> = [
   ['CSS unsafe rejection', testCssRejectsUnsafeTokens],
   ['HTML allow-list/class prefix', testHtmlClassPrefixAndAllowList],
   ['HTML modern class preservation', testModernHtmlPreservesClasses],
+  ['HTML multi-select state preservation', testHtmlPreservesMultiSelectState],
   ['HTML runtime and URL handling', testHtmlRuntimeAndUrlHandling],
 ];
 

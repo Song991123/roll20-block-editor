@@ -6,6 +6,7 @@
  */
 
 export const PRESERVED_ATTRS_FIELD = '__R20_PRESERVED_ATTRS';
+export const PRESERVED_ATTRIBUTE_TARGET = 'data-r20-preserved-target';
 
 const EVENT_ATTRIBUTE = /^on[a-z0-9_-]+$/i;
 const SAFE_ATTRIBUTE_NAME = /^[A-Za-z_:][A-Za-z0-9:._-]*$/;
@@ -99,8 +100,22 @@ function existingAttributeNames(rawAttributes: string): Set<string> {
 /** Add imported attributes to the first generated opening element. */
 export function injectPreservedAttributes(code: string, raw: string): string {
   const entries = parsePreservedAttributes(raw);
-  if (!entries.length) return code;
+  const targetMarker = ` ${PRESERVED_ATTRIBUTE_TARGET}`;
+  const markerIndex = code.indexOf(targetMarker);
+  if (markerIndex >= 0) {
+    const start = code.lastIndexOf('<', markerIndex);
+    const end = code.indexOf('>', markerIndex);
+    if (start >= 0 && end > markerIndex) {
+      const opening = code.slice(start, end + 1);
+      const injected = injectIntoFirstOpeningTag(opening, entries).replace(targetMarker, '');
+      return `${code.slice(0, start)}${injected}${code.slice(end + 1)}`;
+    }
+  }
+  return injectIntoFirstOpeningTag(code, entries);
+}
 
+function injectIntoFirstOpeningTag(code: string, entries: Array<[string, string]>): string {
+  if (!entries.length) return code;
   return code.replace(
     /<([A-Za-z][A-Za-z0-9:.-]*)(\s[^<>]*?)?(\/?)>/,
     (full, _tag: string, rawAttributes = '', close = '') => {

@@ -238,6 +238,21 @@ assert.match(
   /var changedKeys = \[\][\s\S]*?if \(writeSheetAttr\(k, values\[k\]\)\) changedKeys\.push\(k\)/,
   'worker setAttrs dispatches change events only for changed values',
 );
+assert.match(
+  bundle.doc,
+  /function readSheetAttr\(name\)[\s\S]*?querySelectorAll\(selector\)[\s\S]*?nodes\[i\]\.type === 'radio' && nodes\[i\]\.checked/,
+  'worker getAttrs reads the checked member of a radio group',
+);
+assert.match(
+  bundle.doc,
+  /n\.tagName === 'SELECT' && n\.multiple[\s\S]*?option\.selected[\s\S]*?option\.value/,
+  'persistent iframe captures every selected value from a multi-select',
+);
+assert.match(
+  bundle.doc,
+  /el\.tagName === 'SELECT' && el\.multiple && Array\.isArray\(value\)[\s\S]*?el\.options\[optionIndex\]\.selected = nextSelected/,
+  'persistent iframe restores every selected value into a multi-select',
+);
 assert.match(bundle.doc, /if \(style\.textContent !== css\) style\.textContent = css/);
 assert.match(
   bundle.doc,

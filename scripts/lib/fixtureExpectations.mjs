@@ -11,12 +11,41 @@ export function fixtureExpectationFailures(
   for (const name of expected.checkedControlNames ?? []) {
     if (!checked.has(name)) failures.push(`${prefix}checked control missing: ${name}`);
   }
+  for (const [name, values] of Object.entries(expected.checkedControlValues ?? {})) {
+    const actual = summary?.checkedControlValues?.[name] ?? [];
+    if (JSON.stringify(actual) !== JSON.stringify(values)) {
+      failures.push(`${prefix}checked values ${name}=${JSON.stringify(actual)} != ${JSON.stringify(values)}`);
+    }
+  }
   for (const [name, value] of Object.entries(expected.selectedControlValues ?? {})) {
     if (summary?.selectedControlValues?.[name] !== value) {
       failures.push(
         `${prefix}selected value ${name}=${summary?.selectedControlValues?.[name] ?? ''} != ${value}`,
       );
     }
+  }
+  for (const [name, values] of Object.entries(expected.selectedOptionValues ?? {})) {
+    const actual = summary?.selectedOptionValues?.[name] ?? [];
+    if (JSON.stringify(actual) !== JSON.stringify(values)) {
+      failures.push(`${prefix}selected options ${name}=${JSON.stringify(actual)} != ${JSON.stringify(values)}`);
+    }
+  }
+  for (const [name, value] of Object.entries(expected.controlValues ?? {})) {
+    if (summary?.controlValues?.[name] !== value) {
+      failures.push(`${prefix}control value ${name}=${summary?.controlValues?.[name] ?? ''} != ${value}`);
+    }
+  }
+  const disabled = new Set(summary?.disabledControlNames ?? []);
+  for (const name of expected.disabledControlNames ?? []) {
+    if (!disabled.has(name)) failures.push(`${prefix}disabled control missing: ${name}`);
+  }
+  const readOnly = new Set(summary?.readOnlyControlNames ?? []);
+  for (const name of expected.readOnlyControlNames ?? []) {
+    if (!readOnly.has(name)) failures.push(`${prefix}readonly control missing: ${name}`);
+  }
+  const multiple = new Set(summary?.multipleControlNames ?? []);
+  for (const name of expected.multipleControlNames ?? []) {
+    if (!multiple.has(name)) failures.push(`${prefix}multiple control missing: ${name}`);
   }
   for (const [tag, minimum] of Object.entries(expected.minimumTagCounts ?? {})) {
     if ((summary?.tagCounts?.[tag] ?? 0) < minimum) {
@@ -34,6 +63,14 @@ export function fixtureExpectationFailures(
   ) {
     failures.push(
       `${prefix}ordinary script count ${summary?.ordinaryScriptCount ?? 0} != ${expected.ordinaryScriptCount}`,
+    );
+  }
+  if (
+    Number.isFinite(expected.nonControlAttrNameCount)
+    && summary?.nonControlAttrNameCount !== expected.nonControlAttrNameCount
+  ) {
+    failures.push(
+      `${prefix}non-control attr name count ${summary?.nonControlAttrNameCount ?? 0} != ${expected.nonControlAttrNameCount}`,
     );
   }
   const visibleKeys = new Set(translations?.visibleKeys ?? translations?.visibleI18nKeys ?? []);

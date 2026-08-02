@@ -13,6 +13,7 @@
 
 import * as Blockly from 'blockly';
 import { type BlockDef, type GeneratorContext } from './types';
+import { PRESERVED_ATTRIBUTE_TARGET } from './preservedAttributes';
 import { styleAttr } from './style_field';
 
 // ---------- 카테고리 / 상수 ----------
@@ -389,7 +390,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const label = String(b.getFieldValue('LABEL') ?? '');
       const checked = String(b.getFieldValue('CHECKED') ?? 'FALSE') === 'TRUE';
       return (
-        `<label><input type="radio"${sheetClassAttr(cls)}${nameAttr(name)}` +
+        `<label><input ${PRESERVED_ATTRIBUTE_TARGET} type="radio"${sheetClassAttr(cls)}${nameAttr(name)}` +
         `${attr('value', value)}${checked ? ' checked="checked"' : ''}${styleAttr(style)}>` +
         `${escapeAttr(label)}</label>`
       );

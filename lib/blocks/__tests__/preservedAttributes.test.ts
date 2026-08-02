@@ -1,5 +1,6 @@
 import {
   injectPreservedAttributes,
+  PRESERVED_ATTRIBUTE_TARGET,
   removePreservedStyleDeclarations,
   serializePreservedAttributes,
 } from '../preservedAttributes';
@@ -28,6 +29,22 @@ assert(injected.includes('data-layout="grid"'), 'data attribute emitted');
 assert(injected.includes('aria-label="Frame"'), 'ARIA attribute emitted');
 assert(!injected.includes('onclick'), 'event handler never emitted');
 assert(injectPreservedAttributes('<div id="existing"></div>', raw).includes('id="existing"'), 'existing attr wins');
+
+const targeted = injectPreservedAttributes(
+  `<label><input ${PRESERVED_ATTRIBUTE_TARGET} type="radio" name="attr_mode"></label>`,
+  serializePreservedAttributes({ type: 'radio', name: 'attr_mode', value: 'beta', 'data-hook': 'mode' }),
+);
+assert(!targeted.startsWith('<label name='), 'wrapper does not receive source input attributes');
+const targetedInput = targeted.match(/<input\b[^>]*>/)?.[0] ?? '';
+assert(targetedInput.includes('type="radio"'), 'nested source element keeps generated type');
+assert(targetedInput.includes('name="attr_mode"'), 'nested source element keeps generated name');
+assert(targetedInput.includes('value="beta"'), 'nested source element receives preserved value');
+assert(targetedInput.includes('data-hook="mode"'), 'nested source element receives preserved data attribute');
+assert(!targeted.includes(PRESERVED_ATTRIBUTE_TARGET), 'preserved target marker is removed');
+assert(
+  !injectPreservedAttributes(`<label><input ${PRESERVED_ATTRIBUTE_TARGET} type="radio"></label>`, '').includes(PRESERVED_ATTRIBUTE_TARGET),
+  'empty preserved state still removes target marker',
+);
 
 const styled = serializePreservedAttributes({
   style: 'position:absolute;left:8px;color:red;padding:4px',

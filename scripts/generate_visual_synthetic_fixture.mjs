@@ -164,6 +164,77 @@ const files = {
       },
     },
   }),
+  'fixture-D/source.html': [
+    '<div class="form-state-proof" style="width:620px;min-height:260px;padding:16px">',
+    '  <div class="form-state-radios">',
+    '    <label><input type="radio" name="attr_mode" value="alpha">Alpha</label>',
+    '    <label><input type="radio" name="attr_mode" value="beta" checked>Beta</label>',
+    '  </div>',
+    '  <label>Tags<select name="attr_tags" multiple size="3">',
+    '    <option value="one" selected>One</option>',
+    '    <option value="two">Two</option>',
+    '    <option value="three" selected>Three</option>',
+    '  </select></label>',
+    '  <input type="text" name="attr_readonly" value="fixed" readonly>',
+    '  <input type="text" name="attr_disabled" value="blocked" disabled>',
+    '  <input type="text" name="attr_worker_probe" value="">',
+    '  <input type="text" name="attr_worker_mode" value="">',
+    '  <script type="text/worker">on(\'sheet:opened\', function () { setAttrs({ worker_probe: \'installed\' }); getAttrs([\'mode\'], function (values) { setAttrs({ worker_mode: values.mode }); }); });</script>',
+    '</div>',
+  ].join('\n'),
+  'fixture-D/source.css': [
+    '.form-state-proof { background: #fffafc; border: 2px solid #b94c78; box-sizing: border-box; color: #3b2730; }',
+    '.form-state-radios { display: flex; gap: 12px; margin-bottom: 12px; }',
+    '.form-state-proof select { display: block; margin: 6px 0 12px; }',
+    '.form-state-proof input[type="text"] { display: block; margin-top: 8px; }',
+  ].join('\n'),
+  'fixture-D/source.i18n': '{}',
+  'fixture-D/manifest.json': JSON.stringify({
+    id: 'fixture-D',
+    synthetic: true,
+    legacyMode: 'modern',
+    purpose: 'grouped and uncommon form-state regression',
+    expected: {
+      normal: {
+        checkedControlNames: ['attr_mode'],
+        checkedControlValues: { attr_mode: ['beta'] },
+        selectedControlValues: { attr_tags: 'one' },
+        selectedOptionValues: { attr_tags: ['one', 'three'] },
+        controlValues: {
+          attr_mode: 'beta',
+          attr_readonly: 'fixed',
+          attr_disabled: 'blocked',
+          attr_worker_probe: 'installed',
+          attr_worker_mode: 'beta',
+        },
+        disabledControlNames: ['attr_disabled'],
+        readOnlyControlNames: ['attr_readonly'],
+        multipleControlNames: ['attr_tags'],
+        minimumTagCounts: { select: 1, option: 3 },
+        ordinaryScriptCount: 0,
+        nonControlAttrNameCount: 0,
+      },
+      sandbox: {
+        checkedControlNames: ['attr_mode'],
+        checkedControlValues: { attr_mode: ['beta'] },
+        selectedControlValues: { attr_tags: 'one' },
+        selectedOptionValues: { attr_tags: ['one', 'three'] },
+        controlValues: {
+          attr_mode: 'beta',
+          attr_readonly: 'fixed',
+          attr_disabled: 'blocked',
+          attr_worker_probe: 'installed',
+          attr_worker_mode: 'beta',
+        },
+        disabledControlNames: ['attr_disabled'],
+        readOnlyControlNames: ['attr_readonly'],
+        multipleControlNames: ['attr_tags'],
+        minimumTagCounts: { select: 1, option: 3 },
+        ordinaryScriptCount: 0,
+        nonControlAttrNameCount: 0,
+      },
+    },
+  }),
 };
 
 async function main() {
@@ -263,6 +334,32 @@ async function main() {
     if (fixtureExpectationFailures({}, conditionalManifest.expected.normal).length === 0) {
       throw new Error('fixture expectation helper accepted invalid state');
     }
+    if (!files['fixture-D/source.html'].includes("getAttrs(['mode']")) {
+      throw new Error('grouped form fixture worker probe missing');
+    }
+    const formManifest = JSON.parse(files['fixture-D/manifest.json']);
+    const formExpectationFailures = fixtureExpectationFailures({
+      checkedControlNames: ['attr_mode'],
+      checkedControlValues: { attr_mode: ['beta'] },
+      selectedControlValues: { attr_tags: 'one' },
+      selectedOptionValues: { attr_tags: ['one', 'three'] },
+      controlValues: {
+        attr_mode: 'beta',
+        attr_readonly: 'fixed',
+        attr_disabled: 'blocked',
+        attr_worker_probe: 'installed',
+        attr_worker_mode: 'beta',
+      },
+      disabledControlNames: ['attr_disabled'],
+      readOnlyControlNames: ['attr_readonly'],
+      multipleControlNames: ['attr_tags'],
+      tagCounts: { select: 1, option: 3 },
+      ordinaryScriptCount: 0,
+      nonControlAttrNameCount: 0,
+    }, formManifest.expected.normal);
+    if (formExpectationFailures.length > 0) {
+      throw new Error(`grouped form expectation helper rejected valid state: ${formExpectationFailures.join(', ')}`);
+    }
     console.log('VISUAL SYNTHETIC FIXTURE SELF-TEST PASS');
     return;
   }
@@ -274,7 +371,7 @@ async function main() {
   }
   await writeFile(
     path.join(outDir, 'synthetic-meta.json'),
-    `${JSON.stringify({ synthetic: true, fixtureIds: ['fixture-A', 'fixture-B', 'fixture-C'], files: Object.keys(files) }, null, 2)}\n`,
+    `${JSON.stringify({ synthetic: true, fixtureIds: ['fixture-A', 'fixture-B', 'fixture-C', 'fixture-D'], files: Object.keys(files) }, null, 2)}\n`,
     'utf8',
   );
   console.log(`VISUAL SYNTHETIC FIXTURE GENERATED ${outDir}`);

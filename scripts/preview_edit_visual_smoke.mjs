@@ -505,8 +505,15 @@ function summarizeSheetSignature(sheetEl) {
   const blockIds = [];
   const sequence = [];
   const checkedControlNames = [];
+  const checkedControlValues = {};
   const selectedControlValues = {};
+  const selectedOptionValues = {};
+  const controlValues = {};
+  const disabledControlNames = [];
+  const readOnlyControlNames = [];
+  const multipleControlNames = [];
   let ordinaryScriptCount = 0;
+  let nonControlAttrNameCount = 0;
   let visibleRuntimeNodeCount = 0;
   for (const el of nodes) {
     const tag = el.tagName.toLowerCase();
@@ -517,10 +524,30 @@ function summarizeSheetSignature(sheetEl) {
       const key = `${tag}:${type ?? ''}:${name}`;
       controlNames[key] = (controlNames[key] ?? 0) + 1;
     }
-    if (tag === 'input' && name && el.checked) checkedControlNames.push(name);
-    if (tag === 'select' && name) selectedControlValues[name] = el.value;
+    if (tag === 'input' && name && el.checked) {
+      checkedControlNames.push(name);
+      (checkedControlValues[name] ??= []).push(el.value);
+    }
+    if (tag === 'select' && name) {
+      selectedControlValues[name] = el.value;
+      selectedOptionValues[name] = Array.from(el.selectedOptions).map((option) => option.value);
+    }
+    if (name && 'value' in el) {
+      if (tag === 'input' && el.type === 'radio') {
+        if (!(name in controlValues)) controlValues[name] = '';
+        if (el.checked) controlValues[name] = el.value;
+      } else {
+        controlValues[name] = el.value;
+      }
+      if (el.disabled) disabledControlNames.push(name);
+      if (el.readOnly) readOnlyControlNames.push(name);
+      if (tag === 'select' && el.multiple) multipleControlNames.push(name);
+    }
     if (tag === 'script' && String(el.getAttribute('type') ?? '').toLowerCase() !== 'text/worker') {
       ordinaryScriptCount += 1;
+    }
+    if (name?.startsWith('attr_') && !['input', 'select', 'textarea'].includes(tag)) {
+      nonControlAttrNameCount += 1;
     }
     const blockId = el.getAttribute('data-r20-block-id');
     if (blockId) blockIds.push(blockId);
@@ -545,8 +572,15 @@ function summarizeSheetSignature(sheetEl) {
     tagCounts,
     controlNames,
     checkedControlNames: checkedControlNames.sort(),
+    checkedControlValues,
     selectedControlValues,
+    selectedOptionValues,
+    controlValues,
+    disabledControlNames: Array.from(new Set(disabledControlNames)).sort(),
+    readOnlyControlNames: Array.from(new Set(readOnlyControlNames)).sort(),
+    multipleControlNames: Array.from(new Set(multipleControlNames)).sort(),
     ordinaryScriptCount,
+    nonControlAttrNameCount,
     visibleText: sheetEl.innerText,
     sequenceHash: localHashString(sequence.join('\n')),
     visibleRuntimeNodeCount,
@@ -1071,8 +1105,8 @@ async function main() {
     try {
       await page.goto(`http://127.0.0.1:${PORT}${BASE_PATH}/`, { waitUntil: 'load' });
       await warmPerfHook(page);
-      entry.import = await waitForLiveImport(page, fixture);
       await page.evaluate((mode) => window.__perfHook.setRoll20CompatibilityMode(mode), compatibilityMode);
+      entry.import = await waitForLiveImport(page, fixture);
       entry.previewCapture = await capturePreview(page, captureId, fixture.i18n);
       entry.previewDom = entry.previewCapture.dom;
       entry.previewDiagnostics = entry.previewCapture.diagnostics;

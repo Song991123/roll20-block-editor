@@ -291,19 +291,37 @@ function regexEscape(value: string): string {
   return String(value).replace(/[.*+?^\x24{}()|[\]\\]/g, '\\$&');
 }
 
+function sheetAttrSelector(name: string): string {
+  const attrName = `attr_${cssEscapeForSelector(name)}`;
+  return `input[name="${attrName}"],select[name="${attrName}"],textarea[name="${attrName}"]`;
+}
+
 function readSheetAttr(scope: ParentNode, name: string): string {
-  const selector = `[name="attr_${cssEscapeForSelector(name)}"]`;
-  const el = scope.querySelector<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(selector);
+  const selector = sheetAttrSelector(name);
+  const nodes = scope.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(selector);
+  const el = nodes[0];
   if (!el) return '';
   if (el instanceof HTMLInputElement && el.type === 'checkbox') return el.checked ? (el.value || '1') : '0';
-  if (el instanceof HTMLInputElement && el.type === 'radio') return el.checked ? (el.value || '') : '';
+  if (el instanceof HTMLInputElement && el.type === 'radio') {
+    const checked = Array.from(nodes).find(
+      (candidate) => candidate instanceof HTMLInputElement && candidate.type === 'radio' && candidate.checked,
+    );
+    return checked?.value || '';
+  }
   return el.value == null ? '' : String(el.value);
 }
 
 function writeSheetAttr(scope: ParentNode, name: string, value: unknown): void {
-  const selector = `[name="attr_${cssEscapeForSelector(name)}"]`;
+  const selector = sheetAttrSelector(name);
   const nodes = scope.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(selector);
   nodes.forEach((el) => {
+    if (el instanceof HTMLSelectElement && el.multiple && Array.isArray(value)) {
+      const selected = new Set(value.map(String));
+      Array.from(el.options).forEach((option) => {
+        option.selected = selected.has(option.value);
+      });
+      return;
+    }
     if (el instanceof HTMLInputElement && el.type === 'checkbox') {
       el.checked = String(value) === String(el.value || '1') || value === true || value === 1 || value === '1';
       if (el.checked) el.setAttribute('checked', 'checked');
@@ -433,7 +451,9 @@ function installShadowSheetWorkerRuntime(scope: ParentNode, i18n?: string): void
     const rawName = target.getAttribute('name') || '';
     const attr = rawName.slice(5);
     const sourceValue =
-      target instanceof HTMLInputElement && (target.type === 'checkbox' || target.type === 'radio')
+      target instanceof HTMLSelectElement && target.multiple
+        ? Array.from(target.selectedOptions).map((option) => option.value)
+        : target instanceof HTMLInputElement && (target.type === 'checkbox' || target.type === 'radio')
         ? target.checked ? (target.value || '1') : ''
         : target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement
           ? target.value
