@@ -373,7 +373,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               <div className="text-sm font-medium">Roll20 파일을 하나씩 저장</div>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 Custom Sheet Sandbox에서 HTML, CSS, 번역 파일을 각각 선택해야 할 때 사용하세요.
-                ZIP과 같은 최종 payload가 저장됩니다.
+                ZIP에 들어가는 것과 같은 최종 파일이 저장됩니다.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -563,7 +563,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 state={sandboxDiagnostics.htmlChanged ? 'rewritten' : 'same'}
                 detail={`${formatBytes(sandboxDiagnostics.htmlBeforeBytes)} -> ${formatBytes(
                   sandboxDiagnostics.htmlAfterBytes,
-                )}, 런타임 제거 ${sandboxDiagnostics.runtimeStripped}건`}
+                )}, 실행 코드 정리 ${sandboxDiagnostics.runtimeStripped}건`}
               />
               <DiagnosticRow
                 label="CSS 정리"
@@ -576,21 +576,21 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 }
                 detail={`${formatBytes(sandboxDiagnostics.cssBeforeBytes)} -> ${formatBytes(
                   sandboxDiagnostics.cssAfterBytes,
-                )}, 선택자 보정 ${sandboxDiagnostics.selectorPrefixed}건`}
+                )}, 스타일 규칙 정리 ${sandboxDiagnostics.selectorPrefixed}건`}
               />
               <DiagnosticRow
-                label="클래스/태그"
+                label="HTML 구조"
                 state={
                   sandboxDiagnostics.classPrefixed + sandboxDiagnostics.tagStripped > 0
                     ? 'rewritten'
                     : 'same'
                 }
-                detail={`클래스 보정 ${sandboxDiagnostics.classPrefixed}건, 태그 제거 ${sandboxDiagnostics.tagStripped}건`}
+                detail={`스타일 이름 정리 ${sandboxDiagnostics.classPrefixed}건, 지원하지 않는 태그 제거 ${sandboxDiagnostics.tagStripped}건`}
               />
               <DiagnosticRow
                 label="외부 URL"
                 state={sandboxDiagnostics.urlsDropped > 0 ? 'rewritten' : 'same'}
-                detail={`프록시 처리 ${sandboxDiagnostics.urlsProxied}건, 제거 ${sandboxDiagnostics.urlsDropped}건`}
+                detail={`Roll20 경유 처리 ${sandboxDiagnostics.urlsProxied}건, 제거 ${sandboxDiagnostics.urlsDropped}건`}
               />
             </div>
           </details>
@@ -611,8 +611,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               <span className="flex-1">
                 <span className="font-medium">구버전 Roll20 무해화</span>
                 <span className="ml-1 text-xs text-muted-foreground">
-                  끄면 신버전 Roll20 모드로 보고 내보냅니다. 켜면 HTML 클래스 보정과
-                  CSS 무해화를 미리보기에 적용하고 `sheet.json` 역시 legacy로 저장합니다.
+                  끄면 신버전 Roll20 모드로 보고 내보냅니다. 켜면 HTML 이름 정리와
+                  CSS 무해화를 미리보기에 적용하고 호환 설정도 구버전용으로 저장합니다.
                 </span>
               </span>
             </label>
@@ -621,12 +621,12 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 className="mt-2 text-xs text-muted-foreground"
                 data-testid="export-legacy-warnings"
               >
-                최근 무해화 결과: {legacyWarnings.length}건. 자세한 내용은 sanitize-warnings.json에 저장됩니다.
+                최근 무해화 결과: {legacyWarnings.length}건. 자세한 내용은 ZIP 안의 검사 기록 파일에 저장됩니다.
               </div>
             )}
             {legacyMode && legacyWarnings.length === 0 && (
               <div className="mt-2 text-xs text-muted-foreground">
-                내보내기 때 CSS를 검사하고 sanitize-warnings.json을 함께 생성합니다.
+                내보내기 때 CSS를 검사하고 ZIP 안에 검사 기록 파일을 함께 만듭니다.
               </div>
             )}
           </section>

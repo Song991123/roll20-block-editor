@@ -354,7 +354,6 @@ function BlockTile({ def }: { def: BlockDef }) {
   const blockFavorites = useSettingsStore((s) => s.blockFavorites);
   const toggleBlockFavorite = useSettingsStore((s) => s.toggleBlockFavorite);
   const isFavorite = blockFavorites.includes(def.type);
-  const activeWs = useWorkspaceStore((s) => s.activeWorkspace);
   const renderer = useSettingsStore((s) => s.blocklyRenderer);
 
   const previewHostRef = useRef<HTMLDivElement | null>(null);
@@ -446,12 +445,12 @@ function BlockTile({ def }: { def: BlockDef }) {
     const id = appendBlock(def.type);
     if (id) {
       playSfx('block.add');
-      toast(`'${def.label}' 블록 추가됨 — ${activeWs.toUpperCase()} 워크스페이스`, { duration: 1600 });
+      toast(`'${def.label}' 추가 완료`, { duration: 1600 });
     } else {
       playSfx('toast.error');
-      toast.error('블록 추가 실패 (워크스페이스 미연결?)', { duration: 2200 });
+      toast.error('추가하지 못했어요. 잠시 후 다시 시도해 주세요.', { duration: 2200 });
     }
-  }, [appendBlock, def.label, def.type, activeWs]);
+  }, [appendBlock, def.label, def.type]);
 
   return (
     <div

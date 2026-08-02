@@ -15,6 +15,25 @@ or source-derived measurement here.
 - Remote CI: passed safety/unit verification, lint, and production build.
 - Worktree and project server state were clean after the run.
 
+## 2026-08-03 - Modern Chooser Boundary And Plain UI Copy
+
+- Generated a fresh anonymous modern payload through the product export path
+  and passed the synthetic export and upload-file checks.
+- Opened the visible HTML file chooser in the modern Custom Sheet Sandbox. The
+  supported browser file-selection action returned `Not allowed` before a file
+  was transferred. CSS and translation were not attempted, and no hidden input
+  or endpoint workaround was used.
+- Removed internal workspace, payload, runtime, and browser-handler wording
+  from common add, import, and export messages. The user now sees short action
+  results and plain descriptions of cleaned code and generated files.
+- Extended the UI copy guard to parse TypeScript/JSX string literals and JSX
+  text. Its built-in regression check ignores internal comments but rejects the
+  same technical phrases when they enter product copy.
+- `guard:ui-copy`, lint, and the full edit-flow browser smoke passed. The smoke
+  server closed after the run.
+- Claim boundary: this improves local product language only. Modern actual
+  upload and screen parity remain externally unverified.
+
 ## 2026-08-03 - Complete Legacy Payload Replacement Evidence
 
 - Repeated the exact-one participant preflight in the dedicated legacy test

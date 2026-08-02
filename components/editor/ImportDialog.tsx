@@ -254,7 +254,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
 
       if (result.stats.sanitizeDropped > 0) {
         toast.warning(
-          `보안을 위해 인라인 이벤트 핸들러 ${result.stats.sanitizeDropped}개를 제거했습니다. (onclick 등)`,
+          `보안을 위해 브라우저에서 자동 실행되는 코드 ${result.stats.sanitizeDropped}개를 제거했습니다.`,
           { duration: 4500 },
         );
       }
@@ -500,7 +500,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
             )}
             {report.sanitizeDropped > 0 && (
               <div className="mt-1 text-amber-500" data-testid="import-sanitize-warning">
-                보안을 위해 인라인 이벤트 핸들러(onclick 등) {report.sanitizeDropped}개를 제거했습니다.
+                보안을 위해 브라우저에서 자동 실행되는 코드 {report.sanitizeDropped}개를 제거했습니다.
               </div>
             )}
             {report.templateMarkerCount > 0 && (

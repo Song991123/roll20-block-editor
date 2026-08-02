@@ -33,7 +33,8 @@ contain private source evidence or historical test dumps.
   HTML/CSS source and translation JSON meaning must match before render capture.
   The Sandbox upload helper does not target legacy campaign settings.
 - Modern automated upload is stopped at the supported file-selection permission
-  boundary; do not bypass it.
+  boundary. A fresh visible chooser retry with a newly exported anonymous
+  payload failed before transmission; do not bypass it.
 - Generated evidence and external validation inputs remain ignored, local, and
   ephemeral.
 

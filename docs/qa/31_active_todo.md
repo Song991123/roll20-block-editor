@@ -20,8 +20,9 @@ belong in tracked documents.
   local evidence. This proves the tested synthetic contract, not every sheet.
 - `BLOCKED EXTERNAL`: the current automated modern upload path is stopped at
   the browser file-selection permission boundary. A fresh visible chooser
-  retry still returns `Not allowed`. No hidden input, endpoint, or existing-room
-  workaround is allowed.
+  retry for a newly exported anonymous modern payload still returns
+  `Not allowed` before any file is transferred. No hidden input, endpoint, or
+  existing-room workaround is allowed.
 - `PARTIAL`: local Preview/Edit and the dedicated legacy destination now have
   same-payload root comparisons against the exact authored top-level element,
   not the surrounding Roll20 wrapper. Authored-root dimensions and capture
@@ -89,8 +90,11 @@ belong in tracked documents.
 - `PARTIAL`: visual controls exist for sections, rows, text, inputs, images,
   tables, Roll buttons, and result cards. They write managed CSS rather than
   presentation inline HTML.
-- `TODO`: remove remaining technical or broken copy from user-facing panels.
-  Prefer plain Korean actions, icons with tooltips, and visual examples.
+- `PARTIAL`: common block-add, import-safety, and export-diagnostic messages now
+  use plain Korean instead of internal workspace, payload, runtime, or browser
+  handler terms. The UI copy guard parses source literals and JSX text so
+  internal comments do not hide or falsely trigger this rule. Continue the
+  review for less-used panels and add visual examples where text alone is hard.
 - `PARTIAL`: the pastel shell and central editing controls have compact desktop
   browser coverage. Mobile drawers and broader viewport combinations remain to
   be reviewed without changing the Roll20 sheet render surface.

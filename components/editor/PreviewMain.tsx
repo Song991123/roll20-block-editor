@@ -1698,13 +1698,10 @@ export default function PreviewMain() {
               queueMicrotask(() => flushEmitPipeline());
             }
             playSfx('block.add');
-            toast(
-              `'${def?.label ?? type}' 추가됨 — ${(activeWs as WorkspaceKey).toUpperCase()} 워크스페이스`,
-              { duration: 1600 },
-            );
+            toast(`'${def?.label ?? type}' 추가 완료`, { duration: 1600 });
           } else {
             playSfx('toast.error');
-            toast.error('블록 추가 실패', { duration: 2200 });
+            toast.error('추가하지 못했어요. 잠시 후 다시 시도해 주세요.', { duration: 2200 });
           }
         }}
       >
