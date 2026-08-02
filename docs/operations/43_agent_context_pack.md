@@ -1,6 +1,6 @@
 # 43. Agent Context Pack
 
-Date: 2026-08-01
+Date: 2026-08-03
 
 This is the short reading path for agents. It prevents every task from loading
 the entire history and generated evidence tree.
@@ -102,6 +102,15 @@ the entire history and generated evidence tree.
   console/page errors `0/0`. Table/list/conditional and actual Roll20 coverage
   remain open. Commit `3612ad6` is pushed to `claude/design-reset`; GitHub CI
   run `30753185109` passed.
+  Anonymous imported list-item, table-row, and value-switch-case moves now
+  extend that same `inside` contract. The run exposed and fixed two
+  value-switch defects: case panel elements lacked their case block's internal
+  marker, and imported checked radios lost the initially visible state. All
+  six synthetic fixtures now pass together with stable re-import, mismatch no
+  higher than `1.83%` under the `2%` local gate, clean resources, and
+  console/page errors `0/0`. Commit `3bf5b30` is pushed to
+  `claude/design-reset`; GitHub CI run `30753965883` passed. Arbitrary
+  protected sheets and actual modern/legacy Roll20 remain open.
 - Actual Roll20's built-in default chat-template DOM and typography were
   measured in the dedicated one-member modern Sandbox. The local fallback now
   matches its caption/row/inline-roll structure and passes browser smoke.

@@ -12029,3 +12029,26 @@ same-hash modern/legacy comparison.
   `30753185109` passed safety/unit verification, lint, and build in `1m24s`.
 - Actual Roll20 and broader table/list/conditional imported nesting remain
   open; no external parity claim changed.
+
+## 2026-08-03 - Structural inside moves and conditional defaults
+
+- Added three anonymous imported-edit structures for list, table, and
+  value-switch nesting. Each case uses the real layer-panel `inside` drag path
+  and verifies Blockly, Edit iframe, Preview iframe, and re-import parenthood.
+- The first conditional run exposed missing block identity on generated case
+  panel elements. The parent composite generator now places each case block's
+  internal ID on its real panel; the Roll20 export cleanup remains unchanged.
+- The next run exposed lost initial state. A checked source radio now imports
+  into `DEFAULT_VALUE`, stays editable in the inspector, and re-emits as the
+  matching checked radio so the intended initial panel remains visible.
+- All six anonymous imported fixtures pass together. New list/table/conditional
+  mismatch is `0.38%`, `0.38%`, and `0.44%`; the full set stays below `2%`,
+  re-import is stable, resources are clean, and console/page errors are `0/0`.
+- High-priority mapping tests, full `ci:verify`, lint, production build, and a
+  clean full edit-flow retry pass. One first edit-flow attempt stopped at the
+  already tracked multi-selection timing setup; the immediate retry passed.
+- Product commit `3bf5b30` is pushed to `claude/design-reset`; GitHub CI run
+  `30753965883` passed safety/unit verification, lint, and build in `1m20s`.
+  Temporary servers are closed.
+- Actual modern Sandbox and dedicated legacy-room rendering remain unverified;
+  this batch makes no actual Roll20 parity claim.

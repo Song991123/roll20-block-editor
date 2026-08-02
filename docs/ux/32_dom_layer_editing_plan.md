@@ -272,12 +272,13 @@ operations, flow versus free placement, grouping preconditions, selection
 synchronization, and multi-object free transform. The browser smoke also
 proves Ctrl selection -> iframe multi-highlight -> shared free movement ->
 persisted emitted positions, while grouping keeps the model parent, iframe
-parent, and emitted HTML aligned. One anonymous imported cross-container case
-now additionally proves an existing flow input can move into another frame,
-keep the same target parent in Edit and Preview, and retain that nesting after
-emit -> re-import -> emit. This is a frame-to-frame synthetic case; table,
-list, conditional, protected real-fixture, and actual Roll20 coverage remain
-future acceptance work.
+parent, and emitted HTML aligned. Anonymous imported cross-container cases now
+prove existing content can move between frames, lists, table bodies, and
+value-switch cases, keep the same target parent in Edit and Preview, and retain
+that nesting after emit -> re-import -> emit. A value-switch case panel owns
+the internal marker for its case block, and the parent switch preserves an
+imported checked radio as its editable initial value. Protected real-fixture
+and actual modern/legacy Roll20 coverage remain future acceptance work.
 
 ## Composite And Shadow Role Contract
 

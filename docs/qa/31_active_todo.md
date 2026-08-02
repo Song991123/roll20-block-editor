@@ -1,3 +1,40 @@
+# 2026-08-03 Imported structural inside moves and conditional defaults
+
+- `DONE TEST CONTRACT`: the canonical imported-edit smoke now includes three
+  additional anonymous structures. It moves an existing list item into another
+  list, a table row into another table body, and visible content into another
+  value-switch case through the real layer-panel `inside` path.
+- `FIXED PRODUCT`: value-switch case blocks were consumed by their parent
+  generator before the normal per-block marker path ran. Each generated case
+  panel now carries its own internal block ID, so the rendered panel and layer
+  row resolve to the same editable container. Export still removes internal
+  IDs at the existing Roll20 payload boundary.
+- `FIXED DEFAULT STATE`: imported checked radios inside a value-switch now map
+  to an editable `DEFAULT_VALUE` field and emit the matching radio as checked.
+  A source sheet's initially visible conditional panel is no longer silently
+  hidden after import and emit.
+- `VERIFIED STRUCTURE`: frame, list, table, and conditional cases all changed
+  from the source parent to the intended target parent. Edit, Preview, and
+  post-re-import DOM membership agreed; moved content remained non-absolute
+  flow content and stale drag identity was `null`.
+- `VERIFIED BROWSER`: all six anonymous imported fixtures passed together.
+  The new list/table/conditional sheet mismatch values were `0.38%`, `0.38%`,
+  and `0.44%`; the full run stayed under the `2%` gate with resource issues
+  `0` and console/page errors `0/0`.
+- `VERIFIED REGRESSION`: high-priority mapping tests, full `ci:verify`, lint,
+  production build, and a clean edit-flow browser retry pass. The first
+  edit-flow attempt stopped at the already tracked timing-sensitive canvas
+  multi-selection setup; the immediate clean retry completed the full smoke.
+- `VERIFIED LOCAL SERVER HYGIENE`: all temporary browser servers exited and
+  the project/CDP listener check returned zero listeners.
+- `VERIFIED REMOTE`: product commit `3bf5b30` is pushed to
+  `claude/design-reset`; GitHub CI run `30753965883` passed safety/unit
+  verification, lint, and build in `1m20s`.
+- `OPEN EXTERNAL`: this closes anonymous local frame/list/table/conditional
+  structure coverage only. Arbitrary protected sheets and actual current-
+  payload modern Sandbox plus dedicated legacy-room rendering remain separate
+  unverified gates.
+
 # 2026-08-02 Imported cross-container inside move
 
 - `DONE TEST CONTRACT`: the canonical imported-edit smoke now moves an

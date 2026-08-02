@@ -1,5 +1,23 @@
 # 34. Requirements Gap Matrix
 
+## 2026-08-03 Structural inside moves and conditional initial state
+
+- `VERIFIED LOCAL`: anonymous imported frame, list, table-section, and
+  conditional-case structures now pass a real layer-panel cross-container
+  `inside` move. Blockly parent, rendered parent, Preview parent, flow
+  positioning, and post-re-import membership agree.
+- `FIXED LOCAL`: generated value-switch case panels retain an internal editor
+  marker, and an imported checked radio survives as the block's initial value.
+  This restores both drop-target identity and the source's initially visible
+  conditional panel without changing the exported Roll20 markup contract.
+- `VERIFIED LOCAL`: all six anonymous imported fixtures pass together with
+  stable canonical HTML/CSS/i18n/block counts, visual mismatch no higher than
+  `1.83%` under the `2%` local gate, clean resources, and console/page errors
+  `0/0`.
+- `CLAIM BOUNDARY`: this supersedes the table/list/conditional gap below for
+  anonymous local structure. Protected arbitrary sheets and actual modern and
+  legacy Roll20 rendering remain open; local equality is not parity evidence.
+
 ## 2026-08-02 Imported cross-container inside move
 
 - `VERIFIED LOCAL`: one anonymous synthetic imported structure moved an
