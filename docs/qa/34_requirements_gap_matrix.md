@@ -1,5 +1,18 @@
 # 34. Requirements Gap Matrix
 
+## 2026-08-02 Imported cross-container inside move
+
+- `VERIFIED LOCAL`: one anonymous synthetic imported structure moved an
+  existing input across frame boundaries through the layer panel. Blockly
+  parent, iframe parent, flow positioning, Preview parent, and post-re-import
+  frame membership all agreed.
+- `VERIFIED LOCAL`: canonical HTML/CSS/i18n/block-count re-import stability,
+  strict sheet visual mismatch `0.3%` under the `2%` gate, clean resources,
+  and console/page errors `0/0` passed.
+- `CLAIM BOUNDARY`: only a frame-to-frame synthetic flow move is covered.
+  Table/list/conditional families, arbitrary protected fixtures, and actual
+  modern/legacy Roll20 remain open.
+
 ## 2026-08-01 Imported layer subtree sync refresh
 
 - `VERIFIED LOCAL`: `build`, `smoke:edit-flow`, and

@@ -12008,3 +12008,22 @@ same-hash modern/legacy comparison.
   `30752787415` passed safety/unit verification, lint, and build in `1m21s`.
 - Actual modern Roll20 evidence remains `0/4`; this batch makes no external
   visual-parity claim.
+
+## 2026-08-02 - Imported cross-container inside move
+
+- Extended the canonical imported-edit smoke with one anonymous deterministic
+  frame-to-frame move for an existing imported input. Other structures skip
+  this stronger check when no safe pair is defined.
+- Required the layer panel to report `inside`, the Blockly and iframe parent to
+  become the target frame, normal flow positioning to remain, and stale drag
+  identity to be absent.
+- Switched to Preview and confirmed the same target parent, then re-imported
+  the edited emit and confirmed both semantic inputs still shared one frame.
+- The focused cross-container run passed canonical HTML/CSS/i18n/block-count
+  stability, `0.3%` strict sheet visual mismatch under the `2%` gate, clean
+  resources, and console/page errors `0/0`. The two other anonymous synthetic
+  fixture families also passed with the new skip-aware result.
+- Full `ci:verify`, lint, production build, evidence/UI-copy guards, and post-
+  smoke server hygiene pass.
+- Actual Roll20 and broader table/list/conditional imported nesting remain
+  open; no external parity claim changed.

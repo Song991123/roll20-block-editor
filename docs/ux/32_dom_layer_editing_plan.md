@@ -272,10 +272,12 @@ operations, flow versus free placement, grouping preconditions, selection
 synchronization, and multi-object free transform. The browser smoke also
 proves Ctrl selection -> iframe multi-highlight -> shared free movement ->
 persisted emitted positions, while grouping keeps the model parent, iframe
-parent, and emitted HTML aligned. A future browser acceptance test must additionally prove that
-the same imported HTML surface is visible in preview and edit after a nested
-drop, with no rollback frame and with the generated CSS output stable after
-re-import.
+parent, and emitted HTML aligned. One anonymous imported cross-container case
+now additionally proves an existing flow input can move into another frame,
+keep the same target parent in Edit and Preview, and retain that nesting after
+emit -> re-import -> emit. This is a frame-to-frame synthetic case; table,
+list, conditional, protected real-fixture, and actual Roll20 coverage remain
+future acceptance work.
 
 ## Composite And Shadow Role Contract
 

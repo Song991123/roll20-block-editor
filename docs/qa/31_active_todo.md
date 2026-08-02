@@ -1,3 +1,29 @@
+# 2026-08-02 Imported cross-container inside move
+
+- `DONE TEST CONTRACT`: the canonical imported-edit smoke now moves an
+  existing imported input from one anonymous frame into another through the
+  real layer-panel `inside` drop path. Other fixtures record an explicit skip
+  instead of manufacturing an unsafe candidate.
+- `VERIFIED STRUCTURE`: before drop, the moving layer belonged to the source
+  frame. After drop, its layer parent and rendered DOM parent both matched the
+  target frame, the drop was accepted as `inside`, and no stale drag identity
+  remained.
+- `VERIFIED EDIT/PREVIEW`: the moved input stayed normal flow content
+  (`position: static`) and shared the target frame with its witness in both
+  Edit and Preview.
+- `VERIFIED RE-IMPORT`: import -> inside move -> emit -> re-import -> emit kept
+  canonical HTML, CSS, i18n, and block-count stability. After re-import the
+  moving input and target witness still shared one frame.
+- `VERIFIED BROWSER`: the cross-container fixture passed strict sheet visual
+  sync at `0.3%` mismatch under the `2%` gate with resources clean and
+  console/page errors `0/0`. The other two anonymous synthetic imported
+  structures also passed with the new skip-aware gate.
+- `VERIFIED REGRESSION`: full `ci:verify`, lint, production build, evidence/UI-
+  copy guards, and post-smoke server hygiene pass.
+- `OPEN SCOPE`: this proves one anonymous frame-to-frame flow move. Table,
+  list, conditional, arbitrary real imported sheets, and actual Roll20 remain
+  separate evidence gaps.
+
 # 2026-08-02 Long-layer drag navigation
 
 - `DONE PRODUCT`: dragging a layer row near the top or bottom of the

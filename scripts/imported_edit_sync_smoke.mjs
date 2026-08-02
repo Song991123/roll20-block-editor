@@ -1741,6 +1741,151 @@ async function runImportedNonLeafLayerReorder(page, fixtureId) {
   };
 }
 
+async function runImportedLayerInsideMove(page, fixtureId) {
+  if (fixtureId !== 'synthetic-layer-siblings') {
+    return { pass: false, skipped: true, reason: 'no deterministic cross-container synthetic pair' };
+  }
+  await page.evaluate(() => {
+    window.__perfHook.setPreviewZoom(1);
+    window.__perfHook.setMainMode('edit');
+  });
+  const frame = await waitForPreviewSheetFrame(page);
+  const ids = await frame.evaluate(() => {
+    const moving = document.querySelector('input[name="attr_layer_first"]');
+    const witness = document.querySelector('input[name="attr_layer_third"]');
+    const source = moving?.closest('.sheet-layer-frame');
+    const target = witness?.closest('.sheet-layer-frame');
+    return {
+      movingId: moving?.getAttribute('data-r20-block-id') || '',
+      sourceId: source?.getAttribute('data-r20-block-id') || '',
+      targetId: target?.getAttribute('data-r20-block-id') || '',
+      witnessId: witness?.getAttribute('data-r20-block-id') || '',
+    };
+  });
+  if (!ids.movingId || !ids.sourceId || !ids.targetId || !ids.witnessId || ids.sourceId === ids.targetId) {
+    return { pass: false, skipped: false, reason: 'synthetic cross-container nodes missing', ids };
+  }
+
+  const model = await page.evaluate(async (ids) => {
+    const layerBefore = window.__perfHook.getLayerSnapshot('html') || [];
+    const movingBefore = layerBefore.find((node) => node.id === ids.movingId) || null;
+    const movingRow = document.querySelector(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(ids.movingId)}"]`,
+    );
+    const targetRow = document.querySelector(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(ids.targetId)}"]`,
+    );
+    if (!(movingRow instanceof HTMLElement) || !(targetRow instanceof HTMLElement)) {
+      return { pass: false, reason: 'source or target layer row missing', movingBefore };
+    }
+    targetRow.scrollIntoView({ block: 'center' });
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const rect = targetRow.getBoundingClientRect();
+    const dataTransfer = new DataTransfer();
+    dataTransfer.setData('application/x-r20-layer-block', ids.movingId);
+    const dragstart = new DragEvent('dragstart', { bubbles: true, cancelable: true });
+    Object.defineProperty(dragstart, 'dataTransfer', { value: dataTransfer });
+    movingRow.dispatchEvent(dragstart);
+    const init = {
+      bubbles: true,
+      cancelable: true,
+      clientX: rect.left + rect.width / 2,
+      clientY: rect.top + rect.height / 2,
+    };
+    const dragover = new DragEvent('dragover', init);
+    Object.defineProperty(dragover, 'dataTransfer', { value: dataTransfer });
+    targetRow.dispatchEvent(dragover);
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const mode = targetRow.getAttribute('data-r20-layer-drop-mode') || '';
+    const drop = new DragEvent('drop', init);
+    Object.defineProperty(drop, 'dataTransfer', { value: dataTransfer });
+    targetRow.dispatchEvent(drop);
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    const layerAfter = window.__perfHook.getLayerSnapshot('html') || [];
+    const movingAfter = layerAfter.find((node) => node.id === ids.movingId) || null;
+    const targetAfter = layerAfter.find((node) => node.id === ids.targetId) || null;
+    const emitted = window.__perfHook.getEmitContent();
+    return {
+      pass: movingBefore?.layerParentId === ids.sourceId
+        && mode === 'inside'
+        && drop.defaultPrevented
+        && movingAfter?.layerParentId === ids.targetId,
+      mode,
+      dropPrevented: drop.defaultPrevented,
+      movingBefore,
+      movingAfter,
+      targetAfter,
+      emittedHtmlLength: emitted.html.length,
+      staleDraggingBlockAfterDrop: document.body.dataset.r20LayerDraggingBlock ?? null,
+    };
+  }, ids);
+  if (!model.pass) return { pass: false, skipped: false, ids, model };
+
+  const readRendered = () => frame.evaluate(() => {
+    const moving = document.querySelector('input[name="attr_layer_first"]');
+    const witness = document.querySelector('input[name="attr_layer_third"]');
+    const movingFrame = moving?.closest('.sheet-layer-frame');
+    const witnessFrame = witness?.closest('.sheet-layer-frame');
+    return {
+      sameContainer: Boolean(movingFrame && movingFrame === witnessFrame),
+      movingParentId: movingFrame?.getAttribute('data-r20-block-id') || null,
+      witnessParentId: witnessFrame?.getAttribute('data-r20-block-id') || null,
+      movingPosition: moving ? getComputedStyle(moving).position : null,
+    };
+  });
+  const edit = await readRendered();
+  await page.evaluate(() => window.__perfHook.setMainMode('preview'));
+  await waitForFrameMode(frame, '0');
+  const preview = await readRendered();
+  return {
+    pass: model.pass
+      && model.staleDraggingBlockAfterDrop === null
+      && edit.sameContainer
+      && preview.sameContainer
+      && edit.movingParentId === ids.targetId
+      && preview.movingParentId === ids.targetId
+      && edit.movingPosition !== 'absolute'
+      && preview.movingPosition !== 'absolute',
+    skipped: false,
+    ids,
+    model,
+    edit,
+    preview,
+    previewSync: edit.sameContainer === preview.sameContainer
+      && edit.movingParentId === preview.movingParentId,
+  };
+}
+
+async function verifyImportedLayerInsideMoveAfterReimport(page, move) {
+  if (!move || move.skipped) return { pass: false, skipped: true, reason: move?.reason || 'inside move skipped' };
+  await page.evaluate(() => window.__perfHook.setMainMode('preview'));
+  const frame = await waitForPreviewSheetFrame(page);
+  try {
+    await frame.waitForFunction(() => {
+      const moving = document.querySelector('input[name="attr_layer_first"]');
+      const witness = document.querySelector('input[name="attr_layer_third"]');
+      return Boolean(moving && witness && moving.closest('.sheet-layer-frame') === witness.closest('.sheet-layer-frame'));
+    }, null, { timeout: 15000 });
+  } catch {}
+  const rendered = await frame.evaluate(() => {
+    const moving = document.querySelector('input[name="attr_layer_first"]');
+    const witness = document.querySelector('input[name="attr_layer_third"]');
+    const movingFrame = moving?.closest('.sheet-layer-frame');
+    const witnessFrame = witness?.closest('.sheet-layer-frame');
+    return {
+      movingFound: Boolean(moving),
+      witnessFound: Boolean(witness),
+      sameContainer: Boolean(movingFrame && movingFrame === witnessFrame),
+      movingPosition: moving ? getComputedStyle(moving).position : null,
+    };
+  });
+  return {
+    pass: move.pass === true && rendered.sameContainer && rendered.movingPosition !== 'absolute',
+    skipped: false,
+    rendered,
+  };
+}
+
 const CANONICAL_DROP_CONTAINER_TYPES = new Set([
   'r20_div',
   'r20_element_container',
@@ -2961,16 +3106,16 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Scope: local static app, imported real fixtures, real edit pointer drag, preview iframe sync, and emitted HTML/CSS position check. This does not prove actual Roll20 visual parity.');
   lines.push('');
-  lines.push('| Fixture | Status | Interaction | Resources | Final resources | Blocks | Flow insert | Free insert | Layer reorder | Non-leaf layer | Sheet visual | Form state | Root geometry | Target | Role | Before | Edit after | Preview after | Emit/Re-import | Console errors | Page errors |');
-  lines.push('| --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: |');
+  lines.push('| Fixture | Status | Interaction | Resources | Final resources | Blocks | Flow insert | Free insert | Layer reorder | Non-leaf layer | Inside move | Sheet visual | Form state | Root geometry | Target | Role | Before | Edit after | Preview after | Emit/Re-import | Console errors | Page errors |');
+  lines.push('| --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: |');
   for (const item of report.fixtures) {
-    lines.push(`| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.interactionPass ? 'PASS' : 'FAIL'} | ${item.resourcePass ? 'PASS' : 'WARN'} | ${fmtFinalResources(item.finalRenderedResources, item.resourceStatus)} | ${item.import?.blockCount ?? ''} | ${fmtCanvasInsert(item.canvasInsert)} | ${fmtFreeInsert(item.freeInsert)} | ${fmtLayerReorder(item.layerReorder)} | ${fmtNonLeafLayerReorder(item.nonLeafLayerReorder)} | ${fmtVisualSync(item.sheetVisualSync)} | ${fmtFormStateDiff(item.formStateDiff)} | ${fmtRootGeometry(item.rootGeometryDiff)} | ${item.target?.tag ?? ''} | ${item.target?.role ?? ''} | ${fmtRel(item.before)} | ${fmtRel(item.editAfter)} | ${fmtRel(item.previewAfter)} | ${fmtEmit(item.emitted)} / ${fmtReimport(item.reimport)} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`);
+    lines.push(`| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.interactionPass ? 'PASS' : 'FAIL'} | ${item.resourcePass ? 'PASS' : 'WARN'} | ${fmtFinalResources(item.finalRenderedResources, item.resourceStatus)} | ${item.import?.blockCount ?? ''} | ${fmtCanvasInsert(item.canvasInsert)} | ${fmtFreeInsert(item.freeInsert)} | ${fmtLayerReorder(item.layerReorder)} | ${fmtNonLeafLayerReorder(item.nonLeafLayerReorder)} | ${fmtLayerInsideMove(item.layerInsideMove, item.layerInsideMoveReimport)} | ${fmtVisualSync(item.sheetVisualSync)} | ${fmtFormStateDiff(item.formStateDiff)} | ${fmtRootGeometry(item.rootGeometryDiff)} | ${item.target?.tag ?? ''} | ${item.target?.role ?? ''} | ${fmtRel(item.before)} | ${fmtRel(item.editAfter)} | ${fmtRel(item.previewAfter)} | ${fmtEmit(item.emitted)} / ${fmtReimport(item.reimport)} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`);
   }
   lines.push('');
   lines.push('Notes:');
   lines.push('- PASS means an imported visible node moved by the real edit pointer path, the same block id appeared at the same sheet-relative position in preview, emitted HTML/CSS contained absolute position data, a friendly widget dropped into a visible imported frame/flow container as non-absolute flow content, a second widget dropped in user-facing free mode as nested absolute content, post-edit sheet-root visual mismatch stayed within the configured budget, and the edited emit survived a re-import/emit cycle.');
   lines.push('- Interaction and resource status are separated. Use `--fail-on-resource-issues true` for visual-parity work where external images/fonts must load.');
-  lines.push('- Layer reorder is recorded when the imported Blockly graph and layer snapshot expose a safe adjacent leaf sibling pair. Non-leaf layer reorder records the stronger group/subtree case when a visible imported container with direct children has a safe adjacent sibling with matching layer parent/depth semantics. SKIP means no safe pair was found in that fixture; it is not a Roll20 parity claim.');
+  lines.push('- Layer reorder is recorded when the imported Blockly graph and layer snapshot expose a safe adjacent leaf sibling pair. Non-leaf layer reorder records the stronger group/subtree case when a visible imported container with direct children has a safe adjacent sibling with matching layer parent/depth semantics. The anonymous cross-container fixture additionally moves an existing imported input into another frame and checks Preview plus re-import nesting. SKIP means no safe pair was found in that fixture; it is not a Roll20 parity claim.');
   lines.push('- This intentionally does not claim every object/reparenting mode works; it guards the imported-sheet move/sync path that users were feeling as rollback/desync.');
   lines.push('- Screenshots and reports are local-only and ignored by Git.');
   lines.push('');
@@ -3059,6 +3204,13 @@ function fmtNonLeafLayerReorder(item) {
     return `${moving?.tag || ''} ${direction} ${target?.tag || ''} (${moving?.childCount ?? 0} children, preview ${item.previewSync ? 'sync' : 'unchecked'}${mismatch})`;
   }
   return `FAIL: ${item.reason || item.mode || 'subtree not moved'}`;
+}
+
+function fmtLayerInsideMove(item, reimport) {
+  if (!item) return 'missing';
+  if (item.skipped) return `SKIP: ${item.reason || 'no pair'}`;
+  if (item.pass && reimport?.pass) return `inside frame, preview/re-import sync`;
+  return `FAIL: ${item.reason || item.model?.reason || reimport?.reason || 'nesting drift'}`;
 }
 
 function fmtVisualSync(item) {
@@ -3208,6 +3360,7 @@ async function main() {
           await page.waitForTimeout(1300);
           entry.layerReorder = await runImportedLayerReorder(page);
           entry.nonLeafLayerReorder = await runImportedNonLeafLayerReorder(page, fixture.id);
+          entry.layerInsideMove = await runImportedLayerInsideMove(page, fixture.id);
           entry.canvasInsert = await runCanonicalImportedCanvasInsert(page);
           entry.freeInsert = await runCanonicalImportedFreeCanvasInsert(page);
           entry.canonicalEditSync = await runCanonicalIframeEditSync(page);
@@ -3222,11 +3375,17 @@ async function main() {
           // until the emitted payload can be imported and emitted again
           // without structural drift.
           entry.reimport = await reimportCurrentEmit(page, COMPACT_WIDE_ROWS);
+          entry.layerInsideMoveReimport = await verifyImportedLayerInsideMoveAfterReimport(
+            page,
+            entry.layerInsideMove,
+          );
           entry.interactionPass = entry.canonicalEditSync.pass === true;
           entry.interactionPass = entry.interactionPass && isStableReimport(entry.reimport);
           entry.interactionPass = entry.interactionPass
             && (entry.layerReorder?.pass === true || entry.layerReorder?.skipped === true)
             && (entry.nonLeafLayerReorder?.pass === true || entry.nonLeafLayerReorder?.skipped === true)
+            && (entry.layerInsideMove?.pass === true || entry.layerInsideMove?.skipped === true)
+            && (entry.layerInsideMoveReimport?.pass === true || entry.layerInsideMoveReimport?.skipped === true)
             && (entry.canvasInsert?.pass === true || entry.canvasInsert?.skipped === true)
             && (entry.freeInsert?.pass === true || entry.freeInsert?.skipped === true)
             && (!REQUIRE_SHEET_VISUAL_SYNC || entry.sheetVisualSync?.pass === true);
@@ -3235,6 +3394,7 @@ async function main() {
         await page.waitForTimeout(1300);
         entry.layerReorder = await runImportedLayerReorder(page);
         entry.nonLeafLayerReorder = await runImportedNonLeafLayerReorder(page, fixture.id);
+        entry.layerInsideMove = await runImportedLayerInsideMove(page, fixture.id);
         entry.canvasInsert = await runImportedCanvasInsert(page);
         entry.freeInsert = await runImportedFreeCanvasInsert(page);
         entry.attempts = [];
@@ -3269,6 +3429,10 @@ async function main() {
         await page.screenshot({ path: path.join(REPORT_DIR, 'screenshots', `${fixture.id}-after-edit.png`) });
         await page.screenshot({ path: path.join(REPORT_DIR, 'screenshots', `${fixture.id}-after-preview.png`) });
         entry.reimport = await reimportCurrentEmit(page, COMPACT_WIDE_ROWS);
+        entry.layerInsideMoveReimport = await verifyImportedLayerInsideMoveAfterReimport(
+          page,
+          entry.layerInsideMove,
+        );
         entry.sheetVisualSync = await captureSheetRootVisualSync(page, fixture.id);
         entry.formStateDiff = await compareEditPreviewFormState(page);
         entry.rootGeometryDiff = await compareEditPreviewRootGeometry(page);
@@ -3284,6 +3448,8 @@ async function main() {
           entry.freeInsert?.pass === true &&
           (entry.layerReorder?.pass === true || entry.layerReorder?.skipped === true) &&
           (entry.nonLeafLayerReorder?.pass === true || entry.nonLeafLayerReorder?.skipped === true) &&
+          (entry.layerInsideMove?.pass === true || entry.layerInsideMove?.skipped === true) &&
+          (entry.layerInsideMoveReimport?.pass === true || entry.layerInsideMoveReimport?.skipped === true) &&
           (!REQUIRE_SHEET_VISUAL_SYNC || entry.sheetVisualSync?.pass === true) &&
           isStableReimport(entry.reimport);
         entry.pass = entry.interactionPass;
