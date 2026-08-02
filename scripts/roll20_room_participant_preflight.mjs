@@ -4,15 +4,15 @@
  *
  * This intentionally does not navigate, click, upload, save, open a
  * character, or capture a screenshot. An existing room is eligible for
- * generated-sheet work only when the visible page exposes exactly one
- * participant count. Sandbox pages without a readable room count are not
- * silently treated as solo rooms.
+ * generated-sheet work only when the visible page proves exactly one
+ * participant. Sandbox pages without readable room evidence are not silently
+ * treated as solo rooms.
  */
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { isRoll20PageUrl } from './lib/roll20Readiness.mjs';
-import { parseParticipantCounts } from './lib/roll20ParticipantPreflight.mjs';
+import { classifyParticipantEvidence, parseParticipantCounts } from './lib/roll20ParticipantPreflight.mjs';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const SELF_TEST = hasFlag('--self-test');
@@ -56,8 +56,8 @@ async function main() {
     mutationPerformed: false,
     pages: pageResults,
     next: eligible.length === 1
-      ? 'A single existing room has a visible one-member count. Keep the participant check fresh and continue only with read-only observation unless this is the dedicated legacy test room.'
-      : 'Do not upload, save, open a character, click a roll, or change settings. Use the dedicated Sandbox/new test room, or establish a fresh visible one-member legacy room first.',
+      ? 'A single existing room has current visible one-participant evidence. Keep the preflight fresh and continue only with read-only observation unless this is the dedicated legacy test room.'
+      : 'Do not upload, save, open a character, click a roll, or change settings. Use the dedicated Sandbox/new test room, or establish fresh visible one-participant evidence first.',
   };
 
   if (OUT_DIR) {
@@ -69,7 +69,7 @@ async function main() {
   console.log(`ROLL20 ROOM PARTICIPANT PREFLIGHT ${report.status}`);
   console.log(`pages=${pageResults.length}`);
   for (const result of pageResults) {
-    console.log(`page=${result.pathname} status=${result.status} counts=${result.visibleCounts.join(',') || 'none'}`);
+    console.log(`page=${result.pathname} status=${result.status} source=${result.source} counts=${result.visibleCounts.join(',') || 'none'}`);
   }
   console.log(`mutationPerformed=${report.mutationPerformed}`);
   console.log(`next=${report.next}`);
@@ -89,15 +89,39 @@ async function inspectPage(page) {
         && element.getClientRects().length > 0;
       return visible ? (element.innerText ?? element.textContent ?? '') : '';
     })(),
+    playerZone: (() => {
+      const zone = document.querySelector('#playerzone');
+      if (!zone) return { visible: false, visibleCards: null };
+      const style = getComputedStyle(zone);
+      const rect = zone.getBoundingClientRect();
+      const visible = style.display !== 'none'
+        && style.visibility !== 'hidden'
+        && rect.width > 0
+        && rect.height > 0;
+      if (!visible) return { visible: false, visibleCards: null };
+      const visibleCards = Array.from(zone.querySelectorAll('.player[id^="player_"]')).filter((element) => {
+        const cardStyle = getComputedStyle(element);
+        const cardRect = element.getBoundingClientRect();
+        return cardStyle.display !== 'none'
+          && cardStyle.visibility !== 'hidden'
+          && cardRect.width > 0
+          && cardRect.height > 0;
+      }).length;
+      return { visible: true, visibleCards };
+    })(),
   }));
-  const participant = parseParticipantCounts(snapshot.participantText);
+  const participant = classifyParticipantEvidence({
+    participantText: snapshot.participantText,
+    playerZoneVisible: snapshot.playerZone.visible,
+    visiblePlayerCards: snapshot.playerZone.visibleCards,
+  });
   return {
     pathname: snapshot.pathname,
     title: snapshot.title,
     status: participant.status,
     visibleCounts: participant.counts,
     evidence: participant.lines,
-    source: '.party-page-members',
+    source: participant.source,
     mutationPerformed: false,
   };
 }
@@ -105,7 +129,7 @@ async function inspectPage(page) {
 function runSelfTest() {
   const cases = [
     ['- generic: 1 구성원', 'PASS_SOLO'],
-    ['Players\n- generic: 2 구성원', 'BLOCKED_NOT_SOLO'],
+    ['Players\n- generic: 2 members', 'BLOCKED_NOT_SOLO'],
     ['Players\nNo participant line', 'BLOCKED_UNKNOWN'],
     ['1 member\n1 participant', 'BLOCKED_AMBIGUOUS'],
   ];
@@ -113,6 +137,11 @@ function runSelfTest() {
   for (const [input, expected] of cases) {
     const actual = parseParticipantCounts(input).status;
     if (actual !== expected) failures.push({ input, expected, actual });
+  }
+  const cardOnly = classifyParticipantEvidence({ participantText: '', playerZoneVisible: true, visiblePlayerCards: 1 });
+  const ambiguous = classifyParticipantEvidence({ participantText: '1 구성원', playerZoneVisible: true, visiblePlayerCards: 2 });
+  if (cardOnly.status !== 'PASS_SOLO' || cardOnly.source !== 'visible-player-cards' || ambiguous.status !== 'BLOCKED_AMBIGUOUS') {
+    failures.push({ cardOnly, ambiguous });
   }
   if (failures.length) {
     console.error(`ROLL20 ROOM PARTICIPANT PREFLIGHT SELF_TEST FAIL ${JSON.stringify(failures)}`);

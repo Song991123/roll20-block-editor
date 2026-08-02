@@ -443,6 +443,26 @@ async function renderCandidate({
       'button[type="roll"]',
       'button[type="action"]',
     ];
+    const query = (selector) => root ? Array.from(root.querySelectorAll(selector)) : [];
+    const authoredRoot = root
+      ? Array.from(root.children).find((child) => {
+          if (['SCRIPT', 'ROLLTEMPLATE'].includes(child.tagName)) return false;
+          const cs = getComputedStyle(child);
+          const childRect = child.getBoundingClientRect();
+          return cs.display !== 'none' && cs.visibility !== 'hidden' && childRect.width > 0 && childRect.height > 0;
+        }) ?? null
+      : null;
+    const statePanels = query('[class*="sheet-"]')
+      .filter((node) => node instanceof HTMLElement)
+      .filter((node) => {
+        const className = typeof node.className === 'string' ? node.className : String(node.className || '');
+        if (!/\bsheet-[A-Za-z0-9_-]+/.test(className)) return false;
+        if (['INPUT', 'BUTTON', 'SELECT', 'TEXTAREA', 'TABLE', 'IMG'].includes(node.tagName)) return false;
+        const nodeRect = node.getBoundingClientRect();
+        if (nodeRect.width <= 0 || nodeRect.height <= 0) return false;
+        return (node.textContent || '').trim().length > 0 || node.children.length > 0;
+      })
+      .slice(0, 600);
     return {
       bodyScroll: { width: body.scrollWidth, height: body.scrollHeight },
       rootRect: rect(root),
@@ -464,9 +484,18 @@ async function renderCandidate({
         }),
       },
       targetGeometry: {
-        rows: Array.from(document.querySelectorAll('.sheet-2colrow')).map((row, index) => ({ index, ...pickTargetGeometry(row) })),
-        tables: Array.from(document.querySelectorAll('table')).slice(0, 12).map((table, index) => ({ index, ...pickTargetGeometry(table) })),
-        images: Array.from(document.querySelectorAll('img')).map((image, index) => ({ index, ...pickTargetGeometry(image) })),
+        root: pickTargetGeometry(root, 1),
+        authoredRoot: pickTargetGeometry(authoredRoot, 1),
+        rows: query('.sheet-2colrow').map((row, index) => ({ index, ...pickTargetGeometry(row) })),
+        tables: query('table').slice(0, 12).map((table, index) => ({ index, ...pickTargetGeometry(table) })),
+        images: query('img').map((image, index) => ({ index, ...pickTargetGeometry(image) })),
+        labels: query('label').slice(0, 80).map((label, index) => ({ index, ...pickTargetGeometry(label) })),
+        inputs: query('input').slice(0, 120).map((input, index) => ({ index, ...pickTargetGeometry(input) })),
+        textareas: query('textarea').slice(0, 80).map((textarea, index) => ({ index, ...pickTargetGeometry(textarea) })),
+        selects: query('select').slice(0, 80).map((select, index) => ({ index, ...pickTargetGeometry(select) })),
+        rollButtons: query('button[type="roll"], button.roll').slice(0, 80).map((button, index) => ({ index, ...pickTargetGeometry(button) })),
+        actionButtons: query('button[type="action"]').slice(0, 80).map((button, index) => ({ index, ...pickTargetGeometry(button) })),
+        statePanels: statePanels.map((panel, index) => ({ index, ...pickTargetGeometry(panel) })),
       },
     };
   });

@@ -26,9 +26,12 @@ belong in tracked documents.
   same-payload root comparisons against the exact authored top-level element,
   not the surrounding Roll20 wrapper. Authored-root dimensions and capture
   completeness agree, and the current product baseline is closer than the
-  tested generic CSS candidates. Actual element-level geometry/computed-style
-  evidence is still missing, so diagnostics report `ROOT_ONLY` and the
-  renderer-action gate holds. Modern comparison remains open.
+  tested generic CSS candidates. One anonymous legacy payload now also has
+  actual label, input, Roll-button, and action-button geometry/computed-style
+  evidence; collection counts agree and the remaining visible control deltas
+  do not justify a global renderer patch. A second synthetic payload remains
+  `ROOT_ONLY`, the renderer-action gate holds, and modern comparison remains
+  open.
 - `PARTIAL ACTUAL`: Roll-capable and non-Roll payloads now share one chat
   applicability rule across status, capture planning, metric audit, and pixel
   diagnostics. Current foreground DOM/style/font evidence passes for the

@@ -15,6 +15,27 @@ or source-derived measurement here.
 - Remote CI: passed safety/unit verification, lint, and production build.
 - Worktree and project server state were clean after the run.
 
+## 2026-08-03 - Actual Control Geometry Evidence
+
+- Extended the local baseline, export-payload, same-context, and full-root
+  probes to use one element schema for authored roots, structural elements,
+  labels, form controls, Roll/action buttons, and state panels.
+- Added a fail-closed distinction between `COMPARED` and `ROOT_ONLY`: an object
+  containing only root metadata or empty element collections can no longer be
+  reported as element-level evidence.
+- Current Roll20 participant preflight accepts the visible member count first
+  and a visible one-player card count only as a fallback. Conflicting sources
+  stop the run.
+- A fresh read-only probe in the dedicated owner-only legacy test room supplied
+  actual control geometry for one anonymous synthetic payload. Hidden controls
+  remain in structure/state evidence but are excluded from visual offset
+  ranking.
+- The tested visible controls are close enough that current evidence still
+  favors no production renderer CSS change. Another synthetic payload and the
+  modern Sandbox still lack equivalent actual element evidence.
+- Claim boundary: one anonymous legacy control surface only. This is not broad
+  sheet parity and does not complete modern verification.
+
 ## 2026-08-03 - Authored-Root Evidence Alignment
 
 - Repaired the full-root candidate runner to use the product's real document
@@ -161,8 +182,9 @@ or source-derived measurement here.
 ## Open Gates
 
 1. Supported modern Custom Sheet Sandbox upload and actual-screen verification.
-2. Actual element-level geometry/computed-style evidence plus deterministic,
-   lossless same-state result-card capture before renderer changes.
+2. Equivalent actual element-level evidence for the remaining synthetic and
+   modern paths, plus deterministic lossless same-state result-card capture
+   before renderer changes.
 3. Broader anonymous mapping and edit coverage for uncommon structures.
 4. Future JavaScript workspace and lossless unsupported-source policy.
 5. Current-tree privacy cleanup, followed by an explicit Git-history decision.

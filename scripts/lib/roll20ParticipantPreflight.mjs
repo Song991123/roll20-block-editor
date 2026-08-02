@@ -1,6 +1,7 @@
 /**
- * Pure parser shared by the read-only room preflight and upload guard.
- * Keep this independent from CDP so the safety rule can be self-tested in CI.
+ * Pure participant-evidence helpers shared by the read-only room preflight
+ * and upload guard. Keep these independent from CDP so CI can exercise the
+ * fail-closed policy without a browser.
  */
 
 export function parseParticipantCounts(bodyText) {
@@ -10,9 +11,9 @@ export function parseParticipantCounts(bodyText) {
     .filter(Boolean);
   const matches = [];
   for (const line of lines) {
-    // Roll20 currently exposes a compact line such as "- generic: 1 구성원".
-    // Keep the parser narrow so unrelated numbers are ignored.
-    const match = line.match(/(?:^|\s)(\d+)\s+(구성원|members?|participants?)\s*$/i);
+    // Roll20 may expose a compact localized member-count line. Keep this
+    // narrow so unrelated room numbers and dates are ignored.
+    const match = line.match(/(?:^|\s)(\d+)\s+(?:구성원|members?|participants?)\s*$/i);
     if (!match) continue;
     matches.push({ line, count: Number(match[1]) });
   }
@@ -22,4 +23,33 @@ export function parseParticipantCounts(bodyText) {
   else if (counts.some((count) => count !== 1)) status = 'BLOCKED_NOT_SOLO';
   else if (counts.length > 1) status = 'BLOCKED_AMBIGUOUS';
   return { status, counts, lines: matches.map((match) => match.line) };
+}
+
+export function classifyParticipantEvidence({ participantText, playerZoneVisible, visiblePlayerCards }) {
+  const countEvidence = parseParticipantCounts(participantText);
+  const cardCount = playerZoneVisible && Number.isInteger(visiblePlayerCards) && visiblePlayerCards >= 0
+    ? visiblePlayerCards
+    : null;
+
+  if (countEvidence.counts.length > 0) {
+    if (cardCount !== null && countEvidence.counts.some((count) => count !== cardCount)) {
+      return {
+        status: 'BLOCKED_AMBIGUOUS',
+        counts: [...countEvidence.counts, cardCount],
+        lines: countEvidence.lines,
+        source: 'member-count-and-visible-player-cards',
+      };
+    }
+    return { ...countEvidence, source: 'visible-member-count' };
+  }
+
+  if (cardCount === null) {
+    return { status: 'BLOCKED_UNKNOWN', counts: [], lines: [], source: 'none' };
+  }
+  return {
+    status: cardCount === 1 ? 'PASS_SOLO' : 'BLOCKED_NOT_SOLO',
+    counts: [cardCount],
+    lines: [],
+    source: 'visible-player-cards',
+  };
 }

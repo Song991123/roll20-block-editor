@@ -16,6 +16,22 @@ import { chromium } from 'playwright-core';
 import { buildSheetDoc } from '../lib/preview/buildDoc.ts';
 import { ROLL20_LAYOUT_SELECTORS } from './lib/roll20LayoutSelectors.mjs';
 
+const CONTROL_GEOMETRY_GROUPS = Object.freeze([
+  'labels',
+  'inputs',
+  'textareas',
+  'selects',
+  'rollButtons',
+  'actionButtons',
+]);
+const ELEMENT_GEOMETRY_GROUPS = Object.freeze([
+  'rows',
+  'tables',
+  'images',
+  ...CONTROL_GEOMETRY_GROUPS,
+  'statePanels',
+]);
+
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const selfTest = args.includes('--self-test');
 const threshold = Number(argOf('--threshold', '60'));
@@ -153,7 +169,12 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
         actualSize,
       })
     : null;
-  const actualRootWidth = Number(actualStyleProbe?.root?.rect?.width ?? actualSize.w ?? 0) || null;
+  const actualRootWidth = Number(
+    actualTargetGeometry?.authoredRoot?.rect?.width
+      ?? actualSize.w
+      ?? actualStyleProbe?.root?.rect?.width
+      ?? 0,
+  ) || null;
   const baselineRootWidth = Number(baselineFixture?.previewDom?.rect?.width ?? 0) || 850;
 
   const payload = {
@@ -567,6 +588,15 @@ async function renderCandidate({
         children: depth >= 2 ? [] : Array.from(el.children).slice(0, 30).map((child) => target(child, depth + 1)),
       };
     };
+    const query = (selector) => root ? Array.from(root.querySelectorAll(selector)) : [];
+    const authoredRoot = root
+      ? Array.from(root.children).find((child) => {
+          if (['SCRIPT', 'ROLLTEMPLATE'].includes(child.tagName)) return false;
+          const cs = getComputedStyle(child);
+          const r = child.getBoundingClientRect();
+          return cs.display !== 'none' && cs.visibility !== 'hidden' && r.width > 0 && r.height > 0;
+        }) ?? null
+      : null;
     return {
       rootRect: rect(root),
       dialogRect: rect(dialog),
@@ -576,22 +606,32 @@ async function renderCandidate({
         sheetTabForBtn: document.querySelector('[name="attr_sheetTabForBtn"]')?.value || null,
       },
       counts: {
-        rows: document.querySelectorAll('.sheet-2colrow').length,
-        cols: document.querySelectorAll('.sheet-col').length,
-        tables: document.querySelectorAll('table').length,
-        inputs: document.querySelectorAll('input').length,
-        statePanels: document.querySelectorAll('[class*="sheet-"]').length,
-        rollButtons: document.querySelectorAll('button[type="roll"]').length,
-        actionButtons: document.querySelectorAll('button[type="action"]').length,
+        rows: query('.sheet-2colrow').length,
+        cols: query('.sheet-col').length,
+        tables: query('table').length,
+        labels: query('label').length,
+        inputs: query('input').length,
+        textareas: query('textarea').length,
+        selects: query('select').length,
+        statePanels: query('[class*="sheet-"]').length,
+        rollButtons: query('button[type="roll"], button.roll').length,
+        actionButtons: query('button[type="action"]').length,
       },
       targetGeometry: {
-        rows: Array.from(document.querySelectorAll('.sheet-2colrow')).map((row, index) => ({ index, ...target(row) })),
-        tables: Array.from(document.querySelectorAll('table')).slice(0, 12).map((table, index) => ({ index, ...target(table) })),
-        images: Array.from(document.querySelectorAll('img')).map((image, index) => ({ index, ...target(image) })),
-        inputs: Array.from(document.querySelectorAll('input')).slice(0, 80).map((input, index) => ({ index, ...target(input) })),
+        root: target(root, 2),
+        authoredRoot: target(authoredRoot, 2),
+        rows: query('.sheet-2colrow').map((row, index) => ({ index, ...target(row) })),
+        tables: query('table').slice(0, 12).map((table, index) => ({ index, ...target(table) })),
+        images: query('img').map((image, index) => ({ index, ...target(image) })),
+        labels: query('label').slice(0, 80).map((label, index) => ({ index, ...target(label) })),
+        inputs: query('input').slice(0, 120).map((input, index) => ({ index, ...target(input) })),
+        textareas: query('textarea').slice(0, 80).map((textarea, index) => ({ index, ...target(textarea) })),
+        selects: query('select').slice(0, 80).map((select, index) => ({ index, ...target(select) })),
+        rollButtons: query('button[type="roll"], button.roll').slice(0, 80).map((button, index) => ({ index, ...target(button) })),
+        actionButtons: query('button[type="action"]').slice(0, 80).map((button, index) => ({ index, ...target(button) })),
         layout: Object.fromEntries(layoutSelectors.map((selector) => [
           selector,
-          Array.from(document.querySelectorAll(selector))
+          query(selector)
             .slice(0, selector === 'input' ? 80 : 120)
             .map((node, index) => ({ index, ...target(node, 2) })),
         ])),
@@ -599,7 +639,7 @@ async function renderCandidate({
       },
     };
     function collectStatePanels() {
-      return Array.from(document.querySelectorAll('[class*="sheet-"]'))
+      return query('[class*="sheet-"]')
         .filter((node) => node instanceof HTMLElement)
         .filter((node) => {
           const className = typeof node.className === 'string' ? node.className : String(node.className || '');
@@ -1449,20 +1489,57 @@ function compareTargetGeometry(actual, local) {
       reason: !actual ? 'missing actual target geometry probe' : 'missing local target geometry',
     };
   }
+  if (!hasElementLevelGeometry(actual)) {
+    return {
+      status: 'ROOT_ONLY',
+      reason: 'actual target geometry contains root metadata but no element collections',
+    };
+  }
+  const offsets = {
+    actualRootY: actual.authoredRoot?.rect?.y ?? actual.root?.rect?.y ?? 0,
+    localRootY: local.authoredRoot?.rect?.y ?? local.root?.rect?.y ?? 0,
+  };
+  const labels = compareIndexed(actual.labels ?? [], local.labels ?? [], offsets);
+  const inputs = compareIndexed(actual.inputs ?? [], local.inputs ?? [], offsets);
+  const textareas = compareIndexed(actual.textareas ?? [], local.textareas ?? [], offsets);
+  const selects = compareIndexed(actual.selects ?? [], local.selects ?? [], offsets);
+  const rollButtons = compareIndexed(actual.rollButtons ?? [], local.rollButtons ?? [], offsets);
+  const actionButtons = compareIndexed(actual.actionButtons ?? [], local.actionButtons ?? [], offsets);
+  const controlFindings = [
+    ...labels.map((finding) => ({ ...finding, kind: 'label' })),
+    ...inputs.map((finding) => ({ ...finding, kind: 'input' })),
+    ...textareas.map((finding) => ({ ...finding, kind: 'textarea' })),
+    ...selects.map((finding) => ({ ...finding, kind: 'select' })),
+    ...rollButtons.map((finding) => ({ ...finding, kind: 'rollButton' })),
+    ...actionButtons.map((finding) => ({ ...finding, kind: 'actionButton' })),
+  ].sort((a, b) => {
+    const aScore = Math.abs(a.yDelta ?? 0) + Math.abs(a.heightDelta ?? 0) * 2 + Math.abs(a.widthDelta ?? 0);
+    const bScore = Math.abs(b.yDelta ?? 0) + Math.abs(b.heightDelta ?? 0) * 2 + Math.abs(b.widthDelta ?? 0);
+    return bScore - aScore;
+  });
   return {
     status: 'COMPARED',
     state: actual.state ?? null,
-    counts: {
-      rows: { actual: actual.rows?.length ?? 0, local: local.rows?.length ?? 0 },
-      tables: { actual: actual.tables?.length ?? 0, local: local.tables?.length ?? 0 },
-      images: { actual: actual.images?.length ?? 0, local: local.images?.length ?? 0 },
-      statePanels: { actual: actual.statePanels?.length ?? 0, local: local.statePanels?.length ?? 0 },
-    },
-    rowFindings: compareIndexed(actual.rows ?? [], local.rows ?? []).slice(0, 8),
-    tableFindings: compareIndexed(actual.tables ?? [], local.tables ?? []).slice(0, 8),
-    imageFindings: compareIndexed(actual.images ?? [], local.images ?? []).slice(0, 8),
+    counts: Object.fromEntries(ELEMENT_GEOMETRY_GROUPS.map((group) => [
+      group,
+      { actual: actual[group]?.length ?? 0, local: local[group]?.length ?? 0 },
+    ])),
+    rowFindings: compareIndexed(actual.rows ?? [], local.rows ?? [], offsets).slice(0, 8),
+    tableFindings: compareIndexed(actual.tables ?? [], local.tables ?? [], offsets).slice(0, 8),
+    imageFindings: compareIndexed(actual.images ?? [], local.images ?? [], offsets).slice(0, 8),
+    labelFindings: labels.slice(0, 12),
+    inputFindings: inputs.slice(0, 20),
+    textareaFindings: textareas.slice(0, 12),
+    selectFindings: selects.slice(0, 12),
+    rollButtonFindings: rollButtons.slice(0, 12),
+    actionButtonFindings: actionButtons.slice(0, 12),
+    controlFindings: controlFindings.slice(0, 40),
     statePanelFindings: compareByClassAndText(actual.statePanels ?? [], local.statePanels ?? []).slice(0, 12),
   };
+}
+
+function hasElementLevelGeometry(geometry) {
+  return Boolean(geometry && ELEMENT_GEOMETRY_GROUPS.some((group) => Array.isArray(geometry[group]) && geometry[group].length > 0));
 }
 
 function compareByClassAndText(actualItems, localItems) {
@@ -1517,7 +1594,7 @@ function comparablePanelKey(item) {
   return classKey;
 }
 
-function compareIndexed(actualItems, localItems) {
+function compareIndexed(actualItems, localItems, offsets = {}) {
   const length = Math.max(actualItems.length, localItems.length);
   const out = [];
   for (let i = 0; i < length; i += 1) {
@@ -1534,7 +1611,7 @@ function compareIndexed(actualItems, localItems) {
       actualRect: actual.rect ?? null,
       localRect: local.rect ?? null,
       heightDelta: delta(local.rect?.height, actual.rect?.height),
-      yDelta: delta(local.rect?.y, actual.rect?.y),
+      yDelta: targetYDelta(actual, local, offsets),
       widthDelta: delta(local.rect?.width, actual.rect?.width),
       actualStyle: summarizeStyle(actual.style),
       localStyle: summarizeStyle(local.style),
@@ -1542,6 +1619,23 @@ function compareIndexed(actualItems, localItems) {
     });
   }
   return out.sort((a, b) => Math.abs(b.heightDelta ?? 0) - Math.abs(a.heightDelta ?? 0));
+}
+
+function normalizedY(value, rootY = 0) {
+  return typeof value === 'number' ? Number((value - (rootY || 0)).toFixed(3)) : value;
+}
+
+function targetYDelta(actual, local, offsets = {}) {
+  if (!hasMeasurableRect(actual) || !hasMeasurableRect(local)) return null;
+  return delta(
+    normalizedY(local.rect?.y, offsets.localRootY),
+    normalizedY(actual.rect?.y, offsets.actualRootY),
+  );
+}
+
+function hasMeasurableRect(item) {
+  if (!item?.rect || item.style?.display === 'none' || item.style?.visibility === 'hidden') return false;
+  return Number(item.rect.width ?? 0) > 0 || Number(item.rect.height ?? 0) > 0;
 }
 
 function interpret({ bestCandidate, bestGeometryCandidate, closestRootHeightCandidate, sourceBest, stateBest, baselineReference, actualTargetGeometry }) {
@@ -1571,6 +1665,7 @@ function interpret({ bestCandidate, bestGeometryCandidate, closestRootHeightCand
     notes.push(`best local root height delta vs actual is ${num(bestCandidate.rootHeightDelta)}px`);
   }
   if (!actualTargetGeometry) notes.push('actual target geometry probe is missing; capture it before CSS changes');
+  else if (!hasElementLevelGeometry(actualTargetGeometry)) notes.push('actual target geometry contains root metadata only; capture element-level geometry before CSS changes');
   return notes;
 }
 
@@ -1615,7 +1710,20 @@ function summarizeGeometryFit({ actualSize, actualTargetGeometry, candidate }) {
   const actualRows = actualTargetGeometry?.rows ?? [];
   const localPanels = candidate.metrics?.targetGeometry?.statePanels ?? [];
   const actualPanels = actualTargetGeometry?.statePanels ?? [];
-  if (!candidate.metrics?.rootRect || !actualSize || ((actualRows.length === 0 || localRows.length === 0) && (actualPanels.length === 0 || localPanels.length === 0))) {
+  const offsets = {
+    actualRootY: actualTargetGeometry?.authoredRoot?.rect?.y ?? actualTargetGeometry?.root?.rect?.y ?? 0,
+    localRootY: candidate.metrics?.targetGeometry?.authoredRoot?.rect?.y ?? candidate.metrics?.targetGeometry?.root?.rect?.y ?? 0,
+  };
+  const controlFindings = CONTROL_GEOMETRY_GROUPS
+    .flatMap((group) => compareIndexed(
+      actualTargetGeometry?.[group] ?? [],
+      candidate.metrics?.targetGeometry?.[group] ?? [],
+      offsets,
+    ).map((finding) => ({ ...finding, kind: group })))
+    .filter((finding) => finding.status === 'COMPARED');
+  const hasRowEvidence = actualRows.length > 0 && localRows.length > 0;
+  const hasPanelEvidence = actualPanels.length > 0 && localPanels.length > 0;
+  if (!candidate.metrics?.rootRect || !actualSize || (!hasRowEvidence && !hasPanelEvidence && controlFindings.length === 0)) {
     return { score: null, reason: 'missing actual/local geometry' };
   }
   const row0Delta = delta(localRows[0]?.rect?.height, actualRows[0]?.rect?.height);
@@ -1625,8 +1733,22 @@ function summarizeGeometryFit({ actualSize, actualTargetGeometry, candidate }) {
   const statePanelHeightDelta = panelFindings.find((finding) => typeof finding.heightDelta === 'number')?.heightDelta ?? null;
   const statePanelComparedCount = panelFindings.filter((finding) => finding.status === 'COMPARED').length;
   const statePanelMissingCount = panelFindings.filter((finding) => finding.status === 'MISSING').length;
+  const topControls = [...controlFindings]
+    .sort((a, b) => {
+      const aScore = Math.abs(a.yDelta ?? 0) + Math.abs(a.heightDelta ?? 0) * 2 + Math.abs(a.widthDelta ?? 0);
+      const bScore = Math.abs(b.yDelta ?? 0) + Math.abs(b.heightDelta ?? 0) * 2 + Math.abs(b.widthDelta ?? 0);
+      return bScore - aScore;
+    })
+    .slice(0, 4);
   const rootHeightDelta = delta(candidate.captureTargetRect?.height, actualSize.h);
-  const scoreParts = [rootHeightDelta, row0Delta, row3Delta, statePanelYDelta, statePanelHeightDelta]
+  const scoreParts = [
+    rootHeightDelta,
+    row0Delta,
+    row3Delta,
+    statePanelYDelta,
+    statePanelHeightDelta,
+    ...topControls.flatMap((finding) => [finding.yDelta, finding.heightDelta, finding.widthDelta]),
+  ]
     .filter((value) => typeof value === 'number')
     .map((value, index) => Math.abs(value) * (index === 0 ? 1 : 2));
   return {
@@ -1638,6 +1760,14 @@ function summarizeGeometryFit({ actualSize, actualTargetGeometry, candidate }) {
     statePanelHeightDelta,
     statePanelComparedCount,
     statePanelMissingCount,
+    controlComparedCount: controlFindings.length,
+    topControls: topControls.map((finding) => ({
+      kind: finding.kind,
+      selector: finding.selector,
+      yDelta: finding.yDelta,
+      heightDelta: finding.heightDelta,
+      widthDelta: finding.widthDelta,
+    })),
     row0Height: localRows[0]?.rect?.height ?? null,
     row3Height: localRows[3]?.rect?.height ?? null,
   };
@@ -1760,7 +1890,9 @@ function summarizeStyle(style) {
 function label(actual, local) {
   const item = actual ?? local;
   const cls = item?.className ? `.${String(item.className).trim().split(/\s+/).slice(0, 3).join('.')}` : '';
-  return `${item?.tag ?? ''}${cls}`;
+  const name = item?.name ? `[name="${String(item.name).slice(0, 80)}"]` : '';
+  const type = item?.type ? `[type="${String(item.type).slice(0, 40)}"]` : '';
+  return `${item?.tag ?? ''}${cls}${name}${type}`;
 }
 
 async function imageSize(page, file) {
@@ -1833,7 +1965,7 @@ function renderMarkdown(report) {
       lines.push('');
       lines.push('### Geometry Findings');
       lines.push('');
-      lines.push(`Counts: rows ${fixture.targetGeometry.counts.rows.actual}/${fixture.targetGeometry.counts.rows.local}, tables ${fixture.targetGeometry.counts.tables.actual}/${fixture.targetGeometry.counts.tables.local}, images ${fixture.targetGeometry.counts.images.actual}/${fixture.targetGeometry.counts.images.local}, statePanels ${fixture.targetGeometry.counts.statePanels.actual}/${fixture.targetGeometry.counts.statePanels.local}`);
+      lines.push(`Counts: rows ${fixture.targetGeometry.counts.rows.actual}/${fixture.targetGeometry.counts.rows.local}, tables ${fixture.targetGeometry.counts.tables.actual}/${fixture.targetGeometry.counts.tables.local}, images ${fixture.targetGeometry.counts.images.actual}/${fixture.targetGeometry.counts.images.local}, labels ${fixture.targetGeometry.counts.labels.actual}/${fixture.targetGeometry.counts.labels.local}, inputs ${fixture.targetGeometry.counts.inputs.actual}/${fixture.targetGeometry.counts.inputs.local}, textareas ${fixture.targetGeometry.counts.textareas.actual}/${fixture.targetGeometry.counts.textareas.local}, selects ${fixture.targetGeometry.counts.selects.actual}/${fixture.targetGeometry.counts.selects.local}, rollButtons ${fixture.targetGeometry.counts.rollButtons.actual}/${fixture.targetGeometry.counts.rollButtons.local}, actionButtons ${fixture.targetGeometry.counts.actionButtons.actual}/${fixture.targetGeometry.counts.actionButtons.local}, statePanels ${fixture.targetGeometry.counts.statePanels.actual}/${fixture.targetGeometry.counts.statePanels.local}`);
       lines.push('');
       lines.push('| Kind | Index | Selector | Actual h | Local h | Delta | Actual style | Local style |');
       lines.push('| --- | ---: | --- | ---: | ---: | ---: | --- | --- |');
@@ -1848,6 +1980,16 @@ function renderMarkdown(report) {
       }
       for (const finding of (fixture.targetGeometry.statePanelFindings ?? []).slice(0, 8)) {
         lines.push(findingLine('statePanel', finding));
+      }
+      if (fixture.targetGeometry.controlFindings?.length) {
+        lines.push('');
+        lines.push('### Control Geometry Findings');
+        lines.push('');
+        lines.push('| Kind | Index | Selector | Actual h | Local h | Delta | Actual style | Local style |');
+        lines.push('| --- | ---: | --- | ---: | ---: | ---: | --- | --- |');
+        for (const finding of fixture.targetGeometry.controlFindings.slice(0, 16)) {
+          lines.push(findingLine(finding.kind, finding));
+        }
       }
     }
   }
@@ -2003,6 +2145,37 @@ async function runSelfTest() {
   assert.equal(noChange?.noChange, true);
   assert.equal(noChange?.id, 'baseline');
   assert.equal(noChange?.rootHeightDelta, 0);
+
+  assert.equal(hasElementLevelGeometry({ root: { rect: { width: 420, height: 180 } } }), false);
+  assert.equal(compareTargetGeometry(
+    { root: { rect: { y: 60 } } },
+    { root: { rect: { y: 10 } } },
+  ).status, 'ROOT_ONLY');
+  const controlActual = {
+    root: { rect: { y: 60 } },
+    authoredRoot: { rect: { y: 70 } },
+    labels: [{ tag: 'LABEL', rect: { y: 80, width: 80, height: 20 }, children: [] }],
+    inputs: [{ tag: 'INPUT', name: 'attr_name', type: 'text', rect: { y: 102, width: 120, height: 24 }, children: [] }],
+    rollButtons: [{ tag: 'BUTTON', name: 'roll_test', type: 'roll', rect: { y: 130, width: 60, height: 24 }, children: [] }],
+  };
+  const controlLocal = {
+    root: { rect: { y: 10 } },
+    authoredRoot: { rect: { y: 20 } },
+    labels: [{ tag: 'LABEL', rect: { y: 30, width: 80, height: 20 }, children: [] }],
+    inputs: [{ tag: 'INPUT', name: 'attr_name', type: 'text', rect: { y: 52, width: 120, height: 26 }, children: [] }],
+    rollButtons: [{ tag: 'BUTTON', name: 'roll_test', type: 'roll', rect: { y: 80, width: 60, height: 24 }, children: [] }],
+  };
+  const controlComparison = compareTargetGeometry(controlActual, controlLocal);
+  assert.equal(controlComparison.status, 'COMPARED');
+  assert.equal(controlComparison.counts.inputs.actual, 1);
+  assert.equal(controlComparison.inputFindings[0].yDelta, 0);
+  assert.equal(controlComparison.inputFindings[0].heightDelta, 2);
+  assert.match(controlComparison.inputFindings[0].selector, /\[name="attr_name"\]\[type="text"\]/);
+  assert.equal(targetYDelta(
+    { rect: { x: 0, y: 0, width: 0, height: 0 }, style: { display: 'none' } },
+    { rect: { x: 0, y: 0, width: 0, height: 0 }, style: { display: 'none' } },
+    { actualRootY: 70, localRootY: 20 },
+  ), null);
 }
 
 main().catch((error) => {

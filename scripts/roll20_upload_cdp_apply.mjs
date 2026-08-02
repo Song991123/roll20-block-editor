@@ -16,7 +16,7 @@ import {
   nextActionForReadiness,
   selfTestRoll20Readiness,
 } from './lib/roll20Readiness.mjs';
-import { parseParticipantCounts } from './lib/roll20ParticipantPreflight.mjs';
+import { classifyParticipantEvidence } from './lib/roll20ParticipantPreflight.mjs';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const RUN_DIR = path.resolve(readOption('--run-dir', args[0] ?? ''));
@@ -301,11 +301,35 @@ async function inspectParticipantPage(page) {
         && element.getClientRects().length > 0;
       return visible ? (element.innerText ?? element.textContent ?? '') : '';
     })(),
+    playerZone: (() => {
+      const zone = document.querySelector('#playerzone');
+      if (!zone) return { visible: false, visibleCards: null };
+      const style = getComputedStyle(zone);
+      const rect = zone.getBoundingClientRect();
+      const visible = style.display !== 'none'
+        && style.visibility !== 'hidden'
+        && rect.width > 0
+        && rect.height > 0;
+      if (!visible) return { visible: false, visibleCards: null };
+      const visibleCards = Array.from(zone.querySelectorAll('.player[id^="player_"]')).filter((element) => {
+        const cardStyle = getComputedStyle(element);
+        const cardRect = element.getBoundingClientRect();
+        return cardStyle.display !== 'none'
+          && cardStyle.visibility !== 'hidden'
+          && cardRect.width > 0
+          && cardRect.height > 0;
+      }).length;
+      return { visible: true, visibleCards };
+    })(),
   }));
+  const participant = classifyParticipantEvidence({
+    participantText: snapshot.participantText,
+    playerZoneVisible: snapshot.playerZone.visible,
+    visiblePlayerCards: snapshot.playerZone.visibleCards,
+  });
   return {
     pathname: snapshot.pathname,
-    ...parseParticipantCounts(snapshot.participantText),
-    source: '.party-page-members',
+    ...participant,
     mutationPerformed: false,
   };
 }
@@ -424,8 +448,10 @@ function runSelfTest() {
     console.error('ROLL20 UPLOAD CDP SELF_TEST FAIL reload-after-submit classification');
     process.exit(1);
   }
-  const participant = parseParticipantCounts('- generic: 1 구성원');
-  if (participant.status !== 'PASS_SOLO') {
+  const participant = classifyParticipantEvidence({ participantText: '- generic: 1 구성원', playerZoneVisible: true, visiblePlayerCards: 1 });
+  const cardFallback = classifyParticipantEvidence({ participantText: '', playerZoneVisible: true, visiblePlayerCards: 1 });
+  const conflicting = classifyParticipantEvidence({ participantText: '1 구성원', playerZoneVisible: true, visiblePlayerCards: 2 });
+  if (participant.status !== 'PASS_SOLO' || cardFallback.status !== 'PASS_SOLO' || conflicting.status !== 'BLOCKED_AMBIGUOUS') {
     console.error('ROLL20 UPLOAD CDP SELF_TEST FAIL participant guard');
     process.exit(1);
   }

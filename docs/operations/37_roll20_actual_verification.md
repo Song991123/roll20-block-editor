@@ -45,10 +45,15 @@ payload source, or measured results.
 Before any existing-room observation or test-room write:
 
 1. Read the current visible room state.
-2. Confirm the participant/member count is exactly one.
-3. Record only generic `PASS` or `STOP` in tracked status documents.
-4. Keep screenshots and room-specific evidence local and ignored.
-5. Repeat the preflight if the room reloads or participant state changes.
+2. Prefer a visible participant/member count. If the current Roll20 UI does
+   not expose that count, a visible player zone with exactly one visible player
+   card may be used as the fallback evidence.
+3. If both sources are visible, require them to agree. Missing, hidden,
+   conflicting, zero, or greater-than-one evidence means stop.
+4. Confirm the resulting participant count is exactly one.
+5. Record only generic `PASS` or `STOP` in tracked status documents.
+6. Keep screenshots and room-specific evidence local and ignored.
+7. Repeat the preflight if the room reloads or participant state changes.
 
 A room name, old chat log, owner status, or prior observation is not current
 proof of solitude.

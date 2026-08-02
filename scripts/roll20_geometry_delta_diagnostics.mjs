@@ -32,6 +32,21 @@ const sameContextFile = path.join(runDir, 'same-context-visible-smoke', 'same-co
 const fullRootFile = path.join(runDir, 'full-root-candidate-smoke', 'full-root-candidate-smoke-results.json');
 const localBaselineFile = path.join(runDir, 'local-baseline-results.json');
 const payloadRoundtripFile = path.join(runDir, 'payload-roundtrip-visual', 'payload-roundtrip-visual-results.json');
+const CONTROL_GEOMETRY_GROUPS = Object.freeze([
+  'labels',
+  'inputs',
+  'textareas',
+  'selects',
+  'rollButtons',
+  'actionButtons',
+]);
+const ELEMENT_GEOMETRY_GROUPS = Object.freeze([
+  'rows',
+  'tables',
+  'images',
+  ...CONTROL_GEOMETRY_GROUPS,
+  'statePanels',
+]);
 
 function readOption(name, fallback = '') {
   const index = args.indexOf(name);
@@ -183,6 +198,7 @@ async function analyzeSameContextFixture(fixture, localBaselineFixture, payloadR
 
 async function analyzeFullRootFixture(fixture, localBaselineFixture, payloadRoundtripFixture) {
   const actualTargetGeometry = await readActualTargetGeometry(fixture.fixtureId);
+  const elementGeometryCaptured = hasElementLevelGeometry(actualTargetGeometry);
   const localTargetGeometry = fixture.bestCandidate.metrics?.targetGeometry ?? null;
   const targetGeometry = compareTargetGeometry(actualTargetGeometry, localTargetGeometry, {
     actualRootY: actualTargetGeometry?.root?.rect?.y ?? 0,
@@ -220,7 +236,7 @@ async function analyzeFullRootFixture(fixture, localBaselineFixture, payloadRoun
 
   return {
     fixtureId: fixture.fixtureId,
-    status: actualTargetGeometry ? 'COMPARED' : 'ROOT_ONLY',
+    status: elementGeometryCaptured ? 'COMPARED' : 'ROOT_ONLY',
     evidenceSource: 'full-root-candidate-smoke',
     bestCandidate: {
       id: fixture.bestCandidate.id,
@@ -228,12 +244,9 @@ async function analyzeFullRootFixture(fixture, localBaselineFixture, payloadRoun
       nativeMismatchRatio: fixture.bestCandidate.nativeCompare?.mismatchRatio ?? null,
       computedStyleScore: fixture.bestCandidate.computedStyleScore ?? null,
     },
-    countsMatched: actualTargetGeometry && fixture.targetGeometry?.status === 'COMPARED'
-      ? Boolean(
-          fixture.targetGeometry?.counts?.rows?.actual === fixture.targetGeometry?.counts?.rows?.local &&
-          fixture.targetGeometry?.counts?.images?.actual === fixture.targetGeometry?.counts?.images?.local &&
-          fixture.targetGeometry?.counts?.tables?.actual === fixture.targetGeometry?.counts?.tables?.local
-        )
+    countsMatched: elementGeometryCaptured && targetGeometry?.status === 'COMPARED'
+      ? actualGeometryGroups(actualTargetGeometry).every((group) =>
+          targetGeometry?.counts?.[group]?.actual === targetGeometry?.counts?.[group]?.local)
       : null,
     root,
     selectorFindings,
@@ -362,6 +375,7 @@ function buildFindingsFromFullRootGeometry(targetGeometry) {
     ...(targetGeometry.rowFindings ?? []).map((finding) => normalizeFullRootFinding(finding, 'row')),
     ...(targetGeometry.tableFindings ?? []).map((finding) => normalizeFullRootFinding(finding, 'table')),
     ...(targetGeometry.imageFindings ?? []).map((finding) => normalizeFullRootFinding(finding, 'image')),
+    ...(targetGeometry.controlFindings ?? []).map((finding) => normalizeFullRootFinding(finding, finding.kind ?? 'control')),
   ]
     .filter(Boolean)
     .sort((a, b) => b.importanceScore - a.importanceScore)
@@ -428,25 +442,75 @@ function compareTargetGeometry(actual, local, offsets = {}) {
       reason: !actual ? 'missing actual target geometry probe' : 'missing local target geometry in same-context candidate',
     };
   }
+  if (!hasElementLevelGeometry(actual)) {
+    return {
+      status: 'ROOT_ONLY',
+      reason: 'actual target geometry contains root metadata but no element collections',
+    };
+  }
   const rows = compareIndexedTargets(actual.rows ?? [], local.rows ?? [], offsets);
   const tables = compareIndexedTargets(actual.tables ?? [], local.tables ?? [], offsets);
   const images = compareIndexedTargets(actual.images ?? [], local.images ?? [], offsets);
+  const labels = compareIndexedTargets(actual.labels ?? [], local.labels ?? [], offsets);
+  const inputs = compareIndexedTargets(actual.inputs ?? [], local.inputs ?? [], offsets);
+  const textareas = compareIndexedTargets(actual.textareas ?? [], local.textareas ?? [], offsets);
+  const selects = compareIndexedTargets(actual.selects ?? [], local.selects ?? [], offsets);
+  const rollButtons = compareIndexedTargets(actual.rollButtons ?? [], local.rollButtons ?? [], offsets);
+  const actionButtons = compareIndexedTargets(actual.actionButtons ?? [], local.actionButtons ?? [], offsets);
+  const statePanels = compareIndexedTargets(actual.statePanels ?? [], local.statePanels ?? [], offsets);
+  const controls = [
+    ...labels.map((finding) => ({ ...finding, kind: 'label' })),
+    ...inputs.map((finding) => ({ ...finding, kind: 'input' })),
+    ...textareas.map((finding) => ({ ...finding, kind: 'textarea' })),
+    ...selects.map((finding) => ({ ...finding, kind: 'select' })),
+    ...rollButtons.map((finding) => ({ ...finding, kind: 'rollButton' })),
+    ...actionButtons.map((finding) => ({ ...finding, kind: 'actionButton' })),
+  ];
   const topRows = rows
     .filter((row) => row.status === 'COMPARED')
     .sort((a, b) => Math.abs(b.heightDelta ?? 0) - Math.abs(a.heightDelta ?? 0))
     .slice(0, 8);
+  const topControls = controls
+    .filter((control) => control.status === 'COMPARED')
+    .sort((a, b) => {
+      const aScore = Math.abs(a.yDelta ?? 0) + Math.abs(a.heightDelta ?? 0) * 2 + Math.abs(a.widthDelta ?? 0);
+      const bScore = Math.abs(b.yDelta ?? 0) + Math.abs(b.heightDelta ?? 0) * 2 + Math.abs(b.widthDelta ?? 0);
+      return bScore - aScore;
+    })
+    .slice(0, 16);
   return {
     status: 'COMPARED',
     actualCapturedAt: actual.capturedAt ?? null,
     actualState: actual.state ?? null,
+    counts: Object.fromEntries(ELEMENT_GEOMETRY_GROUPS.map((group) => [
+      group,
+      { actual: actual[group]?.length ?? 0, local: local[group]?.length ?? 0 },
+    ])),
     rowCount: { actual: actual.rows?.length ?? 0, local: local.rows?.length ?? 0 },
     tableCount: { actual: actual.tables?.length ?? 0, local: local.tables?.length ?? 0 },
     imageCount: { actual: actual.images?.length ?? 0, local: local.images?.length ?? 0 },
     rows,
     tables,
     images,
+    labels,
+    inputs,
+    textareas,
+    selects,
+    rollButtons,
+    actionButtons,
+    statePanels,
+    controls,
     topRows,
+    topControls,
   };
+}
+
+function actualGeometryGroups(geometry) {
+  return ELEMENT_GEOMETRY_GROUPS.filter((group) => Array.isArray(geometry?.[group]));
+}
+
+function hasElementLevelGeometry(geometry) {
+  return actualGeometryGroups(geometry).some((group) => geometry[group].length > 0);
 }
 
 async function readActualTargetGeometry(fixtureId) {
@@ -476,7 +540,7 @@ function compareIndexedTargets(actualItems, localItems, offsets = {}) {
       selector: targetLabel(actual, local),
       actual: summarizeTarget(actual),
       local: summarizeTarget(local),
-      yDelta: delta(normalizedY(local.rect?.y, offsets.localRootY), normalizedY(actual.rect?.y, offsets.actualRootY)),
+      yDelta: targetYDelta(actual, local, offsets),
       widthDelta: delta(local.rect?.width, actual.rect?.width),
       heightDelta: delta(local.rect?.height, actual.rect?.height),
       childCount: { actual: actual.children?.length ?? 0, local: local.children?.length ?? 0 },
@@ -490,10 +554,25 @@ function normalizedY(value, rootY = 0) {
   return typeof value === 'number' ? Number((value - (rootY || 0)).toFixed(3)) : value;
 }
 
+function targetYDelta(actual, local, offsets = {}) {
+  if (!hasMeasurableRect(actual) || !hasMeasurableRect(local)) return null;
+  return delta(
+    normalizedY(local.rect?.y, offsets.localRootY),
+    normalizedY(actual.rect?.y, offsets.actualRootY),
+  );
+}
+
+function hasMeasurableRect(item) {
+  if (!item?.rect || item.style?.display === 'none' || item.style?.visibility === 'hidden') return false;
+  return Number(item.rect.width ?? 0) > 0 || Number(item.rect.height ?? 0) > 0;
+}
+
 function summarizeTarget(item) {
   return {
     tag: item.tag,
     className: item.className,
+    name: item.name,
+    type: item.type,
     text: item.text,
     rect: item.rect,
     scroll: item.scroll,
@@ -522,7 +601,9 @@ function summarizeTarget(item) {
 function targetLabel(actual, local) {
   const item = actual ?? local;
   const cls = item?.className ? `.${String(item.className).trim().split(/\s+/).slice(0, 3).join('.')}` : '';
-  return `${item?.tag ?? ''}${cls}`;
+  const name = item?.name ? `[name="${String(item.name).slice(0, 80)}"]` : '';
+  const type = item?.type ? `[type="${String(item.type).slice(0, 40)}"]` : '';
+  return `${item?.tag ?? ''}${cls}${name}${type}`;
 }
 
 function summarizeRoot(rootDiffs) {
@@ -634,6 +715,10 @@ function buildInterpretation({ root, topFindings, contentFindings, selectorFindi
   if (targetTop) {
     notes.push(`target row detail: row ${targetTop.index} ${targetTop.selector} height delta ${num(targetTop.heightDelta)}px`);
   }
+  const targetControl = targetGeometry?.topControls?.[0];
+  if (targetControl) {
+    notes.push(`target control detail: ${targetControl.kind} ${targetControl.selector} height delta ${num(targetControl.heightDelta)}px, y delta ${num(targetControl.yDelta)}px`);
+  }
   return notes;
 }
 
@@ -653,6 +738,8 @@ function buildNextChecks({ root, topFindings, contentFindings, selectorFindings,
   if (targetGeometry?.status === 'COMPARED') {
     const row = targetGeometry.topRows?.[0];
     if (row) checks.push(`Targeted row probe currently points at row ${row.index} (${row.selector}) with height delta ${num(row.heightDelta)}px; inspect its child comparisons before renderer CSS changes.`);
+    const control = targetGeometry.topControls?.[0];
+    if (control) checks.push(`Targeted control probe currently points at ${control.kind} (${control.selector}) with height delta ${num(control.heightDelta)}px and y delta ${num(control.yDelta)}px; classify baseline versus authored CSS before renderer changes.`);
   }
   const table = selectorFindings.find((item) => item.selector.toLowerCase() === 'table');
   const input = selectorFindings.find((item) => item.selector.toLowerCase() === 'input');
@@ -794,6 +881,16 @@ function renderMarkdown(report) {
           }
         }
       }
+      if (fixture.targetGeometry.topControls?.length) {
+        lines.push('');
+        lines.push('### Target Control Details');
+        lines.push('');
+        lines.push('| Kind | Index | Selector | Actual size | Local size | y delta | height delta | width delta |');
+        lines.push('| --- | ---: | --- | --- | --- | ---: | ---: | ---: |');
+        for (const control of fixture.targetGeometry.topControls) {
+          lines.push(`| ${control.kind} | ${control.index} | \`${control.selector}\` | ${fmtRectSize(control.actual?.rect)} | ${fmtRectSize(control.local?.rect)} | ${num(control.yDelta)} | ${num(control.heightDelta)} | ${num(control.widthDelta)} |`);
+        }
+      }
     }
     if (fixture.unresolvedGeometryGaps?.length) {
       lines.push('');
@@ -813,7 +910,7 @@ function renderMarkdown(report) {
   lines.push('- Matching selector counts here do not prove visual parity.');
   lines.push('- Geometry deltas here are root-cause clues only.');
   if (report.summary.rootOnly > 0) {
-    lines.push('- `ROOT_ONLY` means the authored-root dimensions were compared without an actual element-level geometry sidecar; selector and row geometry remain unknown.');
+    lines.push('- `ROOT_ONLY` means the authored-root dimensions were compared without usable actual element-level geometry; selector, control, and row geometry remain unknown.');
   }
   if (hasFullHeightEvidence) {
     lines.push('- The stitched full-height Roll20 root evidence narrows this fixture to geometry work, but it still does not prove full-sheet visual parity.');
@@ -927,6 +1024,11 @@ function fmtSize(size) {
     : '';
 }
 
+function fmtRectSize(rect) {
+  if (!rect || typeof rect.width !== 'number' || typeof rect.height !== 'number') return '';
+  return `${num(rect.width)}x${num(rect.height)}`;
+}
+
 async function runSelfTest() {
   const fixture = await analyzeFullRootFixture({
     fixtureId: '__geometry-diagnostics-self-test-no-sidecar__',
@@ -952,6 +1054,25 @@ async function runSelfTest() {
   assert.equal(fixture.root.widthDelta, 0);
   assert.equal(fixture.root.heightDelta, 0);
   assert.equal(fixture.targetGeometry.status, 'SKIP');
+
+  assert.equal(hasElementLevelGeometry({ root: { rect: { width: 420, height: 180 } }, rows: [], tables: [], images: [] }), false);
+  assert.equal(hasElementLevelGeometry({ labels: [{ tag: 'LABEL' }] }), true);
+  const controls = compareTargetGeometry({
+    root: { rect: { y: 60 } },
+    authoredRoot: { rect: { y: 70 } },
+    labels: [{ tag: 'LABEL', rect: { y: 80, width: 80, height: 20 }, children: [] }],
+    inputs: [{ tag: 'INPUT', name: 'attr_name', type: 'text', rect: { y: 102, width: 120, height: 24 }, children: [] }],
+  }, {
+    root: { rect: { y: 10 } },
+    authoredRoot: { rect: { y: 20 } },
+    labels: [{ tag: 'LABEL', rect: { y: 30, width: 80, height: 20 }, children: [] }],
+    inputs: [{ tag: 'INPUT', name: 'attr_name', type: 'text', rect: { y: 52, width: 120, height: 26 }, children: [] }],
+  }, { actualRootY: 70, localRootY: 20 });
+  assert.equal(controls.status, 'COMPARED');
+  assert.equal(controls.topControls.length, 2);
+  assert.equal(controls.inputs[0].yDelta, 0);
+  assert.equal(controls.inputs[0].heightDelta, 2);
+  assert.match(controls.inputs[0].selector, /\[name="attr_name"\]\[type="text"\]/);
 }
 
 async function readJsonRequired(file) {

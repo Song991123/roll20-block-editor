@@ -363,6 +363,23 @@ function summarizeSheetElement(sheetEl) {
       children: depth >= 2 ? [] : Array.from(el.children).slice(0, 30).map((child) => target(child, depth + 1)),
     };
   }
+  const authoredRoot = Array.from(sheetEl.children).find((child) => {
+    if (['SCRIPT', 'ROLLTEMPLATE'].includes(child.tagName)) return false;
+    const cs = getComputedStyle(child);
+    const childRect = child.getBoundingClientRect();
+    return cs.display !== 'none' && cs.visibility !== 'hidden' && childRect.width > 0 && childRect.height > 0;
+  }) ?? null;
+  const statePanels = Array.from(sheetEl.querySelectorAll('[class*="sheet-"]'))
+    .filter((node) => node instanceof HTMLElement)
+    .filter((node) => {
+      const className = typeof node.className === 'string' ? node.className : String(node.className || '');
+      if (!/\bsheet-[A-Za-z0-9_-]+/.test(className)) return false;
+      if (['INPUT', 'BUTTON', 'SELECT', 'TEXTAREA', 'TABLE', 'IMG'].includes(node.tagName)) return false;
+      const nodeRect = node.getBoundingClientRect();
+      if (nodeRect.width <= 0 || nodeRect.height <= 0) return false;
+      return (node.textContent || '').trim().length > 0 || node.children.length > 0;
+    })
+    .slice(0, 600);
   return {
     rect: {
       width: Math.round(rect.width),
@@ -384,12 +401,18 @@ function summarizeSheetElement(sheetEl) {
       return cs.display !== 'none' && cs.visibility !== 'hidden' && r.width > 0 && r.height > 0;
     }).length,
     targetGeometry: {
+      root: target(sheetEl, 2),
+      authoredRoot: authoredRoot ? target(authoredRoot, 2) : null,
       rows: Array.from(sheetEl.querySelectorAll('.sheet-2colrow')).map((row, index) => ({ index, ...target(row) })),
       tables: Array.from(sheetEl.querySelectorAll('table')).slice(0, 12).map((table, index) => ({ index, ...target(table) })),
       images: Array.from(sheetEl.querySelectorAll('img')).map((image, index) => ({ index, ...target(image) })),
-      inputs: Array.from(sheetEl.querySelectorAll('input')).slice(0, 20).map((input, index) => ({ index, ...target(input) })),
-      rollButtons: Array.from(sheetEl.querySelectorAll('button[type="roll"], button.roll')).slice(0, 20).map((button, index) => ({ index, ...target(button) })),
-      actionButtons: Array.from(sheetEl.querySelectorAll('button[type="action"]')).slice(0, 20).map((button, index) => ({ index, ...target(button) })),
+      labels: Array.from(sheetEl.querySelectorAll('label')).slice(0, 80).map((label, index) => ({ index, ...target(label) })),
+      inputs: Array.from(sheetEl.querySelectorAll('input')).slice(0, 120).map((input, index) => ({ index, ...target(input) })),
+      textareas: Array.from(sheetEl.querySelectorAll('textarea')).slice(0, 80).map((textarea, index) => ({ index, ...target(textarea) })),
+      selects: Array.from(sheetEl.querySelectorAll('select')).slice(0, 80).map((select, index) => ({ index, ...target(select) })),
+      rollButtons: Array.from(sheetEl.querySelectorAll('button[type="roll"], button.roll')).slice(0, 80).map((button, index) => ({ index, ...target(button) })),
+      actionButtons: Array.from(sheetEl.querySelectorAll('button[type="action"]')).slice(0, 80).map((button, index) => ({ index, ...target(button) })),
+      statePanels: statePanels.map((panel, index) => ({ index, ...target(panel) })),
     },
   };
 }
