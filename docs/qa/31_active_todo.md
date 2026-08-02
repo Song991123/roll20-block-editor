@@ -20,6 +20,9 @@
   structures also passed with the new skip-aware gate.
 - `VERIFIED REGRESSION`: full `ci:verify`, lint, production build, evidence/UI-
   copy guards, and post-smoke server hygiene pass.
+- `VERIFIED REMOTE`: commit `3612ad6` is pushed to `claude/design-reset`.
+  GitHub CI run `30753185109` passed safety/unit verification, lint, and build
+  in `1m24s`.
 - `OPEN SCOPE`: this proves one anonymous frame-to-frame flow move. Table,
   list, conditional, arbitrary real imported sheets, and actual Roll20 remain
   separate evidence gaps.

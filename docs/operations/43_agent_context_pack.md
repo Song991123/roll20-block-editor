@@ -100,7 +100,8 @@ the entire history and generated evidence tree.
   Preview parent, and post-re-import frame membership agree. Strict sheet
   visual mismatch is `0.3%` under the `2%` local gate with clean resources and
   console/page errors `0/0`. Table/list/conditional and actual Roll20 coverage
-  remain open.
+  remain open. Commit `3612ad6` is pushed to `claude/design-reset`; GitHub CI
+  run `30753185109` passed.
 - Actual Roll20's built-in default chat-template DOM and typography were
   measured in the dedicated one-member modern Sandbox. The local fallback now
   matches its caption/row/inline-roll structure and passes browser smoke.

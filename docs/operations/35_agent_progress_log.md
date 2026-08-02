@@ -12025,5 +12025,7 @@ same-hash modern/legacy comparison.
   fixture families also passed with the new skip-aware result.
 - Full `ci:verify`, lint, production build, evidence/UI-copy guards, and post-
   smoke server hygiene pass.
+- Pushed commit `3612ad6` to `claude/design-reset`; GitHub CI run
+  `30753185109` passed safety/unit verification, lint, and build in `1m24s`.
 - Actual Roll20 and broader table/list/conditional imported nesting remain
   open; no external parity claim changed.
