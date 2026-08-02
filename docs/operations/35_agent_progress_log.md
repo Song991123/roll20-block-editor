@@ -15,6 +15,26 @@ or source-derived measurement here.
 - Remote CI: passed safety/unit verification, lint, and production build.
 - Worktree and project server state were clean after the run.
 
+## 2026-08-03 - Conditional-State Render Contract Coverage
+
+- Added a third anonymous visual fixture combining checked and selected form
+  defaults, conditional visibility, list and repeating structure, translation,
+  inert ordinary Page JS, custom properties, and nested conditional CSS.
+- Fixture manifests can now describe expected control state, structure,
+  translation visibility, and script removal. Preview/Edit and Sandbox smokes
+  share one expectation checker instead of maintaining separate rules.
+- Modern and legacy Preview/Edit runs are pixel-exact for all three current
+  anonymous fixtures. The Sandbox preparation run also passes its separate
+  allow-list expectation, including removal of unsupported semantic wrappers.
+- Verified with both synthetic browser smokes, `ci:verify`, `lint`, production
+  `build`, and the Roll20 evidence guard.
+- External browser verification stopped before interaction because the listed
+  tab identity did not match the current visible page. No external Roll20
+  evidence was claimed or recorded from that run.
+- Claim boundary: this expands local synthetic render coverage only. A fresh
+  supported modern Sandbox upload and broader dedicated legacy evidence remain
+  external acceptance work.
+
 ## 2026-08-03 - Equal-Gap Multi-Selection Distribution
 
 - Added horizontal and vertical gap controls for three or more absolute visual

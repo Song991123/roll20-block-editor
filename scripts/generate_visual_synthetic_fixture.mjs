@@ -8,6 +8,7 @@
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { fixtureExpectationFailures } from './lib/fixtureExpectations.mjs';
 
 const args = process.argv.slice(2);
 const outIndex = args.indexOf('--out-dir');
@@ -92,6 +93,77 @@ const files = {
     legacyMode: 'modern',
     purpose: 'generic layout/control regression',
   }),
+  'fixture-C/source.html': [
+    '<div class="advanced-proof" style="width:680px;min-height:300px;padding:16px">',
+    '  <input class="advanced-toggle" type="checkbox" name="attr_show_details" value="1" checked>',
+    '  <label class="advanced-toggle-label" data-i18n="show_details"></label>',
+    '  <section class="advanced-panel">',
+    '    <div class="advanced-summary">',
+    '      <h3 data-i18n="summary"></h3>',
+    '      <ul class="advanced-list"><li data-i18n="first"></li><li data-i18n="second"></li></ul>',
+    '    </div>',
+    '    <fieldset class="repeating_items">',
+    '      <div class="advanced-item-row">',
+    '        <label data-i18n="item"></label>',
+    '        <input type="text" name="attr_item_name" value="">',
+    '        <select name="attr_item_rank"><option value="one">One</option><option value="two" selected>Two</option></select>',
+    '      </div>',
+    '    </fieldset>',
+    '  </section>',
+    '  <section class="advanced-closed" data-i18n="closed"></section>',
+    '  <script>window.__syntheticPageScriptRan = true;</script>',
+    '</div>',
+  ].join('\n'),
+  'fixture-C/source.css': [
+    '.advanced-proof { --accent: #b94c78; container: synthetic-sheet / inline-size; background: #fffafc; border: 2px solid var(--accent); box-sizing: border-box; color: #3b2730; }',
+    '.advanced-toggle { position: absolute; opacity: 0; pointer-events: none; }',
+    '.advanced-toggle-label { display: inline-block; margin-bottom: 12px; color: var(--accent); font-weight: 700; }',
+    '.advanced-toggle:not(:checked) ~ .advanced-panel { display: none; }',
+    '.advanced-toggle:checked ~ .advanced-closed { display: none; }',
+    '.advanced-list { margin: 0; padding-left: 20px; }',
+    '.advanced-item-row { display: flex; align-items: center; gap: 8px; }',
+    '@layer synthetic-components {',
+    '  @supports (display: grid) {',
+    '    .advanced-panel { display: grid; grid-template-columns: 1fr; gap: 14px; }',
+    '  }',
+    '}',
+    '@container synthetic-sheet (min-width: 600px) {',
+    '  .advanced-panel { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }',
+    '}',
+  ].join('\n'),
+  'fixture-C/source.i18n': JSON.stringify({
+    show_details: 'Show details',
+    summary: 'Summary',
+    first: 'First item',
+    second: 'Second item',
+    item: 'Repeating item',
+    closed: 'Closed',
+  }),
+  'fixture-C/manifest.json': JSON.stringify({
+    id: 'fixture-C',
+    synthetic: true,
+    legacyMode: 'modern',
+    purpose: 'conditional state and nested CSS regression',
+    expected: {
+      normal: {
+        checkedControlNames: ['attr_show_details'],
+        selectedControlValues: { attr_item_rank: 'two' },
+        minimumTagCounts: { section: 2, fieldset: 1, ul: 1, li: 2 },
+        visibleI18nKeys: ['show_details', 'summary', 'first', 'second', 'item'],
+        hiddenI18nKeys: ['closed'],
+        ordinaryScriptCount: 0,
+      },
+      sandbox: {
+        checkedControlNames: ['attr_show_details'],
+        selectedControlValues: { attr_item_rank: 'two' },
+        minimumTagCounts: { fieldset: 1, ul: 1, li: 2 },
+        maximumTagCounts: { section: 0 },
+        visibleI18nKeys: ['show_details', 'summary', 'first', 'second', 'item'],
+        absentI18nKeys: ['closed'],
+        ordinaryScriptCount: 0,
+      },
+    },
+  }),
 };
 
 async function main() {
@@ -141,6 +213,56 @@ async function main() {
     if (JSON.parse(files['fixture-B/source.i18n']).ready !== 'Ready') {
       throw new Error('layout fixture translation marker missing');
     }
+    if (!files['fixture-C/source.html'].includes('checked')) {
+      throw new Error('conditional fixture default state missing');
+    }
+    if (!files['fixture-C/source.html'].includes('repeating_items')) {
+      throw new Error('conditional fixture repeating section missing');
+    }
+    if (!files['fixture-C/source.html'].includes('<script>')) {
+      throw new Error('conditional fixture page script missing');
+    }
+    if (!files['fixture-C/source.css'].includes('@layer synthetic-components')) {
+      throw new Error('conditional fixture layer at-rule missing');
+    }
+    if (!files['fixture-C/source.css'].includes('@supports (display: grid)')) {
+      throw new Error('conditional fixture supports at-rule missing');
+    }
+    if (!files['fixture-C/source.css'].includes('@container synthetic-sheet')) {
+      throw new Error('conditional fixture container at-rule missing');
+    }
+    if (JSON.parse(files['fixture-C/source.i18n']).closed !== 'Closed') {
+      throw new Error('conditional fixture translation marker missing');
+    }
+    const conditionalManifest = JSON.parse(files['fixture-C/manifest.json']);
+    if (conditionalManifest.expected.normal.selectedControlValues.attr_item_rank !== 'two') {
+      throw new Error('conditional fixture selected value expectation missing');
+    }
+    if (!conditionalManifest.expected.normal.hiddenI18nKeys.includes('closed')) {
+      throw new Error('conditional fixture hidden translation expectation missing');
+    }
+    if (!conditionalManifest.expected.sandbox.absentI18nKeys.includes('closed')) {
+      throw new Error('conditional fixture Sandbox tag-strip expectation missing');
+    }
+    const expectationFailures = fixtureExpectationFailures(
+      {
+        checkedControlNames: ['attr_show_details'],
+        selectedControlValues: { attr_item_rank: 'two' },
+        tagCounts: { section: 2, fieldset: 1, ul: 1, li: 2 },
+        ordinaryScriptCount: 0,
+      },
+      conditionalManifest.expected.normal,
+      {
+        visibleKeys: ['show_details', 'summary', 'first', 'second', 'item'],
+        hiddenKeys: ['closed'],
+      },
+    );
+    if (expectationFailures.length > 0) {
+      throw new Error(`fixture expectation helper rejected valid state: ${expectationFailures.join(', ')}`);
+    }
+    if (fixtureExpectationFailures({}, conditionalManifest.expected.normal).length === 0) {
+      throw new Error('fixture expectation helper accepted invalid state');
+    }
     console.log('VISUAL SYNTHETIC FIXTURE SELF-TEST PASS');
     return;
   }
@@ -152,7 +274,7 @@ async function main() {
   }
   await writeFile(
     path.join(outDir, 'synthetic-meta.json'),
-    `${JSON.stringify({ synthetic: true, fixtureIds: ['fixture-A', 'fixture-B'], files: Object.keys(files) }, null, 2)}\n`,
+    `${JSON.stringify({ synthetic: true, fixtureIds: ['fixture-A', 'fixture-B', 'fixture-C'], files: Object.keys(files) }, null, 2)}\n`,
     'utf8',
   );
   console.log(`VISUAL SYNTHETIC FIXTURE GENERATED ${outDir}`);

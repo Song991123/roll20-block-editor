@@ -16,6 +16,7 @@ import http from 'node:http';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
+import { fixtureExpectationFailures } from './lib/fixtureExpectations.mjs';
 
 const args = process.argv.slice(2);
 function argOf(name, fallback) {
@@ -76,6 +77,12 @@ async function readMaybe(file) {
   }
 }
 
+async function readJsonMaybe(file) {
+  const source = await readMaybe(file);
+  if (!source.trim()) return null;
+  return JSON.parse(source);
+}
+
 async function loadFixture(id) {
   const dir = path.join(FIXTURES_DIR, id);
   const html = await readMaybe(path.join(dir, 'source.html'));
@@ -85,6 +92,7 @@ async function loadFixture(id) {
     html,
     css: await readMaybe(path.join(dir, 'source.css')),
     i18n: await readMaybe(path.join(dir, 'source.i18n')),
+    expected: (await readJsonMaybe(path.join(dir, 'manifest.json')))?.expected ?? null,
   };
 }
 
@@ -100,6 +108,7 @@ async function loadFixtures() {
       html,
       css: await readMaybe(process.env.R20_SANDBOX_SMOKE_CSS_PATH),
       i18n: await readMaybe(process.env.R20_SANDBOX_SMOKE_I18N_PATH),
+      expected: null,
     }];
   }
   if (FIXTURE_ID) return [await loadFixture(FIXTURE_ID)];
@@ -170,6 +179,24 @@ async function summarizePreview(page) {
         const root = document.querySelector('.charactersheet.charsheet');
         const css = document.querySelector('#r20-user')?.textContent ?? '';
         const rootHtml = root?.innerHTML ?? '';
+        const elements = Array.from(root?.querySelectorAll('*') ?? []);
+        const isVisible = (el) => {
+          const style = getComputedStyle(el);
+          const rect = el.getBoundingClientRect();
+          return style.display !== 'none'
+            && style.visibility !== 'hidden'
+            && rect.width > 0
+            && rect.height > 0;
+        };
+        const tagCounts = {};
+        elements.forEach((el) => {
+          const tag = el.tagName.toLowerCase();
+          tagCounts[tag] = (tagCounts[tag] ?? 0) + 1;
+        });
+        const selectedControlValues = {};
+        elements.filter((el) => el.tagName.toLowerCase() === 'select' && el.getAttribute('name'))
+          .forEach((el) => { selectedControlValues[el.getAttribute('name')] = el.value; });
+        const i18nElements = elements.filter((el) => el.hasAttribute('data-i18n'));
         return {
           sandboxMode: document.body.getAttribute('data-roll20-sandbox-sanitize') ?? '',
           rootInnerBytes: new TextEncoder().encode(rootHtml).length,
@@ -177,15 +204,18 @@ async function summarizePreview(page) {
           colgroupCount: root?.querySelectorAll('colgroup, col').length ?? 0,
           rolltemplateCount: root?.querySelectorAll('rolltemplate').length ?? 0,
           sourceWorkerScriptCount: root?.querySelectorAll('script[type="text/worker"]').length ?? 0,
+          ordinaryScriptCount: root?.querySelectorAll('script:not([type="text/worker"])').length ?? 0,
+          checkedControlNames: elements
+            .filter((el) => el.tagName.toLowerCase() === 'input' && el.checked && el.getAttribute('name'))
+            .map((el) => el.getAttribute('name'))
+            .sort(),
+          selectedControlValues,
+          tagCounts,
+          visibleText: root?.innerText ?? '',
+          visibleI18nKeys: i18nElements.filter(isVisible).map((el) => el.getAttribute('data-i18n')).sort(),
+          hiddenI18nKeys: i18nElements.filter((el) => !isVisible(el)).map((el) => el.getAttribute('data-i18n')).sort(),
           visibleRuntimeNodeCount: Array.from(root?.querySelectorAll('script, rolltemplate') ?? [])
-            .filter((el) => {
-              const style = getComputedStyle(el);
-              const rect = el.getBoundingClientRect();
-              return style.display !== 'none'
-                && style.visibility !== 'hidden'
-                && rect.width > 0
-                && rect.height > 0;
-            }).length,
+            .filter(isVisible).length,
           unprefixedClassSample: Array.from(root?.querySelectorAll('[class]') ?? [])
             .flatMap((el) => Array.from(el.classList))
             .filter((token) =>
@@ -227,6 +257,18 @@ async function validateFixture(page, fixture) {
   });
   await page.waitForTimeout(800);
   checks.sandboxPreview = await summarizePreview(page);
+  failures.push(...fixtureExpectationFailures(
+    checks.normalPreview,
+    fixture.expected?.normal ?? fixture.expected,
+    checks.normalPreview,
+    'normal preview',
+  ));
+  failures.push(...fixtureExpectationFailures(
+    checks.sandboxPreview,
+    fixture.expected?.sandbox ?? fixture.expected,
+    checks.sandboxPreview,
+    'sandbox preview',
+  ));
 
   const safeId = fixture.id.replace(/[^a-zA-Z0-9_.-]/g, '_');
   await page.screenshot({

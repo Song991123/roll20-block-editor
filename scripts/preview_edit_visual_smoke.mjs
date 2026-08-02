@@ -24,6 +24,7 @@ import http from 'node:http';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
+import { fixtureExpectationFailures } from './lib/fixtureExpectations.mjs';
 
 const args = process.argv.slice(2);
 function argOf(name, fallback) {
@@ -88,6 +89,12 @@ async function readMaybe(file) {
   }
 }
 
+async function readJsonMaybe(file) {
+  const source = await readMaybe(file);
+  if (!source.trim()) return null;
+  return JSON.parse(source);
+}
+
 async function listFixtures() {
   const localHtmlPath = process.env.R20_VISUAL_SMOKE_HTML_PATH;
   if (localHtmlPath) {
@@ -101,6 +108,7 @@ async function listFixtures() {
       html,
       css: await readMaybe(process.env.R20_VISUAL_SMOKE_CSS_PATH),
       i18n: await readMaybe(process.env.R20_VISUAL_SMOKE_I18N_PATH),
+      expected: null,
     }];
   }
   const entries = await fs.readdir(FIXTURES_DIR, { withFileTypes: true });
@@ -116,6 +124,7 @@ async function listFixtures() {
       html,
       css: await readMaybe(path.join(dir, 'source.css')),
       i18n: await readMaybe(path.join(dir, 'source.i18n')),
+      expected: (await readJsonMaybe(path.join(dir, 'manifest.json')))?.expected ?? null,
     });
   }
   return out.sort((a, b) => a.id.localeCompare(b.id));
@@ -495,6 +504,9 @@ function summarizeSheetSignature(sheetEl) {
   const controlNames = {};
   const blockIds = [];
   const sequence = [];
+  const checkedControlNames = [];
+  const selectedControlValues = {};
+  let ordinaryScriptCount = 0;
   let visibleRuntimeNodeCount = 0;
   for (const el of nodes) {
     const tag = el.tagName.toLowerCase();
@@ -504,6 +516,11 @@ function summarizeSheetSignature(sheetEl) {
     if (name && ['input', 'button', 'select', 'textarea'].includes(tag)) {
       const key = `${tag}:${type ?? ''}:${name}`;
       controlNames[key] = (controlNames[key] ?? 0) + 1;
+    }
+    if (tag === 'input' && name && el.checked) checkedControlNames.push(name);
+    if (tag === 'select' && name) selectedControlValues[name] = el.value;
+    if (tag === 'script' && String(el.getAttribute('type') ?? '').toLowerCase() !== 'text/worker') {
+      ordinaryScriptCount += 1;
     }
     const blockId = el.getAttribute('data-r20-block-id');
     if (blockId) blockIds.push(blockId);
@@ -527,6 +544,10 @@ function summarizeSheetSignature(sheetEl) {
     uniqueBlockIdCount: new Set(blockIds).size,
     tagCounts,
     controlNames,
+    checkedControlNames: checkedControlNames.sort(),
+    selectedControlValues,
+    ordinaryScriptCount,
+    visibleText: sheetEl.innerText,
     sequenceHash: localHashString(sequence.join('\n')),
     visibleRuntimeNodeCount,
   };
@@ -591,6 +612,8 @@ function summarizeTranslationState(sheetEl, rawI18n) {
   let visibleApplicableCount = 0;
   let visibleMatchedCount = 0;
   let unknownKeyCount = 0;
+  const visibleKeys = [];
+  const hiddenKeys = [];
   const specs = [
     ['data-i18n', 'textContent'],
     ['data-i18n-title', 'title'],
@@ -610,7 +633,12 @@ function summarizeTranslationState(sheetEl, rawI18n) {
       const cs = getComputedStyle(el);
       const rect = el.getBoundingClientRect();
       const visible = cs.display !== 'none' && cs.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
-      if (visible) visibleApplicableCount += 1;
+      if (visible) {
+        visibleApplicableCount += 1;
+        visibleKeys.push(key);
+      } else {
+        hiddenKeys.push(key);
+      }
       const actual = target === 'textContent'
         ? String(el.textContent || '')
         : String(el.getAttribute(target) || '');
@@ -636,6 +664,8 @@ function summarizeTranslationState(sheetEl, rawI18n) {
     visibleApplicableCount,
     visibleMatchedCount,
     visibleMismatchCount,
+    visibleKeys: Array.from(new Set(visibleKeys)).sort(),
+    hiddenKeys: Array.from(new Set(hiddenKeys)).sort(),
     unknownKeyCount,
     parseError,
     mismatches,
@@ -1062,6 +1092,25 @@ async function main() {
       entry.editOverlay = entry.editCapture.overlay;
       entry.editSignature = entry.editCapture.signature;
       entry.domSignatureParity = compareSheetSignatures(entry.previewSignature, entry.editSignature);
+      const expectedNormal = fixture.expected?.normal ?? fixture.expected;
+      const previewExpectationFailures = fixtureExpectationFailures(
+        entry.previewSignature,
+        expectedNormal,
+        entry.previewTranslations,
+      );
+      const editExpectationFailures = fixtureExpectationFailures(
+        entry.editSignature,
+        expectedNormal,
+        entry.editTranslations,
+      );
+      entry.previewExpectation = {
+        pass: previewExpectationFailures.length === 0,
+        failures: previewExpectationFailures,
+      };
+      entry.editExpectation = {
+        pass: editExpectationFailures.length === 0,
+        failures: editExpectationFailures,
+      };
       entry.computedStyleParity = compareRenderStyles(entry.previewStyles, entry.editStyles);
       entry.geometryParity = compareRenderGeometry(entry.previewStyles, entry.editStyles);
       entry.editAppOcclusion = entry.editCapture.appOcclusion;
@@ -1085,6 +1134,8 @@ async function main() {
         entry.previewStability?.status === 'stable' &&
         entry.editStability?.status === 'stable' &&
         entry.domSignatureParity.pass &&
+        entry.previewExpectation.pass &&
+        entry.editExpectation.pass &&
         entry.computedStyleParity.pass &&
         entry.geometryParity.pass &&
         entry.pixelParity.pass &&
