@@ -313,9 +313,12 @@ already-selected insertion position.
   keeps keyboard editing available because the iframe DOM is still current;
   an unapplied HTML tree pauses keyboard movement until its apply ACK arrives.
 - Current browser proof covers two grouped three-layer keyboard moves followed
-  by two undos and two redos. Flow reparenting, direct resize, and inspector
-  history need equivalent browser roundtrips before broad history coverage is
-  complete.
+  by two undos and two redos, plus one-step roundtrips for flow reparenting,
+  direct image resize, and a coordinated section theme. Multi-target section,
+  control, result-card, Roll-button, layout, and composition presets use one
+  outer event group so one visible command remains one history action.
+- Longer mixed-operation runs on dense imported structures and actual Roll20
+  interaction remain outside this local synthetic proof.
 
 ## Verification Boundary
 
@@ -325,7 +328,8 @@ synchronization, multi-object free transform, keyboard nudging, six-way
 alignment math, and horizontal/vertical equal-gap distribution. The browser
 smoke also proves Ctrl selection -> iframe multi-highlight -> layer-panel third
 selection -> shared free movement -> iframe and layer-panel keyboard nudges ->
-two-step undo/redo -> Preview/Edit position equality -> same-parent vertical
+two-step undo/redo -> flow reparent undo/redo -> direct resize undo/redo ->
+coordinated theme undo/redo -> Preview/Edit equality -> same-parent vertical
 distribution -> top alignment -> persisted managed CSS. Distribution keeps the outer rendered
 bounds, while alignment and nudging keep position out of inline HTML. Grouping
 keeps the model parent, iframe parent, and emitted HTML aligned.

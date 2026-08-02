@@ -241,15 +241,17 @@ export default function EditInspector() {
     );
     let htmlChanged = false;
     let cssChanged = false;
-    for (const target of targets) {
-      const result = commitManagedDesignStyle(adapter, {
-        workspace: 'html',
-        blockId: target.blockId,
-        declarations: theme.parts[target.part],
-      });
-      htmlChanged = htmlChanged || result.htmlChanged;
-      cssChanged = cssChanged || result.cssChanged || result.cssBlockCreated;
-    }
+    adapter.runInEventGroup(() => {
+      for (const target of targets) {
+        const result = commitManagedDesignStyle(adapter, {
+          workspace: 'html',
+          blockId: target.blockId,
+          declarations: theme.parts[target.part],
+        });
+        htmlChanged = htmlChanged || result.htmlChanged;
+        cssChanged = cssChanged || result.cssChanged || result.cssBlockCreated;
+      }
+    });
     if (!htmlChanged && !cssChanged) return;
     const store = useWorkspaceStore.getState();
     if (htmlChanged) store.bumpStructure('html', adapter.countBlocks('html'));
@@ -275,15 +277,17 @@ export default function EditInspector() {
     );
     let htmlChanged = false;
     let cssChanged = false;
-    for (const target of targets) {
-      const result = commitManagedDesignStyle(adapter, {
-        workspace: 'html',
-        blockId: target.blockId,
-        declarations: theme.parts[target.part],
-      });
-      htmlChanged = htmlChanged || result.htmlChanged;
-      cssChanged = cssChanged || result.cssChanged || result.cssBlockCreated;
-    }
+    adapter.runInEventGroup(() => {
+      for (const target of targets) {
+        const result = commitManagedDesignStyle(adapter, {
+          workspace: 'html',
+          blockId: target.blockId,
+          declarations: theme.parts[target.part],
+        });
+        htmlChanged = htmlChanged || result.htmlChanged;
+        cssChanged = cssChanged || result.cssChanged || result.cssBlockCreated;
+      }
+    });
     if (!htmlChanged && !cssChanged) return;
     const store = useWorkspaceStore.getState();
     if (htmlChanged) store.bumpStructure('html', adapter.countBlocks('html'));
@@ -314,16 +318,18 @@ export default function EditInspector() {
     const theme = getControlGroupTheme(themeId);
     let htmlChanged = false;
     let cssChanged = false;
-    for (const target of targets) {
-      if (!canManageDesignStyle(adapter, 'html', target.blockId)) continue;
-      const result = commitManagedDesignStyle(adapter, {
-        workspace: 'html',
-        blockId: target.blockId,
-        declarations: theme.parts[target.part],
-      });
-      htmlChanged = htmlChanged || result.htmlChanged;
-      cssChanged = cssChanged || result.cssChanged || result.cssBlockCreated;
-    }
+    adapter.runInEventGroup(() => {
+      for (const target of targets) {
+        if (!canManageDesignStyle(adapter, 'html', target.blockId)) continue;
+        const result = commitManagedDesignStyle(adapter, {
+          workspace: 'html',
+          blockId: target.blockId,
+          declarations: theme.parts[target.part],
+        });
+        htmlChanged = htmlChanged || result.htmlChanged;
+        cssChanged = cssChanged || result.cssChanged || result.cssBlockCreated;
+      }
+    });
     if (!htmlChanged && !cssChanged) return;
     const store = useWorkspaceStore.getState();
     if (htmlChanged) store.bumpStructure('html', adapter.countBlocks('html'));
@@ -342,26 +348,28 @@ export default function EditInspector() {
     const theme = getRollButtonTheme(themeId);
     let htmlChanged = false;
     let cssChanged = false;
-    for (const state of MANAGED_DESIGN_STATES) {
-      const result = commitManagedDesignStyle(adapter, {
-        workspace: 'html',
-        blockId: selectedId,
-        declarations: theme.states[state],
-        state,
-      });
-      htmlChanged = htmlChanged || result.htmlChanged;
-      cssChanged = cssChanged || result.cssChanged || result.cssBlockCreated;
-    }
-    if (hasDirectRollButtonIcon(selected.type)) {
-      const iconResult = commitManagedDesignStyle(adapter, {
-        workspace: 'html',
-        blockId: selectedId,
-        declarations: theme.before,
-        part: 'before',
-      });
-      htmlChanged = htmlChanged || iconResult.htmlChanged;
-      cssChanged = cssChanged || iconResult.cssChanged || iconResult.cssBlockCreated;
-    }
+    adapter.runInEventGroup(() => {
+      for (const state of MANAGED_DESIGN_STATES) {
+        const result = commitManagedDesignStyle(adapter, {
+          workspace: 'html',
+          blockId: selectedId,
+          declarations: theme.states[state],
+          state,
+        });
+        htmlChanged = htmlChanged || result.htmlChanged;
+        cssChanged = cssChanged || result.cssChanged || result.cssBlockCreated;
+      }
+      if (hasDirectRollButtonIcon(selected.type)) {
+        const iconResult = commitManagedDesignStyle(adapter, {
+          workspace: 'html',
+          blockId: selectedId,
+          declarations: theme.before,
+          part: 'before',
+        });
+        htmlChanged = htmlChanged || iconResult.htmlChanged;
+        cssChanged = cssChanged || iconResult.cssChanged || iconResult.cssBlockCreated;
+      }
+    });
     if (!htmlChanged && !cssChanged) return;
     const store = useWorkspaceStore.getState();
     if (htmlChanged) store.bumpStructure('html', adapter.countBlocks('html'));
@@ -387,16 +395,18 @@ export default function EditInspector() {
     );
     let htmlChanged = false;
     let cssChanged = false;
-    for (const target of targets) {
-      if (!canManageDesignStyle(adapter, 'html', target.blockId)) continue;
-      const result = commitManagedDesignStyle(adapter, {
-        workspace: 'html',
-        blockId: target.blockId,
-        declarations: layout.parts[target.part],
-      });
-      htmlChanged = htmlChanged || result.htmlChanged;
-      cssChanged = cssChanged || result.cssChanged || result.cssBlockCreated;
-    }
+    adapter.runInEventGroup(() => {
+      for (const target of targets) {
+        if (!canManageDesignStyle(adapter, 'html', target.blockId)) continue;
+        const result = commitManagedDesignStyle(adapter, {
+          workspace: 'html',
+          blockId: target.blockId,
+          declarations: layout.parts[target.part],
+        });
+        htmlChanged = htmlChanged || result.htmlChanged;
+        cssChanged = cssChanged || result.cssChanged || result.cssBlockCreated;
+      }
+    });
     if (!htmlChanged && !cssChanged) return;
     const store = useWorkspaceStore.getState();
     if (htmlChanged) store.bumpStructure('html', adapter.countBlocks('html'));
@@ -422,16 +432,18 @@ export default function EditInspector() {
     );
     let htmlChanged = false;
     let cssChanged = false;
-    for (const target of targets) {
-      if (!canManageDesignStyle(adapter, 'html', target.blockId)) continue;
-      const result = commitManagedDesignStyle(adapter, {
-        workspace: 'html',
-        blockId: target.blockId,
-        declarations: target.declarations,
-      });
-      htmlChanged = htmlChanged || result.htmlChanged;
-      cssChanged = cssChanged || result.cssChanged || result.cssBlockCreated;
-    }
+    adapter.runInEventGroup(() => {
+      for (const target of targets) {
+        if (!canManageDesignStyle(adapter, 'html', target.blockId)) continue;
+        const result = commitManagedDesignStyle(adapter, {
+          workspace: 'html',
+          blockId: target.blockId,
+          declarations: target.declarations,
+        });
+        htmlChanged = htmlChanged || result.htmlChanged;
+        cssChanged = cssChanged || result.cssChanged || result.cssBlockCreated;
+      }
+    });
     if (!htmlChanged && !cssChanged) return;
     const store = useWorkspaceStore.getState();
     if (htmlChanged) store.bumpStructure('html', adapter.countBlocks('html'));

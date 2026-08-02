@@ -6,8 +6,9 @@
  * smoke deliberately uses a synthetic sheet so no external sheet source or
  * derived evidence is retained. It verifies the user-facing interaction
  * contract: flow/free placement, canvas widget drop, layer insertion, cycle
- * protection, selection sync, keyboard nudging with unified undo/redo, direct resize,
- * multi-selection alignment and distribution, and editable canvas width.
+ * protection, selection sync, unified undo/redo for movement, reparenting,
+ * resize and coordinated styles, multi-selection alignment and distribution,
+ * and editable canvas width.
  */
 
 import http from 'node:http';
@@ -192,6 +193,8 @@ async function main() {
 
     await page.evaluate(() => window.__perfHook.clearAll());
     await page.click('[data-testid="main-mode-edit"]');
+    const historyUndoButton = page.locator('[data-testid="edit-history-undo"]');
+    const historyRedoButton = page.locator('[data-testid="edit-history-redo"]');
 
     result.tests.editSurface = await page.evaluate(() => {
       const root = document.querySelector('[data-testid="edit-canvas-root"]');
@@ -913,24 +916,22 @@ async function main() {
         );
       })
     ), { blockIds: arrangementIds, positions: expected }, { timeout: 10000 });
-    const undoButton = page.locator('[data-testid="edit-history-undo"]');
-    const redoButton = page.locator('[data-testid="edit-history-redo"]');
-    assert(await undoButton.isEnabled(), 'unified undo was disabled after keyboard movement');
-    await undoButton.click();
+    assert(await historyUndoButton.isEnabled(), 'unified undo was disabled after keyboard movement');
+    await historyUndoButton.click();
     const afterFirstUndoExpected = keyboardBefore.map((item) => ({
       left: item.left + 1,
       top: item.top,
     }));
     await waitForArrangement(afterFirstUndoExpected);
     const keyboardUndoStep = await readArrangementGeometry();
-    await undoButton.click();
+    await historyUndoButton.click();
     await waitForArrangement(keyboardBefore);
     const keyboardUndoAll = await readArrangementGeometry();
-    assert(await redoButton.isEnabled(), 'unified redo was disabled after two keyboard undos');
-    await redoButton.click();
+    assert(await historyRedoButton.isEnabled(), 'unified redo was disabled after two keyboard undos');
+    await historyRedoButton.click();
     await waitForArrangement(afterFirstUndoExpected);
     const keyboardRedoStep = await readArrangementGeometry();
-    await redoButton.click();
+    await historyRedoButton.click();
     await waitForArrangement(keyboardAfterEdit);
     const keyboardRedoAll = await readArrangementGeometry();
     assert(
@@ -1797,6 +1798,57 @@ async function main() {
     );
     assert(result.tests.layerCanvasDrop.result.emittedNested, 'layer canvas drop did not update emitted HTML');
 
+    const waitForLayerParent = async (expectedParentId) => {
+      await page.waitForFunction(({ movingId, parentId }) => {
+        const moving = window.__perfHook
+          .getLayerSnapshot('html')
+          .find((node) => node.id === movingId);
+        return Boolean(moving) && (moving.layerParentId ?? null) === parentId;
+      }, { movingId: ids.outsideId, parentId: expectedParentId }, { timeout: 10000 });
+      await frame.waitForFunction(({ movingId, parentId }) => {
+        const moving = document.querySelector(`[data-r20-block-id="${CSS.escape(movingId)}"]`);
+        const renderedParentId = moving
+          ?.parentElement
+          ?.closest('[data-r20-block-id]')
+          ?.getAttribute('data-r20-block-id') ?? null;
+        return Boolean(moving) && renderedParentId === parentId;
+      }, { movingId: ids.outsideId, parentId: expectedParentId }, { timeout: 10000 });
+    };
+    const readLayerParent = async () => {
+      const [modelParentId, renderedParentId] = await Promise.all([
+        page.evaluate((movingId) => {
+          const moving = window.__perfHook
+            .getLayerSnapshot('html')
+            .find((node) => node.id === movingId);
+          return moving?.layerParentId ?? null;
+        }, ids.outsideId),
+        frame.evaluate((movingId) => {
+          const moving = document.querySelector(`[data-r20-block-id="${CSS.escape(movingId)}"]`);
+          return moving
+            ?.parentElement
+            ?.closest('[data-r20-block-id]')
+            ?.getAttribute('data-r20-block-id') ?? null;
+        }, ids.outsideId),
+      ]);
+      return { modelParentId, renderedParentId };
+    };
+    assert(await historyUndoButton.isEnabled(), 'flow reparent did not create an undo step');
+    await historyUndoButton.click();
+    await waitForLayerParent(null);
+    const flowDropUndo = await readLayerParent();
+    assert(await historyRedoButton.isEnabled(), 'flow reparent undo did not create a redo step');
+    await historyRedoButton.click();
+    await waitForLayerParent(ids.frameId);
+    const flowDropRedo = await readLayerParent();
+    result.tests.layerCanvasDrop.history = { undo: flowDropUndo, redo: flowDropRedo };
+    assert(
+      flowDropUndo.modelParentId === null
+        && flowDropUndo.renderedParentId === null
+        && flowDropRedo.modelParentId === ids.frameId
+        && flowDropRedo.renderedParentId === ids.frameId,
+      `flow reparent did not roundtrip in one history step: ${JSON.stringify(result.tests.layerCanvasDrop.history)}`,
+    );
+
     await page.click('[data-testid="edit-placement-free"]');
     result.tests.layerCanvasFreeDrop = await frame.evaluate(({ movingId, targetId }) => {
       const target = document.querySelector(`[data-r20-block-id="${CSS.escape(targetId)}"]`);
@@ -2202,6 +2254,49 @@ async function main() {
     );
     assert(/width\s*:/.test(resizeEmit.css) && /height\s*:/.test(resizeEmit.css), 'managed resize did not persist in CSS');
 
+    const waitForResizeRect = (expected) => frame.waitForFunction(({ blockId, rect }) => {
+      const current = document
+        .querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`)
+        ?.getBoundingClientRect();
+      return Boolean(
+        current
+        && Math.abs(current.width - rect.width) <= 1.5
+        && Math.abs(current.height - rect.height) <= 1.5,
+      );
+    }, { blockId: resizeTargetId, rect: expected }, { timeout: 10000 });
+    const readResizeRect = () => frame.evaluate((blockId) => {
+      const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+      if (!(element instanceof HTMLElement)) return null;
+      const rect = element.getBoundingClientRect();
+      return {
+        width: rect.width,
+        height: rect.height,
+        inlineStyle: element.getAttribute('style') ?? '',
+      };
+    }, resizeTargetId);
+    assert(await historyUndoButton.isEnabled(), 'direct resize did not create an undo step');
+    await historyUndoButton.click();
+    await waitForResizeRect(resizeBefore);
+    const resizeUndo = await readResizeRect();
+    assert(
+      resizeUndo
+        && Math.abs(resizeUndo.width - resizeBefore.width) <= 1.5
+        && Math.abs(resizeUndo.height - resizeBefore.height) <= 1.5
+        && resizeUndo.inlineStyle === resizeBefore.inlineStyle,
+      `direct resize undo did not restore source geometry: ${JSON.stringify({ resizeBefore, resizeUndo })}`,
+    );
+    assert(await historyRedoButton.isEnabled(), 'direct resize undo did not create a redo step');
+    await historyRedoButton.click();
+    await waitForResizeRect(resizeAfterEdit);
+    const resizeRedo = await readResizeRect();
+    assert(
+      resizeRedo
+        && Math.abs(resizeRedo.width - resizeAfterEdit.width) <= 1.5
+        && Math.abs(resizeRedo.height - resizeAfterEdit.height) <= 1.5
+        && resizeRedo.inlineStyle === resizeAfterEdit.inlineStyle,
+      `direct resize redo did not restore managed CSS geometry: ${JSON.stringify({ resizeAfterEdit, resizeRedo })}`,
+    );
+
     await page.click('[data-testid="main-mode-preview"]');
     await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '0');
     const resizePreviewRect = await frame.evaluate((blockId) => {
@@ -2218,6 +2313,8 @@ async function main() {
       before: resizeBefore,
       during: resizeDuring,
       afterEdit: resizeAfterEdit,
+      undo: resizeUndo,
+      redo: resizeRedo,
       preview: resizePreviewRect,
       editAgain: resizeEditRect,
       emittedCss: /width\s*:/.test(resizeEmit.css) && /height\s*:/.test(resizeEmit.css),
@@ -2299,6 +2396,58 @@ async function main() {
     assert(styledEmit.css.includes('background-color: #f1a7bf'), 'visual background was not emitted to CSS');
     assert(styledEmit.css.includes('padding: 18px'), 'visual padding was not emitted to CSS');
 
+    const readSectionStylePreset = () => frame.evaluate(({ frameId, titleId, labelId }) => {
+      const root = document.querySelector(`[data-r20-block-id="${CSS.escape(frameId)}"]`);
+      const title = document.querySelector(`[data-r20-block-id="${CSS.escape(titleId)}"]`);
+      const label = document.querySelector(`[data-r20-block-id="${CSS.escape(labelId)}"]`);
+      if (!(root instanceof HTMLElement) || !(title instanceof HTMLElement) || !(label instanceof HTMLElement)) return null;
+      const rootStyle = getComputedStyle(root);
+      const titleStyle = getComputedStyle(title);
+      const labelStyle = getComputedStyle(label);
+      return {
+        root: {
+          inlineStyle: root.getAttribute('style') ?? '',
+          backgroundColor: rootStyle.backgroundColor,
+          borderColor: rootStyle.borderColor,
+          borderRadius: rootStyle.borderRadius,
+          paddingTop: rootStyle.paddingTop,
+        },
+        title: {
+          inlineStyle: title.getAttribute('style') ?? '',
+          backgroundColor: titleStyle.backgroundColor,
+          color: titleStyle.color,
+          paddingTop: titleStyle.paddingTop,
+        },
+        label: {
+          inlineStyle: label.getAttribute('style') ?? '',
+          color: labelStyle.color,
+        },
+      };
+    }, { frameId: ids.frameId, titleId: ids.titleId, labelId: ids.labelId });
+    const waitForSectionStylePreset = (expected) => frame.waitForFunction(({ frameId, titleId, labelId, appearance }) => {
+      const root = document.querySelector(`[data-r20-block-id="${CSS.escape(frameId)}"]`);
+      const title = document.querySelector(`[data-r20-block-id="${CSS.escape(titleId)}"]`);
+      const label = document.querySelector(`[data-r20-block-id="${CSS.escape(labelId)}"]`);
+      if (!(root instanceof HTMLElement) || !(title instanceof HTMLElement) || !(label instanceof HTMLElement)) return false;
+      const rootStyle = getComputedStyle(root);
+      const titleStyle = getComputedStyle(title);
+      const labelStyle = getComputedStyle(label);
+      return rootStyle.backgroundColor === appearance.root.backgroundColor
+        && rootStyle.borderColor === appearance.root.borderColor
+        && rootStyle.borderRadius === appearance.root.borderRadius
+        && rootStyle.paddingTop === appearance.root.paddingTop
+        && titleStyle.backgroundColor === appearance.title.backgroundColor
+        && titleStyle.color === appearance.title.color
+        && titleStyle.paddingTop === appearance.title.paddingTop
+        && labelStyle.color === appearance.label.color;
+    }, {
+      frameId: ids.frameId,
+      titleId: ids.titleId,
+      labelId: ids.labelId,
+      appearance: expected,
+    }, { timeout: 10000 });
+    const sectionStyleBefore = await readSectionStylePreset();
+    assert(sectionStyleBefore, 'section appearance was unavailable before applying a theme');
     const fieldLabelBeforeTheme = await frame.evaluate((blockId) => {
       const element = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
       if (!(element instanceof HTMLElement)) return null;
@@ -2341,34 +2490,7 @@ async function main() {
       throw new Error(`section theme emit did not settle: ${JSON.stringify(debug)}`, { cause: error });
     }
     await page.waitForTimeout(300);
-    result.tests.sectionStylePreset = await frame.evaluate(({ frameId, titleId, labelId }) => {
-      const root = document.querySelector(`[data-r20-block-id="${CSS.escape(frameId)}"]`);
-      const title = document.querySelector(`[data-r20-block-id="${CSS.escape(titleId)}"]`);
-      const label = document.querySelector(`[data-r20-block-id="${CSS.escape(labelId)}"]`);
-      if (!(root instanceof HTMLElement) || !(title instanceof HTMLElement) || !(label instanceof HTMLElement)) return null;
-      const rootStyle = getComputedStyle(root);
-      const titleStyle = getComputedStyle(title);
-      const labelStyle = getComputedStyle(label);
-      return {
-        root: {
-          inlineStyle: root.getAttribute('style') ?? '',
-          backgroundColor: rootStyle.backgroundColor,
-          borderColor: rootStyle.borderColor,
-          borderRadius: rootStyle.borderRadius,
-          paddingTop: rootStyle.paddingTop,
-        },
-        title: {
-          inlineStyle: title.getAttribute('style') ?? '',
-          backgroundColor: titleStyle.backgroundColor,
-          color: titleStyle.color,
-          paddingTop: titleStyle.paddingTop,
-        },
-        label: {
-          inlineStyle: label.getAttribute('style') ?? '',
-          color: labelStyle.color,
-        },
-      };
-    }, { frameId: ids.frameId, titleId: ids.titleId, labelId: ids.labelId });
+    result.tests.sectionStylePreset = await readSectionStylePreset();
     const sectionPresetDebug = JSON.stringify(result.tests.sectionStylePreset);
     assert(result.tests.sectionStylePreset?.root.backgroundColor === 'rgb(255, 242, 246)', `section theme fill did not reach the shared iframe: ${sectionPresetDebug}`);
     assert(result.tests.sectionStylePreset?.root.borderColor === 'rgb(217, 107, 145)', `section theme border did not reach the shared iframe: ${sectionPresetDebug}`);
@@ -2381,6 +2503,25 @@ async function main() {
     assert(result.tests.sectionStylePreset?.label.inlineStyle === fieldLabelBeforeTheme?.inlineStyle, 'section theme rewrote nested field-label inline style');
     assert(!/background|border|padding/i.test(result.tests.sectionStylePreset?.root.inlineStyle ?? ''), 'section theme leaked root presentation into inline HTML');
     assert(!/background|color|border|padding/i.test(result.tests.sectionStylePreset?.title.inlineStyle ?? ''), 'section theme leaked title presentation into inline HTML');
+    const sectionStyleApplied = JSON.parse(JSON.stringify(result.tests.sectionStylePreset));
+    assert(await historyUndoButton.isEnabled(), 'section theme did not create an undo step');
+    await historyUndoButton.click();
+    await waitForSectionStylePreset(sectionStyleBefore);
+    const sectionStyleUndo = await readSectionStylePreset();
+    assert(await historyRedoButton.isEnabled(), 'section theme undo did not create a redo step');
+    await historyRedoButton.click();
+    await waitForSectionStylePreset(sectionStyleApplied);
+    const sectionStyleRedo = await readSectionStylePreset();
+    result.tests.sectionStylePreset.history = {
+      before: sectionStyleBefore,
+      undo: sectionStyleUndo,
+      redo: sectionStyleRedo,
+    };
+    assert(
+      JSON.stringify(sectionStyleUndo) === JSON.stringify(sectionStyleBefore)
+        && JSON.stringify(sectionStyleRedo) === JSON.stringify(sectionStyleApplied),
+      `section theme did not roundtrip in one history step: ${JSON.stringify(result.tests.sectionStylePreset.history)}`,
+    );
     await page.locator('[data-testid="design-section-themes"]').scrollIntoViewIfNeeded();
     await page.screenshot({
       path: path.join(REPORT_DIR, 'section-theme-editor.png'),

@@ -30,9 +30,13 @@ or source-derived measurement here.
   undoes both steps, redoes both steps, and proves the final Preview/Edit
   geometry is identical. Console and page error collections are empty, and the
   temporary server exits.
-- Claim boundary: anonymous local synthetic history coverage. Browser
-  roundtrips for flow reparenting, direct resize, and inspector changes remain,
-  as do actual modern Roll20 verification and broad-sheet parity.
+- Multi-target section, control, result-card, Roll-button, layout, and
+  composition presets now share one outer event group. The browser smoke also
+  proves one-step undo/redo for flow reparenting, direct image resize, and a
+  coordinated section theme without Preview/Edit divergence.
+- Claim boundary: anonymous local synthetic history coverage. Longer mixed
+  imported-structure history runs, actual modern Roll20 verification, and
+  broad-sheet parity remain.
 
 ## 2026-08-03 - Absolute Selection Keyboard Nudge
 

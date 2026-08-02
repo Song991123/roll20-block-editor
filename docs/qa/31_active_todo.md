@@ -123,11 +123,15 @@ belong in tracked documents.
   writes share one Blockly event group, and multi-selection movement has one
   outer user-action group. Browser coverage moves three layers twice, undoes
   both steps independently, redoes both steps independently, and returns to
-  identical Preview/Edit geometry with zero console or page errors.
+  identical Preview/Edit geometry with zero console or page errors. The same
+  browser path now proves one-step undo/redo for flow reparenting, direct image
+  resize, and a coordinated multi-layer section preset. Multi-target section,
+  control, result-card, Roll-button, layout, and composition presets all share
+  one outer history group.
 - `PARTIAL`: continue usability review for dense imported structures, nested
-  coordinate systems, and layer-panel keyboard selection. Extend browser
-  history coverage from the current multi-layer movement proof to flow
-  reparenting, direct resize, and inspector changes.
+  coordinate systems, and layer-panel keyboard selection. Add longer mixed
+  operation history runs for imported structures while keeping current local
+  synthetic history coverage distinct from actual Roll20 verification.
 
 ## P1 - User Experience
 
