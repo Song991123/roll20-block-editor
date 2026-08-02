@@ -20,9 +20,13 @@ or source-derived measurement here.
 - Replaced wrapping edit-toolbar text actions with accessible icon controls
   while preserving tooltips, pressed state, width entry, and the stable canvas
   offset.
+- Applied the same compact rule to the app-level mode, edit-target,
+  language, compatibility, and upload controls. The secondary group can wrap
+  safely instead of being clipped by the central card.
 - Extended the edit-flow browser smoke to verify one-row geometry and
-  accessible names at a compact desktop viewport before continuing through the
-  existing drag, grouping, and Preview/Edit checks.
+  accessible names, app-toolbar horizontal bounds, and an ignored local visual
+  capture at a compact desktop viewport before continuing through the existing
+  drag, grouping, and Preview/Edit checks.
 - Focused browser smoke, full `ci:verify`, lint, production build, document
   privacy guard, and diff checks passed. Temporary test servers exited.
 - Claim boundary: local toolbar usability only. Actual Roll20 modern and legacy

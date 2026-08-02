@@ -52,6 +52,10 @@ belong in tracked documents.
 - `DONE LOCAL`: the edit toolbar keeps its stable single-row canvas offset at
   a compact desktop viewport. Dense text controls use accessible icon buttons,
   and the edit-flow browser smoke checks vertical overflow and control names.
+- `DONE LOCAL`: compact desktop widths keep every main mode, edit target,
+  language, modern/legacy, and upload-rule control visible. Labels collapse to
+  named icon controls with tooltips, and browser smoke checks clipping and
+  horizontal overflow.
 - `PARTIAL`: continue usability review for dense imported structures, nested
   absolute placement, keyboard selection, resize handles, and undo/redo.
 
@@ -62,8 +66,9 @@ belong in tracked documents.
   presentation inline HTML.
 - `TODO`: remove remaining technical or broken copy from user-facing panels.
   Prefer plain Korean actions, icons with tooltips, and visual examples.
-- `TODO`: validate the pastel application shell at desktop and compact
-  viewports without changing the Roll20 sheet render surface.
+- `PARTIAL`: the pastel shell and central editing controls have compact desktop
+  browser coverage. Mobile drawers and broader viewport combinations remain to
+  be reviewed without changing the Roll20 sheet render surface.
 - `TODO`: add resize and alignment affordances only where they preserve the
   authored DOM and CSS contract.
 

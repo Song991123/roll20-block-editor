@@ -208,6 +208,69 @@ async function main() {
     assert(result.tests.editSurface.layerPanel, 'layer panel is missing');
 
     await page.setViewportSize({ width: 1280, height: 720 });
+    result.tests.compactMainToolbar = await page.evaluate(() => {
+      const toolbar = document.querySelector('[data-testid="main-area-toolbar"]');
+      if (!(toolbar instanceof HTMLElement)) return { found: false };
+      const toolbarRect = toolbar.getBoundingClientRect();
+      const controls = [
+        'main-mode-preview',
+        'main-mode-edit',
+        'main-mode-assemble',
+        'main-mode-split',
+        'edit-submode-sheet',
+        'edit-submode-rolltemplate',
+        'roll20-document-language',
+        'roll20-mode-modern',
+        'roll20-mode-legacy',
+        'roll20-sandbox-sanitize-toggle',
+      ].map((testid) => {
+        const node = document.querySelector(`[data-testid="${testid}"]`);
+        if (!(node instanceof HTMLElement)) return { testid, found: false };
+        const rect = node.getBoundingClientRect();
+        return {
+          testid,
+          found: true,
+          ariaLabel: node.getAttribute('aria-label') ?? '',
+          left: rect.left,
+          right: rect.right,
+          top: rect.top,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height,
+        };
+      });
+      return {
+        found: true,
+        clientWidth: toolbar.clientWidth,
+        scrollWidth: toolbar.scrollWidth,
+        controls,
+        allControlsVisible: controls.every((control) => control.found
+          && control.width > 0
+          && control.height > 0
+          && control.left >= toolbarRect.left - 0.5
+          && control.right <= toolbarRect.right + 0.5
+          && control.top >= toolbarRect.top - 0.5
+          && control.bottom <= toolbarRect.bottom + 0.5),
+      };
+    });
+    assert(result.tests.compactMainToolbar.found, 'compact main toolbar is missing');
+    assert(
+      result.tests.compactMainToolbar.scrollWidth <= result.tests.compactMainToolbar.clientWidth + 1,
+      `compact main toolbar overflowed horizontally: ${JSON.stringify(result.tests.compactMainToolbar)}`,
+    );
+    assert(
+      result.tests.compactMainToolbar.allControlsVisible,
+      `compact main toolbar clipped a control: ${JSON.stringify(result.tests.compactMainToolbar)}`,
+    );
+    assert(
+      result.tests.compactMainToolbar.controls.every((control) => control.ariaLabel.length > 0),
+      `compact main toolbar control lost its accessible name: ${JSON.stringify(result.tests.compactMainToolbar.controls)}`,
+    );
+    await page.screenshot({
+      path: path.join(REPORT_DIR, 'compact-toolbars.png'),
+      fullPage: false,
+    });
+
     result.tests.compactEditToolbar = await page.evaluate(() => {
       const toolbar = document.querySelector('[data-testid="edit-surface-toolbar"]');
       if (!(toolbar instanceof HTMLElement)) return { found: false };

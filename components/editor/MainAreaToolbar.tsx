@@ -81,7 +81,10 @@ export default function MainAreaToolbar() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="r20-strip flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-b border-[var(--border-subtle)] px-3 py-1.5">
+      <div
+        className="r20-strip flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-b border-[var(--border-subtle)] px-3 py-1.5"
+        data-testid="main-area-toolbar"
+      >
         <div role="tablist" aria-label="화면 모드" className="r20-seg shrink-0">
           {MODES.map((mode) => {
             const isActive = mainMode === mode.key;
@@ -93,12 +96,13 @@ export default function MainAreaToolbar() {
                     type="button"
                     role="tab"
                     aria-selected={isActive}
+                    aria-label={mode.label}
                     onClick={() => setMainMode(mode.key)}
                     className="r20-seg-btn"
                     data-testid={`main-mode-${mode.key}`}
                   >
                     <Icon aria-hidden="true" className="h-[18px] w-[18px]" />
-                    {mode.label}
+                    <span className="hidden 2xl:inline">{mode.label}</span>
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>{mode.tooltip}</TooltipContent>
@@ -107,7 +111,7 @@ export default function MainAreaToolbar() {
           })}
         </div>
 
-        <div className="flex shrink-0 items-center gap-2.5 text-muted-foreground">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2.5 text-muted-foreground">
           {mainMode === 'edit' && (
             <div
               role="tablist"
@@ -125,12 +129,13 @@ export default function MainAreaToolbar() {
                         type="button"
                         role="tab"
                         aria-selected={isActive}
+                        aria-label={sub.label}
                         onClick={() => setEditSubmode(sub.key)}
                         className="r20-seg-btn"
                         data-testid={`edit-submode-${sub.key}`}
                       >
                         <Icon className="h-4 w-4" aria-hidden="true" />
-                        {sub.label}
+                        <span className="hidden 2xl:inline">{sub.label}</span>
                       </button>
                     </TooltipTrigger>
                     <TooltipContent>{sub.tooltip}</TooltipContent>
@@ -148,7 +153,7 @@ export default function MainAreaToolbar() {
             <TooltipTrigger asChild>
               <label className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-elevated-2)] px-3 text-xs font-medium">
                 <Languages className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span className="hidden xl:inline">문서 언어</span>
+                <span className="hidden 2xl:inline">문서 언어</span>
                 <input
                   type="text"
                   value={documentLanguage}
@@ -170,7 +175,7 @@ export default function MainAreaToolbar() {
             className="r20-seg r20-seg--compact"
             data-testid="roll20-mode-control"
           >
-            <span className="px-2 text-xs font-semibold text-muted-foreground">Roll20</span>
+            <span className="hidden px-2 text-xs font-semibold text-muted-foreground 2xl:inline">Roll20</span>
             {([
               { key: 'modern' as const, label: '신버전', Icon: ShieldCheck },
               { key: 'legacy' as const, label: '구버전', Icon: ShieldAlert },
@@ -182,12 +187,13 @@ export default function MainAreaToolbar() {
                     <button
                       type="button"
                       aria-pressed={isActive}
+                      aria-label={`Roll20 ${label}`}
                       onClick={() => setRoll20CompatibilityMode(key)}
                       className="r20-seg-btn"
                       data-testid={`roll20-mode-${key}`}
                     >
                       <Icon aria-hidden="true" className="h-4 w-4" />
-                      {label}
+                      <span className="hidden 2xl:inline">{label}</span>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -203,7 +209,7 @@ export default function MainAreaToolbar() {
             <TooltipTrigger asChild>
               <label className="inline-flex h-9 cursor-pointer select-none items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-elevated-2)] px-3 text-xs font-medium">
                 <SlidersHorizontal className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span className="hidden xl:inline">업로드 규칙</span>
+                <span className="hidden 2xl:inline">업로드 규칙</span>
                 <input
                   type="checkbox"
                   checked={roll20SandboxSanitize}
