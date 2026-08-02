@@ -6,7 +6,8 @@
  * smoke deliberately uses a synthetic sheet so no external sheet source or
  * derived evidence is retained. It verifies the user-facing interaction
  * contract: flow/free placement, canvas widget drop, layer insertion, cycle
- * protection, selection sync, direct resize, and editable canvas width.
+ * protection, selection sync, direct resize, multi-selection alignment, and
+ * editable canvas width.
  */
 
 import http from 'node:http';
@@ -751,6 +752,92 @@ async function main() {
         && Math.abs(afterDeltaFirst) >= 16,
       `multi-drag did not persist as a group move: ${JSON.stringify(result.tests.canvasMultiMove)}`,
     );
+
+    const alignmentToolbar = page.locator('[data-testid="iframe-alignment-toolbar"]');
+    await alignmentToolbar.waitFor({ state: 'visible', timeout: 10000 });
+    assert(
+      await alignmentToolbar.getAttribute('data-r20-alignment-count') === '2',
+      'multi-selection alignment toolbar has the wrong selection count',
+    );
+    const readAlignmentGeometry = () => frame.evaluate(({ firstId, secondId }) => {
+      const read = (id) => {
+        const node = document.querySelector(`[data-r20-block-id="${CSS.escape(id)}"]`);
+        const rect = node?.getBoundingClientRect();
+        return rect ? {
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          height: rect.height,
+          position: getComputedStyle(node).position,
+          inlineStyle: node.getAttribute('style') ?? '',
+        } : null;
+      };
+      return { first: read(firstId), second: read(secondId) };
+    }, { firstId: ids.groupOneId, secondId: ids.groupTwoId });
+    const alignmentBefore = await readAlignmentGeometry();
+    assert(
+      alignmentBefore.first?.position === 'absolute'
+        && alignmentBefore.second?.position === 'absolute'
+        && Math.abs(alignmentBefore.first.top - alignmentBefore.second.top) >= 1,
+      `alignment targets are not distinct absolute layers: ${JSON.stringify(alignmentBefore)}`,
+    );
+    await page.locator('[data-testid="iframe-align-top"]').click();
+    await frame.waitForFunction(({ firstId, secondId }) => {
+      const first = document.querySelector(`[data-r20-block-id="${CSS.escape(firstId)}"]`)?.getBoundingClientRect();
+      const second = document.querySelector(`[data-r20-block-id="${CSS.escape(secondId)}"]`)?.getBoundingClientRect();
+      return Boolean(first && second && Math.abs(first.top - second.top) <= 0.5);
+    }, { firstId: ids.groupOneId, secondId: ids.groupTwoId }, { timeout: 10000 });
+    const alignmentAfterEdit = await readAlignmentGeometry();
+    const alignmentModel = await page.evaluate(({ firstId, secondId }) => {
+      const graph = window.__perfHook.getLayerSnapshot('html');
+      const emitted = window.__perfHook.getEmitContent();
+      return {
+        firstParent: graph.find((node) => node.id === firstId)?.layerParentId ?? null,
+        secondParent: graph.find((node) => node.id === secondId)?.layerParentId ?? null,
+        emittedCss: emitted.css,
+      };
+    }, { firstId: ids.groupOneId, secondId: ids.groupTwoId });
+    assert(
+      alignmentAfterEdit.first && alignmentAfterEdit.second
+        && Math.abs(alignmentAfterEdit.first.top - alignmentAfterEdit.second.top) <= 0.5,
+      `top alignment did not persist in Edit: ${JSON.stringify(alignmentAfterEdit)}`,
+    );
+    assert(
+      !/(?:^|;)\s*(?:position|left|top)\s*:/i.test(alignmentAfterEdit.first.inlineStyle)
+        && !/(?:^|;)\s*(?:position|left|top)\s*:/i.test(alignmentAfterEdit.second.inlineStyle),
+      `alignment leaked position into inline HTML: ${JSON.stringify(alignmentAfterEdit)}`,
+    );
+    assert(
+      alignmentModel.firstParent === result.tests.layerGrouping.groupId
+        && alignmentModel.secondParent === result.tests.layerGrouping.groupId,
+      `alignment changed the HTML parent: ${JSON.stringify(alignmentModel)}`,
+    );
+    assert(/position\s*:\s*absolute/i.test(alignmentModel.emittedCss), 'alignment did not remain in emitted managed CSS');
+
+    await page.click('[data-testid="main-mode-preview"]');
+    await page.waitForTimeout(120);
+    const alignmentPreview = await readAlignmentGeometry();
+    assert(
+      alignmentPreview.first && alignmentPreview.second
+        && Math.abs(alignmentPreview.first.top - alignmentPreview.second.top) <= 0.5,
+      `Preview geometry differs after alignment: ${JSON.stringify(alignmentPreview)}`,
+    );
+    await page.click('[data-testid="preview-exit-edit"]');
+    await alignmentToolbar.waitFor({ state: 'visible', timeout: 10000 });
+    const alignmentEditAgain = await readAlignmentGeometry();
+    assert(
+      alignmentEditAgain.first && alignmentEditAgain.second
+        && Math.abs(alignmentEditAgain.first.top - alignmentEditAgain.second.top) <= 0.5,
+      `Edit geometry changed after Preview roundtrip: ${JSON.stringify(alignmentEditAgain)}`,
+    );
+    result.tests.canvasAlignment = {
+      before: alignmentBefore,
+      afterEdit: alignmentAfterEdit,
+      preview: alignmentPreview,
+      editAgain: alignmentEditAgain,
+      firstParent: alignmentModel.firstParent,
+      secondParent: alignmentModel.secondParent,
+    };
 
     // This is the user-facing path: move a real rendered node over another
     // rendered node, let the iframe show the optimistic order immediately,

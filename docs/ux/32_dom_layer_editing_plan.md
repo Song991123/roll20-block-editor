@@ -80,6 +80,12 @@ invent separate DOM models.
 15. Structural layer selection and friendly-widget selection use separate
     iframe markers. Updating or clearing one selection channel must not erase
     the other channel's visible state.
+16. A multi-selection exposes six alignment actions only when every selected
+    visual layer is absolutely positioned, shares one logical parent, and uses
+    that same parent as its rendered offset parent. Alignment uses the measured
+    selection bounds, preserves HTML order and parentage, and commits position
+    through managed CSS. Flow, table, list, mixed-parent, and mixed-coordinate
+    selections do not receive these actions.
 
 ## Visual Language
 
@@ -122,6 +128,10 @@ already-selected insertion position.
 - A touched property is removed from both the block's ordinary style field and
   its preserved imported `style` backup. Unrelated inline declarations,
   `data-*`, ARIA, and other preserved attributes remain intact.
+- Eligible absolute multi-selections show one dashed selection frame and six
+  compact icon controls for left, horizontal center, right, top, vertical
+  center, and bottom alignment. The frame is parent-owned UI above the same
+  persistent iframe; it never enters emitted HTML or sheet CSS.
 - Managed presentation declarations merge with managed position declarations.
   Moving a styled object must not erase its fill, spacing, border, or type
   rules; styling a moved object must not erase `position`, `left`, or `top`.
@@ -281,16 +291,18 @@ already-selected insertion position.
 
 Local tests cover classification, cycle protection, before/inside/after layer
 operations, flow versus free placement, grouping preconditions, selection
-synchronization, and multi-object free transform. The browser smoke also
-proves Ctrl selection -> iframe multi-highlight -> shared free movement ->
-persisted emitted positions, while grouping keeps the model parent, iframe
-parent, and emitted HTML aligned. Anonymous imported cross-container cases now
-prove existing content can move between frames, lists, table bodies, and
-value-switch cases, keep the same target parent in Edit and Preview, and retain
-that nesting after emit -> re-import -> emit. A value-switch case panel owns
-the internal marker for its case block, and the parent switch preserves an
-imported checked radio as its editable initial value. Protected real-fixture
-and actual modern/legacy Roll20 coverage remain future acceptance work.
+synchronization, multi-object free transform, and six-way alignment math. The
+browser smoke also proves Ctrl selection -> iframe multi-highlight -> shared
+free movement -> same-parent top alignment -> persisted managed CSS, with no
+position leak into inline HTML and equal geometry after Preview/Edit switches.
+Grouping keeps the model parent, iframe parent, and emitted HTML aligned.
+Anonymous imported cross-container cases prove existing content can move
+between frames, lists, table bodies, and value-switch cases, keep the same
+target parent in Edit and Preview, and retain that nesting after emit ->
+re-import -> emit. A value-switch case panel owns the internal marker for its
+case block, and the parent switch preserves an imported checked radio as its
+editable initial value. Protected real-fixture and actual modern/legacy Roll20
+coverage remain future acceptance work.
 
 ## Composite And Shadow Role Contract
 

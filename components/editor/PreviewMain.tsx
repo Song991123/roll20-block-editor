@@ -9,6 +9,15 @@ import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
+import {
+  AlignCenterHorizontal,
+  AlignCenterVertical,
+  AlignEndHorizontal,
+  AlignEndVertical,
+  AlignStartHorizontal,
+  AlignStartVertical,
+  type LucideIcon,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { useChatStore } from '@/lib/stores/chatStore';
@@ -65,6 +74,11 @@ import {
   resolveDesignResizeRect,
   type DesignResizeHandle,
 } from '@/lib/editor/designResize';
+import {
+  designSelectionBounds,
+  resolveDesignAlignment,
+  type DesignAlignmentMode,
+} from '@/lib/editor/designAlignment';
 import { getLayerRole } from '@/lib/editor/layerRoles';
 import { dropIndicatorLabel, getDropIndicatorRect } from '@/lib/editor/dropIndicator';
 import {
@@ -112,12 +126,33 @@ const RESIZE_HANDLE_STYLE: Record<DesignResizeHandle, {
   w: { left: '0%', top: '50%', transform: 'translate(-50%, -50%)', cursor: 'ew-resize', label: '왼쪽' },
 };
 
+const ALIGNMENT_CONTROLS: readonly {
+  mode: DesignAlignmentMode;
+  label: string;
+  Icon: LucideIcon;
+}[] = [
+  { mode: 'left', label: '왼쪽 맞춤', Icon: AlignStartVertical },
+  { mode: 'horizontal-center', label: '가로 가운데 맞춤', Icon: AlignCenterVertical },
+  { mode: 'right', label: '오른쪽 맞춤', Icon: AlignEndVertical },
+  { mode: 'top', label: '위쪽 맞춤', Icon: AlignStartHorizontal },
+  { mode: 'vertical-center', label: '세로 가운데 맞춤', Icon: AlignCenterHorizontal },
+  { mode: 'bottom', label: '아래쪽 맞춤', Icon: AlignEndHorizontal },
+];
+
 function paintOverlayRect(node: HTMLDivElement | null, rect: IframeEditRect): void {
   if (!node) return;
   node.style.left = `${rect.left}px`;
   node.style.top = `${rect.top}px`;
   node.style.width = `${rect.width}px`;
   node.style.height = `${rect.height}px`;
+}
+
+function shiftedRect(rect: IframeEditRect, deltaX: number, deltaY: number): IframeEditRect {
+  return {
+    ...rect,
+    left: rect.left + deltaX,
+    top: rect.top + deltaY,
+  };
 }
 
 function inferMultiDragOrigin(
@@ -435,6 +470,125 @@ export default function PreviewMain() {
     selectedId,
     selectedIds.length,
   ]);
+  const iframeAlignmentSelection = useMemo(() => {
+    const renderedSelection = iframeEditOverlay?.selection;
+    if (
+      mainMode !== 'edit'
+      || editSubmode !== 'sheet'
+      || renderMode !== 'iframe'
+      || iframeEditOverlay?.phase !== 'measure'
+      || !renderedSelection
+      || renderedSelection.length < 2
+      || renderedSelection.length !== selectedIds.length
+    ) return null;
+
+    const selectedSet = new Set(selectedIds);
+    if (!renderedSelection.every((item) => selectedSet.has(item.geometry.blockId))) return null;
+    const blocks = renderedSelection.map((item) => htmlLayerMap.get(item.geometry.blockId) ?? null);
+    if (blocks.some((block) => !block || getLayerRole(block.type).kind === 'runtime')) return null;
+    const parentId = blocks[0]?.layerParentId ?? null;
+    const adapter = getBlocklyAdapter();
+    const canCommit = renderedSelection.every((item, index) => {
+      const block = blocks[index];
+      if (!block || block.layerParentId !== parentId) return false;
+      if (item.geometry.position.trim().toLowerCase() !== 'absolute') return false;
+      if (item.geometry.offsetParentBlockId !== parentId) return false;
+      return (
+        adapter.hasBlockField('html', block.id, 'LEFT_PX')
+        && adapter.hasBlockField('html', block.id, 'TOP_PX')
+      ) || canManageDesignStyle(adapter, 'html', block.id);
+    });
+    return canCommit ? renderedSelection : null;
+  }, [
+    editSubmode,
+    htmlLayerMap,
+    iframeEditOverlay,
+    mainMode,
+    renderMode,
+    selectedIds,
+  ]);
+  const iframeAlignmentBounds = useMemo(() => (
+    iframeAlignmentSelection
+      ? designSelectionBounds(iframeAlignmentSelection.map((item) => ({
+          blockId: item.geometry.blockId,
+          rect: item.geometry.rect,
+        })))
+      : null
+  ), [iframeAlignmentSelection]);
+
+  const alignIframeSelection = useCallback((mode: DesignAlignmentMode) => {
+    const selection = iframeAlignmentSelection;
+    if (!selection) return;
+    const deltas = resolveDesignAlignment(selection.map((item) => ({
+      blockId: item.geometry.blockId,
+      rect: item.geometry.rect,
+    })), mode);
+    if (
+      deltas.length !== selection.length
+      || deltas.every((item) => Math.abs(item.deltaX) < 0.001 && Math.abs(item.deltaY) < 0.001)
+    ) return;
+
+    const adapter = getBlocklyAdapter();
+    const lookup = {
+      getBlock: (blockId: string) => htmlLayerMap.get(blockId) ?? null,
+      canNestInContainer: (blockId: string) => adapter.canNestInContainer('html', blockId),
+      canNestBlockInContainer: (movingBlockId: string, targetBlockId: string) => (
+        adapter.canNestBlockInContainer('html', movingBlockId, targetBlockId)
+      ),
+    };
+    const placements = selection.map((item, index) => resolveIframeMultiFreePlacement(
+      item,
+      item,
+      { x: 0, y: 0 },
+      { x: deltas[index].deltaX, y: deltas[index].deltaY },
+      lookup,
+      1,
+    ));
+    if (placements.some((placement) => placement === null)) return;
+
+    let moved = false;
+    let managedCssChanged = false;
+    placements.forEach((placement, index) => {
+      if (!placement) return;
+      const committed = commitManagedDesignPosition(adapter, {
+        workspace: 'html',
+        blockId: selection[index].geometry.blockId,
+        left: placement.left,
+        top: placement.top,
+        containingBlockId: placement.containingBlockId,
+        containingBlockNeedsRelative: placement.containingBlockNeedsRelative,
+      });
+      moved = committed.moved || moved;
+      managedCssChanged = committed.reason === 'managed-css' || managedCssChanged;
+    });
+    if (!moved) return;
+
+    const deltaById = new Map(deltas.map((item) => [item.blockId, item]));
+    setIframeEditOverlay((current) => {
+      if (!current || current.phase !== 'measure') return current;
+      const shiftGeometry = (geometry: typeof current.subject) => {
+        const delta = deltaById.get(geometry.blockId);
+        return delta
+          ? { ...geometry, rect: shiftedRect(geometry.rect, delta.deltaX, delta.deltaY) }
+          : geometry;
+      };
+      const subject = shiftGeometry(current.subject);
+      return {
+        ...current,
+        rect: subject.rect,
+        subject,
+        hitPath: current.hitPath.map(shiftGeometry),
+        selection: current.selection?.map((item) => ({
+          geometry: shiftGeometry(item.geometry),
+          hitPath: item.hitPath.map(shiftGeometry),
+        })),
+      };
+    });
+    const store = useWorkspaceStore.getState();
+    store.bumpStructure('html', adapter.countBlocks('html'));
+    if (managedCssChanged) store.bumpStructure('css', adapter.countBlocks('css'));
+    queueMicrotask(() => flushEmitPipeline());
+  }, [htmlLayerMap, iframeAlignmentSelection]);
 
   const applyIframeResizePointer = useCallback((clientX: number, clientY: number) => {
     const session = iframeResizeSessionRef.current;
@@ -1826,7 +1980,7 @@ export default function PreviewMain() {
       selectedBlockId: selectedId,
       selectedBlockIds: selectedIds,
     }, '*');
-  }, [iframeEditBridgeId, mainMode, selectedId, selectedIds, lastApplyAck]);
+  }, [iframeEditBridgeId, iframeRenderReady, mainMode, selectedId, selectedIds, lastApplyAck]);
 
   useEffect(() => {
     if (mainMode === 'edit') return;
@@ -2052,6 +2206,86 @@ export default function PreviewMain() {
                   시트 불러오는 중...
                 </span>
               </div>
+            )}
+            {renderMode === 'iframe' && mainMode === 'edit' && iframeAlignmentBounds && (
+              <>
+                <div
+                  aria-hidden="true"
+                  data-testid="iframe-multi-selection-overlay"
+                  className="pointer-events-none absolute z-20 box-border border border-dashed border-rose-500 bg-rose-300/5"
+                  style={{
+                    left: `${iframeAlignmentBounds.left}px`,
+                    top: `${iframeAlignmentBounds.top}px`,
+                    width: `${iframeAlignmentBounds.width}px`,
+                    height: `${iframeAlignmentBounds.height}px`,
+                    borderWidth: `${1.5 / Math.max(scale, 0.01)}px`,
+                  }}
+                />
+                <div
+                  role="toolbar"
+                  aria-label="선택한 요소 정렬"
+                  data-testid="iframe-alignment-toolbar"
+                  data-r20-alignment-count={iframeAlignmentSelection?.length ?? 0}
+                  className="pointer-events-auto absolute z-30 flex items-center border border-rose-200 bg-white/95 shadow-md backdrop-blur-sm"
+                  style={{
+                    left: `${Math.max(
+                      4 / Math.max(scale, 0.01),
+                      Math.min(
+                        Math.max(
+                          4 / Math.max(scale, 0.01),
+                          canvasWidth - 188 / Math.max(scale, 0.01),
+                        ),
+                        iframeAlignmentBounds.left
+                          + iframeAlignmentBounds.width / 2
+                          - 94 / Math.max(scale, 0.01),
+                      ),
+                    )}px`,
+                    top: `${Math.max(
+                      4 / Math.max(scale, 0.01),
+                      iframeAlignmentBounds.top - 36 / Math.max(scale, 0.01),
+                    )}px`,
+                    gap: `${2 / Math.max(scale, 0.01)}px`,
+                    padding: `${3 / Math.max(scale, 0.01)}px`,
+                    borderWidth: `${1 / Math.max(scale, 0.01)}px`,
+                    borderRadius: `${6 / Math.max(scale, 0.01)}px`,
+                  }}
+                >
+                  {ALIGNMENT_CONTROLS.map(({ mode, label, Icon }) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      aria-label={label}
+                      title={label}
+                      data-testid={`iframe-align-${mode}`}
+                      data-r20-alignment-mode={mode}
+                      className="grid place-items-center text-rose-700 transition-colors hover:bg-rose-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-rose-500"
+                      style={{
+                        width: `${28 / Math.max(scale, 0.01)}px`,
+                        height: `${28 / Math.max(scale, 0.01)}px`,
+                        minWidth: 0,
+                        minHeight: 0,
+                        padding: 0,
+                        border: 0,
+                        borderRadius: `${4 / Math.max(scale, 0.01)}px`,
+                        backgroundColor: 'transparent',
+                      }}
+                      onPointerDown={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                      }}
+                      onClick={() => alignIframeSelection(mode)}
+                    >
+                      <Icon
+                        aria-hidden="true"
+                        style={{
+                          width: `${16 / Math.max(scale, 0.01)}px`,
+                          height: `${16 / Math.max(scale, 0.01)}px`,
+                        }}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
             {renderMode === 'iframe' && mainMode === 'edit' && iframeEditOverlay && (
               <div

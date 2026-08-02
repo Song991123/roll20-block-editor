@@ -15,6 +15,24 @@ or source-derived measurement here.
 - Remote CI: passed safety/unit verification, lint, and production build.
 - Worktree and project server state were clean after the run.
 
+## 2026-08-03 - Safe Multi-Selection Alignment
+
+- Added one measured multi-selection frame and six icon actions above the same
+  persistent Roll20 iframe used by Preview and Edit.
+- Actions appear only for editable absolute siblings whose logical parent and
+  rendered offset parent agree. Flow, table, list, mixed-parent, and
+  mixed-coordinate selections keep their structural behavior.
+- Alignment preserves parentage and HTML order and writes position through the
+  existing managed-CSS path. It does not add presentation position to inline
+  HTML.
+- Six-way unit tests and the full edit-flow browser smoke pass. The browser run
+  verifies a same-parent alignment, managed-CSS persistence, Preview/Edit
+  geometry equality, and zero console or page errors. Its temporary server
+  closed after the run.
+- Claim boundary: this is anonymous local synthetic coverage. Distribution,
+  nested-coordinate usability, broad imported-sheet behavior, and actual
+  Roll20 interaction remain outside this batch.
+
 ## 2026-08-03 - Direct Resize On The Shared Sheet Surface
 
 - Added direct edge/corner resize handles to eligible single selections on the

@@ -89,8 +89,13 @@ belong in tracked documents.
   layers keep their anchored edges, while absolute layers expose all edges and
   corners. Ordinary inline text and table-row structure stay excluded, while
   inline images remain directly resizable.
+- `DONE LOCAL`: two or more absolute visual siblings sharing the same rendered
+  coordinate parent expose left/center/right and top/center/bottom alignment.
+  Unit coverage checks all six calculations. Browser coverage checks that a
+  top alignment keeps the same parent and HTML order, writes managed CSS rather
+  than inline position, and remains identical after Preview/Edit switches.
 - `PARTIAL`: continue usability review for dense imported structures, nested
-  absolute placement, keyboard selection, alignment, and undo/redo.
+  absolute placement, keyboard selection, distribution, and undo/redo.
 
 ## P1 - User Experience
 
@@ -105,8 +110,9 @@ belong in tracked documents.
 - `PARTIAL`: the pastel shell and central editing controls have compact desktop
   browser coverage. Mobile drawers and broader viewport combinations remain to
   be reviewed without changing the Roll20 sheet render surface.
-- `TODO`: add alignment affordances only where they preserve the authored DOM
-  and CSS contract.
+- `DONE LOCAL`: alignment actions are shown only for same-parent absolute
+  selections whose logical and rendered coordinate parents agree. Flow, table,
+  list, mixed-parent, and mixed-coordinate selections remain structure-driven.
 
 ## P1 - Copyright And Privacy
 
