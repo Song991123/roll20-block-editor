@@ -15,6 +15,24 @@ or source-derived measurement here.
 - Remote CI: passed safety/unit verification, lint, and production build.
 - Worktree and project server state were clean after the run.
 
+## 2026-08-03 - Nested Select Option-Group Mapping
+
+- Added an editable option-group block and routed nested options through the
+  shared element matcher. Group labels, disabled state, classes, styles, and
+  safe preserved attributes no longer disappear during import.
+- Extended the structural verifier and shared browser expectation helper so
+  nested group order, selected values, disabled groups, safe user `data-*`
+  attributes, and emitted tag counts are checked from rendered DOM.
+- The focused importer suite and every current anonymous Sandbox preparation
+  case pass with zero console/page errors. Preview and Edit pass every current
+  modern/legacy combination with exact pixel equality.
+- One initial full browser run hit the local transport error
+  `ERR_NO_BUFFER_SPACE`; the affected combination passed alone and a clean full
+  rerun passed every combination. All temporary smoke servers closed.
+- Claim boundary: this proves the current anonymous local option-group and
+  shared-render contract. It is not modern Roll20 upload proof or broad-sheet
+  parity.
+
 ## 2026-08-03 - Conditional-State Render Contract Coverage
 
 - Added a third anonymous visual fixture combining checked and selected form

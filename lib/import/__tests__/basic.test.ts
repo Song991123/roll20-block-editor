@@ -168,6 +168,23 @@ function testDefaultControlStateIsEditable(): void {
   assert(r.stats.htmlRawFallback === 0, 'default state controls stay structured');
 }
 
+function testSelectOptionGroupsStayEditable(): void {
+  const html = [
+    '<select name="attr_role">',
+    '<optgroup label="Archived" disabled data-kind="history"><option value="old">Old</option></optgroup>',
+    '<optgroup label="Current"><option value="current" selected>Current</option></optgroup>',
+    '</select>',
+  ].join('');
+  const r = importSheet({ html });
+  assert(r.html.includes('<block type="r20_select"'), 'select stays structured');
+  assert((r.html.match(/<block type="r20_optgroup"/g) || []).length === 2, 'both option groups map to blocks');
+  assert(r.html.includes('<field name="LABEL">Archived</field>'), 'option group label is editable');
+  assert(r.html.includes('<field name="DISABLED">TRUE</field>'), 'disabled option group state is editable');
+  assert(r.html.includes('data-kind'), 'unknown option group attributes are preserved');
+  assert(r.html.includes('<field name="SELECTED">TRUE</field>'), 'nested selected option remains editable');
+  assert(r.stats.htmlRawFallback === 0, 'option groups do not fall back to raw HTML');
+}
+
 function testUnknownAttributesSurviveMatchedBlocks(): void {
   const html = `<div id="frame" data-layout="grid" aria-label="Frame"><input type="text" name="attr_name" title="Name" data-hook="field"></div>`;
   const r = importSheet({ html });
@@ -529,6 +546,7 @@ const tests = [
   ['stable formatted text', testFormattedDirectTextHasStableWhitespace],
   ['radio label wrapper', testRadioLabelDoesNotNestOnEmit],
   ['default control state', testDefaultControlStateIsEditable],
+  ['select option groups', testSelectOptionGroupsStayEditable],
   ['unknown attributes', testUnknownAttributesSurviveMatchedBlocks],
   ['css rule', testCssRule],
   ['i18n json', testI18nJson],

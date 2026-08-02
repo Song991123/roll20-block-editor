@@ -356,6 +356,7 @@ function expectedBlockType(node) {
     return null;
   }
   if (tag === 'select') return 'r20_select';
+  if (tag === 'optgroup') return 'r20_optgroup';
   if (tag === 'option') {
     if (a['data-i18n']) return 'r20_i18n_select_option';
     return 'r20_select_option';
@@ -491,8 +492,9 @@ const ATTR_FIELD_MAP = {
   r20_file_input: { name: 'NAME', class: 'CLASS', accept: 'ACCEPT', type: '@implicit', style: 'STYLE' },
   r20_i18n_placeholder: { 'data-i18n-placeholder': 'KEY', name: 'NAME', class: 'CLASS', type: 'TYPE', value: 'DEFAULT', accept: 'ACCEPT', min: 'MIN', max: 'MAX', style: 'STYLE' },
   r20_select: { name: 'NAME', class: 'CLASS', style: 'STYLE' },
-  r20_select_option: { value: 'VALUE', class: 'CLASS', style: 'STYLE' },
-  r20_i18n_select_option: { 'data-i18n': 'KEY', value: 'VALUE', class: 'CLASS', style: 'STYLE' },
+  r20_optgroup: { label: 'LABEL', disabled: '@implicit', class: 'CLASS', style: 'STYLE' },
+  r20_select_option: { value: 'VALUE', selected: '@implicit', class: 'CLASS', style: 'STYLE' },
+  r20_i18n_select_option: { 'data-i18n': 'KEY', value: 'VALUE', selected: '@implicit', class: 'CLASS', style: 'STYLE' },
   r20_textarea: { name: 'NAME', class: 'CLASS', rows: 'ROWS', style: 'STYLE' },
   r20_roll_button: { name: 'NAME', class: 'CLASS', type: '@implicit', value: '@value_expr', style: 'STYLE' },
   r20_chat_button: { name: 'NAME', class: 'CLASS', type: '@implicit', value: 'MESSAGE', style: 'STYLE' },
@@ -627,15 +629,7 @@ function compare(rootHtml, rootBlocks) {
   // walk: htmlNode 의 element 자식들과 블록 sibling chain 매핑.
   function walk(htmlNode, blockSiblings) {
     const htmlElems = elementChildren(htmlNode);
-    // emit 대상 element 만 추리기 (inline 흡수 / raw_html 자식 / select option 등은 동등 비교에서 제외)
-    const emittable = [];
-    for (const el of htmlElems) {
-      // rolltemplate 내부는 그대로 element children
-      // 부모가 select 면 자식들은 select.OPTIONS 슬롯에 매핑됨
-      // 우린 일반 CONTENT 매핑만 여기서 — option 은 부모쪽에서 별도 처리
-      if (htmlNode.tag === 'select' && el.tag === 'option') continue; // 별도 OPTIONS 슬롯에서 다룸
-      emittable.push(el);
-    }
+    const emittable = htmlElems;
 
     // block 트리 인접한 sibling 시퀀스에서 위치 단위 매칭 (greedy).
     let bi = 0;
@@ -870,10 +864,11 @@ function compare(rootHtml, rootBlocks) {
       const htmlChildElems = elementChildren(el);
       let blockChildChain = matchedBlock.statements['CONTENT'] || [];
 
-      // 특수: select → OPTIONS, rolltemplate → ROWS
-      if (matchedBlock.blockType === 'r20_select') {
+      // 특수: select/optgroup → OPTIONS, rolltemplate → ROWS
+      if (matchedBlock.blockType === 'r20_select' || matchedBlock.blockType === 'r20_optgroup') {
         const opts = matchedBlock.statements['OPTIONS'] || [];
-        const optElems = htmlChildElems.filter(c => c.tag === 'option');
+        const optElems = htmlChildElems.filter(c =>
+          c.tag === 'option' || (matchedBlock.blockType === 'r20_select' && c.tag === 'optgroup'));
         if (opts.length !== optElems.length) {
           loss.children_count_mismatch++;
         } else {

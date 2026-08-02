@@ -508,6 +508,9 @@ function summarizeSheetSignature(sheetEl) {
   const checkedControlValues = {};
   const selectedControlValues = {};
   const selectedOptionValues = {};
+  const optgroupLabels = [];
+  const disabledOptgroupLabels = [];
+  const dataAttributeValues = {};
   const controlValues = {};
   const disabledControlNames = [];
   const readOnlyControlNames = [];
@@ -531,6 +534,14 @@ function summarizeSheetSignature(sheetEl) {
     if (tag === 'select' && name) {
       selectedControlValues[name] = el.value;
       selectedOptionValues[name] = Array.from(el.selectedOptions).map((option) => option.value);
+    }
+    if (tag === 'optgroup') {
+      optgroupLabels.push(el.label);
+      if (el.disabled) disabledOptgroupLabels.push(el.label);
+    }
+    for (const attribute of Array.from(el.attributes)) {
+      if (!attribute.name.startsWith('data-') || attribute.name.startsWith('data-r20-')) continue;
+      (dataAttributeValues[attribute.name] ??= []).push(attribute.value);
     }
     if (name && 'value' in el) {
       if (tag === 'input' && el.type === 'radio') {
@@ -575,6 +586,11 @@ function summarizeSheetSignature(sheetEl) {
     checkedControlValues,
     selectedControlValues,
     selectedOptionValues,
+    optgroupLabels,
+    disabledOptgroupLabels,
+    dataAttributeValues: Object.fromEntries(
+      Object.entries(dataAttributeValues).map(([name, values]) => [name, values.sort()]),
+    ),
     controlValues,
     disabledControlNames: Array.from(new Set(disabledControlNames)).sort(),
     readOnlyControlNames: Array.from(new Set(readOnlyControlNames)).sort(),

@@ -264,7 +264,45 @@ export const INPUT_BLOCKS: BlockDef[] = [
     },
   },
 
-  // 5) select option (stack — fits SelectOption slot) -----------------------
+  // 5) option group (c-shape — also fits SelectOption slot) -----------------
+  {
+    type: 'r20_optgroup',
+    shape: 'c',
+    category: INPUT,
+    label: '선택 묶음',
+    tooltip: '선택 항목을 이름 붙은 묶음으로 정리한다.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('선택 묶음')
+        .appendField('이름')
+        .appendField(new Blockly.FieldTextInput('Group'), 'LABEL')
+        .appendField('사용 안 함')
+        .appendField(new Blockly.FieldCheckbox('FALSE'), 'DISABLED');
+      b.appendDummyInput()
+        .appendField('클래스')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendStatementInput('OPTIONS').setCheck('SelectOption').appendField('선택 항목:');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
+      b.setPreviousStatement(true, 'SelectOption');
+      b.setNextStatement(true, 'SelectOption');
+    }),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const label = String(b.getFieldValue('LABEL') ?? '');
+      const disabled = String(b.getFieldValue('DISABLED') ?? 'FALSE') === 'TRUE';
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const style = String(b.getFieldValue('STYLE') ?? '');
+      const options = ctx.statementToCode(block, 'OPTIONS');
+      const head = `<optgroup${attr('label', label)}${disabled ? ' disabled="disabled"' : ''}` +
+        `${sheetClassAttr(cls)}${styleAttr(style)}>`;
+      if (!options || !options.trim()) return `${head}</optgroup>`;
+      return `${head}\n${ctx.indent(options)}\n</optgroup>`;
+    },
+  },
+
+  // 6) select option (stack — fits SelectOption slot) -----------------------
   {
     type: 'r20_select_option',
     shape: 'stack',
@@ -304,7 +342,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
     },
   },
 
-  // 6) textarea -------------------------------------------------------------
+  // 7) textarea -------------------------------------------------------------
   {
     type: 'r20_textarea',
     shape: 'stack',

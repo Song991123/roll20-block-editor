@@ -235,6 +235,56 @@ const files = {
       },
     },
   }),
+  'fixture-E/source.html': [
+    '<div class="option-group-proof" style="width:420px;min-height:180px;padding:16px">',
+    '  <label>Role<select name="attr_role">',
+    '    <optgroup label="Archived" disabled data-kind="history">',
+    '      <option value="old">Old</option>',
+    '    </optgroup>',
+    '    <optgroup label="Current" class="active-group">',
+    '      <option value="current" selected>Current</option>',
+    '      <option value="future" data-hook="future">Future</option>',
+    '    </optgroup>',
+    '  </select></label>',
+    '</div>',
+  ].join('\n'),
+  'fixture-E/source.css': [
+    '.option-group-proof { background: #fffafc; border: 2px solid #b94c78; box-sizing: border-box; color: #3b2730; }',
+    '.option-group-proof label { display: block; font-weight: 700; }',
+    '.option-group-proof select { display: block; margin-top: 8px; min-width: 220px; }',
+    '.option-group-proof .active-group { color: #9f3158; }',
+  ].join('\n'),
+  'fixture-E/source.i18n': '{}',
+  'fixture-E/manifest.json': JSON.stringify({
+    id: 'fixture-E',
+    synthetic: true,
+    legacyMode: 'modern',
+    purpose: 'nested select option-group regression',
+    expected: {
+      normal: {
+        selectedControlValues: { attr_role: 'current' },
+        selectedOptionValues: { attr_role: ['current'] },
+        controlValues: { attr_role: 'current' },
+        optgroupLabels: ['Archived', 'Current'],
+        disabledOptgroupLabels: ['Archived'],
+        dataAttributeValues: { 'data-kind': ['history'], 'data-hook': ['future'] },
+        minimumTagCounts: { select: 1, optgroup: 2, option: 3 },
+        ordinaryScriptCount: 0,
+        nonControlAttrNameCount: 0,
+      },
+      sandbox: {
+        selectedControlValues: { attr_role: 'current' },
+        selectedOptionValues: { attr_role: ['current'] },
+        controlValues: { attr_role: 'current' },
+        optgroupLabels: ['Archived', 'Current'],
+        disabledOptgroupLabels: ['Archived'],
+        dataAttributeValues: { 'data-kind': ['history'], 'data-hook': ['future'] },
+        minimumTagCounts: { select: 1, optgroup: 2, option: 3 },
+        ordinaryScriptCount: 0,
+        nonControlAttrNameCount: 0,
+      },
+    },
+  }),
 };
 
 async function main() {
@@ -360,6 +410,24 @@ async function main() {
     if (formExpectationFailures.length > 0) {
       throw new Error(`grouped form expectation helper rejected valid state: ${formExpectationFailures.join(', ')}`);
     }
+    if (!files['fixture-E/source.html'].includes('<optgroup')) {
+      throw new Error('option group fixture structure missing');
+    }
+    const optionGroupManifest = JSON.parse(files['fixture-E/manifest.json']);
+    const optionGroupExpectationFailures = fixtureExpectationFailures({
+      selectedControlValues: { attr_role: 'current' },
+      selectedOptionValues: { attr_role: ['current'] },
+      controlValues: { attr_role: 'current' },
+      optgroupLabels: ['Archived', 'Current'],
+      disabledOptgroupLabels: ['Archived'],
+      dataAttributeValues: { 'data-kind': ['history'], 'data-hook': ['future'] },
+      tagCounts: { select: 1, optgroup: 2, option: 3 },
+      ordinaryScriptCount: 0,
+      nonControlAttrNameCount: 0,
+    }, optionGroupManifest.expected.normal);
+    if (optionGroupExpectationFailures.length > 0) {
+      throw new Error(`option group expectation helper rejected valid state: ${optionGroupExpectationFailures.join(', ')}`);
+    }
     console.log('VISUAL SYNTHETIC FIXTURE SELF-TEST PASS');
     return;
   }
@@ -371,7 +439,7 @@ async function main() {
   }
   await writeFile(
     path.join(outDir, 'synthetic-meta.json'),
-    `${JSON.stringify({ synthetic: true, fixtureIds: ['fixture-A', 'fixture-B', 'fixture-C', 'fixture-D'], files: Object.keys(files) }, null, 2)}\n`,
+    `${JSON.stringify({ synthetic: true, fixtureIds: ['fixture-A', 'fixture-B', 'fixture-C', 'fixture-D', 'fixture-E'], files: Object.keys(files) }, null, 2)}\n`,
     'utf8',
   );
   console.log(`VISUAL SYNTHETIC FIXTURE GENERATED ${outDir}`);

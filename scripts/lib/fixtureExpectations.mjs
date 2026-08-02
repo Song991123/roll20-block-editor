@@ -30,6 +30,19 @@ export function fixtureExpectationFailures(
       failures.push(`${prefix}selected options ${name}=${JSON.stringify(actual)} != ${JSON.stringify(values)}`);
     }
   }
+  for (const key of ['optgroupLabels', 'disabledOptgroupLabels']) {
+    if (!(key in expected)) continue;
+    const actual = summary?.[key] ?? [];
+    if (JSON.stringify(actual) !== JSON.stringify(expected[key])) {
+      failures.push(`${prefix}${key}=${JSON.stringify(actual)} != ${JSON.stringify(expected[key])}`);
+    }
+  }
+  for (const [name, values] of Object.entries(expected.dataAttributeValues ?? {})) {
+    const actual = summary?.dataAttributeValues?.[name] ?? [];
+    if (JSON.stringify(actual) !== JSON.stringify(values)) {
+      failures.push(`${prefix}data attribute ${name}=${JSON.stringify(actual)} != ${JSON.stringify(values)}`);
+    }
+  }
   for (const [name, value] of Object.entries(expected.controlValues ?? {})) {
     if (summary?.controlValues?.[name] !== value) {
       failures.push(`${prefix}control value ${name}=${summary?.controlValues?.[name] ?? ''} != ${value}`);

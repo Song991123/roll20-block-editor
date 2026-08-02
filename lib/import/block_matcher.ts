@@ -313,8 +313,8 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     const cls = stripSheetPrefix(a.class || '');
     const options: MatchedBlock[] = [];
     for (const c of node.children) {
-      if (c.type === 'element' && c.tag === 'option') {
-        const matched = matchOption(c, ctx);
+      if (c.type === 'element' && (c.tag === 'option' || c.tag === 'optgroup')) {
+        const matched = matchElement(c, ctx);
         if (matched) options.push(matched);
       }
     }
@@ -327,6 +327,10 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
 
   if (tag === 'option') {
     return matchOption(node, ctx);
+  }
+
+  if (tag === 'optgroup') {
+    return matchOptgroup(node, ctx);
   }
 
   if (tag === 'textarea') {
@@ -376,6 +380,26 @@ function matchOption(node: DomNode, _ctx: MatchContext): MatchedBlock {
       STYLE: a.style || '',
     },
     children: {},
+  };
+}
+
+function matchOptgroup(node: DomNode, ctx: MatchContext): MatchedBlock {
+  const a = node.attrs ?? {};
+  const options: MatchedBlock[] = [];
+  for (const child of node.children) {
+    if (child.type !== 'element' || child.tag !== 'option') continue;
+    const matched = matchElement(child, ctx);
+    if (matched) options.push(matched);
+  }
+  return {
+    blockType: 'r20_optgroup',
+    fields: {
+      LABEL: a.label || '',
+      DISABLED: 'disabled' in a || a.disabled != null ? 'TRUE' : 'FALSE',
+      CLASS: stripSheetPrefix(a.class || ''),
+      STYLE: a.style || '',
+    },
+    children: { OPTIONS: options },
   };
 }
 

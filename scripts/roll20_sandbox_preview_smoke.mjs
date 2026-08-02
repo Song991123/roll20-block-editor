@@ -196,6 +196,14 @@ async function summarizePreview(page) {
         const selectedControlValues = {};
         const selectedOptionValues = {};
         const defaultSelectedOptionValues = {};
+        const optgroups = elements.filter((el) => el.tagName.toLowerCase() === 'optgroup');
+        const dataAttributeValues = {};
+        elements.forEach((el) => {
+          Array.from(el.attributes).forEach((attribute) => {
+            if (!attribute.name.startsWith('data-') || attribute.name.startsWith('data-r20-')) return;
+            (dataAttributeValues[attribute.name] ??= []).push(attribute.value);
+          });
+        });
         elements.filter((el) => el.tagName.toLowerCase() === 'select' && el.getAttribute('name'))
           .forEach((el) => {
             selectedControlValues[el.getAttribute('name')] = el.value;
@@ -240,6 +248,11 @@ async function summarizePreview(page) {
           selectedControlValues,
           selectedOptionValues,
           defaultSelectedOptionValues,
+          optgroupLabels: optgroups.map((el) => el.label),
+          disabledOptgroupLabels: optgroups.filter((el) => el.disabled).map((el) => el.label),
+          dataAttributeValues: Object.fromEntries(
+            Object.entries(dataAttributeValues).map(([name, values]) => [name, values.sort()]),
+          ),
           controlValues,
           disabledControlNames: Array.from(new Set(controls.filter((el) => el.disabled)
             .map((el) => el.getAttribute('name')))).sort(),
