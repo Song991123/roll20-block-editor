@@ -483,15 +483,18 @@ export default function PreviewMain() {
     selectedId,
     selectedIds.length,
   ]);
-  const iframeAlignmentSelection = useMemo(() => {
-    const renderedSelection = iframeEditOverlay?.selection;
+  const iframeKeyboardNudgeSelection = useMemo(() => {
+    const renderedSelection = iframeEditOverlay?.selection?.length
+      ? iframeEditOverlay.selection
+      : iframeEditOverlay
+        ? [{ geometry: iframeEditOverlay.subject, hitPath: iframeEditOverlay.hitPath }]
+        : null;
     if (
       mainMode !== 'edit'
       || editSubmode !== 'sheet'
       || renderMode !== 'iframe'
       || iframeEditOverlay?.phase !== 'measure'
       || !renderedSelection
-      || renderedSelection.length < 2
       || renderedSelection.length !== selectedIds.length
     ) return null;
 
@@ -499,13 +502,12 @@ export default function PreviewMain() {
     if (!renderedSelection.every((item) => selectedSet.has(item.geometry.blockId))) return null;
     const blocks = renderedSelection.map((item) => htmlLayerMap.get(item.geometry.blockId) ?? null);
     if (blocks.some((block) => !block || getLayerRole(block.type).kind === 'runtime')) return null;
-    const parentId = blocks[0]?.layerParentId ?? null;
     const adapter = getBlocklyAdapter();
     const canCommit = renderedSelection.every((item, index) => {
       const block = blocks[index];
-      if (!block || block.layerParentId !== parentId) return false;
+      if (!block) return false;
       if (item.geometry.position.trim().toLowerCase() !== 'absolute') return false;
-      if (item.geometry.offsetParentBlockId !== parentId) return false;
+      if (item.geometry.offsetParentBlockId !== block.layerParentId) return false;
       return (
         adapter.hasBlockField('html', block.id, 'LEFT_PX')
         && adapter.hasBlockField('html', block.id, 'TOP_PX')
@@ -520,6 +522,14 @@ export default function PreviewMain() {
     renderMode,
     selectedIds,
   ]);
+  const iframeAlignmentSelection = useMemo(() => {
+    const selection = iframeKeyboardNudgeSelection;
+    if (!selection || selection.length < 2) return null;
+    const parentId = htmlLayerMap.get(selection[0].geometry.blockId)?.layerParentId ?? null;
+    return selection.every((item) => (
+      htmlLayerMap.get(item.geometry.blockId)?.layerParentId === parentId
+    )) ? selection : null;
+  }, [htmlLayerMap, iframeKeyboardNudgeSelection]);
   const iframeAlignmentBounds = useMemo(() => (
     iframeAlignmentSelection
       ? designSelectionBounds(iframeAlignmentSelection.map((item) => ({
@@ -530,16 +540,27 @@ export default function PreviewMain() {
   ), [iframeAlignmentSelection]);
 
   const commitIframeSelectionDeltas = useCallback((
+    selection: readonly IframeEditSelectionNode[],
     deltas: ReturnType<typeof resolveDesignAlignment>,
   ) => {
-    const selection = iframeAlignmentSelection;
-    if (!selection) return;
     if (
-      deltas.length !== selection.length
+      selection.length < 1
+      || deltas.length !== selection.length
       || deltas.every((item) => Math.abs(item.deltaX) < 0.001 && Math.abs(item.deltaY) < 0.001)
     ) return;
 
     const adapter = getBlocklyAdapter();
+    if (selection.some((item) => {
+      const block = htmlLayerMap.get(item.geometry.blockId);
+      if (!block || getLayerRole(block.type).kind === 'runtime') return true;
+      if (item.geometry.position.trim().toLowerCase() !== 'absolute') return true;
+      if (item.geometry.offsetParentBlockId !== block.layerParentId) return true;
+      if (!item.hitPath.every((geometry) => htmlLayerMap.has(geometry.blockId))) return true;
+      return !(
+        adapter.hasBlockField('html', block.id, 'LEFT_PX')
+        && adapter.hasBlockField('html', block.id, 'TOP_PX')
+      ) && !canManageDesignStyle(adapter, 'html', block.id);
+    })) return;
     const lookup = {
       getBlock: (blockId: string) => htmlLayerMap.get(blockId) ?? null,
       canNestInContainer: (blockId: string) => adapter.canNestInContainer('html', blockId),
@@ -575,35 +596,41 @@ export default function PreviewMain() {
     if (!moved) return;
 
     const deltaById = new Map(deltas.map((item) => [item.blockId, item]));
-    setIframeEditOverlay((current) => {
-      if (!current || current.phase !== 'measure') return current;
-      const shiftGeometry = (geometry: typeof current.subject) => {
+    const shiftedSelection = selection.map((item) => {
+      const shiftGeometry = (geometry: typeof item.geometry) => {
         const delta = deltaById.get(geometry.blockId);
         return delta
           ? { ...geometry, rect: shiftedRect(geometry.rect, delta.deltaX, delta.deltaY) }
           : geometry;
       };
-      const subject = shiftGeometry(current.subject);
+      return {
+        geometry: shiftGeometry(item.geometry),
+        hitPath: item.hitPath.map(shiftGeometry),
+      };
+    });
+    const shiftedById = new Map(shiftedSelection.map((item) => [item.geometry.blockId, item]));
+    setIframeEditOverlay((current) => {
+      if (!current || current.phase !== 'measure') return current;
+      const primary = shiftedById.get(current.blockId);
+      if (!primary) return current;
+      const subject = primary.geometry;
       return {
         ...current,
         rect: subject.rect,
         subject,
-        hitPath: current.hitPath.map(shiftGeometry),
-        selection: current.selection?.map((item) => ({
-          geometry: shiftGeometry(item.geometry),
-          hitPath: item.hitPath.map(shiftGeometry),
-        })),
+        hitPath: primary.hitPath,
+        selection: shiftedSelection.length > 1 ? shiftedSelection : undefined,
       };
     });
     const store = useWorkspaceStore.getState();
     store.bumpStructure('html', adapter.countBlocks('html'));
     if (managedCssChanged) store.bumpStructure('css', adapter.countBlocks('css'));
     queueMicrotask(() => flushEmitPipeline());
-  }, [htmlLayerMap, iframeAlignmentSelection]);
+  }, [htmlLayerMap]);
   const alignIframeSelection = useCallback((mode: DesignAlignmentMode) => {
     const selection = iframeAlignmentSelection;
     if (!selection) return;
-    commitIframeSelectionDeltas(resolveDesignAlignment(selection.map((item) => ({
+    commitIframeSelectionDeltas(selection, resolveDesignAlignment(selection.map((item) => ({
       blockId: item.geometry.blockId,
       rect: item.geometry.rect,
     })), mode));
@@ -611,11 +638,22 @@ export default function PreviewMain() {
   const distributeIframeSelection = useCallback((mode: DesignDistributionMode) => {
     const selection = iframeAlignmentSelection;
     if (!selection || selection.length < 3) return;
-    commitIframeSelectionDeltas(resolveDesignDistribution(selection.map((item) => ({
+    commitIframeSelectionDeltas(selection, resolveDesignDistribution(selection.map((item) => ({
       blockId: item.geometry.blockId,
       rect: item.geometry.rect,
     })), mode));
   }, [commitIframeSelectionDeltas, iframeAlignmentSelection]);
+  const nudgeIframeSelection = useCallback((
+    selection: readonly IframeEditSelectionNode[],
+    deltaX: number,
+    deltaY: number,
+  ) => {
+    commitIframeSelectionDeltas(selection, selection.map((item) => ({
+      blockId: item.geometry.blockId,
+      deltaX,
+      deltaY,
+    })));
+  }, [commitIframeSelectionDeltas]);
   const iframeDistributionEnabled = (iframeAlignmentSelection?.length ?? 0) >= 3;
   const iframeArrangementToolbarWidth = iframeDistributionEnabled ? 254 : 188;
 
@@ -1232,6 +1270,17 @@ export default function PreviewMain() {
           selectedBlockId: useWorkspaceStore.getState().selectedBlockId,
           selectedBlockIds: useWorkspaceStore.getState().selectedBlockIds,
         }, '*');
+        return;
+      }
+      if (editMessage?.type === 'r20:edit-nudge') {
+        if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
+        const ui = useUiStore.getState();
+        if (ui.mainMode !== 'edit' || ui.editSubmode !== 'sheet' || !iframeRenderReady) return;
+        const selectedBlockIds = useWorkspaceStore.getState().selectedBlockIds;
+        if (editMessage.selection.length !== selectedBlockIds.length) return;
+        const selectedSet = new Set(selectedBlockIds);
+        if (!editMessage.selection.every((item) => selectedSet.has(item.geometry.blockId))) return;
+        nudgeIframeSelection(editMessage.selection, editMessage.deltaX, editMessage.deltaY);
         return;
       }
       if (editMessage?.type === 'r20:edit-hit') {
@@ -1905,7 +1954,41 @@ export default function PreviewMain() {
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [appendBlock, canvasWidthAuto, editSubmode, flushIframeEditState, htmlLayerMap, iframeDocumentSrcdoc, iframeRenderReady, liveHtmlKey, queueIframeEditState, renderSourceKey, setAutoCanvasWidth, setHoveredWidgetId, setSelected, setSelectedWidgetId]);
+  }, [appendBlock, canvasWidthAuto, editSubmode, flushIframeEditState, htmlLayerMap, iframeDocumentSrcdoc, iframeRenderReady, liveHtmlKey, nudgeIframeSelection, queueIframeEditState, renderSourceKey, setAutoCanvasWidth, setHoveredWidgetId, setSelected, setSelectedWidgetId]);
+
+  useEffect(() => {
+    if (!iframeEditBridgeId || !iframeKeyboardNudgeSelection || !iframeRenderReady) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.defaultPrevented
+        || event.isComposing
+        || event.altKey
+        || event.ctrlKey
+        || event.metaKey
+      ) return;
+      const target = event.target;
+      if (
+        target instanceof HTMLElement
+        && target.closest('input, textarea, select, [contenteditable="true"]')
+      ) return;
+      const step = event.shiftKey ? 10 : 1;
+      const deltaX = event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0;
+      const deltaY = event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0;
+      if (!deltaX && !deltaY) return;
+      const targetWindow = iframeRef.current?.contentWindow;
+      if (!targetWindow) return;
+      event.preventDefault();
+      targetWindow.postMessage({
+        type: 'r20:edit-nudge-command',
+        protocol: R20_IFRAME_EDIT_PROTOCOL,
+        bridgeId: iframeEditBridgeId,
+        deltaX,
+        deltaY,
+      }, '*');
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [iframeEditBridgeId, iframeKeyboardNudgeSelection, iframeRenderReady]);
 
   useEffect(() => {
     if (!iframeEditBridgeId) return;

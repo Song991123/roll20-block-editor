@@ -6,8 +6,8 @@
  * smoke deliberately uses a synthetic sheet so no external sheet source or
  * derived evidence is retained. It verifies the user-facing interaction
  * contract: flow/free placement, canvas widget drop, layer insertion, cycle
- * protection, selection sync, direct resize, multi-selection alignment and
- * distribution, and editable canvas width.
+ * protection, selection sync, keyboard nudging, direct resize,
+ * multi-selection alignment and distribution, and editable canvas width.
  */
 
 import http from 'node:http';
@@ -824,7 +824,74 @@ async function main() {
       const sorted = [...items].sort((a, b) => a.top - b.top);
       return sorted.slice(1).map((item, index) => item.top - (sorted[index].top + sorted[index].height));
     };
-    const alignmentBefore = await readArrangementGeometry();
+    const keyboardBefore = await readArrangementGeometry();
+    assert(
+      keyboardBefore.every((item) => item?.position === 'absolute'),
+      `keyboard nudge targets are not absolute layers: ${JSON.stringify(keyboardBefore)}`,
+    );
+    await frame.locator('body').press('ArrowRight');
+    await frame.waitForFunction(() => (
+      Number(document.body?.getAttribute('data-r20-keyboard-nudge-count') ?? '0') >= 1
+      && !document.body?.hasAttribute('data-r20-keyboard-nudge-active')
+    ), null, { timeout: 10000 });
+    await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.groupTwoId}"]`,
+    ).press('Shift+ArrowDown');
+    await frame.waitForFunction(() => (
+      Number(document.body?.getAttribute('data-r20-keyboard-nudge-count') ?? '0') >= 2
+      && !document.body?.hasAttribute('data-r20-keyboard-nudge-active')
+    ), null, { timeout: 10000 });
+    const keyboardAfterEdit = await readArrangementGeometry();
+    const keyboardEmit = await page.evaluate(() => window.__perfHook.getEmitContent());
+    const keyboardMetrics = await frame.evaluate(() => ({
+      count: Number(document.body?.getAttribute('data-r20-keyboard-nudge-count') ?? '0'),
+      nudgeEpoch: Number(document.body?.getAttribute('data-r20-last-keyboard-nudge-epoch') ?? '0'),
+      applyEpoch: Number(document.body?.getAttribute('data-r20-last-apply-epoch') ?? '0'),
+    }));
+    assert(
+      keyboardAfterEdit.every((item, index) => (
+        Math.abs(item.left - keyboardBefore[index].left - 1) <= 0.5
+        && Math.abs(item.top - keyboardBefore[index].top - 10) <= 0.5
+      )),
+      `keyboard nudge did not move every selected layer by 1px/10px: ${JSON.stringify({ keyboardBefore, keyboardAfterEdit })}`,
+    );
+    assert(
+      keyboardAfterEdit.every(
+        (item) => !/(?:^|;)\s*(?:position|left|top)\s*:/i.test(item.inlineStyle),
+      ),
+      `keyboard nudge leaked position into inline HTML: ${JSON.stringify(keyboardAfterEdit)}`,
+    );
+    assert(/position\s*:\s*absolute/i.test(keyboardEmit.css), 'keyboard nudge did not persist in managed CSS');
+    assert(
+      keyboardMetrics.count >= 2
+        && keyboardMetrics.nudgeEpoch > 0
+        && keyboardMetrics.applyEpoch >= keyboardMetrics.nudgeEpoch,
+      `keyboard nudge was not applied optimistically before the authoritative patch: ${JSON.stringify(keyboardMetrics)}`,
+    );
+    await page.click('[data-testid="main-mode-preview"]');
+    await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '0');
+    const keyboardPreview = await readArrangementGeometry();
+    await page.click('[data-testid="preview-exit-edit"]');
+    await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '1');
+    const keyboardEditAgain = await readArrangementGeometry();
+    assert(
+      keyboardPreview.every((item, index) => (
+        Math.abs(item.left - keyboardAfterEdit[index].left) <= 0.5
+        && Math.abs(item.top - keyboardAfterEdit[index].top) <= 0.5
+        && Math.abs(keyboardEditAgain[index].left - item.left) <= 0.5
+        && Math.abs(keyboardEditAgain[index].top - item.top) <= 0.5
+      )),
+      `keyboard nudge diverged across Preview/Edit: ${JSON.stringify({ keyboardAfterEdit, keyboardPreview, keyboardEditAgain })}`,
+    );
+    result.tests.keyboardNudge = {
+      before: keyboardBefore,
+      afterEdit: keyboardAfterEdit,
+      preview: keyboardPreview,
+      editAgain: keyboardEditAgain,
+      metrics: keyboardMetrics,
+    };
+    await alignmentToolbar.waitFor({ state: 'visible', timeout: 10000 });
+    const alignmentBefore = keyboardEditAgain;
     assert(
       alignmentBefore.every((item) => item?.position === 'absolute')
         && new Set(alignmentBefore.map((item) => Math.round(item.top))).size > 1,
@@ -3678,7 +3745,7 @@ async function main() {
         `- Status: ${result.pass ? 'PASS' : 'FAIL'}`,
         `- Console errors: ${consoleErrors.length}`,
         `- Page errors: ${pageErrors.length}`,
-        '- Coverage: flow/free placement, direct on-sheet resize, canvas widget and block gallery drops, layer edge auto-scroll, layer collapse/drag-hover expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, managed visual styles, preview Roll/chat, sheet width, and the dedicated rolltemplate card editor with click/style/drop/chat synchronization plus empty-workspace template creation.',
+        '- Coverage: flow/free placement, direct on-sheet keyboard nudge and resize, canvas widget and block gallery drops, layer edge auto-scroll, layer collapse/drag-hover expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, managed visual styles, preview Roll/chat, sheet width, and the dedicated rolltemplate card editor with click/style/drop/chat synchronization plus empty-workspace template creation.',
         '',
       ].join('\n'),
       'utf8',

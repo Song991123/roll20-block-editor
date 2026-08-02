@@ -113,8 +113,14 @@ belong in tracked documents.
   axes and selection-order independence. Browser coverage checks uneven gaps
   becoming equal while outer bounds, parentage, managed-CSS persistence, and
   the shared Preview/Edit surface remain intact.
+- `DONE LOCAL`: eligible absolute selections move by one pixel with an arrow
+  key and ten pixels with Shift plus an arrow. The same path works while focus
+  is inside the rendered sheet or on a layer row, paints in the iframe before
+  the model round trip, writes managed CSS, and stays geometrically identical
+  after Preview/Edit switches.
 - `PARTIAL`: continue usability review for dense imported structures, nested
-  absolute placement, keyboard selection, and undo/redo.
+  coordinate systems, layer-panel keyboard selection, and unified HTML/CSS
+  undo/redo transactions.
 
 ## P1 - User Experience
 

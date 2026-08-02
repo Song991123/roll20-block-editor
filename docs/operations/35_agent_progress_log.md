@@ -15,6 +15,24 @@ or source-derived measurement here.
 - Remote CI: passed safety/unit verification, lint, and production build.
 - Worktree and project server state were clean after the run.
 
+## 2026-08-03 - Absolute Selection Keyboard Nudge
+
+- Added one-pixel arrow-key and ten-pixel Shift-arrow movement for eligible
+  absolute selections on the persistent iframe edit surface.
+- Keyboard input works from the rendered sheet and from a focused layer row.
+  The iframe paints temporary coordinates first, then the existing managed-CSS
+  position commit becomes authoritative; no position is added to inline HTML.
+- Eligibility requires each logical parent to match its rendered offset parent.
+  Flow, table, list, runtime, nested-selected, and mixed-coordinate cases remain
+  unchanged instead of being silently converted to free placement.
+- Focused bridge/build/position tests, production build, and the full edit-flow
+  browser smoke pass. The browser run verifies three-layer movement, immediate
+  iframe timing, managed CSS, Preview/Edit geometry equality, zero console/page
+  errors, and temporary-server cleanup.
+- Claim boundary: this is anonymous local synthetic coverage. Unified undo/redo
+  across HTML and CSS workspaces, dense imported-sheet ergonomics, and actual
+  Roll20 interaction remain open.
+
 ## 2026-08-03 - Nested Select Option-Group Mapping
 
 - Added an editable option-group block and routed nested options through the

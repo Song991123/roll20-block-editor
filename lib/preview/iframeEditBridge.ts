@@ -110,6 +110,15 @@ export type IframeEditContextMenuMessage = {
   pointer: { x: number; y: number };
 };
 
+export type IframeEditNudgeMessage = {
+  type: 'r20:edit-nudge';
+  protocol: typeof R20_IFRAME_EDIT_PROTOCOL;
+  bridgeId: string;
+  deltaX: number;
+  deltaY: number;
+  selection: IframeEditSelectionNode[];
+};
+
 export type IframeEditBridgeMessage =
   | IframeEditReadyMessage
   | IframeEditHitMessage
@@ -117,7 +126,8 @@ export type IframeEditBridgeMessage =
   | IframeWidgetDragMessage
   | IframeBlockTypeDragMessage
   | IframeLayerDragMessage
-  | IframeEditContextMenuMessage;
+  | IframeEditContextMenuMessage
+  | IframeEditNudgeMessage;
 
 export type IframeEditModeCommand = {
   type: 'r20:edit-mode';
@@ -231,6 +241,32 @@ export function parseIframeEditBridgeMessage(value: unknown): IframeEditBridgeMe
       bridgeId: value.bridgeId,
       revision: value.revision,
       blockCount: value.blockCount,
+    };
+  }
+  if (value.type === 'r20:edit-nudge') {
+    if (
+      !isFiniteCoordinate(value.deltaX)
+      || !isFiniteCoordinate(value.deltaY)
+      || Math.abs(value.deltaX) > 10
+      || Math.abs(value.deltaY) > 10
+      || (value.deltaX === 0 && value.deltaY === 0)
+      || !Array.isArray(value.selection)
+      || value.selection.length < 1
+      || value.selection.length > 128
+      || !value.selection.every(isSelectionNode)
+    ) return null;
+    const unique = new Set<string>();
+    for (const selected of value.selection) {
+      if (unique.has(selected.geometry.blockId)) return null;
+      unique.add(selected.geometry.blockId);
+    }
+    return {
+      type: 'r20:edit-nudge',
+      protocol: R20_IFRAME_EDIT_PROTOCOL,
+      bridgeId: value.bridgeId,
+      deltaX: value.deltaX,
+      deltaY: value.deltaY,
+      selection: value.selection,
     };
   }
   if (value.type === 'r20:widget-drag') {

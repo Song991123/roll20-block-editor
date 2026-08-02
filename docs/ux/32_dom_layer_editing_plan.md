@@ -1,6 +1,6 @@
 # DOM Layer Editing Plan
 
-Updated: 2026-08-01
+Updated: 2026-08-03
 
 This document defines how imported Roll20 DOM structures are represented in
 the editor. It is a product contract for the layer panel and the shared iframe
@@ -88,6 +88,12 @@ invent separate DOM models.
     and vertical distribution. Distribution preserves the outer selection
     bounds and makes the gaps between rendered boxes equal. Flow, table, list,
     mixed-parent, and mixed-coordinate selections do not receive these actions.
+17. Arrow keys move an eligible absolute selection by one pixel; Shift plus an
+    arrow moves it by ten pixels. The logical parent and rendered offset parent
+    must already agree. The iframe paints the new coordinates before the model
+    round trip, then the existing managed-CSS position path becomes
+    authoritative. Flow/table/list content is never converted to absolute
+    positioning by a keyboard action.
 
 ## Visual Language
 
@@ -294,14 +300,14 @@ already-selected insertion position.
 
 Local tests cover classification, cycle protection, before/inside/after layer
 operations, flow versus free placement, grouping preconditions, selection
-synchronization, multi-object free transform, six-way alignment math, and
-horizontal/vertical equal-gap distribution. The browser smoke also proves Ctrl
-selection -> iframe multi-highlight -> layer-panel third selection -> shared
-free movement -> same-parent vertical distribution -> top alignment ->
-persisted managed CSS. Distribution keeps the outer rendered bounds, while
-alignment keeps no position in inline HTML and has equal geometry after
-Preview/Edit switches. Grouping keeps the model parent, iframe parent, and
-emitted HTML aligned.
+synchronization, multi-object free transform, keyboard nudging, six-way
+alignment math, and horizontal/vertical equal-gap distribution. The browser
+smoke also proves Ctrl selection -> iframe multi-highlight -> layer-panel third
+selection -> shared free movement -> iframe and layer-panel keyboard nudges ->
+Preview/Edit position equality -> same-parent vertical distribution -> top
+alignment -> persisted managed CSS. Distribution keeps the outer rendered
+bounds, while alignment and nudging keep position out of inline HTML. Grouping
+keeps the model parent, iframe parent, and emitted HTML aligned.
 Anonymous imported cross-container cases prove existing content can move
 between frames, lists, table bodies, and value-switch cases, keep the same
 target parent in Edit and Preview, and retain that nesting after emit ->

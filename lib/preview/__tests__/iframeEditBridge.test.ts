@@ -95,6 +95,15 @@ assert.deepEqual(parseIframeEditBridgeMessage({
   protocol: R20_IFRAME_EDIT_PROTOCOL,
   bridgeId,
 });
+const nudge = {
+  type: 'r20:edit-nudge',
+  protocol: R20_IFRAME_EDIT_PROTOCOL,
+  bridgeId,
+  deltaX: 1,
+  deltaY: -10,
+  selection: [{ geometry: subject, hitPath: hit.hitPath }],
+};
+assert.deepEqual(parseIframeEditBridgeMessage(nudge), nudge);
 const widgetDrag = {
   type: 'r20:widget-drag',
   protocol: R20_IFRAME_EDIT_PROTOCOL,
@@ -156,6 +165,10 @@ assert.equal(parseIframeEditBridgeMessage({
   subject: { ...subject, tagName: 'x'.repeat(65) },
 }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...hit, modifiers: { ctrlKey: 'yes' } }), null);
+assert.equal(parseIframeEditBridgeMessage({ ...nudge, deltaX: 11 }), null);
+assert.equal(parseIframeEditBridgeMessage({ ...nudge, deltaX: 0, deltaY: 0 }), null);
+assert.equal(parseIframeEditBridgeMessage({ ...nudge, selection: [] }), null);
+assert.equal(parseIframeEditBridgeMessage({ ...nudge, selection: [nudge.selection[0], nudge.selection[0]] }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...multiHit, selection: [multiHit.selection[0], multiHit.selection[0]] }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...multiHit, selection: [] }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...multiHit, selection: [{ geometry: subject, hitPath: new Array(65).fill(subject) }] }), null);

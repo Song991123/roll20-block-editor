@@ -144,6 +144,9 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   var optimisticFlowCommit = null;
   var optimisticEditMove = null;
   var optimisticEditResize = null;
+  var optimisticEditNudge = null;
+  var optimisticEditNudgeTimer = 0;
+  var keyboardNudgeCount = 0;
   var selectedEditBlockIds = [];
   var pendingLivePatchChunks = null;
   // Parent retries an apply message for transport reliability. A delayed
@@ -375,6 +378,10 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       nextSelectedBlockIds = selectedEditBlockIds.slice(0, 128);
     }
     selectedEditBlockIds = nextSelectedBlockIds;
+    if (
+      optimisticEditNudge
+      && optimisticEditNudge.selectionKey !== selectedEditBlockIds.slice().sort().join('\u0001')
+    ) clearOptimisticEditNudge();
     if (activeEditPointer) {
       var nextSelectionKey = selectedEditBlockIds.join('\u0001');
       if (activeEditPointer.dragSelectionKey !== nextSelectionKey) {
@@ -495,6 +502,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       activeEditPointer = null;
       clearOptimisticEditMove();
       clearOptimisticEditResize();
+      clearOptimisticEditNudge();
       rollbackOptimisticFlowMove();
       clearValidatedFlowTarget();
     }
@@ -711,6 +719,106 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       return;
     }
     node.style.setProperty(property, snapshot.value, snapshot.priority || '');
+  }
+  function clearOptimisticEditNudge() {
+    if (optimisticEditNudgeTimer) window.clearTimeout(optimisticEditNudgeTimer);
+    optimisticEditNudgeTimer = 0;
+    var nudge = optimisticEditNudge;
+    optimisticEditNudge = null;
+    document.body.removeAttribute('data-r20-keyboard-nudge-active');
+    if (!nudge || !nudge.selectedNodes) return false;
+    for (var i = 0; i < nudge.selectedNodes.length; i += 1) {
+      var selected = nudge.selectedNodes[i];
+      if (!selected.node || !selected.node.isConnected) continue;
+      Object.keys(selected.properties).forEach(function (property) {
+        restoreInlineProperty(selected.node, property, selected.properties[property]);
+      });
+    }
+    scheduleResize();
+    return true;
+  }
+  function applyKeyboardNudge(deltaX, deltaY) {
+    if (
+      !editBridgeEnabled
+      || activeEditPointer
+      || optimisticEditResize
+      || !Number.isFinite(deltaX)
+      || !Number.isFinite(deltaY)
+      || Math.abs(deltaX) > 10
+      || Math.abs(deltaY) > 10
+      || (deltaX === 0 && deltaY === 0)
+    ) return false;
+    var nodes = selectedNodesForIds(selectedEditBlockIds);
+    if (!nodes.length || nodes.length !== selectedEditBlockIds.length) return false;
+    var selectionKey = nodes.map(function (node) {
+      return node.dataset && node.dataset.r20BlockId ? node.dataset.r20BlockId : '';
+    }).filter(Boolean).sort().join('\u0001');
+    if (!selectionKey) return false;
+
+    var selection = [];
+    for (var i = 0; i < nodes.length; i += 1) {
+      var geometry = geometryOf(nodes[i]);
+      if (!geometry || String(geometry.position).toLowerCase() !== 'absolute') return false;
+      selection.push({ geometry: geometry, hitPath: hitPathOf(nodes[i]) });
+    }
+    if (!optimisticEditNudge || optimisticEditNudge.selectionKey !== selectionKey) {
+      clearOptimisticEditNudge();
+      optimisticEditNudge = {
+        selectionKey: selectionKey,
+        selectedNodes: nodes.map(function (node) {
+          var properties = {};
+          ['left', 'top', 'right', 'bottom', 'transition', 'will-change'].forEach(function (property) {
+            properties[property] = inlinePropertySnapshot(node, property);
+          });
+          return { node: node, properties: properties };
+        })
+      };
+    }
+
+    var changed = false;
+    for (var nodeIndex = 0; nodeIndex < nodes.length; nodeIndex += 1) {
+      var current = selection[nodeIndex].geometry;
+      var nextLeft = Math.max(0, Math.round(current.offsetLeft + deltaX));
+      var nextTop = Math.max(0, Math.round(current.offsetTop + deltaY));
+      if (nextLeft === current.offsetLeft && nextTop === current.offsetTop) continue;
+      var node = nodes[nodeIndex];
+      node.style.setProperty('left', nextLeft + 'px', 'important');
+      node.style.setProperty('top', nextTop + 'px', 'important');
+      node.style.setProperty('right', 'auto', 'important');
+      node.style.setProperty('bottom', 'auto', 'important');
+      node.style.setProperty('transition', 'none', 'important');
+      node.style.setProperty('will-change', 'left, top', 'important');
+      changed = true;
+    }
+    if (!changed) {
+      clearOptimisticEditNudge();
+      return false;
+    }
+
+    keyboardNudgeCount += 1;
+    document.body.setAttribute('data-r20-keyboard-nudge-active', '1');
+    document.body.setAttribute('data-r20-keyboard-nudge-count', String(keyboardNudgeCount));
+    document.body.setAttribute(
+      'data-r20-last-keyboard-nudge-epoch',
+      String(window.performance.timeOrigin + window.performance.now())
+    );
+    if (optimisticEditNudgeTimer) window.clearTimeout(optimisticEditNudgeTimer);
+    optimisticEditNudgeTimer = window.setTimeout(clearOptimisticEditNudge, 1500);
+    scheduleResize();
+    try {
+      parent.postMessage({
+        type: 'r20:edit-nudge',
+        protocol: 1,
+        bridgeId: editBridgeId,
+        deltaX: deltaX,
+        deltaY: deltaY,
+        selection: selection
+      }, '*');
+    } catch (error) {
+      clearOptimisticEditNudge();
+      return false;
+    }
+    return true;
   }
   function clearOptimisticEditResize() {
     var resize = optimisticEditResize;
@@ -970,6 +1078,9 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       pendingLivePatchChunks = null;
     }
     lastAppliedRevision = data.revision;
+    // Restore temporary keyboard coordinates before applying authoritative
+    // HTML/CSS in this same task, so no rollback frame is painted.
+    clearOptimisticEditNudge();
     // Restore the pre-drag inline state before applying the authoritative HTML
     // and managed CSS. Both operations run in one task, so no rollback frame is
     // painted and an imported inline width cannot be reintroduced afterward.
@@ -1920,8 +2031,28 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       }, '*');
     } catch (_) {}
   }, true);
+  document.addEventListener('keydown', function (e) {
+    if (!editBridgeEnabled || e.defaultPrevented || e.isComposing || e.altKey || e.ctrlKey || e.metaKey) return;
+    var target = e.target;
+    if (target && target.isContentEditable) return;
+    var step = e.shiftKey ? 10 : 1;
+    var deltaX = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
+    var deltaY = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
+    if (!deltaX && !deltaY) return;
+    if (!applyKeyboardNudge(deltaX, deltaY)) return;
+    try { e.preventDefault(); } catch (_) {}
+    try { e.stopPropagation(); } catch (_) {}
+  }, true);
   window.addEventListener('message', function (e) {
     if (e.source !== parent || !e.data) return;
+    if (
+      e.data.type === 'r20:edit-nudge-command'
+      && e.data.protocol === 1
+      && e.data.bridgeId === editBridgeId
+    ) {
+      applyKeyboardNudge(Number(e.data.deltaX), Number(e.data.deltaY));
+      return;
+    }
     if (
       e.data.type === 'r20:edit-resize-preview'
       && e.data.protocol === 1
