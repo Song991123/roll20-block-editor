@@ -136,6 +136,7 @@
     "diagnose:roll20-chat-style": "node scripts/roll20_chat_style_context_diagnostics.mjs",
     "diagnose:roll20-chat-current-metrics": "node scripts/roll20_chat_current_metrics_audit.mjs",
     "diagnose:roll20-chat-structure": "node scripts/roll20_chat_structure_compare.mjs",
+    "test:roll20-chat-structure": "node scripts/roll20_chat_structure_compare.mjs --self-test",
     "diagnose:roll20-chat-refresh": "node scripts/roll20_chat_diagnostic_refresh.mjs",
     "plan:roll20-chat-renderer-targets": "node scripts/roll20_chat_targeted_renderer_plan.mjs",
     "handoff:roll20-chat-current": "node scripts/roll20_chat_current_handoff.mjs",

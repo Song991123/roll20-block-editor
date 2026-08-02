@@ -17,6 +17,8 @@
 import { existsSync } from 'node:fs';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { inspectCurrentChatMetrics } from './lib/roll20ChatMetrics.mjs';
+import { payloadRequiresChat } from './lib/roll20PayloadCapabilities.mjs';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const REQUIRE_ACTUAL = args.includes('--require-actual');
@@ -654,82 +656,10 @@ async function readChatCurrentMetrics(runDir, fixtureIds) {
 }
 
 function validateCurrentChatMetrics(fixtureId, domEvidence, file) {
-  if (!domEvidence) {
-    return {
-      fixtureId,
-      ok: false,
-      status: 'MISSING_SIDECAR',
-      file: rel(file),
-      missing: ['roll20-chat-dom-evidence.json'],
-      note: 'Roll20 chat DOM sidecar is missing; current row/typography metrics cannot be checked',
-    };
-  }
-  const template = domEvidence.latestTemplate
-    ?? [...(domEvidence.rolltemplates ?? [])].reverse().find((item) => item?.rect?.width)
-    ?? null;
-  const table = findTemplateChild(template, 'table');
-  const hasTableStructure = Boolean(template?.tableStructure?.table?.boxMetrics) ||
-    Boolean(synthesizeTableStructure(template, table)?.table?.boxMetrics);
-  const missing = [];
-  if (!template?.computedStyle) missing.push('latestTemplate.computedStyle');
-  if (!Array.isArray(template?.rowMetrics) || template.rowMetrics.length === 0) missing.push('latestTemplate.rowMetrics');
-  if (!hasTableStructure) missing.push('latestTemplate.tableStructure');
-  if (!table?.computedStyle) missing.push('table.computedStyle');
-  if (!table?.boxMetrics) missing.push('table.boxMetrics');
-  if (template?.computedStyle && !hasTextRasterizationFields(template.computedStyle)) missing.push('latestTemplate.computedStyle.textRasterization');
-  if (table?.computedStyle && !hasTextRasterizationFields(table.computedStyle)) missing.push('table.computedStyle.textRasterization');
-  if (template?.computedStyle && !hasPaintFilterField(template.computedStyle)) missing.push('latestTemplate.computedStyle.filter');
-  if (table?.computedStyle && !hasPaintFilterField(table.computedStyle)) missing.push('table.computedStyle.filter');
-  if (!domEvidence.fontEvidence?.checks) missing.push('fontEvidence.checks');
-  if (!domEvidence.viewportEvidence?.devicePixelRatio) missing.push('viewportEvidence.devicePixelRatio');
   return {
     fixtureId,
-    ok: missing.length === 0,
-    status: missing.length ? 'MISSING_CURRENT_METRICS' : 'PRESENT',
+    ...inspectCurrentChatMetrics(domEvidence),
     file: rel(file),
-    missing,
-    templateClass: template?.className ?? '',
-    tableStructureSource: template?.tableStructure?.table?.boxMetrics ? 'latestTemplate.tableStructure' : (hasTableStructure ? 'legacy-computedChildren' : ''),
-    note: missing.length
-      ? `Roll20 chat DOM sidecar predates current row/typography/paint-filter probe fields: missing ${missing.join(', ')}`
-      : hasTableStructure && !template?.tableStructure?.table?.boxMetrics
-        ? 'Roll20 chat DOM sidecar includes current row/typography/paint-filter metrics; tableStructure is synthesized from legacy computedChildren table evidence'
-        : 'Roll20 chat DOM sidecar includes current row/typography/paint-filter metrics',
-  };
-}
-
-function hasTextRasterizationFields(style) {
-  return Object.prototype.hasOwnProperty.call(style, 'textRendering') &&
-    Object.prototype.hasOwnProperty.call(style, 'webkitFontSmoothing') &&
-    Object.prototype.hasOwnProperty.call(style, 'mozOsxFontSmoothing');
-}
-
-function hasPaintFilterField(style) {
-  return Object.prototype.hasOwnProperty.call(style, 'filter');
-}
-
-function findTemplateChild(template, selector) {
-  const children = template?.computedChildren ?? template?.elements ?? [];
-  return children.find((child) => child?.selector === selector) ?? null;
-}
-
-function synthesizeTableStructure(template, table = findTemplateChild(template, 'table')) {
-  if (template?.tableStructure?.table?.boxMetrics) return template.tableStructure;
-  if (!table?.boxMetrics) return null;
-  const text = String(table.text ?? template?.text ?? '').replace(/\s+/g, ' ').trim();
-  const tokens = text.split(/\s+/).filter(Boolean);
-  const longestToken = tokens.reduce((best, token) => token.length > best.length ? token : best, '');
-  return {
-    source: 'legacy-computedChildren',
-    table,
-    textProfile: {
-      textLength: text.length,
-      tokenCount: tokens.length,
-      longestToken: longestToken.slice(0, 120),
-      longestTokenLength: longestToken.length,
-    },
-    columnGroups: [],
-    columns: [],
   };
 }
 
@@ -754,7 +684,7 @@ async function inspectFixture(runDir, fixtureId, diffReport) {
   }));
   const htmlFile = path.join(payload, 'sheet.html');
   const requiresChat = existsSync(htmlFile)
-    ? fixtureRequiresChat(await fs.readFile(htmlFile, 'utf8'))
+    ? payloadRequiresChat(await fs.readFile(htmlFile, 'utf8'))
     : false;
   const targets = TARGETS.map((target) => target.id === 'chat'
     ? {
@@ -930,12 +860,6 @@ async function validateChatEvidence(screenshots, file) {
   };
 }
 
-function fixtureRequiresChat(html) {
-  const source = String(html ?? '');
-  return /<rolltemplate\b/i.test(source)
-    || /<(?:button|input)\b[^>]*\btype\s*=\s*["']roll["']/i.test(source);
-}
-
 function validateChatForeground(domEvidence) {
   const chatSelector = String(domEvidence?.chatSelector ?? '');
   const chatElementSelector = String(domEvidence?.chatElementSelector ?? '');
@@ -1081,9 +1005,9 @@ function buildNextAction({
   }
   if (chatStructure?.exists && chatStructure.mismatches > 0) {
     const mismatches = chatStructure.mismatchFixtures
-      .map((fixture) => `${fixture.fixtureId} (${fixture.localTemplate || 'n/a'} vs ${fixture.actualTemplate || 'n/a'}, rows ${fixture.localRows}/${fixture.actualRows})`)
+      .map((fixture) => `${fixture.fixtureId} (${fixture.status}: ${fixture.localTemplate || 'n/a'} vs ${fixture.actualTemplate || 'n/a'}, rows ${fixture.localRows}/${fixture.actualRows})`)
       .join('; ');
-    return `Roll20 chat screenshots are normalized, but local and actual rolltemplate structures differ for ${mismatches}. Recapture the same local smoke roll/template in Roll20, then rerun diagnose:roll20-chat-structure, diagnose:roll20-chat-parity, gate:roll20-renderer-action, and this status command before treating pixel diffs as renderer CSS evidence.`;
+    return `Roll20 chat screenshots are normalized, but local and actual rolltemplate structure or rendered content differs for ${mismatches}. Reproduce the same template, field values, translation state, and roll substitutions before recapturing, then rerun diagnose:roll20-chat-structure, diagnose:roll20-chat-parity, gate:roll20-renderer-action, and this status command before treating pixel diffs as renderer CSS evidence.`;
   }
   if (!chatStructure?.exists && chatParity?.exists && chatParity.authoritativeNormalizedHighMismatch > 0) {
     return `Roll20 chat screenshots are normalized but structure comparison is missing. Run corepack pnpm run diagnose:roll20-chat-structure -- ${rel(path.resolve(runDirFromReport(rendererAction.file)))}, then rerun gate:roll20-renderer-action and this status command before treating pixel diffs as renderer CSS evidence.`;
@@ -1104,7 +1028,7 @@ function buildNextAction({
   }
   if (chatParity?.exists && chatParity.actualCaptureScaleSuspect > 0) {
     const suspectFixtures = formatChatSuspectFixtures(chatParity, 'capture scale/format');
-    return `Roll20 chat screenshots are normalized but some captures are JPEG or non-1x scale${suspectFixtures ? ` for ${suspectFixtures}` : ''}. Run corepack pnpm run plan:roll20-chat-capture -- ${rel(path.resolve(runDirFromReport(rendererAction.file)))} to create the focused recapture checklist, then recapture those chat crops as true PNG with clip.scale=1 before tuning local ChatPane CSS from pixel diffs.`;
+    return `Roll20 chat screenshots are normalized but some captures use a lossy source, non-PNG bytes, or non-1x scale${suspectFixtures ? ` for ${suspectFixtures}` : ''}. Run corepack pnpm run plan:roll20-chat-capture -- ${rel(path.resolve(runDirFromReport(rendererAction.file)))} to create the focused recapture checklist, then recapture those chat crops from a lossless PNG source with clip.scale=1 before tuning local ChatPane CSS from pixel diffs.`;
   }
   if (chatParity?.exists && chatParity.authoritativeNormalizedHighMismatch > 0) {
     return 'Roll20 chat screenshots are normalized but still differ from local ChatPane. Fix chat shell/template sizing after confirming actual Roll20 user rolltemplate CSS is active.';
@@ -1417,7 +1341,7 @@ async function selfTest() {
     ['plain layout', '<div><input type="text"></div>', false],
   ];
   for (const [name, html, expected] of cases) {
-    const actual = fixtureRequiresChat(html);
+    const actual = payloadRequiresChat(html);
     if (actual !== expected) throw new Error(`${name}: expected ${expected}, got ${actual}`);
   }
   console.log('ROLL20 ACTUAL STATUS SELF-TEST PASS');

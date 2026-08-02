@@ -479,7 +479,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
       blockers.push(`actual Roll20 chat CSS appears scoped/prefix-mismatched for ${chatParitySummary.actualChatCssScopedMismatch}/${chatParitySummary.fixtures} fixtures; verify whether Roll20 stores rolltemplate CSS under .charsheet or without sheet-* chat selectors before changing local ChatPane CSS`);
     }
     if (chatParitySummary.actualCaptureScaleSuspect > 0) {
-      blockers.push(`actual Roll20 chat screenshots have non-PNG or non-1x capture scale for ${chatParitySummary.actualCaptureScaleSuspect}/${chatParitySummary.fixtures} fixtures${formatChatSuspectSuffix(chatParitySummary, 'capture scale/format')}; recapture with PNG bytes and clip.scale=1 before using pixel mismatch as a production renderer target`);
+      blockers.push(`actual Roll20 chat screenshots have a lossy source, non-PNG bytes, or non-1x capture scale for ${chatParitySummary.actualCaptureScaleSuspect}/${chatParitySummary.fixtures} fixtures${formatChatSuspectSuffix(chatParitySummary, 'capture scale/format')}; recapture with lossless PNG source bytes and clip.scale=1 before using pixel mismatch as a production renderer target`);
     }
     if (chatParitySummary.actualCropGeometrySuspect > 0) {
       blockers.push(`actual Roll20 chat crop geometry is suspect for ${chatParitySummary.actualCropGeometrySuspect}/${chatParitySummary.normalizedCompared} normalized fixtures${formatChatSuspectSuffix(chatParitySummary, 'crop geometry')}; recapture with element-bound template screenshots before using pixel mismatch as a production renderer target`);
@@ -2193,6 +2193,7 @@ function summarizeChatParity(report) {
       fixture.compareMode === 'rolltemplate-crop' &&
       !fixture.actualCropGeometry?.suspect &&
       !fixture.actualTemplatePixels?.suspect &&
+      fixture.actualCaptureQuality?.authoritativePixelEvidence === true &&
       Number(fixture.bestAlignedMismatchRatio ?? fixture.mismatchRatio ?? 0) > 0.1,
   );
   const authoritativeNormalizedHighMismatch = Number(
@@ -2220,6 +2221,7 @@ function summarizeChatParity(report) {
     actualChatCssScopedMismatch: Number(report.summary.actualChatCssScopedMismatch ?? 0),
     actualChatCssUnknown: Number(report.summary.actualChatCssUnknown ?? 0),
     actualCaptureScaleSuspect: Number(report.summary.actualCaptureScaleSuspect ?? 0),
+    actualCaptureUntrusted: Number(report.summary.actualCaptureUntrusted ?? 0),
     maxMismatchRatio: Number(report.summary.maxMismatchRatio ?? 0),
     maxMismatchPct: pctNumber(report.summary.maxMismatchRatio ?? 0),
     maxNormalizedMismatchRatio: Number(report.summary.maxNormalizedMismatchRatio ?? 0),

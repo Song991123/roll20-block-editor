@@ -15,6 +15,34 @@ or source-derived measurement here.
 - Remote CI: passed safety/unit verification, lint, and production build.
 - Worktree and project server state were clean after the run.
 
+## 2026-08-03 - Chat Evidence Applicability And Trust
+
+- Unified the Roll button/Rolltemplate capability check across actual status,
+  chat capture planning, current-metric audit, and chat parity diagnostics.
+  Layout-only payloads no longer produce false missing-chat work.
+- Made current chat metrics structure-aware. Non-table result cards require
+  template metrics but no longer fail table-only row/cell requirements; table
+  result cards still require their table evidence.
+- Replaced the chat structure comparator's historical fixed fixture list with
+  current-run discovery. Payloads without Roll capability are skipped, hyphenated
+  fixture ids are retained, and array/object/unavailable child evidence no
+  longer crashes the comparison. A CI self-test now protects this path.
+- Rechecked the anonymous legacy result card in the dedicated owner-only room.
+  The fresh sidecar proves a foreground template, current computed styles,
+  font checks, viewport scale, and non-table structure.
+- The connected browser surface supplies a lossy viewport screenshot. Its
+  foreground crop is retained as ignored diagnostic evidence, but shared
+  capture-quality policy now prevents it from becoming authoritative pixel
+  evidence or triggering a production renderer patch.
+- The fresh structure comparison matches template class and row count but finds
+  different rendered content. The status report now asks for the same template,
+  fields, translation state, and roll substitutions before pixel comparison.
+- Untrusted chat captures now report `NEEDS_AUTHORITATIVE_CAPTURE` instead of a
+  misleading headline based only on their raw mismatch percentage.
+- Claim boundary: actual legacy interaction and current DOM metrics are
+  verified for the synthetic contract. Lossless chat pixel comparison, modern
+  actual verification, and broad-sheet parity remain open.
+
 ## 2026-08-03 - Dedicated Legacy Actual Verification
 
 - Extended the anonymous synthetic runtime payload with a real Roll action,

@@ -11,6 +11,9 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { classifyCaptureQuality } from './lib/roll20CaptureQuality.mjs';
+import { inspectCurrentChatMetrics } from './lib/roll20ChatMetrics.mjs';
+import { payloadRequiresChat } from './lib/roll20PayloadCapabilities.mjs';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const runDir = path.resolve(args[0] ?? '');
@@ -50,7 +53,8 @@ async function main() {
   const chatParity = await readJsonIfExists(path.join(runDir, 'chat-parity-diagnostics', 'chat-parity-diagnostics-results.json'));
   const chatStructure = await readJsonIfExists(path.join(runDir, 'chat-structure-compare', 'chat-structure-compare-results.json'));
   const entries = fixtureIds.map((fixtureId) => buildEntry(fixtureId, status, chatParity, chatStructure));
-  const plannedEntries = INCLUDE_ALL ? entries : entries.filter((entry) => entry.needsCapture);
+  const applicableEntries = entries.filter((entry) => entry.applicable);
+  const plannedEntries = INCLUDE_ALL ? applicableEntries : applicableEntries.filter((entry) => entry.needsCapture);
 
   await mkdir(path.join(outDir, 'snippets'), { recursive: true });
   const snippetChecks = [];
@@ -93,6 +97,7 @@ async function main() {
       chatNormalizedHighMismatch: Number(status?.summary?.chatParityNormalizedHighMismatch ?? 0),
     },
     entries,
+    applicableEntries: applicableEntries.length,
     plannedEntries,
     snippetChecks,
     followUpCommands: [
@@ -108,7 +113,8 @@ async function main() {
 
   console.log(`ROLL20 CHAT CAPTURE PLAN ${plannedEntries.length ? 'NEEDS_CAPTURE' : 'ALL_CHAT_EVIDENCE_TRUSTED'}`);
   console.log(`run=${rel(runDir)}`);
-  console.log(`plannedFixtures=${plannedEntries.length}/${entries.length}`);
+  console.log(`plannedFixtures=${plannedEntries.length}/${applicableEntries.length}`);
+  console.log(`skippedNotApplicable=${entries.length - applicableEntries.length}`);
   console.log(`snippetSyntax=${snippetChecks.every((check) => check.ok) ? 'PASS' : 'FAIL'}`);
   for (const entry of plannedEntries) {
     console.log(`CHAT_CAPTURE ${entry.fixtureId}: ${entry.chat.status} ${entry.captureReasons.join('; ')}`);
@@ -125,6 +131,8 @@ function buildEntry(fixtureId, status, chatParity, chatStructure) {
   const currentMetrics = validateCurrentChatMetrics(screenshots);
   const statusFixture = (status?.fixtures ?? []).find((fixture) => fixture.fixtureId === fixtureId);
   const statusChatTarget = statusFixture?.actualTargets?.find((target) => target.id === 'chat') ?? null;
+  const applicable = existsSync(payloadHtml)
+    && payloadRequiresChat(readFileSync(payloadHtml, 'utf8'));
   const parityFixture = (chatParity?.fixtures ?? []).find((fixture) => fixture.fixtureId === fixtureId) ?? null;
   const structureFixture = (chatStructure?.fixtures ?? []).find((fixture) => fixture.fixtureId === fixtureId) ?? null;
   const sameTemplateTarget = structureFixture && structureFixture.status !== 'STRUCTURE_MATCH'
@@ -141,24 +149,24 @@ function buildEntry(fixtureId, status, chatParity, chatStructure) {
     : null;
   const rollButtons = prioritizeRollButtons(extractRollButtonNames(payloadHtml), sameTemplateTarget?.targetRollButton);
   const captureReasons = [];
-  if (!chat.ok) captureReasons.push(chat.note);
-  if (REQUIRE_CURRENT_METRICS && !currentMetrics.ok) captureReasons.push(currentMetrics.note);
-  if (parityFixture?.status === 'NEEDS_NORMALIZED_CAPTURE') {
+  if (applicable && !chat.ok) captureReasons.push(chat.note);
+  if (applicable && REQUIRE_CURRENT_METRICS && !currentMetrics.ok) captureReasons.push(currentMetrics.note);
+  if (applicable && parityFixture?.status === 'NEEDS_NORMALIZED_CAPTURE') {
     captureReasons.push('chat parity diagnostic needs normalized rolltemplate crop metadata');
   }
-  if (parityFixture?.actualCropGeometry?.suspect) {
+  if (applicable && parityFixture?.actualCropGeometry?.suspect) {
     captureReasons.push(`chat parity diagnostic marks actual crop geometry suspect: ${parityFixture.actualCropGeometry.reason ?? 'recapture with element-bound template screenshot'}`);
   }
-  if (parityFixture?.actualTemplatePixels?.suspect) {
+  if (applicable && parityFixture?.actualTemplatePixels?.suspect) {
     captureReasons.push(`chat parity diagnostic marks actual template foreground pixels suspect: ${parityFixture.actualTemplatePixels.reason ?? 'recapture visible rolltemplate foreground'}`);
   }
-  if (isCaptureScaleSuspect(parityFixture)) {
+  if (applicable && isCaptureScaleSuspect(parityFixture)) {
     captureReasons.push('chat parity diagnostic marks actual screenshot scale/format suspect; recapture true PNG at CSS scale 1');
   }
-  if (sameTemplateTarget) {
+  if (applicable && sameTemplateTarget) {
     captureReasons.push(`chat structure compare requires same-template recapture: local ${sameTemplateTarget.targetTemplate || 'n/a'} via ${sameTemplateTarget.targetRollButton || 'unknown roll button'} vs actual ${sameTemplateTarget.actualTemplate || 'n/a'} (${sameTemplateTarget.localRows}/${sameTemplateTarget.actualRows} rows)`);
   }
-  const needsCapture = captureReasons.length > 0;
+  const needsCapture = applicable && captureReasons.length > 0;
   const targets = {
     chatPng: fileTarget(path.join(screenshots, 'roll20-chat.png')),
     chatDomEvidence: fileTarget(path.join(screenshots, 'roll20-chat-dom-evidence.json')),
@@ -168,6 +176,7 @@ function buildEntry(fixtureId, status, chatParity, chatStructure) {
   const sheetFrameProbeCommand = `corepack pnpm run probe:roll20-sheet-frame -- --run-dir ${rel(runDir)} --fixture ${fixtureId}`;
   return {
     fixtureId,
+    applicable,
     needsCapture,
     captureReasons,
     chat,
@@ -178,6 +187,7 @@ function buildEntry(fixtureId, status, chatParity, chatStructure) {
           rawExists: Boolean(statusChatTarget.rawExists),
           diffStatus: statusChatTarget.diffStatus ?? '',
           validationKind: statusChatTarget.validation?.kind ?? '',
+          applicable: statusChatTarget.applicable !== false,
           note: statusChatTarget.note ?? statusChatTarget.validation?.note ?? '',
         }
       : null,
@@ -210,7 +220,7 @@ function buildEntry(fixtureId, status, chatParity, chatStructure) {
       'Capture roll20-chat.png from the visible Roll20 chat/rolltemplate area. Prefer CDP Page.captureScreenshot with format=png and clip.scale=1; do not trust a .png filename if the screenshot bytes are JPEG or scaled.',
       'If CDP captures the wrong region on a high-DPR Roll20 tab, verify the coordinate space with a debug crop: multiply the CSS template rect by devicePixelRatio, capture the physical PNG, then DPR-correct/downscale it back to the CSS clip size and record captureDprCorrection in the sidecar.',
       'Immediately capture roll20-chat-dom-evidence.json from the same message/action using the generated DOM probe snippet or browser automation.',
-      'For current renderer diagnostics, the DOM sidecar must include latestTemplate.rowMetrics, computedStyle, table computedStyle, table boxMetrics, latestTemplate.tableStructure, text-rendering/font-smoothing/filter fields, fontEvidence, textMeasureEvidence, and viewportEvidence.',
+      'For current renderer diagnostics, the DOM sidecar must include template rowMetrics, computed style, text-rendering/font-smoothing/filter fields, fontEvidence, textMeasureEvidence, and viewportEvidence. Table metrics are required only when the result card actually contains a table.',
       'The DOM sidecar must include templateForegroundEvidence=FOREGROUND_TEMPLATE_HIT. If it reports overlay candidates or foreground suspect, do not save/promote the screenshot; close or move the overlapping Roll20 panel and recapture.',
       'Keep screenshot and DOM sidecar timestamps within 5 minutes.',
       'Rerun screenshot diff, chat parity diagnostics, renderer action gate, and status.',
@@ -229,84 +239,7 @@ function isCaptureScaleSuspect(parityFixture) {
 function validateCurrentChatMetrics(screenshots) {
   const domEvidenceFile = path.join(screenshots, 'roll20-chat-dom-evidence.json');
   const domEvidence = readJsonIfExists(domEvidenceFile);
-  if (!domEvidence) {
-    return {
-      ok: false,
-      status: 'MISSING_SIDECAR',
-      note: 'Roll20 chat DOM sidecar is missing; current row/typography metrics cannot be checked',
-    };
-  }
-  const template = domEvidence.latestTemplate
-    ?? [...(domEvidence.rolltemplates ?? [])].reverse().find((item) => item?.rect?.width)
-    ?? null;
-  const table = findTemplateChild(template, 'table');
-  const hasTableStructure = Boolean(template?.tableStructure?.table?.boxMetrics) ||
-    Boolean(synthesizeTableStructure(template, table)?.table?.boxMetrics);
-  const missing = [];
-  if (!template?.computedStyle) missing.push('latestTemplate.computedStyle');
-  if (!Array.isArray(template?.rowMetrics) || template.rowMetrics.length === 0) missing.push('latestTemplate.rowMetrics');
-  if (!hasTableStructure) missing.push('latestTemplate.tableStructure');
-  if (!table?.computedStyle) missing.push('table.computedStyle');
-  if (!table?.boxMetrics) missing.push('table.boxMetrics');
-  if (template?.computedStyle && !hasTextRasterizationFields(template.computedStyle)) missing.push('latestTemplate.computedStyle.textRasterization');
-  if (table?.computedStyle && !hasTextRasterizationFields(table.computedStyle)) missing.push('table.computedStyle.textRasterization');
-  if (template?.computedStyle && !hasPaintFilterField(template.computedStyle)) missing.push('latestTemplate.computedStyle.filter');
-  if (table?.computedStyle && !hasPaintFilterField(table.computedStyle)) missing.push('table.computedStyle.filter');
-  if (!domEvidence.fontEvidence?.checks) missing.push('fontEvidence.checks');
-  if (!hasTextMeasureEvidence(domEvidence, template)) missing.push('textMeasureEvidence.samples');
-  if (!domEvidence.viewportEvidence?.devicePixelRatio) missing.push('viewportEvidence.devicePixelRatio');
-  return {
-    ok: missing.length === 0,
-    status: missing.length ? 'MISSING_CURRENT_METRICS' : 'PRESENT',
-    missing,
-    templateClass: template?.className ?? '',
-    tableStructureSource: template?.tableStructure?.table?.boxMetrics ? 'latestTemplate.tableStructure' : (hasTableStructure ? 'legacy-computedChildren' : ''),
-    note: missing.length
-      ? `Roll20 chat DOM sidecar predates current row/typography/text-rasterization/paint-filter probe fields: missing ${missing.join(', ')}`
-      : hasTableStructure && !template?.tableStructure?.table?.boxMetrics
-        ? 'Roll20 chat DOM sidecar includes current row/typography/text-rasterization/paint-filter metrics; tableStructure is synthesized from legacy computedChildren table evidence'
-        : 'Roll20 chat DOM sidecar includes current row/typography/text-rasterization/paint-filter metrics',
-  };
-}
-
-function hasTextMeasureEvidence(domEvidence, template) {
-  return Array.isArray(domEvidence?.textMeasureEvidence?.samples) ||
-    Array.isArray(template?.textMeasureEvidence?.samples);
-}
-
-function hasTextRasterizationFields(style) {
-  return Object.prototype.hasOwnProperty.call(style, 'textRendering') &&
-    Object.prototype.hasOwnProperty.call(style, 'webkitFontSmoothing') &&
-    Object.prototype.hasOwnProperty.call(style, 'mozOsxFontSmoothing');
-}
-
-function hasPaintFilterField(style) {
-  return Object.prototype.hasOwnProperty.call(style, 'filter');
-}
-
-function findTemplateChild(template, selector) {
-  const children = template?.computedChildren ?? template?.elements ?? [];
-  return children.find((child) => child?.selector === selector) ?? null;
-}
-
-function synthesizeTableStructure(template, table = findTemplateChild(template, 'table')) {
-  if (template?.tableStructure?.table?.boxMetrics) return template.tableStructure;
-  if (!table?.boxMetrics) return null;
-  const text = String(table.text ?? template?.text ?? '').replace(/\s+/g, ' ').trim();
-  const tokens = text.split(/\s+/).filter(Boolean);
-  const longestToken = tokens.reduce((best, token) => token.length > best.length ? token : best, '');
-  return {
-    source: 'legacy-computedChildren',
-    table,
-    textProfile: {
-      textLength: text.length,
-      tokenCount: tokens.length,
-      longestToken: longestToken.slice(0, 120),
-      longestTokenLength: longestToken.length,
-    },
-    columnGroups: [],
-    columns: [],
-  };
+  return inspectCurrentChatMetrics(domEvidence, { requireTextMeasure: true });
 }
 
 function validateChatEvidence(screenshots) {
@@ -446,23 +379,42 @@ function inspectScreenshotQuality(file, domEvidence) {
   const clip = domEvidence?.captureDprCorrection?.applied && domEvidence?.captureDprCorrection?.cssClip
     ? domEvidence.captureDprCorrection.cssClip
     : domEvidence?.clip ?? domEvidence?.screenshotClipApplied ?? domEvidence?.screenshotCssClip ?? null;
+  const captureMeta = readJsonIfExists(file.replace(/\.png$/i, '.json'));
+  const captureQuality = classifyCaptureQuality({
+    actualBytes: readFileSync(file),
+    actualFile: file,
+    actualMeta: captureMeta,
+  });
+  return classifyScreenshotQuality({ image, clip, captureQuality });
+}
+
+function classifyScreenshotQuality({ image, clip, captureQuality = null }) {
   const scale = image.width && image.height && clip?.width && clip?.height
     ? {
         x: Number((image.width / clip.width).toFixed(4)),
         y: Number((image.height / clip.height).toFixed(4)),
       }
     : null;
-  const formatOk = image.format === 'png';
+  const sourceMimeType = String(captureQuality?.sourceImageMimeType ?? '').toLowerCase();
+  const derivedFromLossySource = image.format === 'png'
+    && captureQuality?.authoritativePixelEvidence === false;
+  const formatOk = image.format === 'png'
+    && captureQuality?.authoritativePixelEvidence !== false;
   const scaleOk = !scale || (Math.abs(scale.x - 1) <= 0.01 && Math.abs(scale.y - 1) <= 0.01);
   const bits = [`format=${image.format}`, `size=${image.width}x${image.height}`];
+  if (sourceMimeType) bits.push(`source=${sourceMimeType}`);
   if (scale) bits.push(`scale=${scale.x}x${scale.y}`);
   return {
     ok: formatOk && scaleOk,
     ...image,
     scale,
+    sourceMimeType: sourceMimeType || null,
+    derivedFromLossySource,
     note: formatOk && scaleOk
       ? `Roll20 chat screenshot is true PNG at CSS scale 1 (${bits.join(', ')})`
-      : `Roll20 chat screenshot is not high-confidence pixel evidence (${bits.join(', ')}); recapture with CDP Page.captureScreenshot format=png and clip.scale=1`,
+      : derivedFromLossySource
+        ? `Roll20 chat screenshot is a PNG crop derived from a lossy source (${bits.join(', ')}); keep it diagnostic-only and recapture a true PNG source with CDP Page.captureScreenshot format=png and clip.scale=1`
+        : `Roll20 chat screenshot is not high-confidence pixel evidence (${bits.join(', ')}); recapture with CDP Page.captureScreenshot format=png and clip.scale=1`,
   };
 }
 
@@ -1051,6 +1003,74 @@ function renderDomProbeSnippet(entry) {
 }
 
 function runSelfTest() {
+  const payloadCases = [
+    ['rolltemplate', '<rolltemplate class="sheet-rolltemplate-proof"></rolltemplate>', true],
+    ['roll button', '<button type="roll" name="roll_check">Roll</button>', true],
+    ['roll input', '<input name="roll_check" type="roll">', true],
+    ['action button', '<button type="action" name="act_mark">Mark</button>', false],
+    ['plain layout', '<div><input type="text"></div>', false],
+  ];
+  const payloadFailure = payloadCases.find(([, html, expected]) => payloadRequiresChat(html) !== expected);
+  if (payloadFailure) {
+    console.error(`ROLL20 CHAT CAPTURE PLAN SELF_TEST FAIL payload capability ${payloadFailure[0]}`);
+    process.exitCode = 1;
+    return;
+  }
+  const metricStyle = {
+    filter: 'none',
+    mozOsxFontSmoothing: '',
+    textRendering: 'auto',
+    webkitFontSmoothing: '',
+  };
+  const nonTableMetrics = inspectCurrentChatMetrics({
+    latestTemplate: {
+      className: 'sheet-rolltemplate-card',
+      computedStyle: metricStyle,
+      htmlSnippet: '<div class="sheet-card">Result</div>',
+      rowMetrics: [],
+      tableStructure: null,
+      textMeasureEvidence: { status: 'UNAVAILABLE', samples: [] },
+    },
+    fontEvidence: { checks: [{ ok: true, spec: '12px sans-serif' }] },
+    viewportEvidence: { devicePixelRatio: 1.25 },
+  }, { requireTextMeasure: true });
+  if (!nonTableMetrics.ok || nonTableMetrics.tableApplicable) {
+    console.error(`ROLL20 CHAT CAPTURE PLAN SELF_TEST FAIL non-table metrics ${nonTableMetrics.missing.join(', ')}`);
+    process.exitCode = 1;
+    return;
+  }
+  const incompleteTableMetrics = inspectCurrentChatMetrics({
+    latestTemplate: {
+      className: 'sheet-rolltemplate-table-card',
+      computedStyle: metricStyle,
+      htmlSnippet: '<table><tr><td>Result</td></tr></table>',
+      rowMetrics: [],
+      tableStructure: null,
+      textMeasureEvidence: { status: 'UNAVAILABLE', samples: [] },
+    },
+    fontEvidence: { checks: [{ ok: true, spec: '12px sans-serif' }] },
+    viewportEvidence: { devicePixelRatio: 1.25 },
+  }, { requireTextMeasure: true });
+  if (incompleteTableMetrics.ok || !incompleteTableMetrics.tableApplicable) {
+    console.error('ROLL20 CHAT CAPTURE PLAN SELF_TEST FAIL table metrics were not required');
+    process.exitCode = 1;
+    return;
+  }
+  const losslessPng = classifyScreenshotQuality({
+    image: { format: 'png', width: 267, height: 78 },
+    clip: { width: 267, height: 78 },
+    captureQuality: { authoritativePixelEvidence: true, sourceImageMimeType: 'image/png' },
+  });
+  const lossyDerivedPng = classifyScreenshotQuality({
+    image: { format: 'png', width: 267, height: 78 },
+    clip: { width: 267, height: 78 },
+    captureQuality: { authoritativePixelEvidence: false, sourceImageMimeType: 'image/jpeg' },
+  });
+  if (!losslessPng.ok || lossyDerivedPng.ok || !lossyDerivedPng.derivedFromLossySource) {
+    console.error('ROLL20 CHAT CAPTURE PLAN SELF_TEST FAIL screenshot source quality');
+    process.exitCode = 1;
+    return;
+  }
   const snippet = renderDomProbeSnippet({ fixtureId: 'self-test' });
   const syntax = validateSnippetSyntax('self-test', snippet);
   if (!syntax.ok) {
@@ -1293,6 +1313,7 @@ function renderMarkdown(report) {
     `- Generated authoritative evidence: ${report.currentStatus.generatedAuthoritative ? 'YES' : 'NO'}`,
     `- Chat normalized high mismatch: ${report.currentStatus.chatNormalizedHighMismatch}`,
     `- Require current row/typography metrics: ${report.requireCurrentMetrics ? 'YES' : 'no'}`,
+    `- Chat-applicable fixtures: ${report.applicableEntries}/${report.entries.length}`,
     '',
     '## Planned Captures',
     '',
@@ -1325,7 +1346,12 @@ function renderMarkdown(report) {
   lines.push('## Per-Fixture Details', '');
   for (const entry of report.entries) {
     lines.push(`### ${entry.fixtureId}`, '');
+    lines.push(`- Chat applicable: ${entry.applicable ? 'YES' : 'no'}`);
     lines.push(`- Needs capture: ${entry.needsCapture ? 'YES' : 'no'}`);
+    if (!entry.applicable) {
+      lines.push('- Reason: payload has no Roll button or Rolltemplate.', '');
+      continue;
+    }
     if (entry.captureReasons.length) lines.push(`- Capture reason: ${entry.captureReasons.join('; ')}`);
     lines.push(`- Chat status: ${entry.chat.status}`);
     lines.push(`- Reason: ${entry.chat.note}`);

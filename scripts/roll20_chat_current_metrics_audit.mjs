@@ -10,6 +10,8 @@
 import { existsSync } from 'node:fs';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { findTemplateChild, inspectCurrentChatMetrics } from './lib/roll20ChatMetrics.mjs';
+import { payloadRequiresChat } from './lib/roll20PayloadCapabilities.mjs';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const optionNamesWithValues = new Set(['--out-dir']);
@@ -43,7 +45,8 @@ async function main() {
     fixtures.push(await auditFixture(fixtureId));
   }
 
-  const missingFixtures = fixtures.filter((fixture) => fixture.status !== 'PASS');
+  const applicableFixtures = fixtures.filter((fixture) => fixture.status !== 'NOT_APPLICABLE');
+  const missingFixtures = applicableFixtures.filter((fixture) => fixture.status !== 'PASS');
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -51,10 +54,12 @@ async function main() {
     scope: 'local-only Roll20 chat DOM sidecar metric audit; not visual parity',
     requiredFields: requiredFieldLabels(),
     summary: {
-      fixtures: fixtures.length,
-      pass: fixtures.length - missingFixtures.length,
+      fixtures: applicableFixtures.length,
+      allFixtures: fixtures.length,
+      notApplicable: fixtures.length - applicableFixtures.length,
+      pass: applicableFixtures.length - missingFixtures.length,
       needsRecapture: missingFixtures.length,
-      missingFieldTotal: fixtures.reduce((sum, fixture) => sum + fixture.missing.length, 0),
+      missingFieldTotal: applicableFixtures.reduce((sum, fixture) => sum + fixture.missing.length, 0),
     },
     fixtures,
     nextActions: buildNextActions(missingFixtures),
@@ -65,6 +70,7 @@ async function main() {
   console.log(`ROLL20 CHAT CURRENT METRICS ${report.status}`);
   console.log(`run=${rel(runDir)}`);
   console.log(`fixtures=${report.summary.pass}/${report.summary.fixtures} current`);
+  console.log(`skippedNotApplicable=${report.summary.notApplicable}`);
   console.log(`missingFields=${report.summary.missingFieldTotal}`);
   for (const fixture of missingFixtures) {
     console.log(`STALE_CHAT_METRICS ${fixture.fixtureId}: missing ${fixture.missing.join(', ')}`);
@@ -123,7 +129,23 @@ async function writeReport(report, outDir) {
 }
 
 async function auditFixture(fixtureId) {
-  const screenshots = path.join(runDir, 'local-baseline', fixtureId, 'screenshots');
+  const fixtureDir = path.join(runDir, 'local-baseline', fixtureId);
+  const payloadHtml = path.join(fixtureDir, 'payload', 'sheet.html');
+  const chatApplicable = existsSync(payloadHtml)
+    && payloadRequiresChat(await fs.readFile(payloadHtml, 'utf8'));
+  if (!chatApplicable) {
+    return {
+      fixtureId,
+      status: 'NOT_APPLICABLE',
+      missing: [],
+      sidecar: null,
+      latestTemplate: null,
+      table: null,
+      note: 'payload has no Roll button or Rolltemplate',
+    };
+  }
+
+  const screenshots = path.join(fixtureDir, 'screenshots');
   const sidecarFile = path.join(screenshots, 'roll20-chat-dom-evidence.json');
   const screenshotFile = path.join(screenshots, 'roll20-chat.png');
   const sidecar = await readJsonIfExists(sidecarFile);
@@ -133,37 +155,10 @@ async function auditFixture(fixtureId) {
       null
     : null;
   const table = findTemplateChild(template, 'table');
-  const missing = [];
+  const currentMetrics = inspectCurrentChatMetrics(sidecar, { requireTextMeasure: true });
+  const missing = [...currentMetrics.missing];
 
   if (!existsSync(screenshotFile)) missing.push('roll20-chat.png');
-  if (!sidecar) {
-    missing.push('roll20-chat-dom-evidence.json');
-  } else {
-    if (!template?.computedStyle) missing.push('latestTemplate.computedStyle');
-    if (!Array.isArray(template?.rowMetrics) || template.rowMetrics.length === 0) {
-      missing.push('latestTemplate.rowMetrics');
-    }
-    if (!hasTableStructure(template, table)) missing.push('latestTemplate.tableStructure');
-    if (!table?.computedStyle) missing.push('table.computedStyle');
-    if (!table?.boxMetrics) missing.push('table.boxMetrics');
-    if (template?.computedStyle && !hasTextRasterizationFields(template.computedStyle)) {
-      missing.push('latestTemplate.computedStyle.textRasterization');
-    }
-    if (table?.computedStyle && !hasTextRasterizationFields(table.computedStyle)) {
-      missing.push('table.computedStyle.textRasterization');
-    }
-    if (template?.computedStyle && !hasPaintFilterField(template.computedStyle)) {
-      missing.push('latestTemplate.computedStyle.filter');
-    }
-    if (table?.computedStyle && !hasPaintFilterField(table.computedStyle)) {
-      missing.push('table.computedStyle.filter');
-    }
-    if (!sidecar.fontEvidence?.checks) missing.push('fontEvidence.checks');
-    if (!hasTextMeasureEvidence(sidecar, template)) missing.push('textMeasureEvidence.samples');
-    if (!sidecar.viewportEvidence?.devicePixelRatio) {
-      missing.push('viewportEvidence.devicePixelRatio');
-    }
-  }
 
   return {
     fixtureId,
@@ -182,8 +177,9 @@ async function auditFixture(fixtureId) {
           className: template.className ?? '',
           hasComputedStyle: Boolean(template.computedStyle),
           rowMetrics: Array.isArray(template.rowMetrics) ? template.rowMetrics.length : 0,
-          hasTableStructure: hasTableStructure(template, table),
-          hasTextMeasureEvidence: hasTextMeasureEvidence(sidecar, template),
+          tableApplicable: currentMetrics.tableApplicable,
+          tableStructureSource: currentMetrics.tableStructureSource,
+          textMeasureStatus: currentMetrics.textMeasureStatus,
           filter: template.computedStyle?.filter ?? null,
         }
       : null,
@@ -195,6 +191,7 @@ async function auditFixture(fixtureId) {
           width: table.boxMetrics?.width ?? table.rect?.width ?? null,
         }
       : null,
+    currentMetrics,
   };
 }
 
@@ -204,13 +201,13 @@ function requiredFieldLabels() {
     'roll20-chat-dom-evidence.json',
     'latestTemplate.computedStyle',
     'latestTemplate.rowMetrics',
-    'latestTemplate.tableStructure',
-    'table.computedStyle',
-    'table.boxMetrics',
+    'latestTemplate.tableStructure (table templates only)',
+    'table.computedStyle (table templates only)',
+    'table.boxMetrics (table templates only)',
     'latestTemplate.computedStyle.textRasterization',
-    'table.computedStyle.textRasterization',
+    'table.computedStyle.textRasterization (table templates only)',
     'latestTemplate.computedStyle.filter',
-    'table.computedStyle.filter',
+    'table.computedStyle.filter (table templates only)',
     'fontEvidence.checks',
     'textMeasureEvidence.samples',
     'viewportEvidence.devicePixelRatio',
@@ -235,30 +232,6 @@ function buildNextActions(missingFixtures) {
   ];
 }
 
-function findTemplateChild(template, selector) {
-  const children = template?.computedChildren ?? template?.elements ?? [];
-  return children.find((child) => child?.selector === selector) ?? null;
-}
-
-function hasTableStructure(template, table) {
-  return Boolean(template?.tableStructure?.table?.boxMetrics || table?.boxMetrics);
-}
-
-function hasTextMeasureEvidence(sidecar, template) {
-  return Array.isArray(sidecar?.textMeasureEvidence?.samples) ||
-    Array.isArray(template?.textMeasureEvidence?.samples);
-}
-
-function hasTextRasterizationFields(style) {
-  return Object.prototype.hasOwnProperty.call(style, 'textRendering') &&
-    Object.prototype.hasOwnProperty.call(style, 'webkitFontSmoothing') &&
-    Object.prototype.hasOwnProperty.call(style, 'mozOsxFontSmoothing');
-}
-
-function hasPaintFilterField(style) {
-  return Object.prototype.hasOwnProperty.call(style, 'filter');
-}
-
 async function readJsonIfExists(file) {
   if (!existsSync(file)) return null;
   try {
@@ -281,6 +254,7 @@ function renderMarkdown(report) {
     '## Summary',
     '',
     `- Fixtures current: ${report.summary.pass}/${report.summary.fixtures}`,
+    `- Fixtures skipped as not applicable: ${report.summary.notApplicable}/${report.summary.allFixtures}`,
     `- Fixtures needing recapture: ${report.summary.needsRecapture}`,
     `- Missing field total: ${report.summary.missingFieldTotal}`,
     '',

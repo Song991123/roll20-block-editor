@@ -25,8 +25,18 @@ belong in tracked documents.
 - `PARTIAL`: local Preview/Edit and the dedicated legacy destination now have
   same-payload root comparisons. Root dimensions and capture completeness
   agree, but residual pixel differences still require an actual DOM/CSS
-  comparison before any parity claim. Modern comparison and detailed chat
-  typography/row diagnostics remain open.
+  comparison before any parity claim. Modern comparison remains open.
+- `PARTIAL ACTUAL`: Roll-capable and non-Roll payloads now share one chat
+  applicability rule across status, capture planning, metric audit, and pixel
+  diagnostics. Current foreground DOM/style/font evidence passes for the
+  tested non-table result card, while table-only metrics are conditional. The
+  available browser screenshot is a crop derived from a lossy viewport source,
+  so it remains diagnostic-only and the renderer-action gate correctly holds.
+  The structure comparator now discovers the current run instead of using old
+  fixed fixture names and skips payloads without Roll capability. Its current
+  comparison finds matching template class/row count but different rendered
+  content, so a deterministic same-state recapture plus a lossless source PNG
+  is still required for chat pixel conclusions.
 
 ## P0 - Universal Import And Export
 

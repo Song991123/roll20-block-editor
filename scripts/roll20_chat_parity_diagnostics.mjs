@@ -11,6 +11,8 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
+import { classifyCaptureQuality } from './lib/roll20CaptureQuality.mjs';
+import { payloadRequiresChat } from './lib/roll20PayloadCapabilities.mjs';
 
 const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
 const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && rawArgs[index - 1] !== '--out-dir');
@@ -51,7 +53,8 @@ async function main() {
     await browser.close();
   }
 
-  const compared = fixtures.filter((fixture) => fixture.status === 'DIFFED');
+  const applicableFixtures = fixtures.filter((fixture) => fixture.status !== 'NOT_APPLICABLE');
+  const compared = applicableFixtures.filter((fixture) => fixture.status === 'DIFFED');
   const normalizedCompared = compared.filter((fixture) => fixture.compareMode === 'rolltemplate-crop');
   const highMismatch = compared.filter((fixture) => fixture.mismatchRatio !== null && fixture.mismatchRatio > 0.1);
   const normalizedHighMismatch = normalizedCompared.filter((fixture) => fixture.mismatchRatio !== null && fixture.mismatchRatio > 0.1);
@@ -59,23 +62,31 @@ async function main() {
   const actualCropGeometrySuspect = normalizedCompared.filter((fixture) => fixture.actualCropGeometry?.suspect);
   const actualTemplatePixelSuspect = normalizedCompared.filter((fixture) => fixture.actualTemplatePixels?.suspect);
   const authoritativeNormalizedHighMismatch = alignedHighMismatch.filter(
-    (fixture) => !fixture.actualCropGeometry?.suspect && !fixture.actualTemplatePixels?.suspect,
+    (fixture) => !fixture.actualCropGeometry?.suspect
+      && !fixture.actualTemplatePixels?.suspect
+      && fixture.actualCaptureQuality?.authoritativePixelEvidence === true,
   );
-  const actualChatCssInactive = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'CSS_RULE_MISSING_IN_PAGE_STYLES');
-  const actualChatCssScopedMismatch = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'ROLLTEMPLATE_CSS_SCOPED_OR_PREFIX_MISMATCH');
-  const actualChatCssUnknown = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'UNKNOWN');
-  const actualCaptureScaleSuspect = fixtures.filter((fixture) => fixture.status === 'DIFFED' && isActualCaptureScaleSuspect(fixture));
+  const actualChatCssInactive = applicableFixtures.filter((fixture) => fixture.actualChatCss?.classification === 'CSS_RULE_MISSING_IN_PAGE_STYLES');
+  const actualChatCssScopedMismatch = applicableFixtures.filter((fixture) => fixture.actualChatCss?.classification === 'ROLLTEMPLATE_CSS_SCOPED_OR_PREFIX_MISMATCH');
+  const actualChatCssUnknown = applicableFixtures.filter((fixture) => fixture.actualChatCss?.classification === 'UNKNOWN');
+  const actualCaptureScaleSuspect = applicableFixtures.filter((fixture) => fixture.status === 'DIFFED' && isActualCaptureScaleSuspect(fixture));
+  const actualCaptureUntrusted = applicableFixtures.filter(
+    (fixture) => fixture.status === 'DIFFED'
+      && fixture.actualCaptureQuality?.authoritativePixelEvidence !== true,
+  );
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
     localChatDir,
     scope: 'Local ChatPane screenshot vs actual Roll20 chat screenshot diagnostic; not visual parity by itself',
     summary: {
-      fixtures: fixtures.length,
+      fixtures: applicableFixtures.length,
+      allFixtures: fixtures.length,
+      notApplicable: fixtures.length - applicableFixtures.length,
       compared: compared.length,
       normalizedCompared: normalizedCompared.length,
-      missing: fixtures.filter((fixture) => fixture.status === 'MISSING').length,
-      needsNormalizedCapture: fixtures.filter((fixture) => fixture.status === 'NEEDS_NORMALIZED_CAPTURE').length,
+      missing: applicableFixtures.filter((fixture) => fixture.status === 'MISSING').length,
+      needsNormalizedCapture: applicableFixtures.filter((fixture) => fixture.status === 'NEEDS_NORMALIZED_CAPTURE').length,
       highMismatch: highMismatch.length,
       normalizedHighMismatch: normalizedHighMismatch.length,
       alignedHighMismatch: alignedHighMismatch.length,
@@ -86,6 +97,7 @@ async function main() {
       actualChatCssScopedMismatch: actualChatCssScopedMismatch.length,
       actualChatCssUnknown: actualChatCssUnknown.length,
       actualCaptureScaleSuspect: actualCaptureScaleSuspect.length,
+      actualCaptureUntrusted: actualCaptureUntrusted.length,
       maxMismatchRatio: compared.reduce((max, fixture) => Math.max(max, fixture.mismatchRatio ?? 0), 0),
       maxNormalizedMismatchRatio: normalizedCompared.reduce((max, fixture) => Math.max(max, fixture.mismatchRatio ?? 0), 0),
       maxAlignedMismatchRatio: normalizedCompared.reduce((max, fixture) => Math.max(max, fixture.bestAlignedMismatchRatio ?? 0), 0),
@@ -97,18 +109,21 @@ async function main() {
   await writeFile(path.join(outDir, 'chat-parity-diagnostics-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
   await writeFile(path.join(outDir, 'chat-parity-diagnostics-results.md'), renderMarkdown(report), 'utf8');
 
-  const needsNormalized = fixtures.some((fixture) => fixture.status === 'NEEDS_NORMALIZED_CAPTURE');
+  const needsNormalized = applicableFixtures.some((fixture) => fixture.status === 'NEEDS_NORMALIZED_CAPTURE');
   const status = actualCropGeometrySuspect.length
+    || actualTemplatePixelSuspect.length
+    || actualCaptureUntrusted.length
     ? 'NEEDS_AUTHORITATIVE_CAPTURE'
     : normalizedHighMismatch.length
-    ? 'HIGH_MISMATCH'
-    : needsNormalized
-      ? 'NEEDS_NORMALIZED_CAPTURE'
-      : compared.length === fixtures.length
-        ? 'COMPARED'
-        : 'PARTIAL';
+      ? 'HIGH_MISMATCH'
+      : needsNormalized
+        ? 'NEEDS_NORMALIZED_CAPTURE'
+        : compared.length === applicableFixtures.length
+          ? 'COMPARED'
+          : 'PARTIAL';
   console.log(`ROLL20 CHAT PARITY DIAGNOSTIC ${status}`);
-  console.log(`fixtures=${fixtures.length}`);
+  console.log(`fixtures=${applicableFixtures.length}`);
+  console.log(`skippedNotApplicable=${fixtures.length - applicableFixtures.length}`);
   console.log(`compared=${compared.length}`);
   console.log(`normalizedCompared=${normalizedCompared.length}`);
   console.log(`highMismatch=${highMismatch.length}`);
@@ -117,6 +132,7 @@ async function main() {
   console.log(`authoritativeNormalizedHighMismatch=${authoritativeNormalizedHighMismatch.length}`);
   console.log(`actualCropGeometrySuspect=${actualCropGeometrySuspect.length}`);
   console.log(`actualTemplatePixelSuspect=${actualTemplatePixelSuspect.length}`);
+  console.log(`actualCaptureUntrusted=${actualCaptureUntrusted.length}`);
   for (const fixture of fixtures) {
     if (fixture.status === 'DIFFED') {
       console.log(`DIFFED ${fixture.fixtureId} mode=${fixture.compareMode} mismatch=${pct(fixture.mismatchRatio)} local=${fixture.localSize.join('x')} actual=${fixture.actualSize.join('x')}`);
@@ -128,6 +144,7 @@ async function main() {
 }
 
 function isActualCaptureScaleSuspect(fixture) {
+  if (fixture.actualCaptureQuality?.authoritativePixelEvidence !== true) return true;
   if (fixture.actualImageFormat && fixture.actualImageFormat !== 'png') return true;
   const [scaleX, scaleY] = fixture.actualScreenshotScale ?? [];
   return Math.abs(Number(scaleX ?? 1) - 1) > 0.01 || Math.abs(Number(scaleY ?? 1) - 1) > 0.01;
@@ -140,6 +157,19 @@ async function readFixtureIds(baselineDir) {
 }
 
 async function compareFixture(page, fixtureId) {
+  const payloadHtml = path.join(runDir, 'local-baseline', fixtureId, 'payload', 'sheet.html');
+  const chatApplicable = existsSync(payloadHtml)
+    && payloadRequiresChat(await readFile(payloadHtml, 'utf8'));
+  if (!chatApplicable) {
+    return {
+      fixtureId,
+      status: 'NOT_APPLICABLE',
+      local: '',
+      actual: '',
+      sidecar: '',
+      note: 'payload has no Roll button or Rolltemplate',
+    };
+  }
   const localTemplate = path.join(localChatDir, `${fixtureId}-chat-template.png`);
   const local = existsSync(localTemplate)
     ? localTemplate
@@ -191,6 +221,12 @@ async function compareFixture(page, fixtureId) {
   const actualCropGeometry = classifyActualCropGeometry(sidecarJson, actualCrop);
   const localImageFormat = await sniffImageFormat(local);
   const actualImageFormat = await sniffImageFormat(actual);
+  const actualMeta = await readJsonIfExists(actual.replace(/\.png$/i, '.json'));
+  const actualCaptureQuality = classifyCaptureQuality({
+    actualBytes: await readFile(actual),
+    actualFile: actual,
+    actualMeta,
+  });
   return {
     fixtureId,
     status: 'DIFFED',
@@ -206,6 +242,7 @@ async function compareFixture(page, fixtureId) {
     localImageFormat,
     actualSize: diff.actualSize,
     actualImageFormat,
+    actualCaptureQuality,
     actualSource: diff.actualSource,
     actualTemplatePixels: classifyActualTemplatePixels(sidecarJson, diff.actualTemplatePixelStats),
     actualScreenshotScale: actualCrop?.clip
@@ -705,6 +742,7 @@ function renderMarkdown(report) {
   lines.push(report.scope);
   lines.push('');
   lines.push(`Compared: ${report.summary.compared}/${report.summary.fixtures}`);
+  lines.push(`Skipped not applicable: ${report.summary.notApplicable}/${report.summary.allFixtures}`);
   lines.push(`Normalized compared: ${report.summary.normalizedCompared}/${report.summary.fixtures}`);
   lines.push(`Needs normalized capture: ${report.summary.needsNormalizedCapture}`);
   lines.push(`High mismatch: ${report.summary.highMismatch}`);
@@ -717,6 +755,7 @@ function renderMarkdown(report) {
   lines.push(`Actual chat CSS scoped/prefix mismatch: ${report.summary.actualChatCssScopedMismatch}`);
   lines.push(`Actual chat CSS unknown: ${report.summary.actualChatCssUnknown}`);
   lines.push(`Actual capture scale/format suspect: ${report.summary.actualCaptureScaleSuspect}`);
+  lines.push(`Actual capture untrusted: ${report.summary.actualCaptureUntrusted}`);
   lines.push(`Max mismatch: ${pct(report.summary.maxMismatchRatio)}`);
   lines.push(`Max normalized mismatch: ${pct(report.summary.maxNormalizedMismatchRatio)}`);
   lines.push(`Max aligned mismatch: ${pct(report.summary.maxAlignedMismatchRatio)}`);
@@ -730,7 +769,11 @@ function renderMarkdown(report) {
       ? ''
       : `${fixture.widthDeltaPx}x${fixture.heightDeltaPx}`;
     const breakdown = summarizeBreakdown(fixture.bestAlignedDiffBreakdown ?? fixture.diffBreakdown);
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.compareMode ?? ''} | ${fixture.actualChatCss?.classification ?? ''} | ${cropGeometry} | ${pixelCheck} | \`${fixture.local}\` | \`${fixture.actual}\` | ${fixture.sidecarRolltemplateCount ?? ''} | ${fixture.localSize?.join('x') ?? ''} ${fixture.localImageFormat ? `(${fixture.localImageFormat})` : ''} | ${fixture.actualSize?.join('x') ?? ''} ${fixture.actualImageFormat ? `(${fixture.actualImageFormat})` : ''} | ${sizeDelta} | ${fixture.actualScreenshotScale?.join('x') ?? ''} | ${fixture.actualSource?.join(',') ?? ''} | ${fixture.comparedSize?.join('x') ?? ''} | ${fixture.mismatchPct ?? ''} | ${fixture.bestAlignedMismatchPct ?? ''} | ${fixture.bestAlignedOffset?.join(',') ?? ''} | ${breakdown.highlightShare} | ${breakdown.highlightDelta} | ${breakdown.brightShare} | ${breakdown.darkShare} | ${breakdown.worstRow} | ${fixture.rmsRgb ?? ''} | ${fixture.note} |`);
+    const source = [
+      ...(fixture.actualSource ?? []),
+      fixture.actualCaptureQuality?.status ?? '',
+    ].filter(Boolean).join(',');
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.compareMode ?? ''} | ${fixture.actualChatCss?.classification ?? ''} | ${cropGeometry} | ${pixelCheck} | \`${fixture.local}\` | \`${fixture.actual}\` | ${fixture.sidecarRolltemplateCount ?? ''} | ${fixture.localSize?.join('x') ?? ''} ${fixture.localImageFormat ? `(${fixture.localImageFormat})` : ''} | ${fixture.actualSize?.join('x') ?? ''} ${fixture.actualImageFormat ? `(${fixture.actualImageFormat})` : ''} | ${sizeDelta} | ${fixture.actualScreenshotScale?.join('x') ?? ''} | ${source} | ${fixture.comparedSize?.join('x') ?? ''} | ${fixture.mismatchPct ?? ''} | ${fixture.bestAlignedMismatchPct ?? ''} | ${fixture.bestAlignedOffset?.join(',') ?? ''} | ${breakdown.highlightShare} | ${breakdown.highlightDelta} | ${breakdown.brightShare} | ${breakdown.darkShare} | ${breakdown.worstRow} | ${fixture.rmsRgb ?? ''} | ${fixture.note} |`);
   }
   lines.push('');
   lines.push('This report does not replace actual Roll20 sheet-root evidence or human visual classification.');

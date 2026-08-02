@@ -8,25 +8,39 @@
  */
 
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
+import { findTemplateChild } from './lib/roll20ChatMetrics.mjs';
+import { payloadRequiresChat } from './lib/roll20PayloadCapabilities.mjs';
 
-const args = process.argv.slice(2).filter((arg) => arg !== '--');
+const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
+const SELF_TEST = rawArgs.includes('--self-test');
+const args = rawArgs.filter((arg) => arg !== '--self-test');
+
+if (SELF_TEST) {
+  await selfTest();
+  process.exit(0);
+}
+
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const localSmokeArg = args[1] ?? 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json';
 const runDir = path.resolve(runDirArg);
 const localSmokeFile = path.resolve(localSmokeArg);
 const outDir = path.join(runDir, 'chat-structure-compare');
-const fixtureIds = ['fixtureA', 'fixtureB', 'fixtureC'];
 
 const localSmoke = await readJsonIfExists(localSmokeFile);
+const fixtureInventory = await discoverFixtureInventory(runDir);
+const fixtureIds = fixtureInventory
+  .filter((fixture) => fixture.applicable)
+  .map((fixture) => fixture.fixtureId);
 const fixtures = [];
 
 for (const fixtureId of fixtureIds) {
   const localFixture = localSmoke?.fixtures?.find((fixture) => fixture.id === fixtureId);
   const localTemplate = localFixture?.cardInfo?.templateComputed ?? null;
   const actualSidecar = await readJsonIfExists(path.join(runDir, 'local-baseline', fixtureId, 'screenshots', 'roll20-chat-dom-evidence.json'));
-  const actualTemplate = actualSidecar?.selectedTemplate ?? actualSidecar?.latestTemplate ?? null;
+  const actualTemplate = actualSidecar?.latestTemplate ?? actualSidecar?.selectedTemplate ?? null;
   fixtures.push(compareFixture(fixtureId, localFixture, localTemplate, actualSidecar, actualTemplate));
 }
 
@@ -35,7 +49,8 @@ const report = {
   runDir: runDirArg,
   localSmoke: localSmokeArg,
   scope: 'diagnostic-only chat rolltemplate structure comparison',
-  summary: summarize(fixtures),
+  summary: summarize(fixtures, fixtureInventory.length),
+  fixtureInventory,
   fixtures,
 };
 
@@ -44,10 +59,34 @@ await writeFile(path.join(outDir, 'chat-structure-compare-results.json'), `${JSO
 await writeFile(path.join(outDir, 'chat-structure-compare-results.md'), renderMarkdown(report), 'utf8');
 
 console.log(`ROLL20 CHAT STRUCTURE ${report.summary.status}`);
+console.log(`fixtures=${report.summary.fixtures}/${report.summary.allFixtures}`);
+console.log(`skippedNotApplicable=${report.summary.notApplicable}`);
 for (const fixture of fixtures) {
   console.log(`FIXTURE ${fixture.fixtureId} status=${fixture.status} local=${fixture.local.templateClass || 'n/a'} actual=${fixture.actual.templateClass || 'n/a'} rows=${fixture.local.rowCount}/${fixture.actual.rowCount} decision=${fixture.decision} next=${fixture.nextAction}`);
 }
 console.log(`out=${path.relative(process.cwd(), outDir)}`);
+
+async function discoverFixtureInventory(targetRunDir) {
+  const baselineDir = path.join(targetRunDir, 'local-baseline');
+  if (!existsSync(baselineDir)) return [];
+  const entries = await readdir(baselineDir, { withFileTypes: true });
+  const fixtureIds = entries
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+  return Promise.all(fixtureIds.map(async (fixtureId) => {
+    const payloadHtml = path.join(baselineDir, fixtureId, 'payload', 'sheet.html');
+    if (!existsSync(payloadHtml)) {
+      return { fixtureId, applicable: false, reason: 'payload HTML missing' };
+    }
+    const applicable = payloadRequiresChat(await readFile(payloadHtml, 'utf8'));
+    return {
+      fixtureId,
+      applicable,
+      reason: applicable ? 'Roll button or Rolltemplate present' : 'payload has no Roll button or Rolltemplate',
+    };
+  }));
+}
 
 function compareFixture(fixtureId, localFixture, localTemplate, actualSidecar, actualTemplate) {
   const localRows = Array.isArray(localTemplate?.rowMetrics) ? localTemplate.rowMetrics : [];
@@ -60,7 +99,7 @@ function compareFixture(fixtureId, localFixture, localTemplate, actualSidecar, a
     templateClass: localTemplate?.className ?? '',
     rowCount: localRows.length,
     rowSignature: localSignature,
-    tableText: findChild(localTemplate, 'table')?.text ?? localTemplate?.text ?? '',
+    tableText: findTemplateChild(localTemplate, 'table')?.text ?? localTemplate?.text ?? '',
   };
   const actualInfo = {
     selectedTemplateStrategy: actualSidecar?.selectedTemplateStrategy ?? '',
@@ -68,7 +107,7 @@ function compareFixture(fixtureId, localFixture, localTemplate, actualSidecar, a
     templateClass: actualTemplate?.className ?? '',
     rowCount: actualRows.length,
     rowSignature: actualSignature,
-    tableText: findChild(actualTemplate, 'table')?.text ?? actualTemplate?.text ?? '',
+    tableText: findTemplateChild(actualTemplate, 'table')?.text ?? actualTemplate?.text ?? '',
     availableTemplateClasses: [...new Set((actualSidecar?.rolltemplates ?? []).map((template) => template?.className).filter(Boolean))],
   };
   if (!localTemplate) {
@@ -160,16 +199,18 @@ function normalizeText(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
 }
 
-function findChild(template, selector) {
-  return (template?.computedChildren ?? []).find((child) => child?.selector === selector) ?? null;
-}
-
-function summarize(fixtures) {
+function summarize(fixtures, allFixtures = fixtures.length) {
   const counts = countBy(fixtures.map((fixture) => fixture.status));
   const mismatches = fixtures.filter((fixture) => fixture.status !== 'STRUCTURE_MATCH');
   return {
-    status: mismatches.length ? 'STRUCTURE_MISMATCH_FOUND' : 'STRUCTURE_MATCHED',
+    status: fixtures.length === 0
+      ? 'NO_APPLICABLE_FIXTURES'
+      : mismatches.length
+        ? 'STRUCTURE_MISMATCH_FOUND'
+        : 'STRUCTURE_MATCHED',
     fixtures: fixtures.length,
+    allFixtures,
+    notApplicable: Math.max(0, allFixtures - fixtures.length),
     mismatches: mismatches.length,
     counts,
     productionSafe: false,
@@ -189,6 +230,8 @@ function renderMarkdown(report) {
     `Generated: ${report.generatedAt}`,
     `Run: \`${report.runDir}\``,
     `Local smoke: \`${report.localSmoke}\``,
+    `Applicable fixtures: ${report.summary.fixtures}/${report.summary.allFixtures}`,
+    `Skipped as not applicable: ${report.summary.notApplicable}`,
     '',
     '| Fixture | Status | Local template | Actual template | Rows L/A | Chosen roll | Actual strategy | Decision | Next |',
     '| --- | --- | --- | --- | ---: | --- | --- | --- | --- |',
@@ -204,4 +247,36 @@ function renderMarkdown(report) {
 
 function escapeCell(value) {
   return String(value ?? '').replace(/\|/g, '\\|').replace(/\n/g, '<br>');
+}
+
+async function selfTest() {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), 'roll20-chat-structure-'));
+  try {
+    const chatPayloadDir = path.join(tempDir, 'local-baseline', 'fixture-A', 'payload');
+    const layoutPayloadDir = path.join(tempDir, 'local-baseline', 'fixture-B', 'payload');
+    await mkdir(chatPayloadDir, { recursive: true });
+    await mkdir(layoutPayloadDir, { recursive: true });
+    await writeFile(path.join(chatPayloadDir, 'sheet.html'), '<button type=roll name="roll_test">Roll</button>', 'utf8');
+    await writeFile(path.join(layoutPayloadDir, 'sheet.html'), '<input type="text" name="attr_name">', 'utf8');
+
+    const inventory = await discoverFixtureInventory(tempDir);
+    const applicable = inventory.filter((fixture) => fixture.applicable).map((fixture) => fixture.fixtureId);
+    if (inventory.length !== 2 || applicable.length !== 1 || applicable[0] !== 'fixture-A') {
+      throw new Error(`dynamic fixture discovery failed: ${JSON.stringify(inventory)}`);
+    }
+    const summary = summarize([], inventory.length);
+    if (summary.status !== 'NO_APPLICABLE_FIXTURES' || summary.notApplicable !== 2) {
+      throw new Error(`empty applicability summary failed: ${JSON.stringify(summary)}`);
+    }
+    if (findTemplateChild({ computedChildren: '[Circular]' }, 'table') !== null) {
+      throw new Error('non-collection computedChildren must be ignored');
+    }
+    const tableChild = { selector: 'table', text: 'proof' };
+    if (findTemplateChild({ computedChildren: { table: tableChild } }, 'table') !== tableChild) {
+      throw new Error('object-form computedChildren must be normalized');
+    }
+    console.log('ROLL20 CHAT STRUCTURE SELF-TEST PASS');
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
 }
