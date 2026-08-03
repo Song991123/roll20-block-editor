@@ -40,8 +40,8 @@ or source-derived measurement here.
   5.67%-9.60% in legacy mode. Full authored-root candidates are 4.96%-4.97%
   with a one-pixel height delta. These are ignored local synthetic metrics, not
   broad-sheet parity or support for every third-party sheet.
-- Commit, push, remote CI, and final server/browser cleanup remain pending for
-  this batch.
+- This batch is committed and pushed. Its remote CI safety/unit, lint, and
+  production-build gates passed, and final server/browser cleanup completed.
 
 ## 2026-08-03 - Result-Card CSS And Short-Sheet Geometry
 
