@@ -16,6 +16,25 @@ or source-derived measurement here.
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
 
+## 2026-08-03 - Modern Sandbox CSS Rejection Boundary
+
+- Reproduced a false whole-stylesheet rejection in modern Sandbox preparation:
+  one local inline data URL and quoted CSS grammar were being classified as
+  unsafe before the blocked URL could be removed.
+- The sanitizer now removes blocked inline data URLs before its unsafe-token
+  audit and distinguishes quoted grammar from unquoted markup. Script URLs and
+  raw markup remain rejected. Focused regression tests pass.
+- A fresh anonymous six-fixture modern pre-upload run passes local baseline,
+  payload audit, Sandbox sanitize audit, roundtrip, state, asset, and evidence
+  gates.
+- The visible Custom Sheet Sandbox upload remains externally blocked before
+  file transmission because Chrome local-file access is not enabled. No
+  alternate upload path was used, so this batch does not claim new actual-screen
+  evidence.
+- Focused sanitizer tests, full `ci:verify`, lint, production build, tracked-doc
+  privacy guard, and diff checks pass. The final server-hygiene check reports no
+  project or browser-debug listener.
+
 ## 2026-08-03 - Native Input, Void Element, And CSS Value Preservation
 
 - Added an editable leaf mapping for browser-native input types outside the
@@ -659,8 +678,8 @@ or source-derived measurement here.
 ## Open Gates
 
 1. Supported modern Custom Sheet Sandbox upload remains blocked at its visible
-   file chooser; current modern actual evidence comes from a dedicated
-   owner-only test room and must be broadened.
+   file chooser until Chrome local-file access is enabled; current modern actual
+   evidence comes from a dedicated owner-only test room and must be broadened.
 2. Equivalent actual element-level evidence for the remaining synthetic and
    modern paths, plus deterministic lossless same-state result-card capture
    before renderer changes.

@@ -112,6 +112,10 @@ export function sanitizeRoll20SandboxCss(
   let out = stripMobileCss(css, warnings);
   out = out.replace(/\/\*[\s\S]*?\*\//g, '');
 
+  if (options.rewriteUrls !== false) {
+    out = dropInlineDataCssUrls(out, warnings);
+  }
+
   if (hasUnsafeCssToken(out)) {
     warnings.push({
       code: 'css-rejected',
@@ -132,6 +136,18 @@ export function sanitizeRoll20SandboxCss(
   out = prefixNestedCssBlocks(out, prefixSelectors, warnings);
 
   return { css: out, warnings };
+}
+
+function dropInlineDataCssUrls(
+  css: string,
+  warnings: Roll20SandboxWarning[],
+): string {
+  return css.replace(/url\s*\(([^)]+)\)/gi, (source, rawUrl: string) => {
+    const normalized = stripCssUrlQuotes(String(rawUrl).replace(/\s+/g, ''));
+    if (!/^data:/i.test(normalized)) return source;
+    rewriteRoll20Url(normalized, warnings, 'css');
+    return '';
+  });
 }
 
 function prefixNestedCssBlocks(
@@ -301,14 +317,33 @@ function stripMobileCss(css: string, warnings: Roll20SandboxWarning[]): string {
 }
 
 function hasUnsafeCssToken(css: string): boolean {
+  if (hasUnquotedLessThan(css)) return true;
   return [
     /(\bdata:\b|eval|cookie|\bwindow\b|\bparent\b|\bthis\b)/i,
-    /behaviou?r|expression|moz-binding|@charset|javascript|vbscript|[<]|\\\w/i,
+    /behaviou?r|expression|moz-binding|@charset|javascript|vbscript|\\\w/i,
     /@import (?!url\(['"]https:\/\/fonts\.googleapis\.com\/css\?family=)/i,
     /[\x7f-\xff]/,
     /[\x00-\x08\x0b\x0c\x0e-\x1f]/,
     /&#/,
   ].some((re) => re.test(css));
+}
+
+function hasUnquotedLessThan(css: string): boolean {
+  let quote = '';
+  for (let index = 0; index < css.length; index += 1) {
+    const char = css[index];
+    if (quote) {
+      if (char === '\\') index += 1;
+      else if (char === quote) quote = '';
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      continue;
+    }
+    if (char === '<') return true;
+  }
+  return false;
 }
 
 function prefixRoll20Selector(selector: string, warnings: Roll20SandboxWarning[]): string {

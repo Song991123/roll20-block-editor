@@ -39,9 +39,10 @@ contain private source evidence or historical test dumps.
   The Sandbox upload helper does not target legacy campaign settings.
 - Modern automated Custom Sheet Sandbox upload is stopped at the supported
   file-selection permission boundary. A fresh dedicated Sandbox persisted an
-  anonymous manifest and launched the visible upload tools, but its supported
-  HTML chooser failed before transmission; do not bypass it. Separate modern
-  actual evidence exists through an owner-only dedicated test room.
+  anonymous manifest and launched the visible upload tools, but Chrome
+  local-file access is not enabled and the supported HTML chooser stops before
+  transmission; do not bypass it. Separate modern actual evidence exists
+  through an owner-only dedicated test room.
 - Sequential imports use monotonic store versions plus Blockly hydration
   generations in the emit-cache identity. The current six-fixture browser
   path also requires each mounted preview CSS hash to match the latest import,
@@ -51,6 +52,10 @@ contain private source evidence or historical test dumps.
   use the same leaf-only contract instead of a false generic frame. CSS
   declaration values preserve semicolons inside strings and functions such as data URLs while
   still removing top-level declaration boundaries.
+- Modern Sandbox CSS preparation drops blocked inline data URLs before the
+  unsafe-token audit. Quoted CSS grammar remains intact, but script URLs and
+  unquoted markup still reject the stylesheet. The current anonymous
+  six-fixture pre-upload gate passes; this is not actual-screen evidence.
 - The edit layer panel has a persisted, pointer- and keyboard-resizable width.
   One responsive track positions both its edge and the persistent iframe, so
   resizing editor chrome does not create a Preview/Edit coordinate split.

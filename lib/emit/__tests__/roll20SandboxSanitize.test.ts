@@ -140,10 +140,33 @@ function testCssUrlRewrite(): void {
   assert(r.warnings.some((w) => w.code === 'css-url-dropped'), 'drop warning present');
 }
 
+function testCssDropsInlineDataUrlWithoutRejectingStylesheet(): void {
+  const r = sanitizeRoll20SandboxCss(`
+    @property --turn { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+    .asset { background-image: url("data:image/png;base64,AAAA"); color: #123456; }
+    .fallback { display: block; }
+  `);
+
+  expectNotContains(r.css, 'data:image', 'inline data URL dropped');
+  expectContains(r.css, 'syntax: "<angle>"', 'quoted property syntax preserved');
+  expectContains(r.css, 'color: #123456', 'declarations beside data URL preserved');
+  expectContains(r.css, '.charsheet .fallback', 'following rules preserved');
+  assert(r.warnings.some((w) => w.code === 'css-url-dropped'), 'data URL drop warning present');
+  assert(!r.warnings.some((w) => w.code === 'css-rejected'), 'data URL does not reject whole stylesheet');
+}
+
 function testCssRejectsUnsafeTokens(): void {
   const r = sanitizeRoll20SandboxCss('.a { color: red; } .b { behavior: url(x); }');
   assert(r.css === '', 'unsafe CSS clears output');
   assert(r.warnings.some((w) => w.code === 'css-rejected'), 'rejected warning present');
+
+  const scriptUrl = sanitizeRoll20SandboxCss('.a { background: url("javascript:alert(1)"); }');
+  assert(scriptUrl.css === '', 'script URL still clears output');
+  assert(scriptUrl.warnings.some((w) => w.code === 'css-rejected'), 'script URL rejection warning present');
+
+  const markup = sanitizeRoll20SandboxCss('.a { color: red; } <script>');
+  assert(markup.css === '', 'unquoted markup token still clears output');
+  assert(markup.warnings.some((w) => w.code === 'css-rejected'), 'markup rejection warning present');
 }
 
 function testHtmlClassPrefixAndAllowList(): void {
@@ -202,6 +225,7 @@ const tests: Array<[string, () => void]> = [
   ['CSS actual iframe selector preservation', testCssCanPreserveActualIframeSelectors],
   ['CSS nested at-rules', testCssNestedAtRules],
   ['CSS URL rewrite', testCssUrlRewrite],
+  ['CSS inline data URL drop', testCssDropsInlineDataUrlWithoutRejectingStylesheet],
   ['CSS unsafe rejection', testCssRejectsUnsafeTokens],
   ['HTML allow-list/class prefix', testHtmlClassPrefixAndAllowList],
   ['HTML modern class preservation', testModernHtmlPreservesClasses],

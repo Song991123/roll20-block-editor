@@ -36,10 +36,10 @@ belong in tracked documents.
   local evidence. This proves the tested synthetic contract, not every sheet.
 - `BLOCKED EXTERNAL`: the current automated modern upload path is stopped at
   the browser file-selection permission boundary. A fresh dedicated Sandbox
-  accepted and persisted an anonymous manifest, launched its visible upload
-  tools, and then returned `Not allowed` when the supported HTML chooser tried
-  to select the newly exported file. No file was transferred. No hidden input,
-  endpoint, or existing-room workaround is allowed.
+  accepted and persisted an anonymous manifest and launched its visible upload
+  tools. Fresh supported chooser attempts still stop before transmission while
+  the Chrome extension lacks local-file access. No file was transferred. No
+  hidden input, endpoint, or existing-room workaround is allowed.
 - `DONE CURRENT SYNTHETIC MATRIX`: local Preview/Edit and the dedicated modern and legacy destinations now have
   same-payload root comparisons against the exact authored top-level element,
   not the surrounding Roll20 wrapper. Authored-root dimensions and capture
@@ -116,6 +116,12 @@ belong in tracked documents.
   pixel-exact in both modern and legacy modes; Sandbox preparation keeps its
   restricted output separate. Actual user-owned hosted asset loading remains
   unverified.
+- `DONE LOCAL`: modern Sandbox CSS preparation drops a blocked inline data URL
+  without rejecting unrelated declarations or the rest of the stylesheet.
+  Quoted CSS grammar such as `@property` angle syntax remains valid, while
+  script URLs and unquoted markup still reject the stylesheet. All six current
+  anonymous fixtures pass a fresh modern pre-upload run. This is preparation
+  evidence only; the actual Sandbox upload remains blocked above.
 - `DONE LOCAL`: executable ordinary scripts use a separate inert source
   workspace with source-order slots. Preview/Edit remove them from the visual
   runtime. Final Roll20 `sheet.html` keeps only Sheet Worker scripts; excluded
