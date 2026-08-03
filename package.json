@@ -37,6 +37,7 @@
     "test:blockly-sound-policy": "tsx lib/editor/__tests__/blocklySoundPolicy.test.ts",
     "test:iframe-edit-bridge": "tsx lib/preview/__tests__/iframeEditBridge.test.ts",
     "test:build-doc-bundle": "tsx lib/preview/__tests__/buildDocBundle.test.ts",
+    "test:targeted-html-patch": "tsx lib/preview/__tests__/targetedHtmlPatch.test.ts",
     "test:canvas-dimensions": "tsx lib/preview/__tests__/canvasDimensions.test.ts",
     "test:runtime-asset-policy": "tsx lib/preview/__tests__/runtimeAssetPolicy.test.ts",
     "test:runtime-contract": "tsx lib/preview/__tests__/runtimeContract.test.ts",

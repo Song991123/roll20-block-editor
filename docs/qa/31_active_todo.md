@@ -196,6 +196,19 @@ belong in tracked documents.
   resize, and a coordinated multi-layer section preset. Multi-target section,
   control, result-card, Roll-button, layout, and composition presets all share
   one outer history group.
+- `DONE LOCAL`: a first free-placement commit that keeps the same structural
+  parent now proves that only allowlisted `class`/`style` attributes changed,
+  then patches those nodes in the persistent iframe instead of morphing the
+  whole sheet. Any text, structure, tag, unrelated attribute, duplicate ID, or
+  stale HTML-key difference falls back to the full patch. Modern and legacy
+  browser smoke preserves runtime input, class, and style state with no iframe
+  reload. The six-fixture anonymous edit suite and anonymous 5,200/9,000-item
+  large-workspace paths pass with zero console/page errors.
+- `PARTIAL PERFORMANCE`: the iframe apply, target-plan, message-transfer, and
+  optimistic-paint budgets pass on the ignored larger-input check. Parent
+  apply scheduling and final ACK remain warnings there. Optimize the React
+  commit/store invalidation path next without moving source emission behind an
+  unverified visual-only shortcut.
 - `PARTIAL`: continue usability review for dense imported structures, longer
   or dynamically changing/animated transform stacks, and 3D/perspective
   transforms. Add longer mixed history runs for imported structures while

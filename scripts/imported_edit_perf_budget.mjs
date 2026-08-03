@@ -36,6 +36,13 @@ const BUDGETS = {
   importTotalMs: { warn: 6000, fail: 10000 },
   injectMs: { warn: 5000, fail: 8000 },
   emitMs: { warn: 200, fail: 500 },
+  editModeReadyMs: { warn: 750, fail: 2000 },
+  optimisticPaintMs: { warn: 50, fail: 100 },
+  applySchedulingWaitMs: { warn: 100, fail: 500 },
+  targetPlanMs: { warn: 25, fail: 100 },
+  postMessageMs: { warn: 25, fail: 100 },
+  pointerUpToAckMs: { warn: 500, fail: 1500 },
+  applyCostMs: { warn: 100, fail: 500 },
   dragDriftPx: { warn: 1, fail: 2 },
   pageErrors: { warn: 1, fail: 1 },
   resourceWarnings: { warn: 1, fail: 999999 },
@@ -46,6 +53,10 @@ function statusFor(value, budget) {
   if (value >= budget.fail) return 'FAIL';
   if (value >= budget.warn) return 'WARN';
   return 'PASS';
+}
+
+function optionalStatusFor(value, budget) {
+  return value == null ? 'PASS' : statusFor(value, budget);
 }
 
 function worstStatus(statuses) {
@@ -73,6 +84,14 @@ function summarizeFixture(fixture, index) {
   const importTotalMs = round(fixture.import?.totalMs);
   const injectMs = round(fixture.import?.injectMs);
   const emitMs = round(fixture.import?.emitMs);
+  const editPerformance = fixture.canonicalEditSync?.performance ?? null;
+  const editModeReadyMs = round(editPerformance?.editModeReadyMs);
+  const optimisticPaintMs = round(editPerformance?.optimisticPaintMs);
+  const applySchedulingWaitMs = round(editPerformance?.applySchedulingWaitMs);
+  const targetPlanMs = round(editPerformance?.targetPlanMs);
+  const postMessageMs = round(editPerformance?.postMessageMs);
+  const pointerUpToAckMs = round(editPerformance?.pointerUpToAckMs);
+  const applyCostMs = round(editPerformance?.applyCostMs);
   const htmlShape = fixture.htmlWorkspaceShape ?? {};
   const largestRoot = htmlShape.roots?.[0] ?? null;
   const topRemainingTrSignature = htmlShape.remainingTrSignatures?.[0] ?? null;
@@ -90,6 +109,13 @@ function summarizeFixture(fixture, index) {
     importTotalMs: statusFor(importTotalMs, BUDGETS.importTotalMs),
     injectMs: statusFor(injectMs, BUDGETS.injectMs),
     emitMs: statusFor(emitMs, BUDGETS.emitMs),
+    editModeReadyMs: optionalStatusFor(editModeReadyMs, BUDGETS.editModeReadyMs),
+    optimisticPaintMs: optionalStatusFor(optimisticPaintMs, BUDGETS.optimisticPaintMs),
+    applySchedulingWaitMs: optionalStatusFor(applySchedulingWaitMs, BUDGETS.applySchedulingWaitMs),
+    targetPlanMs: optionalStatusFor(targetPlanMs, BUDGETS.targetPlanMs),
+    postMessageMs: optionalStatusFor(postMessageMs, BUDGETS.postMessageMs),
+    pointerUpToAckMs: optionalStatusFor(pointerUpToAckMs, BUDGETS.pointerUpToAckMs),
+    applyCostMs: optionalStatusFor(applyCostMs, BUDGETS.applyCostMs),
     dragDriftPx: statusFor(drift, BUDGETS.dragDriftPx),
     pageErrors: statusFor(pageErrors, BUDGETS.pageErrors),
     resourceWarnings: statusFor(resourceWarnings, BUDGETS.resourceWarnings),
@@ -126,6 +152,15 @@ function summarizeFixture(fixture, index) {
       parseMs: round(fixture.import?.parseMs),
       injectMs,
       emitMs,
+      editModeReadyMs,
+      optimisticPaintMs,
+      applySchedulingWaitMs,
+      targetPlanMs,
+      postMessageMs,
+      pointerUpToAckMs,
+      applyCostMs,
+      targetedHtmlPatches: editPerformance?.targetedHtmlPatches ?? null,
+      targetedHtmlPatchCheck: editPerformance?.targetedHtmlPatchCheck ?? null,
       dragDriftPx: drift,
       dragTimelineSamples: timeline?.samples?.length ?? 0,
       editPreviewSync: Boolean(fixture.pass && fixture.interactionPass),
@@ -157,8 +192,8 @@ function renderMarkdown(summary) {
   lines.push(`Source: ${summary.source}`);
   lines.push(`Overall: **${summary.status}**`);
   lines.push('');
-  lines.push('| Fixture | Status | Blocks | Root HTML | Max root subtree | Max root % | Max root depth | Composite collapsed | Composite types | Wide row bundles | Wide row collapsed | Top row sig rows | Top row sig blocks | Est. row reduction | Projected HTML blocks | Import ms | Inject ms | Emit ms | Drift px | Sync | Reimport | Resources | Page errors |');
-  lines.push('|---|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|---:|');
+  lines.push('| Fixture | Status | Blocks | Root HTML | Max root subtree | Max root % | Max root depth | Composite collapsed | Composite types | Wide row bundles | Wide row collapsed | Top row sig rows | Top row sig blocks | Est. row reduction | Projected HTML blocks | Import ms | Inject ms | Emit ms | Edit ready ms | Optimistic ms | Apply schedule ms | Target plan ms | Message ms | Pointerup-ACK ms | Apply ms | Target patch | Drift px | Sync | Reimport | Resources | Page errors |');
+  lines.push('|---|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---|---|---|---:|');
   for (const item of summary.fixtures) {
     const m = item.metrics;
     lines.push([
@@ -180,6 +215,14 @@ function renderMarkdown(summary) {
       m.importTotalMs ?? '',
       m.injectMs ?? '',
       m.emitMs ?? '',
+      m.editModeReadyMs ?? '',
+      m.optimisticPaintMs ?? '',
+      m.applySchedulingWaitMs ?? '',
+      m.targetPlanMs ?? '',
+      m.postMessageMs ?? '',
+      m.pointerUpToAckMs ?? '',
+      m.applyCostMs ?? '',
+      m.targetedHtmlPatchCheck ?? '',
       m.dragDriftPx ?? '',
       m.editPreviewSync ? 'PASS' : 'FAIL',
       m.reimportStable ? 'PASS' : 'WARN',
@@ -193,6 +236,13 @@ function renderMarkdown(summary) {
   lines.push(`- Import total: WARN >= ${BUDGETS.importTotalMs.warn}ms, FAIL >= ${BUDGETS.importTotalMs.fail}ms`);
   lines.push(`- Blockly inject: WARN >= ${BUDGETS.injectMs.warn}ms, FAIL >= ${BUDGETS.injectMs.fail}ms`);
   lines.push(`- Emit: WARN >= ${BUDGETS.emitMs.warn}ms, FAIL >= ${BUDGETS.emitMs.fail}ms`);
+  lines.push(`- Edit mode ready: WARN >= ${BUDGETS.editModeReadyMs.warn}ms, FAIL >= ${BUDGETS.editModeReadyMs.fail}ms`);
+  lines.push(`- Optimistic paint: WARN >= ${BUDGETS.optimisticPaintMs.warn}ms, FAIL >= ${BUDGETS.optimisticPaintMs.fail}ms`);
+  lines.push(`- Apply scheduling wait: WARN >= ${BUDGETS.applySchedulingWaitMs.warn}ms, FAIL >= ${BUDGETS.applySchedulingWaitMs.fail}ms`);
+  lines.push(`- Target patch plan: WARN >= ${BUDGETS.targetPlanMs.warn}ms, FAIL >= ${BUDGETS.targetPlanMs.fail}ms`);
+  lines.push(`- Parent postMessage: WARN >= ${BUDGETS.postMessageMs.warn}ms, FAIL >= ${BUDGETS.postMessageMs.fail}ms`);
+  lines.push(`- Pointer-up to apply ACK: WARN >= ${BUDGETS.pointerUpToAckMs.warn}ms, FAIL >= ${BUDGETS.pointerUpToAckMs.fail}ms`);
+  lines.push(`- Iframe apply: WARN >= ${BUDGETS.applyCostMs.warn}ms, FAIL >= ${BUDGETS.applyCostMs.fail}ms`);
   lines.push(`- Drag drift: WARN >= ${BUDGETS.dragDriftPx.warn}px, FAIL >= ${BUDGETS.dragDriftPx.fail}px`);
   lines.push('- Shape metrics are sanitized structural counts only. They omit block IDs, DOM text, HTML snippets, CSS snippets, source identifiers, and private fixture paths.');
   lines.push('- Estimated row reduction is a dry-run unless the fixture was imported with `--compact-wide-rows true`; wide row bundle metrics report actual optional compaction.');

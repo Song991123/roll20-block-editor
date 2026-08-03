@@ -98,6 +98,8 @@ async function readApplyStats(frame) {
     structuralPatchFallbacks: Number(document.body?.getAttribute('data-r20-structural-patch-fallbacks') ?? 0),
     optimisticFlowFastPatches: Number(document.body?.getAttribute('data-r20-optimistic-flow-fast-patches') ?? 0),
     optimisticFlowCheck: document.body?.getAttribute('data-r20-optimistic-flow-check') ?? '',
+    targetedHtmlPatches: Number(document.body?.getAttribute('data-r20-targeted-html-patches') ?? 0),
+    targetedHtmlPatchCheck: document.body?.getAttribute('data-r20-targeted-html-patch-check') ?? '',
     initialPlaceholderReplacements: Number(document.body?.getAttribute('data-r20-initial-placeholder-replacements') ?? 0),
     styleOnlyApplies: Number(document.body?.getAttribute('data-r20-style-only-applies') ?? 0),
     optimisticFlowMoves: Number(document.body?.getAttribute('data-r20-optimistic-flow-moves') ?? 0),
@@ -952,11 +954,20 @@ async function runMode(browser, mode) {
       };
     });
     await page.locator('[data-testid="edit-placement-free"]').evaluate((button) => button.click());
-    result.freeCommit = await page.evaluate(() => ({
-      beforeAck: Number(document
-        .querySelector('[data-r20-apply-acked]')
-        ?.getAttribute('data-r20-apply-acked')),
-    }));
+    result.freeCommit = await page.evaluate(() => {
+      window.__r20SmokeFreeFirstStartedAt = performance.now();
+      return {
+        beforeAck: Number(document
+          .querySelector('[data-r20-apply-acked]')
+          ?.getAttribute('data-r20-apply-acked')),
+      };
+    });
+    await frame.evaluate(() => {
+      const subject = document.querySelector('.sheet-probe-card');
+      if (!subject) return;
+      subject.classList.add('runtime-probe-state');
+      subject.style.setProperty('--runtime-probe-state', 'preserved');
+    });
     result.freeCommit.preStyle = await frame.evaluate(() => {
       const subject = document.querySelector('.sheet-probe-card');
       return {
@@ -1040,6 +1051,8 @@ async function runMode(browser, mode) {
         containerPosition: containerStyle?.position ?? '',
         subjectClass: subject?.className ?? '',
         containerClass: container?.className ?? '',
+        runtimeClassPreserved: subject?.classList.contains('runtime-probe-state') ?? false,
+        runtimeStylePreserved: subject?.style.getPropertyValue('--runtime-probe-state') ?? '',
       };
     }));
     Object.assign(result.freeCommit, await page.evaluate(() => {
@@ -1051,6 +1064,7 @@ async function runMode(browser, mode) {
         emittedCssHasAbsolute: /sheet-r20-node-[^{]+\{[^}]*position:\s*absolute;[^}]*left:\s*\d+px;[^}]*top:\s*\d+px;/i.test(emit.css),
         emittedCssHasRelative: /sheet-r20-node-[^{]+\{[^}]*position:\s*relative;/i.test(emit.css),
         loadCount: window.__persistentPreviewLoadCount,
+        ackMs: performance.now() - window.__r20SmokeFreeFirstStartedAt,
       };
     }));
     Object.assign(result.freeCommit, {
@@ -1610,6 +1624,8 @@ async function runMode(browser, mode) {
       && result.freeCommit.containerPosition === 'relative'
       && result.freeCommit.subjectClass.includes('sheet-r20-node-')
       && result.freeCommit.containerClass.includes('sheet-r20-node-')
+      && result.freeCommit.runtimeClassPreserved === true
+      && result.freeCommit.runtimeStylePreserved === 'preserved'
       && result.freeCommit.emittedCssHasAbsolute === true
       && result.freeCommit.emittedCssHasRelative === true
       && result.freeCommit.inputValue === `runtime-${mode}`
@@ -1619,6 +1635,9 @@ async function runMode(browser, mode) {
       && result.freeCommit.stats.rootReplacements === result.flowCommit.stats.rootReplacements
       && result.freeCommit.stats.structuralPatches > result.flowCommit.stats.structuralPatches
       && result.freeCommit.stats.structuralPatchFallbacks === 0
+      && result.freeCommit.stats.targetedHtmlPatches > result.flowCommit.stats.targetedHtmlPatches
+      && result.freeCommit.stats.targetedHtmlPatchCheck === 'accepted'
+      && result.freeCommit.stats.lastApplyCostMs < 25
       && result.freeRecommit.dispatched === true
       && result.freeRecommit.afterAck > result.freeRecommit.beforeAck
       // A free move may be clamped by the containing layout on one axis;

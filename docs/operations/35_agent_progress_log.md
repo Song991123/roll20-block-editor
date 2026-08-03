@@ -603,6 +603,27 @@ or source-derived measurement here.
 - Claim boundary: local 390x844 and 768x900 synthetic UI coverage. Landscape,
   touch dragging, dense imports, and actual Roll20 parity are unchanged.
 
+## 2026-08-03 - Guarded Free-Placement Patch
+
+- Measured the first same-parent free-placement path from optimistic pointer
+  paint through source emit, parent scheduling, iframe apply, and ACK.
+- Added an allowlisted HTML patch planner. It accepts only `class`/`style`
+  changes on explicitly named block IDs and rejects text, structure, tag,
+  unrelated attribute, duplicate-ID, no-op, and stale-key cases.
+- The persistent iframe validates the previous authored state, preserves
+  runtime-only classes and inline style properties, applies the targeted
+  attributes, restores Roll20 button classes, and retains the old full-patch
+  fallback.
+- Anonymous modern and legacy browser runs keep one iframe, runtime input and
+  state, and zero console/page errors. Six structural edit fixtures plus
+  anonymous 5,200- and 9,000-item large-workspace runs pass. The performance
+  report now separates optimistic paint, apply scheduling, target planning,
+  message transfer, iframe apply, and final ACK.
+- Claim boundary: the targeted iframe apply is complete for this guarded path.
+  Larger ignored input still warns on parent scheduling and final ACK, so dense
+  imported editing remains partial and no all-sheet or Roll20-parity claim is
+  made.
+
 ## Current Product State
 
 - Preview and Edit share one persistent Roll20 iframe.

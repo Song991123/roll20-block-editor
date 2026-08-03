@@ -40,6 +40,7 @@ const tasks = [
   'test:blockly-sound-policy',
   'test:iframe-edit-bridge',
   'test:build-doc-bundle',
+  'test:targeted-html-patch',
   'test:canvas-dimensions',
   'test:runtime-asset-policy',
   'test:runtime-contract',

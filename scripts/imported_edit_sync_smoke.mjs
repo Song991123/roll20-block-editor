@@ -470,18 +470,32 @@ async function runCanonicalIframeEditSync(page) {
     };
   }, target.blockId);
 
+  const editModeStartedAt = await page.evaluate(() => performance.now());
   await page.evaluate(() => window.__perfHook.setMainMode('edit'));
   await page.locator('[data-testid="edit-canvas-root"]').waitFor({ state: 'visible', timeout: 30000 });
   await waitForFrameMode(frame, '1');
   await page.locator('[data-testid="edit-placement-free"]').click();
+  const editModeReadyMs = await page.evaluate(
+    (startedAt) => performance.now() - startedAt,
+    editModeStartedAt,
+  );
 
-  const beforeAck = await page.evaluate(() => Number(
-    document.querySelector('[data-r20-apply-acked]')?.getAttribute('data-r20-apply-acked') || 0,
-  ));
-  const drag = await frame.locator('[data-r20-block-id]').evaluateAll((nodes, target) => {
+  const dragStarted = await page.evaluate(() => {
+    window.__r20PerfTimings = {};
+    return {
+      at: performance.now(),
+      epoch: performance.timeOrigin + performance.now(),
+      beforeAck: Number(
+        document.querySelector('[data-r20-apply-acked]')?.getAttribute('data-r20-apply-acked') || 0,
+      ),
+    };
+  });
+  const beforeAck = dragStarted.beforeAck;
+  const drag = await frame.locator('[data-r20-block-id]').evaluateAll(async (nodes, target) => {
     const node = nodes
       .find((candidate) => candidate.getAttribute('data-r20-block-id') === target.blockId);
     if (!node) return { dispatched: false };
+    const startedAt = performance.now();
     const rect = node.getBoundingClientRect();
     const pointerId = 77;
     const startX = rect.left + rect.width / 2;
@@ -496,11 +510,37 @@ async function runCanonicalIframeEditSync(page) {
       bubbles: true, cancelable: true, pointerId, button: 0, buttons: 1,
       clientX: endX, clientY: endY,
     }));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const optimisticRect = node.getBoundingClientRect();
+    const optimisticPaintMs = performance.now() - startedAt;
+    const optimisticTransform = node.style.transform;
     node.dispatchEvent(new PointerEvent('pointerup', {
       bubbles: true, cancelable: true, pointerId, button: 0, buttons: 0,
       clientX: endX, clientY: endY,
     }));
-    return { dispatched: true, pointerId, startX, startY, endX, endY };
+    const pointerUpRect = node.getBoundingClientRect();
+    return {
+      dispatched: true,
+      pointerId,
+      startX,
+      startY,
+      endX,
+      endY,
+      optimisticPaintMs,
+      optimisticTransform,
+      optimisticRect: {
+        left: optimisticRect.left,
+        top: optimisticRect.top,
+        width: optimisticRect.width,
+        height: optimisticRect.height,
+      },
+      pointerUpRect: {
+        left: pointerUpRect.left,
+        top: pointerUpRect.top,
+        width: pointerUpRect.width,
+        height: pointerUpRect.height,
+      },
+    };
   }, target);
   if (!drag.dispatched) return { pass: false, target, drag };
 
@@ -524,6 +564,39 @@ async function runCanonicalIframeEditSync(page) {
       error: String(error),
     };
   }
+  const parentPerformance = await page.evaluate((startedAt) => {
+    const timings = window.__r20PerfTimings ?? {};
+    const relativeTimings = Object.fromEntries(Object.entries(timings).map(([name, value]) => [
+      name,
+      value - startedAt,
+    ]));
+    const duration = (start, end) => (
+      typeof timings[start] === 'number' && typeof timings[end] === 'number'
+        ? timings[end] - timings[start]
+        : null
+    );
+    return {
+      ackMs: performance.now() - startedAt,
+      timings: relativeTimings,
+      commitMs: duration('commit-start', 'commit-end'),
+      countMs: duration('count-start', 'count-end'),
+      emitToSendMs: duration('flush-callback', 'apply-sent'),
+      applySchedulingWaitMs: duration('live-bundle-end', 'target-plan-start'),
+      targetPlanMs: duration('target-plan-start', 'target-plan-end'),
+      postMessageMs: duration('apply-post-start', 'apply-post-end'),
+      pointerUpToAckMs: duration('pointerup-parent', 'apply-acked-parent'),
+    };
+  }, dragStarted.at);
+  const iframeApply = await frame.locator('body').evaluate((body, startedEpoch) => ({
+    applyMode: body.getAttribute('data-r20-last-apply-mode') ?? '',
+    applyCostMs: Number(body.getAttribute('data-r20-last-apply-cost-ms') || 0),
+    applyEpochMs: Number(body.getAttribute('data-r20-last-apply-epoch') || 0) - startedEpoch,
+    rootReplacements: Number(body.getAttribute('data-r20-root-replacements') || 0),
+    structuralPatches: Number(body.getAttribute('data-r20-structural-patches') || 0),
+    styleOnlyApplies: Number(body.getAttribute('data-r20-style-only-applies') || 0),
+    targetedHtmlPatches: Number(body.getAttribute('data-r20-targeted-html-patches') || 0),
+    targetedHtmlPatchCheck: body.getAttribute('data-r20-targeted-html-patch-check') || '',
+  }), dragStarted.epoch);
   const editAfter = await frame.locator('[data-r20-block-id]').evaluateAll((nodes, target) => {
     const node = nodes
       .find((candidate) => candidate.getAttribute('data-r20-block-id') === target.blockId);
@@ -556,6 +629,18 @@ async function runCanonicalIframeEditSync(page) {
     previewAfter,
     previewSync: synced,
     emittedHtmlLength: emitted?.html?.length ?? 0,
+    performance: {
+      editModeReadyMs,
+      optimisticPaintMs: drag.optimisticPaintMs ?? null,
+      optimisticMovedPx: drag.optimisticRect
+        ? Math.hypot(
+            drag.optimisticRect.left - target.rect.left,
+            drag.optimisticRect.top - target.rect.top,
+          )
+        : null,
+      ...parentPerformance,
+      ...iframeApply,
+    },
   };
 }
 

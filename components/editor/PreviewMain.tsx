@@ -95,6 +95,7 @@ import {
   clampSheetRenderHeight,
   SHEET_RENDER_MIN_HEIGHT,
 } from '@/lib/preview/canvasDimensions';
+import { buildTargetedHtmlPatchPlan } from '@/lib/preview/targetedHtmlPatch';
 
 type OptimisticFlowCommit = {
   subjectBlockId: string;
@@ -106,6 +107,11 @@ type OptimisticFlowCommit = {
 type AppliedSource = {
   sourceKey: string;
   htmlKey: string;
+  html: string;
+};
+
+type PendingTargetedHtmlPatch = {
+  blockIds: string[];
 };
 
 type IframeResizeSession = {
@@ -304,8 +310,11 @@ export default function PreviewMain() {
   const applyRevisionRef = useRef(0);
   const applySourcesRef = useRef(new Map<number, AppliedSource>());
   const lastAppliedSourceRef = useRef<string | null>(null);
+  const lastAppliedHtmlRef = useRef<string | null>(null);
+  const lastAppliedHtmlKeyRef = useRef<string | null>(null);
   const pendingApplySourceRef = useRef<string | null>(null);
   const pendingOptimisticFlowCommitRef = useRef<OptimisticFlowCommit | null>(null);
+  const pendingTargetedHtmlPatchRef = useRef<PendingTargetedHtmlPatch | null>(null);
   const [lastApplyAck, setLastApplyAck] = useState(0);
   const [pendingApplyRevision, setPendingApplyRevision] = useState(0);
   const autoWidthSizedRef = useRef(false);
@@ -1245,6 +1254,10 @@ export default function PreviewMain() {
           pendingIframeResizeBlockRef.current = null;
           lastAppliedAckRevisionRef.current = 0;
           setIframeAppliedHtmlKey(null);
+          applySourcesRef.current.clear();
+          lastAppliedHtmlRef.current = null;
+          lastAppliedHtmlKeyRef.current = null;
+          pendingTargetedHtmlPatchRef.current = null;
         }
         iframeEditBridgeIdRef.current = editMessage.bridgeId;
         setIframeReadySourceKey(null);
@@ -1268,6 +1281,8 @@ export default function PreviewMain() {
         setIframeAppliedHtmlKey(applied.htmlKey);
         markEditorTiming('apply-acked-parent');
         lastAppliedSourceRef.current = applied.sourceKey;
+        lastAppliedHtmlRef.current = applied.html;
+        lastAppliedHtmlKeyRef.current = applied.htmlKey;
         applySourcesRef.current.delete(editMessage.revision);
         if (pendingApplySourceRef.current === applied.sourceKey) {
           pendingApplySourceRef.current = null;
@@ -1370,6 +1385,7 @@ export default function PreviewMain() {
         }
         if (editMessage.phase === 'pointerdown') {
           iframeEditDropTargetRef.current = null;
+          pendingTargetedHtmlPatchRef.current = null;
           iframeEditDragOriginRef.current = editMessage;
           setIframeEditDragOrigin(editMessage);
           const store = useWorkspaceStore.getState();
@@ -1412,6 +1428,7 @@ export default function PreviewMain() {
           const ui = useUiStore.getState();
           const committedDropTarget = nextDropTarget ?? iframeEditDropTargetRef.current;
           let moved = false;
+          let targetedHtmlBlockIds: string[] | null = null;
           adapter.runInEventGroup(() => {
             if (ui.editPlacementMode === 'flow') {
               markEditorTiming('commit-start');
@@ -1482,6 +1499,7 @@ export default function PreviewMain() {
                 if (placement) {
                   const subject = htmlLayerMap.get(editMessage.subject.blockId) ?? null;
                   const currentParentId = subject?.layerParentId ?? null;
+                  const structureChanged = currentParentId !== (placement.containingBlockId ?? null);
                   let structureMoved = true;
                   if (placement.containingBlockId && currentParentId !== placement.containingBlockId) {
                     structureMoved = adapter.nestBlockInContainer(
@@ -1504,6 +1522,16 @@ export default function PreviewMain() {
                     moved = committed.moved;
                     if (committed.reason === 'managed-css') {
                       useWorkspaceStore.getState().bumpStructure('css', adapter.countBlocks('css'));
+                      if (!structureChanged) {
+                        targetedHtmlBlockIds = [
+                          editMessage.subject.blockId,
+                          ...(
+                            committed.containingClass && placement.containingBlockId
+                              ? [placement.containingBlockId]
+                              : []
+                          ),
+                        ];
+                      }
                     }
                   }
                 }
@@ -1521,6 +1549,10 @@ export default function PreviewMain() {
                 }
               : null;
           pendingOptimisticFlowCommitRef.current = optimisticFlowCommit;
+          pendingTargetedHtmlPatchRef.current =
+            moved && ui.editPlacementMode === 'free' && targetedHtmlBlockIds
+              ? { blockIds: Array.from(new Set(targetedHtmlBlockIds)) }
+              : null;
           if (moved) {
             if (ui.editPlacementMode === 'flow' && committedDropTarget) {
               iframeRef.current?.contentWindow?.postMessage({
@@ -1538,13 +1570,12 @@ export default function PreviewMain() {
             const htmlBlockCount = adapter.countBlocks('html');
             markEditorTiming('count-end');
             store.bumpStructure('html', htmlBlockCount);
-            // Let Blockly's coalesced mutation bump settle before the
-            // immediate commit emit; this keeps the emitted structure final.
+            // The adapter event group is already closed, so the workspace is
+            // final here. Emit before BlocklyModelHost's queued layer bump can
+            // make a large sheet rebuild its snapshot ahead of code/preview.
             markEditorTiming('flush-scheduled');
-            queueMicrotask(() => {
-              markEditorTiming('flush-callback');
-              flushEmitPipeline();
-            });
+            markEditorTiming('flush-callback');
+            flushEmitPipeline();
           } else {
             iframeEditDragOriginRef.current = null;
             setIframeEditDragOrigin(null);
@@ -1999,6 +2030,7 @@ export default function PreviewMain() {
     applySourcesRef.current.set(revision, {
       sourceKey: renderSourceKey,
       htmlKey: liveHtmlKey,
+      html: livePatch.html,
     });
     pendingApplySourceRef.current = renderSourceKey;
     // A persistent iframe first reports the empty/default document width. Let
@@ -2006,9 +2038,28 @@ export default function PreviewMain() {
     // width input remains authoritative until the user resets automatic sizing.
     autoWidthSizedRef.current = false;
     setPendingApplyRevision(revision);
-    const chunked = livePatch.html.length > 300000;
     const optimisticFlowCommit = pendingOptimisticFlowCommitRef.current;
+    const pendingTargetedHtmlPatch = pendingTargetedHtmlPatchRef.current;
+    if (pendingTargetedHtmlPatch) markEditorTiming('target-plan-start');
+    const targetedHtmlPatch =
+      pendingTargetedHtmlPatch
+      && lastAppliedHtmlRef.current
+      && lastAppliedHtmlKeyRef.current
+        ? buildTargetedHtmlPatchPlan({
+            beforeHtml: lastAppliedHtmlRef.current,
+            afterHtml: livePatch.html,
+            blockIds: pendingTargetedHtmlPatch.blockIds,
+            baseHtmlKey: lastAppliedHtmlKeyRef.current,
+            nextHtmlKey: liveHtmlKey,
+          })
+        : null;
+    if (pendingTargetedHtmlPatch) markEditorTiming('target-plan-end');
+    // A proven attribute-only patch can travel as one message even when the
+    // full fallback HTML is large. The iframe still receives that fallback,
+    // but avoids dozens of chunk tasks and a whole-root DOM morph.
+    const chunked = livePatch.html.length > 300000 && !targetedHtmlPatch;
     const flowMetadata = optimisticFlowCommit ? { optimisticFlow: optimisticFlowCommit } : {};
+    const targetedMetadata = targetedHtmlPatch ? { targetedHtmlPatch } : {};
     const messages: Array<Record<string, unknown>> = chunked
       ? (() => {
           const chunkSize = 32000;
@@ -2023,6 +2074,7 @@ export default function PreviewMain() {
             totalChunks,
             ...metadata,
             ...flowMetadata,
+            ...targetedMetadata,
           };
           const chunks = [];
           for (let index = 0; index < totalChunks; index += 1) {
@@ -2044,6 +2096,7 @@ export default function PreviewMain() {
           revision,
           ...livePatch,
           ...flowMetadata,
+          ...targetedMetadata,
         }];
     let retryTimer: number | null = null;
     let attempts = 0;
@@ -2056,11 +2109,19 @@ export default function PreviewMain() {
       ) return;
       if (!currentTarget) return;
       try {
+        if (attempts === 0) markEditorTiming('apply-post-start');
         messages.forEach((message) => currentTarget.postMessage(message, '*'));
         if (attempts === 0) {
+          markEditorTiming('apply-post-end');
           markEditorTiming('apply-sent');
           if (optimisticFlowCommit && pendingOptimisticFlowCommitRef.current === optimisticFlowCommit) {
             pendingOptimisticFlowCommitRef.current = null;
+          }
+          if (
+            pendingTargetedHtmlPatch
+            && pendingTargetedHtmlPatchRef.current === pendingTargetedHtmlPatch
+          ) {
+            pendingTargetedHtmlPatchRef.current = null;
           }
         }
       } catch {

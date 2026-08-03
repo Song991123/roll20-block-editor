@@ -71,6 +71,11 @@ contain private source evidence or historical test dumps.
   animated transform changes, and 3D/perspective remain open.
 - Generated evidence and external validation inputs remain ignored, local, and
   ephemeral.
+- Same-parent first free placement has a guarded class/style-only iframe patch.
+  It preserves runtime class/style state and falls back on every unrelated HTML
+  difference. Anonymous modern/legacy and large-workspace checks pass; larger
+  ignored input still warns on parent apply scheduling and final ACK, while the
+  iframe apply itself passes its budget.
 - Ordinary JavaScript has a separate inert source workspace. Authored emission
   preserves it, Preview/Edit never execute or display it, and final Roll20
   `sheet.html` excludes every non-Worker script while the ZIP keeps an explicit

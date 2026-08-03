@@ -142,6 +142,8 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   var optimisticFlowRollbackCount = 0;
   var optimisticFlowFastPatchCount = 0;
   var optimisticFlowCheck = '';
+  var targetedHtmlPatchCount = 0;
+  var targetedHtmlPatchCheck = '';
   var validatedFlowTarget = null;
   var optimisticFlowSnapshot = null;
   var optimisticFlowCommit = null;
@@ -1193,6 +1195,183 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     scheduleResize();
     return true;
   }
+  function decodeHtmlAttribute(value) {
+    if (value === null) return null;
+    var textarea = document.createElement('textarea');
+    textarea.innerHTML = String(value);
+    return textarea.value;
+  }
+  function stylePropertyNames(style) {
+    var names = [];
+    for (var index = 0; index < style.length; index += 1) {
+      var name = style.item(index);
+      if (name) names.push(name);
+    }
+    return names;
+  }
+  function styleHasProperty(style, property) {
+    for (var index = 0; index < style.length; index += 1) {
+      if (style.item(index) === property) return true;
+    }
+    return false;
+  }
+  function parsedInlineStyle(value) {
+    var probe = document.createElement('div');
+    var decoded = decodeHtmlAttribute(value);
+    if (decoded !== null) probe.setAttribute('style', decoded);
+    return probe.style;
+  }
+  function prepareRuntimeStyle(node, beforeStyleText, nextStyleText) {
+    var beforeStyle = parsedInlineStyle(beforeStyleText);
+    var nextStyle = parsedInlineStyle(nextStyleText);
+    var beforeNames = stylePropertyNames(beforeStyle);
+    var currentNames = stylePropertyNames(node.style);
+    var transientProperties = {
+      transform: true,
+      transition: true,
+      'will-change': true
+    };
+    var runtime = [];
+    for (var index = 0; index < currentNames.length; index += 1) {
+      var property = currentNames[index];
+      var isTransient = transientProperties[property] === true;
+      var existedBefore = beforeNames.indexOf(property) >= 0;
+      if (
+        existedBefore
+        && !isTransient
+        && (
+          node.style.getPropertyValue(property) !== beforeStyle.getPropertyValue(property)
+          || node.style.getPropertyPriority(property) !== beforeStyle.getPropertyPriority(property)
+        )
+      ) return null;
+      if ((isTransient || !existedBefore) && !styleHasProperty(nextStyle, property)) {
+        runtime.push({
+          property: property,
+          value: node.style.getPropertyValue(property),
+          priority: node.style.getPropertyPriority(property)
+        });
+      }
+    }
+    for (var beforeIndex = 0; beforeIndex < beforeNames.length; beforeIndex += 1) {
+      var beforeProperty = beforeNames[beforeIndex];
+      if (transientProperties[beforeProperty] === true) continue;
+      if (!styleHasProperty(node.style, beforeProperty)) return null;
+    }
+    return runtime;
+  }
+  function runtimeClassNames(node, beforeClassName) {
+    var authored = beforeClassName ? beforeClassName.split(/\s+/).filter(Boolean) : [];
+    var runtime = [];
+    for (var index = 0; index < node.classList.length; index += 1) {
+      var className = node.classList.item(index);
+      if (className && authored.indexOf(className) < 0) runtime.push(className);
+    }
+    return runtime;
+  }
+  function validateTargetedHtmlPatch(plan, nextHtmlKey) {
+    if (!plan || typeof plan !== 'object') {
+      targetedHtmlPatchCheck = 'payload-missing';
+      return null;
+    }
+    if (plan.baseHtmlKey !== lastAppliedHtmlKey || plan.nextHtmlKey !== nextHtmlKey) {
+      targetedHtmlPatchCheck = 'html-key-mismatch';
+      return null;
+    }
+    if (!Array.isArray(plan.patches) || plan.patches.length < 1 || plan.patches.length > 128) {
+      targetedHtmlPatchCheck = 'patch-count-invalid';
+      return null;
+    }
+    var seen = {};
+    var prepared = [];
+    for (var index = 0; index < plan.patches.length; index += 1) {
+      var patch = plan.patches[index];
+      if (!patch || typeof patch !== 'object') {
+        targetedHtmlPatchCheck = 'patch-invalid';
+        return null;
+      }
+      if (
+        typeof patch.blockId !== 'string'
+        || patch.blockId.length < 1
+        || patch.blockId.length > 256
+        || seen[patch.blockId]
+        || typeof patch.tagName !== 'string'
+        || !/^[a-z][a-z0-9-]{0,63}$/.test(patch.tagName)
+      ) {
+        targetedHtmlPatchCheck = 'identity-invalid';
+        return null;
+      }
+      var fields = [
+        patch.beforeClassName,
+        patch.beforeStyleText,
+        patch.className,
+        patch.styleText
+      ];
+      for (var fieldIndex = 0; fieldIndex < fields.length; fieldIndex += 1) {
+        if (fields[fieldIndex] !== null && typeof fields[fieldIndex] !== 'string') {
+          targetedHtmlPatchCheck = 'attribute-invalid';
+          return null;
+        }
+        if (typeof fields[fieldIndex] === 'string' && fields[fieldIndex].length > 1000000) {
+          targetedHtmlPatchCheck = 'attribute-too-large';
+          return null;
+        }
+      }
+      var node = document.querySelector(
+        '[data-r20-block-id="' + cssEscape(patch.blockId) + '"]'
+      );
+      if (!node || node.tagName.toLowerCase() !== patch.tagName) {
+        targetedHtmlPatchCheck = 'node-mismatch';
+        return null;
+      }
+      var beforeClassName = decodeHtmlAttribute(patch.beforeClassName);
+      if (beforeClassName) {
+        var beforeClasses = beforeClassName.split(/\s+/).filter(Boolean);
+        for (var classIndex = 0; classIndex < beforeClasses.length; classIndex += 1) {
+          if (!node.classList.contains(beforeClasses[classIndex])) {
+            targetedHtmlPatchCheck = 'class-mismatch';
+            return null;
+          }
+        }
+      }
+      var nextClassName = decodeHtmlAttribute(patch.className);
+      var runtimeClasses = runtimeClassNames(node, beforeClassName);
+      var runtimeStyle = prepareRuntimeStyle(node, patch.beforeStyleText, patch.styleText);
+      if (!runtimeStyle) {
+        targetedHtmlPatchCheck = 'style-mismatch';
+        return null;
+      }
+      seen[patch.blockId] = true;
+      prepared.push({
+        node: node,
+        className: nextClassName,
+        runtimeClasses: runtimeClasses,
+        styleText: decodeHtmlAttribute(patch.styleText),
+        runtimeStyle: runtimeStyle
+      });
+    }
+    targetedHtmlPatchCheck = 'accepted';
+    return prepared;
+  }
+  function applyTargetedHtmlPatch(plan, nextHtmlKey) {
+    var prepared = validateTargetedHtmlPatch(plan, nextHtmlKey);
+    if (!prepared) return false;
+    for (var index = 0; index < prepared.length; index += 1) {
+      var patch = prepared[index];
+      if (patch.className === null) patch.node.removeAttribute('class');
+      else patch.node.setAttribute('class', patch.className);
+      for (var classIndex = 0; classIndex < patch.runtimeClasses.length; classIndex += 1) {
+        patch.node.classList.add(patch.runtimeClasses[classIndex]);
+      }
+      if (patch.styleText === null) patch.node.removeAttribute('style');
+      else patch.node.setAttribute('style', patch.styleText);
+      for (var styleIndex = 0; styleIndex < patch.runtimeStyle.length; styleIndex += 1) {
+        var runtimeStyle = patch.runtimeStyle[styleIndex];
+        patch.node.style.setProperty(runtimeStyle.property, runtimeStyle.value, runtimeStyle.priority);
+      }
+    }
+    targetedHtmlPatchCount += 1;
+    return true;
+  }
   function applyLivePatch(data) {
     var applyStartedAt = window.performance.now();
     if (!data || !Number.isInteger(data.revision) || data.revision < 1) return;
@@ -1239,8 +1418,12 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     }
     var htmlChanged = data.htmlKey !== lastAppliedHtmlKey;
     var usedOptimisticFlowPatch = htmlChanged && canApplyOptimisticFlowCommit(data.optimisticFlow);
-    var attrs = htmlChanged && !usedOptimisticFlowPatch ? collectAttrs() : null;
-    var previousWorkerSource = htmlChanged && !usedOptimisticFlowPatch ? workerSourceText(root) : '';
+    var usedTargetedHtmlPatch = htmlChanged
+      && !usedOptimisticFlowPatch
+      && applyTargetedHtmlPatch(data.targetedHtmlPatch, data.htmlKey);
+    var needsFullHtmlPatch = htmlChanged && !usedOptimisticFlowPatch && !usedTargetedHtmlPatch;
+    var attrs = needsFullHtmlPatch ? collectAttrs() : null;
+    var previousWorkerSource = needsFullHtmlPatch ? workerSourceText(root) : '';
     var usedStructuralPatch = false;
     if (htmlChanged) {
       if (usedOptimisticFlowPatch) {
@@ -1250,6 +1433,13 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
         optimisticFlowFastPatchCount += 1;
         structuralPatchCount += 1;
         optimisticFlowCommit = null;
+        optimisticFlowSnapshot = null;
+        clearValidatedFlowTarget();
+        lastAppliedHtmlKey = data.htmlKey;
+        document.body.setAttribute('data-r20-html-key', data.htmlKey);
+        lastAppliedBlockCount = root.querySelectorAll('[data-r20-block-id]').length;
+      } else if (usedTargetedHtmlPatch) {
+        structuralPatchCount += 1;
         optimisticFlowSnapshot = null;
         clearValidatedFlowTarget();
         lastAppliedHtmlKey = data.htmlKey;
@@ -1305,11 +1495,11 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     var nextI18n = JSON.stringify(data.i18n);
     var i18nChanged = Boolean(i18nNode && i18nNode.textContent !== nextI18n);
     if (i18nNode && i18nChanged) i18nNode.textContent = nextI18n;
-    if (htmlChanged || i18nChanged) {
+    if (needsFullHtmlPatch || i18nChanged) {
       translations = loadTranslations();
       applyTranslations();
     }
-    if (htmlChanged && !usedOptimisticFlowPatch) {
+    if (needsFullHtmlPatch) {
       emulateRoll20RepeatingSections();
       emulateRoll20ButtonClasses();
       applyRoll20Autocalc();
@@ -1320,6 +1510,10 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
         installSheetWorkers();
       }
       lastAppliedBlockCount = root.querySelectorAll('[data-r20-block-id]').length;
+    } else if (usedTargetedHtmlPatch) {
+      // Roll20 runtime classes are not part of emitted HTML. Restore them
+      // after replacing the authored class attribute on only the changed node.
+      emulateRoll20ButtonClasses();
     }
     // Keep the pointer transform in place while the authoritative HTML and
     // styles are being applied. Clearing it before the patch paints the old
@@ -1332,7 +1526,9 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     }
     document.body.setAttribute(
       'data-r20-last-apply-mode',
-      htmlChanged ? (usedOptimisticFlowPatch || usedStructuralPatch ? 'patch' : 'replace') : 'styles'
+      htmlChanged
+        ? (usedOptimisticFlowPatch || usedTargetedHtmlPatch || usedStructuralPatch ? 'patch' : 'replace')
+        : 'styles'
     );
     document.body.setAttribute('data-r20-root-replacements', String(rootReplacementCount));
     document.body.setAttribute('data-r20-structural-patches', String(structuralPatchCount));
@@ -1343,6 +1539,8 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     document.body.setAttribute('data-r20-optimistic-flow-rollbacks', String(optimisticFlowRollbackCount));
     document.body.setAttribute('data-r20-optimistic-flow-fast-patches', String(optimisticFlowFastPatchCount));
     document.body.setAttribute('data-r20-optimistic-flow-check', optimisticFlowCheck);
+    document.body.setAttribute('data-r20-targeted-html-patches', String(targetedHtmlPatchCount));
+    document.body.setAttribute('data-r20-targeted-html-patch-check', targetedHtmlPatchCheck);
     document.body.setAttribute('data-r20-last-applied-revision', String(lastAppliedRevision));
     document.body.setAttribute('data-r20-stale-apply-drops', String(staleApplyDropCount));
     document.body.setAttribute('data-r20-last-apply-at', window.performance.now().toFixed(3));
@@ -1383,6 +1581,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       roll20RendererModel: data.roll20RendererModel,
       documentLanguage: data.documentLanguage,
       optimisticFlow: data.optimisticFlow,
+      targetedHtmlPatch: data.targetedHtmlPatch,
       parts: [],
       received: 0,
     };
@@ -1413,6 +1612,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       styles: patch.styles,
       i18n: patch.i18n,
       optimisticFlow: patch.optimisticFlow,
+      targetedHtmlPatch: patch.targetedHtmlPatch,
       darkMode: patch.darkMode,
       layer: patch.layer,
       roll20SandboxSanitize: patch.roll20SandboxSanitize,
