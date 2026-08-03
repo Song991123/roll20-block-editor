@@ -263,7 +263,7 @@ async function main() {
     assert(/<script\s+type=["']text\/worker/i.test(workerJs.html), 'worker JS was not retained in the export HTML boundary');
     assert(previewRuntime.visibleRuntimeNodeCount === 0, `runtime node became visible in preview: ${JSON.stringify(previewRuntime)}`);
 
-    const unsupportedWorker = 'on("change:hp change:mp", function () { setAttrs({ total: 1 }); });';
+    const unsupportedWorker = 'switch (0) { case 1: setAttrs({ result: 1 }); break; }';
     await page.locator('[data-testid="import-js-textarea"]').fill(unsupportedWorker);
     await clickConvert();
     await page.waitForSelector('[data-testid="import-worker-raw-warning"]', {
@@ -298,7 +298,7 @@ async function main() {
     const rawDiagnostics = page.getByTestId('worker-raw-diagnostics');
     await rawDiagnostics.waitFor({ state: 'visible', timeout: 15000 });
     const rawDiagnosticsText = await rawDiagnostics.innerText();
-    assert(rawDiagnosticsText.includes('여러 감지 조건'), 'raw Worker inspector hides the unsupported syntax reason');
+    assert(rawDiagnosticsText.includes('여러 갈래 선택 분기'), 'raw Worker inspector hides the unsupported syntax reason');
     assert(rawDiagnosticsText.includes('시트 화면에는 나타나지 않으며'), 'raw Worker inspector hides runtime placement');
     assert(consoleErrors.length === 0, `console errors: ${consoleErrors.join(' | ')}`);
     assert(pageErrors.length === 0, `page errors: ${pageErrors.join(' | ')}`);

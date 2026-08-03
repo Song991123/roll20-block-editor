@@ -99,7 +99,9 @@ contain private source evidence or historical test dumps.
 - Raw Sheet Worker blocks derive plain-language unsupported-syntax reasons from
   their current source. Import results expose the actual raw statement count,
   block selection opens the matching inspector, and diagnostics never enter
-  emitted code. Structured Worker coverage remains partial.
+  emitted code. Canonical multi-event listeners and common `eventInfo` fields
+  are structurally editable and pass local source/runtime browser smokes.
+  Arbitrary formatting and broader Worker syntax still use raw preservation.
 
 ## Always Read
 

@@ -16,6 +16,22 @@ or source-derived measurement here.
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
 
+## 2026-08-03 - Multi-Event Worker Blocks And Event Context
+
+- Replaced the canonical multi-event raw fallback with a generic editable
+  event-listener block. It keeps the full event string and optional callback
+  variable instead of splitting one listener into behaviorally different hats.
+- Added a reporter for common Roll20 event fields. Local preview events now
+  distinguish player changes, Worker `setAttrs` changes, and action clicks.
+- Parser, generator, diagnostics, source-roundtrip browser, runtime-state
+  browser, import-dialog browser, and full edit-flow checks pass. The runtime
+  check fires both attributes registered by one listener and sees the expected
+  source attribute and player source type with no queue overflow.
+- Claim boundary: this proves the canonical structured path and current local
+  simulator subset. Source that cannot re-emit byte-stably still stays raw;
+  previous/new values and broader Worker syntax remain open. No actual Roll20
+  screen evidence was added in this batch.
+
 ## 2026-08-03 - Raw Worker Diagnostics And Block Selection
 
 - Traced both raw-code paths: explicitly unsupported statements and the

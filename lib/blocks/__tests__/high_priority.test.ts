@@ -296,6 +296,35 @@ function testWorkerParseIntEmit(): void {
   expectEq(code, 'parseInt(values.strength, 10)', 'parseInt emit');
 }
 
+function testWorkerMultiEventEmit(): void {
+  const def = findBlock(SHEET_WORKER_BLOCKS as Array<{ type: string }>, 'r20_on_events');
+  assert(def.generator, 'r20_on_events has generator');
+  const b = new FakeBlock({
+    type: 'r20_on_events',
+    fields: { EVENTS: '  change:hp   change:mp  ', EVENT_VAR: 'eventInfo' },
+  });
+  const ctx = makeCtx({}, { CHILDREN: `setAttrs({ 'source': eventInfo.sourceType });\n` });
+  const out = def.generator!(b, ctx);
+  const code = Array.isArray(out) ? out[0] : out;
+  expectEq(
+    code,
+    `on('change:hp change:mp', (eventInfo) => {\n  setAttrs({ 'source': eventInfo.sourceType });\n});\n`,
+    'multi-event listener emit',
+  );
+}
+
+function testWorkerEventInfoEmit(): void {
+  const def = findBlock(SHEET_WORKER_BLOCKS as Array<{ type: string }>, 'r20_worker_event_info');
+  assert(def.generator, 'r20_worker_event_info has generator');
+  const b = new FakeBlock({
+    type: 'r20_worker_event_info',
+    fields: { VAR: 'eventInfo', PROPERTY: 'sourceAttribute' },
+  });
+  const out = def.generator!(b, makeCtx());
+  const code = Array.isArray(out) ? out[0] : out;
+  expectEq(code, 'eventInfo.sourceAttribute', 'eventInfo reporter emit');
+}
+
 // ---------- 1b) r20_get_compendium ----------------------------------------
 
 function testCompendiumBasicPath(): void {
@@ -656,6 +685,8 @@ const tests: Array<[string, () => void]> = [
   ['worker Math unary emit', testWorkerMathUnaryEmit],
   ['worker Math binary emit', testWorkerMathBinaryEmit],
   ['worker parseInt emit', testWorkerParseIntEmit],
+  ['worker multi-event emit', testWorkerMultiEventEmit],
+  ['worker eventInfo emit', testWorkerEventInfoEmit],
   ['compendium basic path', testCompendiumBasicPath],
   ['compendium with subpath', testCompendiumWithSubpath],
   ['compendium empty path', testCompendiumEmptyPath],

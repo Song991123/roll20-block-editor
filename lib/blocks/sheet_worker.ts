@@ -1,5 +1,5 @@
 /**
- * Sheet Worker 카테고리 — 25 블록 (Stage A-6).
+ * Sheet Worker 카테고리 — 확장 가능한 Roll20 자동 동작 블록 모음.
  *
  * Anchor:
  *   - docs/spec/02_functional_spec.md §3.1 ID 7 (시트 자동화 / Sheet Worker,
@@ -72,6 +72,24 @@ const LOGIC_OPS: Array<[string, string]> = [
   ['또는', '||'],
 ];
 
+const EVENT_INFO_PROPERTIES: Array<[string, string]> = [
+  ['바뀐 값 이름', 'sourceAttribute'],
+  ['변경한 곳', 'sourceType'],
+  ['이전 값', 'previousValue'],
+  ['새 값', 'newValue'],
+  ['누른 동작 이름', 'triggerName'],
+  ['지운 줄 정보', 'removedInfo'],
+];
+
+const RESERVED_IDENTIFIERS = new Set([
+  'await', 'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger',
+  'default', 'delete', 'do', 'else', 'enum', 'export', 'extends', 'false',
+  'finally', 'for', 'function', 'if', 'implements', 'import', 'in', 'instanceof',
+  'interface', 'let', 'new', 'null', 'package', 'private', 'protected', 'public',
+  'return', 'static', 'super', 'switch', 'this', 'throw', 'true', 'try', 'typeof',
+  'var', 'void', 'while', 'with', 'yield',
+]);
+
 // ---------- init helper ----------
 
 function mkInit(builder: (b: Blockly.Block) => void): (block: unknown) => void {
@@ -120,10 +138,11 @@ function trimBody(code: string): string {
  * 자식 statement 를 `() => { ${children} }` body 로 wrap (들여쓰기 포함).
  * children 비면 빈 본문 emit.
  */
-function wrapArrowBody(ctx: GeneratorContext, children: string): string {
+function wrapArrowBody(ctx: GeneratorContext, children: string, parameter = ''): string {
   const body = trimBody(children);
-  if (!body) return `() => {}`;
-  return `() => {\n${ctx.indent(body)}\n}`;
+  const params = parameter ? `(${parameter})` : '()';
+  if (!body) return `${params} => {}`;
+  return `${params} => {\n${ctx.indent(body)}\n}`;
 }
 
 /**
@@ -151,11 +170,19 @@ function attrListLiteral(raw: string): string {
   return `[${items.join(', ')}]`;
 }
 
-// ---------- 25 블록 정의 ----------
+function safeIdentifier(raw: string, fallback = ''): string {
+  const value = String(raw ?? '').trim();
+  if (/^[A-Za-z_$][\w$]*$/.test(value) && !RESERVED_IDENTIFIERS.has(value)) {
+    return value;
+  }
+  return fallback;
+}
+
+// ---------- 블록 정의 ----------
 
 export const SHEET_WORKER_BLOCKS: BlockDef[] = [
   // ========================================================================
-  // Hat blocks ×5
+  // Hat blocks
   // ========================================================================
 
   // 1) on sheet:opened ------------------------------------------------------
@@ -272,6 +299,45 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
       const name = String(b.getFieldValue('NAME') ?? '').trim() || 'act';
       const body = ctx.statementToCode(block, 'CHILDREN');
       return `on('clicked:${escapeJSString(name)}', ${wrapArrowBody(ctx, body)});\n`;
+    },
+  },
+
+  // Generic one-or-more event listener --------------------------------------
+  {
+    type: 'r20_on_events',
+    shape: 'hat',
+    category: SHEET_WORKER,
+    label: '여러 조건을 감지할 때',
+    tooltip: '공백으로 나눈 Roll20 감지 조건을 한 번에 연결해요.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('감지 조건')
+        .appendField(new Blockly.FieldTextInput('change:hp change:mp'), 'EVENTS');
+      b.appendDummyInput()
+        .appendField('이벤트 정보 이름')
+        .appendField(new Blockly.FieldTextInput('eventInfo'), 'EVENT_VAR');
+      b.appendStatementInput('CHILDREN').setCheck(null);
+      setHatHooks(b);
+    }),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const events = String(b.getFieldValue('EVENTS') ?? '')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .join(' ') || 'sheet:opened';
+      const rawEventVar = String(b.getFieldValue('EVENT_VAR') ?? '').trim();
+      const eventVar = rawEventVar ? safeIdentifier(rawEventVar, 'eventInfo') : '';
+      if (rawEventVar && eventVar !== rawEventVar) {
+        ctx.warn(
+          b.id,
+          'worker-invalid-event-variable',
+          '이벤트 정보 이름이 올바르지 않아 eventInfo로 내보냈어요.',
+          'warning',
+        );
+      }
+      const body = ctx.statementToCode(block, 'CHILDREN');
+      return `on('${escapeJSString(events)}', ${wrapArrowBody(ctx, body, eventVar)});\n`;
     },
   },
 
@@ -603,7 +669,7 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
   },
 
   // ========================================================================
-  // Reporter blocks ×7
+  // Reporter blocks
   // ========================================================================
 
   // 19) v.NAME reference ----------------------------------------------------
@@ -644,6 +710,30 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
       const b = block as Blockly.Block;
       const name = String(b.getFieldValue('NAME') ?? '').trim() || 'attr';
       return [`v.${name}_max`, ORDER.ATOMIC];
+    },
+  },
+
+  // eventInfo.sourceAttribute / sourceType / ... ---------------------------
+  {
+    type: 'r20_worker_event_info',
+    shape: 'reporter',
+    category: SHEET_WORKER,
+    label: '감지된 변경 정보',
+    tooltip: '감지 조건이 전달한 값 이름, 변경 출처, 이전 값 등을 꺼내요.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField(new Blockly.FieldTextInput('eventInfo'), 'VAR')
+        .appendField(new Blockly.FieldDropdown(EVENT_INFO_PROPERTIES), 'PROPERTY');
+      b.setOutput(true, null);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const varName = safeIdentifier(String(b.getFieldValue('VAR') ?? ''), 'eventInfo');
+      const rawProperty = String(b.getFieldValue('PROPERTY') ?? 'sourceAttribute');
+      const property = EVENT_INFO_PROPERTIES.some(([, value]) => value === rawProperty)
+        ? rawProperty
+        : 'sourceAttribute';
+      return [`${varName}.${property}`, ORDER.ATOMIC];
     },
   },
 
@@ -908,7 +998,7 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
 ];
 
 /**
- * Stage A-6 — Sheet Worker 25 블록 등록.
+ * Sheet Worker 블록 등록.
  *
  * 1) BlockDef 메타를 target 배열에 push (UI 카탈로그 표시용).
  * 2) Blockly.Blocks[type] = { init } 등록 (워크스페이스 instantiate 가능).

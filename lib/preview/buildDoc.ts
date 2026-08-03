@@ -1886,7 +1886,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     settingAttrs = true;
     var changed = writeSheetAttr(key, value);
     settingAttrs = false;
-    if (changed) triggerSheetWorker('change:' + key, { sourceAttribute: key });
+    if (changed) triggerSheetWorker('change:' + key, { sourceAttribute: key, sourceType: 'player' });
     scheduleResize();
   }
   function sheetWorkerGetAttrs(names, cb) {
@@ -1902,7 +1902,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       if (writeSheetAttr(k, values[k])) changedKeys.push(k);
     });
     settingAttrs = false;
-    changedKeys.forEach(function (k) { triggerSheetWorker('change:' + k, { sourceAttribute: k }); });
+    changedKeys.forEach(function (k) { triggerSheetWorker('change:' + k, { sourceAttribute: k, sourceType: 'sheetworker' }); });
     if (typeof cb === 'function') cb();
     scheduleResize();
   }
@@ -2098,7 +2098,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (action) {
       var actionName = action.getAttribute('name') || '';
       actionName = actionName.replace(/^act_/, '');
-      triggerSheetWorker('clicked:' + actionName, { triggerName: actionName });
+      triggerSheetWorker('clicked:' + actionName, { triggerName: actionName, sourceType: 'player' });
       try { e.preventDefault(); } catch (_) {}
       return false;
     }
@@ -2595,7 +2595,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     var name = e.target && e.target.getAttribute && e.target.getAttribute('name');
     if (!name || name.indexOf('attr_') !== 0) return;
     var attr = name.substring(5);
-    triggerSheetWorker('change:' + attr, { sourceAttribute: attr });
+    triggerSheetWorker('change:' + attr, { sourceAttribute: attr, sourceType: 'player' });
     scheduleResize();
   }, true);
   window.addEventListener('load', scheduleResize);

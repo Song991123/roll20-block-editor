@@ -1,9 +1,9 @@
 /**
  * Sheet worker JS parser (Stage worker-1) — `<script type="text/worker">` body
- * 를 25 sheet_worker 블록 (lib/blocks/sheet_worker.ts) 패턴으로 분해.
+ * 를 sheet_worker 블록 (lib/blocks/sheet_worker.ts) 패턴으로 분해.
  *
  * Anchor:
- *   - docs/spec/02_functional_spec.md §3.1 (sheet_worker 카탈로그, 25 블록)
+ *   - docs/spec/02_functional_spec.md §3.1 (sheet_worker 카탈로그)
  *   - docs/spec/12_roll20_output_spec.md §3 / §5.5 (worker emit contract)
  *   - lib/blocks/sheet_worker.ts (generator — 본 파서의 역방향)
  *
@@ -14,9 +14,7 @@
  *   1) regex / hand-rolled tokenizer 기반 lightweight 매칭. AST 의존 0
  *      (acorn 도입은 후속 phase).
  *   2) 균형 잡힌 brace / paren / 문자열 / 주석 처리 — balanced bracket walker.
- *   3) 패턴 25 종 (5 hat + 5 c + 8 stack + 7 reporter/boolean) 중 statement-
- *      level 14 종을 인식. 표현식 우측 (RHS) 은 raw literal_string 으로 박음
- *      (v2 에서 reporter 분해).
+ *   3) 지원하는 statement/reporter 패턴을 구조화하고 나머지는 원문으로 보존.
  *   4) 매칭 안 되는 statement 는 r20_raw_worker 로 fallback (statement 단위) —
  *      `JS` 필드에 raw 텍스트 박힘. emit 시 그대로 합쳐짐.
  *   5) 시스템 specific 토큰 0. 사용자 식별자 / 이벤트 이름은 모두 데이터.
@@ -25,8 +23,6 @@
  *   - switch / case
  *   - try / catch
  *   - 복잡한 JSX-ish RHS (template literal 안 ${} 등)
- *   - 다중 이벤트 on('a b c', ...) (a/b/c 각각 별도 hat 으로 emit 가능하지만
- *     Stage v1 에서는 패턴 인식 후 첫 이벤트만 분해 + 나머지 raw)
  */
 
 // ---------------------------------------------------------------------------
@@ -41,7 +37,7 @@ export interface ParsedBlock {
 }
 
 export interface ParseStats {
-  /** 25 카탈로그 패턴으로 매칭된 statement-level 블록 수 (재귀 포함). */
+  /** 카탈로그 패턴으로 매칭된 statement-level 블록 수 (재귀 포함). */
   matched: number;
   /** 어느 패턴에도 매칭 못 한 statement 수 (r20_raw_worker fallback 으로 갔음). */
   unparsed: number;
@@ -463,6 +459,15 @@ type WorkerBinaryGroup = {
   operators: readonly string[];
 };
 
+const EVENT_INFO_PROPERTIES = new Set([
+  'sourceAttribute',
+  'sourceType',
+  'previousValue',
+  'newValue',
+  'triggerName',
+  'removedInfo',
+]);
+
 // Keep these groups ordered from lowest to highest precedence. The parser
 // picks the right-most operator in a group so left-associative expressions
 // such as `a - b - c` rebuild as `(a - b) - c`.
@@ -596,6 +601,14 @@ function valueBlock(rawExpr: string): ParsedBlock {
       };
     }
   }
+  let m = /^([A-Za-z_$][\w$]*)\.([A-Za-z_$][\w$]*)$/.exec(e);
+  if (m && EVENT_INFO_PROPERTIES.has(m[2])) {
+    return {
+      blockType: 'r20_worker_event_info',
+      fields: { VAR: m[1], PROPERTY: m[2] },
+      children: {},
+    };
+  }
   // v.NAME / v.NAME_max — Stage worker-1 reporter.
   const unaryMath = parseWorkerCall(e, /^Math\.(floor|ceil|round|abs)\s*\(/);
   if (unaryMath && unaryMath.args.length === 1 && unaryMath.args[0]) {
@@ -632,7 +645,7 @@ function valueBlock(rawExpr: string): ParsedBlock {
       valueInputs: { VALUE: valueBlock(parseIntCall.args[0]) },
     };
   }
-  let m = /^v\.([A-Za-z_$][\w$]*)_max$/.exec(e);
+  m = /^v\.([A-Za-z_$][\w$]*)_max$/.exec(e);
   if (m) {
     return {
       blockType: 'r20_worker_v_max_ref',
@@ -1054,13 +1067,22 @@ function tryParseOnCall(args: string, stats: ParseStats): ParsedBlock | null {
   if (parts.length !== 2) return null;
   const eventStr = stripQuotes(parts[0]);
   if (eventStr === null) return null;
-  // 단일 이벤트만 v1 에서 지원 — 공백 split 후 1개여야 함.
   const events = eventStr.trim().split(/\s+/).filter(Boolean);
-  if (events.length !== 1) return null;
+  if (events.length === 0) return null;
   const cb = parseCallback(parts[1]);
   if (!cb) return null;
+  const eventVar = cb.params.trim();
+  if (eventVar && !/^[A-Za-z_$][\w$]*$/.test(eventVar)) return null;
   const innerBlocks = parseStatements(cb.body, stats);
-  return eventToHatBlock(events[0], innerBlocks);
+  if (events.length === 1 && !eventVar) {
+    const specialized = eventToHatBlock(events[0], innerBlocks);
+    if (specialized) return specialized;
+  }
+  return {
+    blockType: 'r20_on_events',
+    fields: { EVENTS: events.join(' '), EVENT_VAR: eventVar },
+    children: { CHILDREN: innerBlocks },
+  };
 }
 
 function tryParseGetAttrs(args: string, stats: ParseStats): ParsedBlock | null {
@@ -1196,7 +1218,7 @@ function tryParseForEach(body: string, start: number, stats: ParseStats): OneMat
 // ---------------------------------------------------------------------------
 
 /**
- * `<script type="text/worker">` body 의 JS 텍스트를 25 sheet_worker 카탈로그
+ * `<script type="text/worker">` body 의 JS 텍스트를 sheet_worker 카탈로그
  * 블록으로 분해. 매칭 안 되는 statement 는 r20_raw_worker 단편으로 fallback.
  *
  * 반환 `blocks` 가 비면 호출자는 단일 r20_raw_worker (전체) 로 emit 가능.

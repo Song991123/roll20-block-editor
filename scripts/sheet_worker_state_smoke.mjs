@@ -61,6 +61,9 @@ const SYNTHETIC_SHEET = {
   </div>
 </div>
 <input type="text" name="attr_loop_probe" value="idle">
+<input type="text" name="attr_second_probe" value="idle">
+<input type="hidden" name="attr_event_source" value="">
+<input type="hidden" name="attr_event_attr" value="">
 <script type="text/worker">
   on("clicked:character", function () {
     setAttrs({ sheetTab: "character" });
@@ -70,6 +73,12 @@ const SYNTHETIC_SHEET = {
   });
   on("change:loop_probe", function () {
     setAttrs({ loop_probe: "armed" });
+  });
+  on("change:loop_probe change:second_probe", function (eventInfo) {
+    setAttrs({
+      event_source: eventInfo.sourceType,
+      event_attr: eventInfo.sourceAttribute
+    });
   });
 </script>
 `,
@@ -167,6 +176,9 @@ async function readState(frame) {
       localLockCheckedAttribute: localLock?.getAttribute('checked') ?? null,
       choiceDisplay: choiceStyle?.display ?? null,
       loopProbe: document.querySelector('[name="attr_loop_probe"]')?.value ?? null,
+      secondProbe: document.querySelector('[name="attr_second_probe"]')?.value ?? null,
+      eventSource: document.querySelector('[name="attr_event_source"]')?.value ?? null,
+      eventAttribute: document.querySelector('[name="attr_event_attr"]')?.value ?? null,
       workerQueueOverflows: Number(document.body?.getAttribute('data-r20-worker-queue-overflows') ?? 0),
     };
   });
@@ -190,12 +202,12 @@ function renderMarkdown(report) {
     '',
     'Scope: local static app preview iframe only. This proves worker `setAttrs` updates CSS-visible DOM attributes for Roll20-style state selectors. It is not actual Roll20 visual parity.',
     '',
-    '| Step | Input property | Input attribute | Character display | Combat display | Status |',
-    '| --- | --- | --- | --- | --- | --- |',
+    '| Step | Input property | Input attribute | Character display | Combat display | Event source | Event attribute | Status |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- |',
   ];
   for (const step of report.steps) {
     lines.push(
-      `| ${step.name} | ${step.state.inputValueProperty} | ${step.state.inputValueAttribute} | ${step.state.characterDisplay} | ${step.state.combatDisplay} | ${step.pass ? 'PASS' : 'FAIL'} |`,
+      `| ${step.name} | ${step.state.inputValueProperty} | ${step.state.inputValueAttribute} | ${step.state.characterDisplay} | ${step.state.combatDisplay} | ${step.state.eventSource ?? ''} | ${step.state.eventAttribute ?? ''} | ${step.pass ? 'PASS' : 'FAIL'} |`,
     );
   }
   lines.push('');
@@ -306,7 +318,29 @@ async function main() {
     report.steps.push({
       name: 'same-value-change-does-not-reenter-worker',
       state: workerLoop,
-      pass: workerLoop.loopProbe === 'armed' && workerLoop.workerQueueOverflows === 0,
+      pass:
+        workerLoop.loopProbe === 'armed' &&
+        workerLoop.eventSource === 'player' &&
+        workerLoop.eventAttribute === 'loop_probe' &&
+        workerLoop.workerQueueOverflows === 0,
+    });
+
+    await frame.locator('[name="attr_second_probe"]').fill('changed');
+    await frame.locator('[name="attr_second_probe"]').evaluate((node) => {
+      node.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await frame.waitForFunction(() => (
+      document.querySelector('[name="attr_event_source"]')?.value === 'player' &&
+      document.querySelector('[name="attr_event_attr"]')?.value === 'second_probe'
+    ), null, { timeout: 10000 });
+    const secondEvent = await readState(frame);
+    report.steps.push({
+      name: 'multi-event-listener-receives-second-event',
+      state: secondEvent,
+      pass:
+        secondEvent.secondProbe === 'changed' &&
+        secondEvent.eventSource === 'player' &&
+        secondEvent.eventAttribute === 'second_probe',
     });
 
     report.screenshotPath = path.join(REPORT_DIR, 'sheet-worker-state.png');

@@ -58,7 +58,7 @@ export interface MatchContext {
   /**
    * Sheet worker `<script type="text/worker">` body 의 inner statement
    * matching 통계 (Stage worker-1 — script_parser.ts).
-   *   - scriptBlocksMatched: sheet_worker 25 카탈로그로 인식된 inner block 수.
+   *   - scriptBlocksMatched: sheet_worker 카탈로그로 인식된 inner block 수.
    *   - scriptStatementsRaw: 패턴 매칭 실패해서 raw_worker statement fallback 으로 박은 inner statement 수.
    * htmlMatched / htmlTotal 은 element-level 그대로 유지 — 본 카운터는 별도 보고.
   */

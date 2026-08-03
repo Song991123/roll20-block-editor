@@ -346,11 +346,20 @@ function testMultipleTopLevelHats(): void {
   }
 }
 
-function testMultiEventOnFallback(): void {
-  // v1 에서 다중 이벤트 on('a b', cb) 는 패턴 미지원 → raw fallback.
-  const js = `on('change:a change:b', function() { setAttrs({x:1}); });`;
+function testMultiEventWithEventInfo(): void {
+  const js = `on('change:a change:b', function(eventInfo) { setAttrs({source: eventInfo.sourceType}); });`;
   const r = parseSheetWorkerScript(js);
-  assert(r.blocks[0].blockType === 'r20_raw_worker', 'multi-event → raw fallback');
+  const hat = r.blocks[0];
+  assert(hat.blockType === 'r20_on_events', 'multi-event uses the generic event hat');
+  assert(hat.fields.EVENTS === 'change:a change:b', 'all event tokens are preserved');
+  assert(hat.fields.EVENT_VAR === 'eventInfo', 'callback parameter is preserved');
+  const setter = hat.children.CHILDREN?.[0];
+  assert(setter?.blockType === 'r20_set_attrs', 'event body remains structured');
+  const reporter = setter?.valueInputs?.VALUE;
+  assert(reporter?.blockType === 'r20_worker_event_info', 'eventInfo property uses a reporter block');
+  assert(reporter?.fields.VAR === 'eventInfo', 'eventInfo variable name');
+  assert(reporter?.fields.PROPERTY === 'sourceType', 'eventInfo property');
+  assert(r.stats.unparsed === 0, `multi-event should not fall back: ${r.stats.unparsed}`);
 }
 
 const tests = [
@@ -385,7 +394,7 @@ const tests = [
   ['raw fallback (switch)', testRawFallback],
   ['comments & strings', testCommentsAndStrings],
   ['multiple top hats', testMultipleTopLevelHats],
-  ['multi-event on fallback', testMultiEventOnFallback],
+  ['multi-event on with eventInfo', testMultiEventWithEventInfo],
 ] as const;
 
 let passed = 0;

@@ -134,9 +134,18 @@ belong in tracked documents.
   with it. Browser coverage confirms that the preserved code remains hidden
   from the sheet canvas and returns to Roll20 output. Blockly selection now
   updates the matching inspector without serializing the workspace.
+- `DONE LOCAL`: canonical one-or-more-event listeners now map to an editable
+  `on` block instead of a raw fallback. A callback event variable and common
+  Roll20 event fields map to a reporter block. Parser/generator tests and two
+  browser smokes prove structured source roundtrip plus `sourceType=player`
+  and `sourceAttribute` delivery for either event. Worker-originated local
+  `setAttrs` changes report `sourceType=sheetworker`.
 - `TODO`: expand structured Sheet Worker blocks beyond the current parser and
   runtime subset. Raw Worker source remains the lossless fallback meanwhile;
-  diagnostics do not make unsupported syntax structurally editable.
+  diagnostics do not make unsupported syntax structurally editable. Arbitrary
+  source formatting can still remain raw when structured re-emission is not
+  byte-stable, and the local runtime does not yet simulate every Roll20 event
+  field such as previous/new values.
 
 ## P0 - Edit And Preview Unity
 

@@ -10,11 +10,6 @@ function codes(source: string): string[] {
 
 const cases: Array<{ name: string; source: string; expected: string }> = [
   {
-    name: 'multi-event handler',
-    source: `on('change:hp change:mp', function() { setAttrs({ total: 1 }); });`,
-    expected: 'multi-event',
-  },
-  {
     name: 'switch statement',
     source: 'switch (value) { case 1: setAttrs({ result: 1 }); break; }',
     expected: 'switch-case',
@@ -69,5 +64,9 @@ assert(
   codes(`on('change:hp', function() { /* switch (fake) {} */ setAttrs({ hp: 10 }); });`)[0] === 'source-preserved',
   'supported source is not misclassified by a keyword inside a comment',
 );
+assert(
+  codes(`on('change:hp change:mp', function(eventInfo) { setAttrs({ source: eventInfo.sourceType }); });`)[0] === 'source-preserved',
+  'structured multi-event source is no longer reported as unsupported',
+);
 
-console.log(`\n${passed + 2}/${cases.length + 2} passed`);
+console.log(`\n${passed + 3}/${cases.length + 3} passed`);

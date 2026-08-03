@@ -1,7 +1,6 @@
 import { parseSheetWorkerScript, type ParsedBlock } from './script_parser';
 
 export type RawWorkerDiagnosticCode =
-  | 'multi-event'
   | 'switch-case'
   | 'error-handling'
   | 'async-flow'
@@ -17,7 +16,6 @@ export interface RawWorkerDiagnostic {
 }
 
 const DIAGNOSTIC_MESSAGES: Record<RawWorkerDiagnosticCode, string> = {
-  'multi-event': '여러 감지 조건을 한 번에 묶은 코드는 아직 개별 블록으로 나누지 못해요.',
   'switch-case': '여러 갈래 선택 분기(switch/case)는 아직 개별 블록으로 나누지 못해요.',
   'error-handling': '오류 처리(try/catch)는 아직 개별 블록으로 나누지 못해요.',
   'async-flow': '비동기 처리(async/await)는 아직 개별 블록으로 나누지 못해요.',
@@ -29,7 +27,6 @@ const DIAGNOSTIC_MESSAGES: Record<RawWorkerDiagnosticCode, string> = {
 };
 
 const DIAGNOSTIC_ORDER: RawWorkerDiagnosticCode[] = [
-  'multi-event',
   'switch-case',
   'error-handling',
   'async-flow',
@@ -82,8 +79,6 @@ function collectRawStatements(blocks: ParsedBlock[]): string[] {
 
 function classifyRawStatement(statement: string): RawWorkerDiagnosticCode {
   const code = statement.trim();
-  const multiEvent = /^on\s*\(\s*(['"])([\s\S]*?)\1/.exec(code);
-  if (multiEvent && multiEvent[2].trim().split(/\s+/).length > 1) return 'multi-event';
   if (/^switch\s*\(/.test(code) || /^case\b/.test(code)) return 'switch-case';
   if (/^(?:try\b|catch\b|finally\b)/.test(code)) return 'error-handling';
   if (/^(?:async\b|await\b)/.test(code)) return 'async-flow';

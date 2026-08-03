@@ -123,6 +123,9 @@ async function main() {
           on('clicked:roll', () => {
             setAttrs({ 'hp': 11 });
           });
+          on('change:hp change:mp', (eventInfo) => {
+            setAttrs({ 'last_source': eventInfo.sourceType });
+          });
         </script>
       `;
       const parsedImported = await window.__perfHook.importSheet({ html: parsedHtml, css: '', i18n: '{}' });
@@ -168,9 +171,13 @@ async function main() {
       result.parsedWorkerTypes.includes('r20_worker_arith') &&
       result.parsedWorkerTypes.includes('r20_set_attrs') &&
       result.parsedWorkerTypes.includes('r20_on_button_click') &&
-      result.parsedWorkerTopLevelCount === 2 &&
+      result.parsedWorkerTypes.includes('r20_on_events') &&
+      result.parsedWorkerTypes.includes('r20_worker_event_info') &&
+      result.parsedWorkerTopLevelCount === 3 &&
       result.parsedEmitWorkerScriptCount === 1 &&
       result.parsedEmitWorker.includes("setAttrs({ 'total': (v.hp + (v.mp * 2)) });") &&
+      result.parsedEmitWorker.includes("on('change:hp change:mp', (eventInfo) => {") &&
+      result.parsedEmitWorker.includes("setAttrs({ 'last_source': eventInfo.sourceType });") &&
       consoleErrors.length === 0;
 
     const report = {
