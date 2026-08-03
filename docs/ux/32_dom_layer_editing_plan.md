@@ -117,12 +117,13 @@ invent separate DOM models.
     positioning by a keyboard action.
 18. Pointer coordinates are viewport pixels, while managed `left` and `top`
     values are local CSS pixels. The iframe bridge records an accumulated 2D
-    local-to-viewport matrix for common `transform` and CSS zoom chains; the
-    drop resolver inverts it before snapping. During the drag, the same inverse
-    keeps the optimistic element under the top-level pointer without replacing
-    its authored transform. Scale-only geometry remains a compatibility
-    fallback. The move keeps its logical parent and offset parent, emits owned
-    CSS, and must not jump after model commit or a Preview/Edit switch.
+    local-to-viewport matrix for common `transform`, individual
+    `translate`/`rotate`/`scale`, and CSS zoom chains; the drop resolver inverts
+    it before snapping. During the drag, the matching movement inverse keeps
+    the optimistic element under the top-level pointer without replacing any
+    authored transform. Scale-only geometry remains a compatibility fallback.
+    The move keeps its logical parent and offset parent, emits owned CSS, and
+    must not jump after model commit or a Preview/Edit switch.
 19. Every HTML void element remains a leaf in both the layer panel and iframe
     overlay. In particular, an uncommon native `<input>`, `<source>`, or `<wbr>`
     cannot expose an `inside` target because emitted HTML has no child slot.
@@ -364,8 +365,9 @@ Local tests cover classification, cycle protection, before/inside/after layer
 operations, flow versus free placement, grouping preconditions, selection
 synchronization, multi-object free transform, keyboard nudging, six-way
 alignment math, and horizontal/vertical equal-gap distribution. The browser
-smoke also proves scaled and rotate/skew/scale nested free moves -> owned CSS ->
-Preview/Edit geometry equality without authored-transform loss, then Ctrl selection -> iframe multi-highlight ->
+smoke also proves scaled and combined individual translate/rotate/scale plus
+transform-list nested free moves -> owned CSS -> Preview/Edit geometry equality
+without authored-transform loss, then Ctrl selection -> iframe multi-highlight ->
 layer-panel third selection -> shared free movement -> iframe and layer-panel keyboard nudges ->
 two-step undo/redo -> flow reparent undo/redo -> direct resize undo/redo ->
 coordinated theme undo/redo -> Preview/Edit equality -> same-parent vertical

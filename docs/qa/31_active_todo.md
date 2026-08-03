@@ -177,14 +177,15 @@ belong in tracked documents.
   after Preview/Edit switches.
 - `DONE LOCAL`: free placement converts iframe viewport pixels into local CSS
   pixels through an invertible 2D affine matrix. The bridge accumulates common
-  `transform` matrices and CSS zoom, while scale-only geometry remains the
-  compatibility fallback. Unit coverage checks scale and rotation inversion.
-  Browser coverage checks both a 75% frame and a nested rotate/skew/scale frame
-  inside that scaled ancestor, with a rotated child. Optimistic movement
-  follows the top-level pointer, authored transforms remain intact, managed
-  position stays out of inline HTML, and Preview/Edit geometry agrees after
-  commit. Per-message `WeakMap` reuse keeps shared ancestor measurement from
-  growing quadratically across a deep hit path.
+  `transform` matrices, 2D individual `translate`/`rotate`/`scale`, and CSS
+  zoom, while scale-only geometry remains the compatibility fallback. Unit
+  coverage checks scale and rotation inversion. Browser coverage checks both a
+  75% frame and a nested frame/child pair that combines individual transforms
+  with rotate/skew/scale transform lists. Optimistic movement follows the
+  top-level pointer, every authored transform remains intact, managed position
+  stays out of inline HTML, and Preview/Edit geometry agrees after commit.
+  Per-message `WeakMap` reuse keeps shared ancestor measurement from growing
+  quadratically across a deep hit path.
 - `DONE LOCAL`: editor history chooses the newest recorded action across HTML,
   CSS, translation, Page JS, and Worker workspaces. Managed position/style
   writes share one Blockly event group, and multi-selection movement has one
@@ -196,10 +197,9 @@ belong in tracked documents.
   control, result-card, Roll-button, layout, and composition presets all share
   one outer history group.
 - `PARTIAL`: continue usability review for dense imported structures, longer
-  or dynamically changing transform stacks, individual CSS `rotate`/`scale`
-  properties, and 3D/perspective transforms. Add longer mixed history runs for
-  imported structures while keeping local synthetic coverage distinct from
-  actual Roll20 verification.
+  or dynamically changing/animated transform stacks, and 3D/perspective
+  transforms. Add longer mixed history runs for imported structures while
+  keeping local synthetic coverage distinct from actual Roll20 verification.
 
 ## P1 - User Experience
 

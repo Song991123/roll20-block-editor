@@ -466,8 +466,8 @@ async function main() {
       '.sheet-group-one { margin-bottom: 18px; }',
       '.sheet-scaled-frame { position: relative; width: 260px; height: 150px; margin: 20px 0; padding: 12px; border: 4px solid #d7a5b6; transform: scale(0.75); transform-origin: top left; }',
       '.sheet-scaled-child { position: absolute; left: 24px; top: 32px; width: 80px; height: 28px; }',
-      '.sheet-affine-frame { position: absolute; left: 170px; top: 86px; width: 108px; height: 66px; padding: 6px; border: 3px solid #8abfae; transform: rotate(18deg) skewX(10deg) scale(0.85); transform-origin: top left; }',
-      '.sheet-affine-child { position: absolute; left: 20px; top: 22px; width: 52px; height: 20px; transform: rotate(-7deg); }',
+      '.sheet-affine-frame { position: absolute; left: 170px; top: 86px; width: 108px; height: 66px; padding: 6px; border: 3px solid #8abfae; translate: 5px -3px; rotate: 6deg; scale: 0.95 1.08; transform: rotate(18deg) skewX(10deg) scale(0.85); transform-origin: top left; }',
+      '.sheet-affine-child { position: absolute; left: 20px; top: 22px; width: 52px; height: 20px; translate: 4px 3px; rotate: -11deg; scale: 1.12 0.88; transform: rotate(-7deg); }',
     ].join('\n');
     await page.evaluate(
       ({ html, css }) => window.__perfHook.importSheet({ html, css, i18n: '{}' }),
@@ -711,6 +711,19 @@ async function main() {
             d: transform.d,
           }, own);
         }
+        const scaleParts = style.scale && style.scale !== 'none'
+          ? style.scale.split(/\s+/).map(Number)
+          : [1, 1];
+        const scaleX = scaleParts[0];
+        const scaleY = scaleParts.length > 1 ? scaleParts[1] : scaleX;
+        const angle = style.rotate && style.rotate !== 'none'
+          ? Number.parseFloat(style.rotate) * Math.PI / 180
+          : 0;
+        const individual = multiply(
+          { a: Math.cos(angle), b: Math.sin(angle), c: -Math.sin(angle), d: Math.cos(angle) },
+          { a: scaleX, b: 0, c: 0, d: scaleY },
+        );
+        own = multiply(individual, own);
         matrix = multiply(own, matrix);
         current = current.parentElement;
       }
@@ -726,6 +739,9 @@ async function main() {
         rectHeight: childRect.height,
         matrix,
         transform: getComputedStyle(child).transform,
+        rotate: getComputedStyle(child).rotate,
+        scale: getComputedStyle(child).scale,
+        translate: getComputedStyle(child).translate,
         inlineStyle: child.getAttribute('style') ?? '',
       };
     }, { frameId: ids.affineFrameId, childId: ids.affineChildId });
@@ -734,7 +750,7 @@ async function main() {
     const affineBefore = await readAffinePlacement();
     const affineBox = await affineChild.boundingBox();
     assert(affineBefore && affineBox, 'affine nested free-placement geometry is unavailable');
-    const affineVisualDelta = { x: 28, y: 20 };
+    const affineVisualDelta = { x: 12, y: 8 };
     await page.evaluate((childId) => {
       window.__r20AffinePointerTrace = [];
       window.addEventListener('message', (event) => {
@@ -768,6 +784,12 @@ async function main() {
       Math.abs(affineDuring.rectWidth - affineBefore.rectWidth) <= 0.5
         && Math.abs(affineDuring.rectHeight - affineBefore.rectHeight) <= 0.5,
       `affine optimistic drag dropped the authored child transform: ${JSON.stringify({ affineBefore, affineDuring })}`,
+    );
+    assert(
+      affineDuring.rotate === affineBefore.rotate
+        && affineDuring.scale === affineBefore.scale
+        && affineDuring.translate === affineBefore.translate,
+      `affine optimistic drag changed individual transform properties: ${JSON.stringify({ affineBefore, affineDuring })}`,
     );
     await page.mouse.up();
     await page.waitForTimeout(900);
@@ -807,6 +829,9 @@ async function main() {
     );
     assert(
       affineAfterEdit.transform !== 'none'
+        && affineAfterEdit.rotate === affineBefore.rotate
+        && affineAfterEdit.scale === affineBefore.scale
+        && affineAfterEdit.translate === affineBefore.translate
         && Math.abs(affineAfterEdit.rectWidth - affineBefore.rectWidth) <= 0.5
         && Math.abs(affineAfterEdit.rectHeight - affineBefore.rectHeight) <= 0.5,
       `affine nested drop lost the authored child transform: ${JSON.stringify({ affineBefore, affineAfterEdit })}`,

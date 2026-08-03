@@ -562,6 +562,27 @@ or source-derived measurement here.
   `rotate`/`scale` properties, 3D/perspective, dense real imports, and actual
   Roll20 screens remain unverified by this batch.
 
+## 2026-08-03 - Individual Transform Drag Coordinates
+
+- Measured Chromium computed-value serialization and matrix composition against
+  the [W3C CSS Transforms Level 2 order](https://www.w3.org/TR/css-transforms-2/#ctm)
+  before changing the iframe bridge.
+- Reused the existing affine accumulator. It now includes 2D individual
+  `rotate` and `scale`; individual `translate` remains a positional component
+  and is preserved unchanged.
+- Optimistic movement now inverts the selected element's own individual
+  rotation, scale, and CSS zoom in addition to its transformed ancestors. The
+  authored transform list and all three individual properties remain intact.
+- The synthetic browser path combines individual translate/rotate/scale on a
+  transformed frame and child, then verifies top-level pointer tracking, local
+  managed coordinates, no inline emit leak, and Preview/Edit equality.
+- Focused build-document tests, full `ci:verify`, lint, production build,
+  privacy guards, and edit-flow browser smoke pass. The browser run reports
+  zero console and page errors, and the final server-hygiene check reports no
+  project or CDP listeners.
+- Claim boundary: local anonymous 2D proof only. Animated/dynamic transform
+  changes, 3D/perspective, dense imports, and actual Roll20 screens remain open.
+
 ## Current Product State
 
 - Preview and Edit share one persistent Roll20 iframe.

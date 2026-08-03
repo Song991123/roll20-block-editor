@@ -174,6 +174,54 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       d: outer.b * inner.c + outer.d * inner.d
     };
   }
+  function individualLinearOf(style) {
+    var rotation = { a: 1, b: 0, c: 0, d: 1 };
+    var rotate = String(style.rotate || '').trim();
+    if (rotate && rotate !== 'none') {
+      var angleMatch = rotate.match(/^([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?)deg$/i);
+      if (!angleMatch) return null;
+      var radians = Number(angleMatch[1]) * Math.PI / 180;
+      if (!Number.isFinite(radians)) return null;
+      var cosine = Math.cos(radians);
+      var sine = Math.sin(radians);
+      rotation = { a: cosine, b: sine, c: -sine, d: cosine };
+    }
+    var scaling = { a: 1, b: 0, c: 0, d: 1 };
+    var scale = String(style.scale || '').trim();
+    if (scale && scale !== 'none') {
+      var scaleParts = scale.split(/\s+/);
+      if (scaleParts.length < 1 || scaleParts.length > 3) return null;
+      var scaleX = Number(scaleParts[0]);
+      var scaleY = scaleParts.length > 1 ? Number(scaleParts[1]) : scaleX;
+      var scaleZ = scaleParts.length > 2 ? Number(scaleParts[2]) : 1;
+      if (
+        !Number.isFinite(scaleX)
+        || !Number.isFinite(scaleY)
+        || !Number.isFinite(scaleZ)
+        || Math.abs(scaleZ - 1) > 0.000001
+      ) return null;
+      scaling = { a: scaleX, b: 0, c: 0, d: scaleY };
+    }
+    return multiplyLinear(rotation, scaling);
+  }
+  function ownLinearOf(style, includeTransform) {
+    var zoom = parseFloat(style.zoom);
+    if (!Number.isFinite(zoom) || zoom <= 0) zoom = 1;
+    var own = { a: zoom, b: 0, c: 0, d: zoom };
+    if (includeTransform && style.transform && style.transform !== 'none') {
+      if (typeof DOMMatrixReadOnly !== 'function') return null;
+      var matrix = new DOMMatrixReadOnly(style.transform);
+      if (!matrix.is2D) return null;
+      own = multiplyLinear({
+        a: matrix.a,
+        b: matrix.b,
+        c: matrix.c,
+        d: matrix.d
+      }, own);
+    }
+    var individual = individualLinearOf(style);
+    return individual ? multiplyLinear(individual, own) : null;
+  }
   var linearTransformCache = new WeakMap();
   function resetLinearTransformCache() {
     linearTransformCache = new WeakMap();
@@ -188,25 +236,24 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     }
     try {
       var style = window.getComputedStyle(node);
-      var zoom = parseFloat(style.zoom);
-      if (!Number.isFinite(zoom) || zoom <= 0) zoom = 1;
-      var own = { a: zoom, b: 0, c: 0, d: zoom };
-      if (style.transform && style.transform !== 'none') {
-        if (typeof DOMMatrixReadOnly !== 'function') return null;
-        var matrix = new DOMMatrixReadOnly(style.transform);
-        if (!matrix.is2D) return null;
-        own = multiplyLinear({
-          a: matrix.a,
-          b: matrix.b,
-          c: matrix.c,
-          d: matrix.d
-        }, own);
-      }
+      var own = ownLinearOf(style, true);
+      if (!own) return null;
       var result = multiplyLinear(parent, own);
       linearTransformCache.set(node, result);
       return result;
     } catch (e) {
       linearTransformCache.set(node, null);
+      return null;
+    }
+  }
+  function movementToViewportOf(node) {
+    if (!node || node.nodeType !== 1) return { a: 1, b: 0, c: 0, d: 1 };
+    var parent = localToViewportOf(node.parentElement);
+    if (!parent) return null;
+    try {
+      var own = ownLinearOf(window.getComputedStyle(node), false);
+      return own ? multiplyLinear(parent, own) : null;
+    } catch (e) {
       return null;
     }
   }
@@ -577,7 +624,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
         node: node,
         originTransform: node.style.transform,
         originRenderedTransform: renderedTransformOf(node),
-        movementTransform: localToViewportOf(node.parentElement),
+        movementTransform: movementToViewportOf(node),
         originTransition: node.style.transition,
         originWillChange: node.style.willChange,
       };
@@ -1921,7 +1968,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
         node: node,
         originTransform: node.style.transform,
         originRenderedTransform: renderedTransformOf(node),
-        movementTransform: localToViewportOf(node.parentElement),
+        movementTransform: movementToViewportOf(node),
         originTransition: node.style.transition,
         originWillChange: node.style.willChange,
       };

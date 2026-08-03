@@ -58,12 +58,13 @@ contain private source evidence or historical test dumps.
   active layer visible without recentering rows already inside the viewport or
   mutating emitted source.
 - Transformed containing frames report an accumulated 2D local-to-viewport
-  matrix for common `transform` and CSS zoom chains. Free placement and its
-  optimistic paint invert that matrix before snapping, while authored child
-  transforms remain intact. A per-message cache shares ancestor measurements.
-  Browser proof covers a scaled ancestor containing a rotate/skew/scale frame
-  and rotated child; longer dynamic chains, individual transform properties,
-  and 3D remain open.
+  matrix for common `transform`, individual `translate`/`rotate`/`scale`, and
+  CSS zoom chains. Free placement and its optimistic paint invert the relevant
+  matrix before snapping, while authored child transforms remain intact. A
+  per-message cache shares ancestor measurements. Browser proof covers a
+  scaled ancestor containing a frame and child that combine individual
+  transforms with rotate/skew/scale transform lists. Longer dynamic chains,
+  animated transform changes, and 3D/perspective remain open.
 - Generated evidence and external validation inputs remain ignored, local, and
   ephemeral.
 - Ordinary JavaScript has a separate inert source workspace. Authored emission
