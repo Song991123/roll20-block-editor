@@ -20,6 +20,8 @@ const subject = {
   display: 'block',
   computedWidth: 98,
   computedHeight: 38,
+  scaleX: 0.75,
+  scaleY: 0.8,
   offsetParentBlockId: 'frame-1',
   offsetParentPosition: 'relative',
 };
@@ -155,6 +157,10 @@ assert.equal(parseIframeEditBridgeMessage({ ...hit, pointerId: 1.5 }), null);
 assert.equal(parseIframeEditBridgeMessage({
   ...hit,
   subject: { ...subject, computedWidth: Number.NaN },
+}), null);
+assert.equal(parseIframeEditBridgeMessage({
+  ...hit,
+  subject: { ...subject, scaleX: 0 },
 }), null);
 assert.equal(parseIframeEditBridgeMessage({
   ...hit,

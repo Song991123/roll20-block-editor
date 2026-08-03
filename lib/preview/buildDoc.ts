@@ -173,6 +173,8 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     var display = '';
     var computedWidth = NaN;
     var computedHeight = NaN;
+    var scaleX = 1;
+    var scaleY = 1;
     try {
       offsetParentPosition = offsetParent ? window.getComputedStyle(offsetParent).position : '';
       var computedStyle = window.getComputedStyle(node);
@@ -180,6 +182,10 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       display = computedStyle.display;
       computedWidth = parseFloat(computedStyle.width);
       computedHeight = parseFloat(computedStyle.height);
+      var offsetWidth = Number(node.offsetWidth) || 0;
+      var offsetHeight = Number(node.offsetHeight) || 0;
+      if (offsetWidth > 0 && rect.width > 0) scaleX = rect.width / offsetWidth;
+      if (offsetHeight > 0 && rect.height > 0) scaleY = rect.height / offsetHeight;
     } catch (e) {}
     return {
       blockId: node.dataset.r20BlockId,
@@ -195,6 +201,8 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       display: display,
       computedWidth: Number.isFinite(computedWidth) && computedWidth >= 0 ? computedWidth : undefined,
       computedHeight: Number.isFinite(computedHeight) && computedHeight >= 0 ? computedHeight : undefined,
+      scaleX: Number.isFinite(scaleX) && scaleX > 0 ? scaleX : 1,
+      scaleY: Number.isFinite(scaleY) && scaleY > 0 ? scaleY : 1,
       offsetParentBlockId: offsetParentBlock && offsetParentBlock.dataset
         ? offsetParentBlock.dataset.r20BlockId || null
         : null,

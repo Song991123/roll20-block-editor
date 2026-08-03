@@ -58,6 +58,7 @@ import {
   commitIframeFlowDrop,
   filterDropTargetForPlacement,
   resolveIframeEditDropTarget,
+  resolveIframeContainerPoint,
   resolveIframeFreePlacement,
   resolveIframeMultiFreePlacement,
   resolveIframeLayerDropTarget,
@@ -1596,25 +1597,11 @@ export default function PreviewMain() {
         const freeInside = ui.editPlacementMode === 'free'
           && committedWidgetTarget?.mode === 'inside'
           && Boolean(committedWidgetTarget.containerBlockId);
-        const position = freeInside && committedWidgetTarget
-          ? {
-              left: Math.max(0, Math.round(
-                editMessage.pointer.x
-                - committedWidgetTarget.geometry.rect.left
-                - committedWidgetTarget.geometry.clientLeft
-                + committedWidgetTarget.geometry.scrollLeft,
-              )),
-              top: Math.max(0, Math.round(
-                editMessage.pointer.y
-                - committedWidgetTarget.geometry.rect.top
-                - committedWidgetTarget.geometry.clientTop
-                + committedWidgetTarget.geometry.scrollTop,
-              )),
-            }
-          : {
-              left: Math.max(0, Math.round(editMessage.pointer.x)),
-              top: Math.max(0, Math.round(editMessage.pointer.y)),
-            };
+        const position = resolveIframeContainerPoint(
+          editMessage.pointer,
+          freeInside && committedWidgetTarget ? committedWidgetTarget.geometry : null,
+          ui.snapEnabled ? 8 : 1,
+        );
         const id = appendFriendlyWidgetPreset(preset, position, {
           mode: freeInside ? 'absolute-in-container' : committedWidgetTarget ? 'flow' : 'absolute',
           placement: committedWidgetTarget?.mode,
@@ -1673,25 +1660,11 @@ export default function PreviewMain() {
           const freeInside = placement === 'free'
             && target?.mode === 'inside'
             && Boolean(target.containerBlockId);
-          const position = freeInside && target
-            ? {
-                left: Math.max(0, Math.round(
-                  editMessage.pointer.x
-                  - target.geometry.rect.left
-                  - target.geometry.clientLeft
-                  + target.geometry.scrollLeft,
-                )),
-                top: Math.max(0, Math.round(
-                  editMessage.pointer.y
-                  - target.geometry.rect.top
-                  - target.geometry.clientTop
-                  + target.geometry.scrollTop,
-                )),
-              }
-            : {
-                left: Math.max(0, Math.round(editMessage.pointer.x)),
-                top: Math.max(0, Math.round(editMessage.pointer.y)),
-              };
+          const position = resolveIframeContainerPoint(
+            editMessage.pointer,
+            freeInside && target ? target.geometry : null,
+            useUiStore.getState().snapEnabled ? 8 : 1,
+          );
           let structureReady = true;
           if (freeInside && target?.containerBlockId) {
             structureReady = adapter.nestBlockInContainer('html', id, target.containerBlockId);

@@ -437,6 +437,9 @@ async function main() {
       '  <td class="sheet-table-cell-b"><input type="text" name="attr_table_b" value="B"></td>',
       '</tr></tbody></table>',
       '<div class="outside" style="width:180px; min-height:54px; padding:8px">Outside</div>',
+      '<div class="scaled-frame">',
+      '  <div class="scaled-child">Scaled</div>',
+      '</div>',
       '<div class="group-one" style="padding:4px">Group A</div>',
       '<div class="group-two" style="padding:4px">Group B</div>',
       '<div class="group-three" style="padding:4px">Group C</div>',
@@ -458,6 +461,8 @@ async function main() {
       '.sheet-rolltemplate-default .sheet-template-title { padding: 8px 10px; font-weight: 700; }',
       '.sheet-rolltemplate-default .sheet-template-row { display: flex; justify-content: space-between; padding: 8px 10px; }',
       '.sheet-group-one { margin-bottom: 18px; }',
+      '.sheet-scaled-frame { position: relative; width: 260px; height: 150px; margin: 20px 0; padding: 12px; border: 4px solid #d7a5b6; transform: scale(0.75); transform-origin: top left; }',
+      '.sheet-scaled-child { position: absolute; left: 24px; top: 32px; width: 80px; height: 28px; }',
     ].join('\n');
     await page.evaluate(
       ({ html, css }) => window.__perfHook.importSheet({ html, css, i18n: '{}' }),
@@ -481,6 +486,8 @@ async function main() {
       const tableCellA = document.querySelector('.sheet-table-cell-a');
       const tableCellB = document.querySelector('.sheet-table-cell-b');
       const outside = document.querySelector('.sheet-outside');
+      const scaledFrame = document.querySelector('.sheet-scaled-frame');
+      const scaledChild = document.querySelector('.sheet-scaled-child');
       const groupOne = document.querySelector('.sheet-group-one');
       const groupTwo = document.querySelector('.sheet-group-two');
       const groupThree = document.querySelector('.sheet-group-three');
@@ -504,6 +511,8 @@ async function main() {
         tableCellAId: tableCellA?.getAttribute('data-r20-block-id') ?? null,
         tableCellBId: tableCellB?.getAttribute('data-r20-block-id') ?? null,
         outsideId: outside?.getAttribute('data-r20-block-id') ?? null,
+        scaledFrameId: scaledFrame?.getAttribute('data-r20-block-id') ?? null,
+        scaledChildId: scaledChild?.getAttribute('data-r20-block-id') ?? null,
         groupOneId: groupOne?.getAttribute('data-r20-block-id') ?? null,
         groupTwoId: groupTwo?.getAttribute('data-r20-block-id') ?? null,
         groupThreeId: groupThree?.getAttribute('data-r20-block-id') ?? null,
@@ -516,10 +525,170 @@ async function main() {
     });
     assert(
       ids.frameId && ids.titleId && ids.labelId && ids.rowAId && ids.rowAInputId && ids.rowBId && ids.rowBInputId && ids.imageId && ids.tableId && ids.tableBodyId
-        && ids.tableRowId && ids.outsideId && ids.groupOneId && ids.groupTwoId && ids.groupThreeId
+        && ids.tableRowId && ids.outsideId && ids.scaledFrameId && ids.scaledChildId
+        && ids.groupOneId && ids.groupTwoId && ids.groupThreeId
         && ids.layoutProofId && ids.layoutProofTitleId && ids.layoutProofAId && ids.layoutProofBId && ids.layoutProofCId,
       `synthetic structural IDs were not emitted: ${JSON.stringify(ids)}`,
     );
+
+    const readScaledPlacement = () => frame.evaluate(({ frameId, childId }) => {
+      const container = document.querySelector(`[data-r20-block-id="${CSS.escape(frameId)}"]`);
+      const child = document.querySelector(`[data-r20-block-id="${CSS.escape(childId)}"]`);
+      if (!(container instanceof HTMLElement) || !(child instanceof HTMLElement)) return null;
+      const containerRect = container.getBoundingClientRect();
+      const childRect = child.getBoundingClientRect();
+      const scaleX = container.offsetWidth > 0 ? containerRect.width / container.offsetWidth : 1;
+      const scaleY = container.offsetHeight > 0 ? containerRect.height / container.offsetHeight : 1;
+      return {
+        parentId: child.parentElement?.getAttribute('data-r20-block-id') ?? null,
+        offsetParentId: child.offsetParent?.getAttribute('data-r20-block-id') ?? null,
+        offsetLeft: child.offsetLeft,
+        offsetTop: child.offsetTop,
+        rectLeft: childRect.left,
+        rectTop: childRect.top,
+        scaleX,
+        scaleY,
+        position: getComputedStyle(child).position,
+        inlineStyle: child.getAttribute('style') ?? '',
+      };
+    }, { frameId: ids.scaledFrameId, childId: ids.scaledChildId });
+
+    await page.click('[data-testid="edit-placement-free"]');
+    const scaledChild = frame.locator(`[data-r20-block-id="${ids.scaledChildId}"]`);
+    await scaledChild.scrollIntoViewIfNeeded();
+    const scaledBefore = await readScaledPlacement();
+    const scaledBox = await scaledChild.boundingBox();
+    assert(scaledBefore && scaledBox, 'scaled nested free-placement geometry is unavailable');
+    assert(
+      Math.abs(scaledBefore.scaleX - 0.75) <= 0.01 && Math.abs(scaledBefore.scaleY - 0.75) <= 0.01,
+      `scaled container did not render at 75%: ${JSON.stringify(scaledBefore)}`,
+    );
+    const scaledVisualDelta = { x: 30, y: 18 };
+    await page.evaluate((childId) => {
+      window.__r20ScaledPointerTrace = [];
+      window.addEventListener('message', (event) => {
+        const message = event.data;
+        if (
+          message?.type === 'r20:edit-hit'
+          && message.blockId === childId
+          && (message.phase === 'pointerdown' || message.phase === 'pointerup')
+        ) {
+          window.__r20ScaledPointerTrace.push({
+            phase: message.phase,
+            pointer: message.pointer,
+          });
+        }
+      });
+    }, ids.scaledChildId);
+    await page.mouse.move(scaledBox.x + scaledBox.width / 2, scaledBox.y + scaledBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(
+      scaledBox.x + scaledBox.width / 2 + scaledVisualDelta.x,
+      scaledBox.y + scaledBox.height / 2 + scaledVisualDelta.y,
+      { steps: 4 },
+    );
+    await page.mouse.up();
+    await page.waitForTimeout(900);
+    const scaledAfterEdit = await readScaledPlacement();
+    const scaledBoxAfterEdit = await scaledChild.boundingBox();
+    assert(scaledAfterEdit, 'scaled nested free-placement disappeared after drop');
+    const scaledPointerTrace = await page.evaluate(() => window.__r20ScaledPointerTrace ?? []);
+    const scaledPointerDown = scaledPointerTrace.find((entry) => entry.phase === 'pointerdown');
+    const scaledPointerUp = [...scaledPointerTrace].reverse().find((entry) => entry.phase === 'pointerup');
+    assert(scaledPointerDown && scaledPointerUp, `scaled pointer bridge trace is incomplete: ${JSON.stringify(scaledPointerTrace)}`);
+    const iframePointerDelta = {
+      x: scaledPointerUp.pointer.x - scaledPointerDown.pointer.x,
+      y: scaledPointerUp.pointer.y - scaledPointerDown.pointer.y,
+    };
+    const expectedScaledLeft = Math.round(
+      (scaledBefore.offsetLeft + iframePointerDelta.x / scaledBefore.scaleX) / 8,
+    ) * 8;
+    const expectedScaledTop = Math.round(
+      (scaledBefore.offsetTop + iframePointerDelta.y / scaledBefore.scaleY) / 8,
+    ) * 8;
+    assert(
+      scaledAfterEdit.parentId === ids.scaledFrameId
+        && scaledAfterEdit.offsetParentId === ids.scaledFrameId
+        && scaledAfterEdit.position === 'absolute',
+      `scaled nested drop changed its containing frame: ${JSON.stringify(scaledAfterEdit)}`,
+    );
+    assert(
+      Math.abs(scaledAfterEdit.offsetLeft - expectedScaledLeft) <= 0.5
+        && Math.abs(scaledAfterEdit.offsetTop - expectedScaledTop) <= 0.5,
+      `scaled nested drop stored viewport pixels instead of local CSS pixels: ${JSON.stringify({ scaledBefore, scaledAfterEdit, expectedScaledLeft, expectedScaledTop, iframePointerDelta, scaledPointerTrace })}`,
+    );
+    assert(
+      Math.abs(
+        scaledAfterEdit.rectLeft - scaledBefore.rectLeft
+          - (expectedScaledLeft - scaledBefore.offsetLeft) * scaledBefore.scaleX,
+      ) <= 0.75
+        && Math.abs(
+          scaledAfterEdit.rectTop - scaledBefore.rectTop
+            - (expectedScaledTop - scaledBefore.offsetTop) * scaledBefore.scaleY,
+        ) <= 0.75,
+      `scaled nested drop visually rolled back after model commit: ${JSON.stringify({ scaledBefore, scaledAfterEdit })}`,
+    );
+    assert(
+      scaledBoxAfterEdit
+        && Math.abs(scaledBoxAfterEdit.x - scaledBox.x - scaledVisualDelta.x) <= 4
+        && Math.abs(scaledBoxAfterEdit.y - scaledBox.y - scaledVisualDelta.y) <= 4,
+      `scaled nested drop missed its top-level visual target: ${JSON.stringify({ scaledBox, scaledBoxAfterEdit, scaledVisualDelta })}`,
+    );
+    assert(!/(?:^|;)\s*(?:position|left|top)\s*:/i.test(scaledAfterEdit.inlineStyle), 'scaled placement leaked managed position into inline HTML');
+    const scaledModel = await page.evaluate(({ childId }) => {
+      const emit = window.__perfHook.getEmitContent();
+      const emittedDocument = new DOMParser().parseFromString(emit.html, 'text/html');
+      const emittedNode = emittedDocument.querySelector(`[data-r20-block-id="${CSS.escape(childId)}"]`);
+      const positionClass = [...(emittedNode?.classList ?? [])]
+        .find((className) => (
+          className.startsWith('sheet-r20-node-')
+          || className.startsWith('sheet-r20-position-')
+        )) ?? null;
+      const positionRules = positionClass
+        ? emit.css.match(new RegExp(`[^{}]*\\.${positionClass}(?:\\.${positionClass})*[^{}]*\\{[^}]*\\}`, 'g')) ?? []
+        : [];
+      return {
+        positionClass,
+        emittedInlineStyle: emittedNode?.getAttribute('style') ?? '',
+        positionRules,
+      };
+    }, { childId: ids.scaledChildId });
+    assert(
+      scaledModel.positionClass && scaledModel.positionRules.length > 0,
+      `scaled placement did not emit an owned CSS rule: ${JSON.stringify(scaledModel)}`,
+    );
+    assert(
+      scaledModel.positionRules.some((rule) => (
+        /position\s*:\s*absolute/i.test(rule)
+        && new RegExp(`left\\s*:\\s*${expectedScaledLeft}px`, 'i').test(rule)
+        && new RegExp(`top\\s*:\\s*${expectedScaledTop}px`, 'i').test(rule)
+      )),
+      `scaled placement CSS has the wrong local coordinates: ${JSON.stringify(scaledModel)}`,
+    );
+    assert(!/(?:^|;)\s*(?:position|left|top)\s*:/i.test(scaledModel.emittedInlineStyle), 'scaled placement position leaked into emitted HTML');
+
+    await page.click('[data-testid="main-mode-preview"]');
+    await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '0');
+    const scaledPreview = await readScaledPlacement();
+    await page.click('[data-testid="preview-exit-edit"]');
+    await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '1');
+    const scaledEditAgain = await readScaledPlacement();
+    assert(
+      scaledPreview && scaledEditAgain
+        && Math.abs(scaledPreview.rectLeft - scaledAfterEdit.rectLeft) <= 0.5
+        && Math.abs(scaledPreview.rectTop - scaledAfterEdit.rectTop) <= 0.5
+        && Math.abs(scaledEditAgain.rectLeft - scaledPreview.rectLeft) <= 0.5
+        && Math.abs(scaledEditAgain.rectTop - scaledPreview.rectTop) <= 0.5,
+      `scaled nested placement diverged across Preview/Edit: ${JSON.stringify({ scaledAfterEdit, scaledPreview, scaledEditAgain })}`,
+    );
+    result.tests.scaledNestedPlacement = {
+      before: scaledBefore,
+      afterEdit: scaledAfterEdit,
+      preview: scaledPreview,
+      editAgain: scaledEditAgain,
+      expected: { left: expectedScaledLeft, top: expectedScaledTop },
+      pointerDelta: iframePointerDelta,
+    };
 
     const readLayoutProof = () => frame.evaluate((proofIds) => {
       const root = document.querySelector(`[data-r20-block-id="${CSS.escape(proofIds.root)}"]`);
@@ -4182,7 +4351,7 @@ async function main() {
         `- Status: ${result.pass ? 'PASS' : 'FAIL'}`,
         `- Console errors: ${consoleErrors.length}`,
         `- Page errors: ${pageErrors.length}`,
-        '- Coverage: flow/free placement, direct on-sheet keyboard nudge and resize, resizable layer panel with synchronized iframe origin, virtualized layer Tab navigation, canvas widget and block gallery drops, layer edge auto-scroll, layer collapse/drag-hover expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, managed visual styles, preview Roll/chat, sheet width, and the dedicated rolltemplate card editor with click/style/drop/chat synchronization plus empty-workspace template creation.',
+        '- Coverage: flow/free placement including scaled nested coordinates, direct on-sheet keyboard nudge and resize, resizable layer panel with synchronized iframe origin, virtualized layer Tab navigation, canvas widget and block gallery drops, layer edge auto-scroll, layer collapse/drag-hover expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, managed visual styles, preview Roll/chat, sheet width, and the dedicated rolltemplate card editor with click/style/drop/chat synchronization plus empty-workspace template creation.',
         '',
       ].join('\n'),
       'utf8',

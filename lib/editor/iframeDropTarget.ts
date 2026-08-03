@@ -55,9 +55,47 @@ export type IframeFreePlacement = {
   containingBlockNeedsRelative: boolean;
 };
 
+export type IframeLocalPoint = {
+  left: number;
+  top: number;
+};
+
 // A click in edit mode selects an object; only a real pointer movement should
 // convert a flow node into an explicitly positioned design node.
 const MIN_FREE_DRAG_DISTANCE = 3;
+
+function geometryScale(value: number | undefined): number {
+  return Number.isFinite(value) && Number(value) > 0 ? Number(value) : 1;
+}
+
+function snapCoordinate(value: number, snapSize: number): number {
+  const step = Number.isFinite(snapSize)
+    ? Math.max(1, Math.min(128, Math.round(snapSize)))
+    : 1;
+  return Math.max(0, Math.round(value / step) * step);
+}
+
+/** Convert iframe viewport coordinates into one container's local CSS pixels. */
+export function resolveIframeContainerPoint(
+  pointer: { x: number; y: number },
+  geometry: IframeEditNodeGeometry | null,
+  snapSize = 1,
+): IframeLocalPoint {
+  const left = geometry
+    ? (pointer.x - geometry.rect.left) / geometryScale(geometry.scaleX)
+      - geometry.clientLeft
+      + geometry.scrollLeft
+    : pointer.x;
+  const top = geometry
+    ? (pointer.y - geometry.rect.top) / geometryScale(geometry.scaleY)
+      - geometry.clientTop
+      + geometry.scrollTop
+    : pointer.y;
+  return {
+    left: snapCoordinate(left, snapSize),
+    top: snapCoordinate(top, snapSize),
+  };
+}
 
 function pickDropMode(
   geometry: IframeEditNodeGeometry,
@@ -234,19 +272,10 @@ export function resolveIframeLayerFreePlacement(
   const containingBlock = containingBlockId ? lookup.getBlock(containingBlockId) : null;
   if (containingBlockId && !containingBlock) return null;
   const geometry = target?.geometry ?? null;
-  const left = geometry
-    ? message.pointer.x - geometry.rect.left - geometry.clientLeft + geometry.scrollLeft
-    : message.pointer.x;
-  const top = geometry
-    ? message.pointer.y - geometry.rect.top - geometry.clientTop + geometry.scrollTop
-    : message.pointer.y;
-  const step = Number.isFinite(snapSize)
-    ? Math.max(1, Math.min(128, Math.round(snapSize)))
-    : 1;
-  const snap = (value: number) => Math.max(0, Math.round(value / step) * step);
+  const point = resolveIframeContainerPoint(message.pointer, geometry, snapSize);
   return {
-    left: snap(left),
-    top: snap(top),
+    left: point.left,
+    top: point.top,
     containingBlockId,
     containingBlockNeedsRelative: geometry?.position === 'static',
   };
@@ -319,6 +348,8 @@ export function resolveIframeFreePlacement(
   if (Math.hypot(deltaX, deltaY) < MIN_FREE_DRAG_DISTANCE) return null;
   let baseLeft = origin.subject.offsetLeft;
   let baseTop = origin.subject.offsetTop;
+  const scaleX = geometryScale(containingGeometry?.scaleX);
+  const scaleY = geometryScale(containingGeometry?.scaleY);
 
   if (
     containingGeometry
@@ -327,23 +358,19 @@ export function resolveIframeFreePlacement(
       || origin.subject.position === 'absolute'
     )
   ) {
-    baseLeft = origin.subject.rect.left
-      - containingGeometry.rect.left
+    baseLeft = (origin.subject.rect.left
+      - containingGeometry.rect.left) / scaleX
       - containingGeometry.clientLeft
       + containingGeometry.scrollLeft;
-    baseTop = origin.subject.rect.top
-      - containingGeometry.rect.top
+    baseTop = (origin.subject.rect.top
+      - containingGeometry.rect.top) / scaleY
       - containingGeometry.clientTop
       + containingGeometry.scrollTop;
   }
 
-  const step = Number.isFinite(snapSize)
-    ? Math.max(1, Math.min(128, Math.round(snapSize)))
-    : 1;
-  const snap = (value: number) => Math.max(0, Math.round(value / step) * step);
   return {
-    left: snap(baseLeft + deltaX),
-    top: snap(baseTop + deltaY),
+    left: snapCoordinate(baseLeft + deltaX / scaleX, snapSize),
+    top: snapCoordinate(baseTop + deltaY / scaleY, snapSize),
     containingBlockId: containingGeometry?.blockId ?? null,
     containingBlockNeedsRelative: containingGeometry?.position === 'static',
   };
@@ -374,6 +401,8 @@ export function resolveIframeMultiFreePlacement(
   const deltaY = endPointer.y - originPointer.y;
   let baseLeft = origin.geometry.offsetLeft;
   let baseTop = origin.geometry.offsetTop;
+  const scaleX = geometryScale(currentParentGeometry?.scaleX);
+  const scaleY = geometryScale(currentParentGeometry?.scaleY);
 
   if (
     currentParentGeometry
@@ -382,23 +411,19 @@ export function resolveIframeMultiFreePlacement(
       || origin.geometry.position === 'absolute'
     )
   ) {
-    baseLeft = origin.geometry.rect.left
-      - currentParentGeometry.rect.left
+    baseLeft = (origin.geometry.rect.left
+      - currentParentGeometry.rect.left) / scaleX
       - currentParentGeometry.clientLeft
       + currentParentGeometry.scrollLeft;
-    baseTop = origin.geometry.rect.top
-      - currentParentGeometry.rect.top
+    baseTop = (origin.geometry.rect.top
+      - currentParentGeometry.rect.top) / scaleY
       - currentParentGeometry.clientTop
       + currentParentGeometry.scrollTop;
   }
 
-  const step = Number.isFinite(snapSize)
-    ? Math.max(1, Math.min(128, Math.round(snapSize)))
-    : 1;
-  const snap = (value: number) => Math.max(0, Math.round(value / step) * step);
   return {
-    left: snap(baseLeft + deltaX),
-    top: snap(baseTop + deltaY),
+    left: snapCoordinate(baseLeft + deltaX / scaleX, snapSize),
+    top: snapCoordinate(baseTop + deltaY / scaleY, snapSize),
     containingBlockId: currentParentId,
     containingBlockNeedsRelative: currentParentGeometry?.position === 'static',
   };

@@ -135,6 +135,12 @@ belong in tracked documents.
   is inside the rendered sheet or on a layer row, paints in the iframe before
   the model round trip, writes managed CSS, and stays geometrically identical
   after Preview/Edit switches.
+- `DONE LOCAL`: free placement converts iframe viewport pixels into local CSS
+  pixels for an axis-aligned scaled containing frame. Unit coverage checks
+  single and multi-object movement plus inside drops. Browser coverage drags
+  one nested object inside a 75% frame, preserves its logical and rendered
+  parent, writes owned CSS without inline position, and keeps exact geometry
+  through Preview and Edit re-entry with zero console or page errors.
 - `DONE LOCAL`: editor history chooses the newest recorded action across HTML,
   CSS, translation, Page JS, and Worker workspaces. Managed position/style
   writes share one Blockly event group, and multi-selection movement has one
@@ -146,9 +152,9 @@ belong in tracked documents.
   control, result-card, Roll-button, layout, and composition presets all share
   one outer history group.
 - `PARTIAL`: continue usability review for dense imported structures and
-  nested coordinate systems. Add longer mixed operation history runs for
-  imported structures while keeping current local synthetic history coverage
-  distinct from actual Roll20 verification.
+  untested rotated, skewed, or deeper mixed coordinate systems. Add longer
+  mixed operation history runs for imported structures while keeping current
+  local synthetic history coverage distinct from actual Roll20 verification.
 
 ## P1 - User Experience
 

@@ -15,6 +15,21 @@ or source-derived measurement here.
 - Remote CI: passed safety/unit verification, lint, and production build.
 - Worktree and project server state were clean after the run.
 
+## 2026-08-03 - Scaled Nested Free Placement
+
+- Added rendered-to-local scale geometry to the iframe edit bridge and one
+  shared coordinate converter for existing layers, multi-selection movement,
+  friendly widgets, and block-gallery drops.
+- Free movement inside an axis-aligned scaled frame now converts both the
+  starting rectangle and pointer delta before grid snapping. Parentage remains
+  unchanged and position stays in owned CSS rather than inline HTML.
+- Focused unit tests cover scaled inside placement and single/multi-object
+  movement. The full edit-flow browser smoke moves one nested object inside a
+  75% frame and confirms the same geometry after commit, Preview, and Edit
+  re-entry with zero console or page errors.
+- Claim boundary: local anonymous axis-aligned scale coverage only. Rotated,
+  skewed, deep mixed transforms and actual Roll20 interaction remain open.
+
 ## 2026-08-03 - Virtualized Layer Keyboard Navigation
 
 - Replaced all-row tab stops with one roving tree-item tab stop. Tab and Shift

@@ -113,6 +113,13 @@ invent separate DOM models.
     round trip, then the existing managed-CSS position path becomes
     authoritative. Flow/table/list content is never converted to absolute
     positioning by a keyboard action.
+18. Pointer coordinates are viewport pixels, while managed `left` and `top`
+    values are local CSS pixels. For an axis-aligned scaled containing frame,
+    the iframe bridge records the rendered-to-local scale on each axis and the
+    drop resolver converts both the starting rectangle and pointer delta before
+    snapping. A scaled nested move keeps its logical parent and offset parent,
+    emits position through owned CSS, and must not jump when the model update or
+    a Preview/Edit switch replaces the optimistic paint.
 
 ## Visual Language
 
@@ -351,8 +358,9 @@ Local tests cover classification, cycle protection, before/inside/after layer
 operations, flow versus free placement, grouping preconditions, selection
 synchronization, multi-object free transform, keyboard nudging, six-way
 alignment math, and horizontal/vertical equal-gap distribution. The browser
-smoke also proves Ctrl selection -> iframe multi-highlight -> layer-panel third
-selection -> shared free movement -> iframe and layer-panel keyboard nudges ->
+smoke also proves an axis-aligned scaled nested free move -> owned CSS ->
+Preview/Edit geometry equality, then Ctrl selection -> iframe multi-highlight ->
+layer-panel third selection -> shared free movement -> iframe and layer-panel keyboard nudges ->
 two-step undo/redo -> flow reparent undo/redo -> direct resize undo/redo ->
 coordinated theme undo/redo -> Preview/Edit equality -> same-parent vertical
 distribution -> top alignment -> persisted managed CSS. Distribution keeps the outer rendered

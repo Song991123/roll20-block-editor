@@ -46,6 +46,10 @@ contain private source evidence or historical test dumps.
 - Its virtualized tree uses one roving tab stop. Tab navigation keeps the
   active layer visible without recentering rows already inside the viewport or
   mutating emitted source.
+- Axis-aligned scaled containing frames now report rendered-to-local scale on
+  both axes. Free placement converts pointer deltas into local CSS coordinates
+  before snapping, so nested objects keep their parent and position across the
+  optimistic paint, model commit, and Preview/Edit switches.
 - Generated evidence and external validation inputs remain ignored, local, and
   ephemeral.
 

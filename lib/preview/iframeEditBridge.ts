@@ -30,6 +30,9 @@ export type IframeEditNodeGeometry = {
   display?: string;
   computedWidth?: number;
   computedHeight?: number;
+  /** Viewport pixels represented by one local CSS pixel on each axis. */
+  scaleX?: number;
+  scaleY?: number;
   offsetParentBlockId: string | null;
   offsetParentPosition: string;
 };
@@ -183,6 +186,10 @@ function isNodeGeometry(value: unknown): value is IframeEditNodeGeometry {
       || (isFiniteCoordinate(value.computedWidth) && value.computedWidth >= 0))
     && (value.computedHeight === undefined
       || (isFiniteCoordinate(value.computedHeight) && value.computedHeight >= 0))
+    && (value.scaleX === undefined
+      || (isFiniteCoordinate(value.scaleX) && value.scaleX > 0 && value.scaleX <= 100))
+    && (value.scaleY === undefined
+      || (isFiniteCoordinate(value.scaleY) && value.scaleY > 0 && value.scaleY <= 100))
     && (value.offsetParentBlockId === null
       || (typeof value.offsetParentBlockId === 'string' && value.offsetParentBlockId.length <= 256))
     && typeof value.offsetParentPosition === 'string'

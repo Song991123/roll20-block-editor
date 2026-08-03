@@ -4,6 +4,7 @@ import {
   commitIframeFlowDrop,
   filterDropTargetForPlacement,
   resolveIframeEditDropTarget,
+  resolveIframeContainerPoint,
   resolveIframeFreePlacement,
   resolveIframeMultiFreePlacement,
   resolveIframeLayerDropTarget,
@@ -262,6 +263,22 @@ assert.deepEqual(
   },
 );
 
+const scaledContainer = geometry('frame', 30, 100, {
+  rect: { left: 20, top: 30, width: 150, height: 50 },
+  clientLeft: 4,
+  clientTop: 6,
+  scrollLeft: 2,
+  scrollTop: 3,
+  scaleX: 0.75,
+  scaleY: 0.5,
+  position: 'relative',
+});
+assert.deepEqual(
+  resolveIframeContainerPoint({ x: 80, y: 80 }, scaledContainer),
+  { left: 78, top: 97 },
+  'viewport point is converted into scaled container CSS coordinates',
+);
+
 const calls: string[] = [];
 const commitAdapter = {
   moveBlockBefore: (_workspace: 'html', blockId: string, targetId: string) => {
@@ -330,6 +347,53 @@ assert.equal(resolveIframeFreePlacement(freeOrigin, {
   pointer: { x: 300, y: 80 },
 }, lookup, 8)?.containingBlockId, null);
 assert.equal(resolveIframeFreePlacement(freeEnd, freeEnd, lookup, 8), null);
+
+const scaledSubject = geometry('subject', 41.5, 20, {
+  rect: { left: 26, top: 41.5, width: 50, height: 10 },
+  offsetLeft: 30,
+  offsetTop: 40,
+  offsetParentBlockId: 'frame',
+  offsetParentPosition: 'relative',
+  position: 'absolute',
+});
+const scaledParent = geometry('frame', 20, 200, {
+  rect: { left: 10, top: 20, width: 120, height: 100 },
+  clientLeft: 2,
+  clientTop: 3,
+  scaleX: 0.5,
+  scaleY: 0.5,
+  position: 'relative',
+});
+const scaledOrigin = message(
+  [scaledSubject, scaledParent],
+  46,
+  'pointerdown',
+  scaledSubject,
+);
+const scaledEnd = {
+  ...scaledOrigin,
+  phase: 'pointerup' as const,
+  pointer: { x: scaledOrigin.pointer.x + 10, y: scaledOrigin.pointer.y + 5 },
+  buttons: 0,
+};
+assert.deepEqual(resolveIframeFreePlacement(scaledOrigin, scaledEnd, lookup), {
+  left: 50,
+  top: 50,
+  containingBlockId: 'frame',
+  containingBlockNeedsRelative: false,
+});
+assert.deepEqual(resolveIframeMultiFreePlacement(
+  { geometry: scaledSubject, hitPath: [scaledSubject, scaledParent] },
+  { geometry: scaledSubject, hitPath: [scaledSubject, scaledParent] },
+  scaledOrigin.pointer,
+  scaledEnd.pointer,
+  lookup,
+), {
+  left: 50,
+  top: 50,
+  containingBlockId: 'frame',
+  containingBlockNeedsRelative: false,
+});
 
 const multiSubject = geometry('subject', 30, 24, {
   rect: { left: 30, top: 30, width: 80, height: 24 },
