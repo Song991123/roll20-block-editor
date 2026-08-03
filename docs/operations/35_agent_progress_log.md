@@ -16,6 +16,25 @@ or source-derived measurement here.
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
 
+## 2026-08-03 - Shared Repeating Rows And Reorder
+
+- Same-name repeating fieldsets now render alternate views of one shared row
+  set. Creation, value changes, calculated Worker writes, deletion, and display
+  order synchronize across every instance.
+- Repeating event handlers resolve documented row-context shorthand for
+  `getAttrs` and `setAttrs`. The parser and visual Worker catalog also recognize
+  `change:_reporder:section`.
+- Modify-mode drag reorder persists `_reporder_repeating_section` and dispatches
+  its Worker event. Pointer capture moved from the reordered handle to the
+  stable row container, preventing a DOM move from cancelling and rolling back
+  the drag.
+- `test:build-doc-bundle`, `test:worker-parser`,
+  `test:high-priority-mapping`, production `build`, `smoke:worker-state`,
+  `smoke:worker`, and the 12-pair modern/legacy synthetic Preview/Edit pixel
+  comparison pass.
+- Claim boundary: this is local synthetic runtime proof. Broader Worker APIs
+  and actual modern/legacy Roll20 execution remain open.
+
 ## 2026-08-03 - Repeating Section Runtime And Worker Events
 
 - Replaced visible repeating-fieldset placeholders with a local Roll20-shaped

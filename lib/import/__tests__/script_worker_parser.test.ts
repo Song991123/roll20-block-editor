@@ -54,6 +54,14 @@ function testOnRepeatingSectionChange(): void {
   assert(r.blocks[0].fields.ATTR === '', 'blank ATTR means any field in the section');
 }
 
+function testOnRepeatingReorder(): void {
+  const js = `on("change:_reporder:inv", function() {});`;
+  const r = parseSheetWorkerScript(js);
+  assert(r.blocks[0].blockType === 'r20_on_repeating_reorder', 'repeating reorder');
+  assert(r.blocks[0].fields.SECTION === 'inv', 'SECTION=inv');
+  assert(r.stats.unparsed === 0, 'repeating reorder stays structured');
+}
+
 function testOnRepeatingRemove(): void {
   const js = `on("remove:repeating_inv", () => {});`;
   const r = parseSheetWorkerScript(js);
@@ -396,6 +404,7 @@ const tests = [
   ['on sheet:opened', testOnSheetOpened],
   ['on change:repeating', testOnRepeatingChange],
   ['on whole repeating section change', testOnRepeatingSectionChange],
+  ['on repeating section reorder', testOnRepeatingReorder],
   ['on remove:repeating', testOnRepeatingRemove],
   ['on clicked', testOnClicked],
   ['setAttrs single', testSetAttrsSingle],

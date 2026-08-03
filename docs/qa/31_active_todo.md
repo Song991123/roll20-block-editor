@@ -156,13 +156,18 @@ belong in tracked documents.
   `removeRepeatingRow`. Browser state proof covers full, section-field,
   section-wide, and plain-field change aliases plus lowercased source state and
   `removedInfo` for both player and Worker deletion.
+- `DONE LOCAL`: duplicate fieldsets with the same repeating section now share
+  row IDs, values, and order. Repeating handlers resolve row-context shorthand
+  for `getAttrs` and `setAttrs`; drag reorder persists
+  `_reporder_repeating_*`, dispatches `change:_reporder:*`, and stays synchronized
+  across every same-name instance. The browser smoke also guards against the
+  pointer-capture rollback found when a dragged row moved in the DOM.
 - `TODO`: expand structured Sheet Worker blocks beyond the current parser and
   runtime subset. Raw Worker source remains the lossless fallback meanwhile;
   diagnostics do not make unsupported syntax structurally editable. Arbitrary
   source formatting can still remain raw when structured re-emission is not
-  byte-stable. Repeating-row move/reorder behavior, `_reporder` state and
-  events, row-context shorthand APIs, broader Worker APIs, and actual Roll20
-  execution proof remain incomplete.
+  byte-stable. Broader Worker APIs and actual Roll20 execution proof remain
+  incomplete.
 
 ## P0 - Edit And Preview Unity
 

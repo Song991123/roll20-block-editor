@@ -84,16 +84,23 @@ Repeating-section runtime contract:
 - Adding a row clones the template and rewrites `attr_`, `roll_`, and `act_`
   names with the repeating group and row ID. The source template itself must
   not be read as a live character attribute.
+- Multiple fieldsets with the same repeating group are alternate views of one
+  row set. Every instance uses the same row IDs, values, and display order;
+  fields present in only one instance still belong to that shared row.
 - `setAttrs` with a full repeating attribute may create a missing row.
   `generateRowID`, `getSectionIDs`, and `removeRepeatingRow` operate on the same
   runtime row set.
+- While a repeating change or removal handler runs, the documented
+  `repeating_group_field` shorthand resolves to the triggering row for both
+  `getAttrs` and `setAttrs`.
 - A repeating field update dispatches its full attribute event, the
   `change:repeating_group:field` alias, the `change:repeating_group` alias, and
   the plain field plus `_max` aliases. Removal includes the full lowercased
   source attribute and `removedInfo`, and may be observed by section or row ID.
-- Reordering must eventually persist `_reporder_repeating_group` and dispatch
-  `change:_reporder:group`. Until that path has browser and actual Roll20 proof,
-  the visible move control is not completion evidence.
+- Reordering every same-name instance together persists
+  `_reporder_repeating_group` and dispatches `change:_reporder:group`. The local
+  simulator stores the complete current display order. Browser proof covers the
+  local contract; actual Roll20 upload proof remains a separate gate.
 
 Untyped script compatibility:
 

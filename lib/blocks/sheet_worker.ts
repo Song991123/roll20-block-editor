@@ -268,6 +268,28 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     },
   },
 
+  {
+    type: 'r20_on_repeating_reorder',
+    shape: 'hat',
+    category: SHEET_WORKER,
+    label: '반복 영역 순서가 바뀌었을 때',
+    tooltip: '사용자가 반복 영역의 행 순서를 바꾸면 실행합니다.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('반복 영역 순서가 바뀌었을 때')
+        .appendField('영역')
+        .appendField(new Blockly.FieldTextInput('inventory'), 'SECTION');
+      b.appendStatementInput('CHILDREN').setCheck(null);
+      setHatHooks(b);
+    }),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const section = String(b.getFieldValue('SECTION') ?? '').trim() || 'section';
+      const body = ctx.statementToCode(block, 'CHILDREN');
+      return `on('change:_reporder:${escapeJSString(section)}', ${wrapArrowBody(ctx, body)});\n`;
+    },
+  },
+
   // 4) on remove:repeating_S -----------------------------------------------
   {
     type: 'r20_on_repeating_remove',

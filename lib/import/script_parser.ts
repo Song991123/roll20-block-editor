@@ -421,6 +421,14 @@ function eventToHatBlock(
       children: { CHILDREN: bodyChildren },
     };
   }
+  m = /^change:_reporder:([\w-]+)$/.exec(t);
+  if (m) {
+    return {
+      blockType: 'r20_on_repeating_reorder',
+      fields: { SECTION: m[1] },
+      children: { CHILDREN: bodyChildren },
+    };
+  }
   m = /^remove:repeating_([\w-]+)$/.exec(t);
   if (m) {
     return {

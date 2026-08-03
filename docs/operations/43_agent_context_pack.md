@@ -105,8 +105,10 @@ contain private source evidence or historical test dumps.
   completion behavior are covered. The shared iframe also turns repeating
   templates into Roll20-shaped rows and locally proves Add, Modify/Done,
   player/Worker deletion, row creation APIs, all documented field/section
-  change aliases, and `removedInfo`. Reorder/`_reporder`, row-context
-  shorthand, broader Worker syntax, and actual Roll20 proof remain open.
+  change aliases, and `removedInfo`. Duplicate same-name fieldsets share rows,
+  values, and order; row-context shorthand and synchronized drag reorder with
+  `_reporder` events pass local browser proof. Broader Worker syntax and actual
+  Roll20 proof remain open.
 - ImportDialog waits for every Blockly model workspace before hydration. Keep
   the cold-load early-click browser check; analysis percentages alone do not
   prove blocks were applied.

@@ -1812,6 +1812,8 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   var settingAttrs = false;
   var sheetWorkerAttrValues = {};
   var sheetWorkerRowSequence = 0;
+  var sheetWorkerEventContext = null;
+  var activeRepeatingMove = null;
   var translations = loadTranslations();
   function sheetWorkerOn(events, fn) {
     if (typeof fn !== 'function') return;
@@ -1824,9 +1826,14 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     return 'input[name="' + attrName + '"],select[name="' + attrName + '"],textarea[name="' + attrName + '"]';
   }
   function readSheetAttr(name) {
-    var selector = sheetAttrSelector(name);
+    var resolvedName = resolveSheetWorkerAttrName(name);
+    var selector = sheetAttrSelector(resolvedName);
     var nodes = liveSheetAttrNodes(selector);
-    if (!nodes.length) return '';
+    if (!nodes.length) {
+      return Object.prototype.hasOwnProperty.call(sheetWorkerAttrValues, resolvedName)
+        ? sheetWorkerAttrValues[resolvedName]
+        : '';
+    }
     var el = nodes[0];
     if (el.type === 'checkbox') return el.checked ? (el.value || '1') : '0';
     if (el.type === 'radio') {
@@ -1849,8 +1856,22 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     });
   }
   function writeSheetAttr(name, value) {
-    var repeatingRow = ensureRepeatingRowForAttr(name);
-    var nodes = liveSheetAttrNodes(sheetAttrSelector(name));
+    var resolvedName = resolveSheetWorkerAttrName(name);
+    var orderGroup = parseRepeatingOrderAttrName(resolvedName);
+    if (orderGroup) {
+      var previousOrder = Object.prototype.hasOwnProperty.call(sheetWorkerAttrValues, resolvedName)
+        ? String(sheetWorkerAttrValues[resolvedName] || '')
+        : '';
+      var requestedOrder = String(value == null ? '' : value)
+        .split(',')
+        .map(function (rowId) { return rowId.trim(); })
+        .filter(Boolean);
+      var appliedOrder = applyRepeatingOrder(orderGroup, requestedOrder).join(',');
+      sheetWorkerAttrValues[resolvedName] = appliedOrder;
+      return previousOrder !== appliedOrder;
+    }
+    var repeatingRow = ensureRepeatingRowForAttr(resolvedName);
+    var nodes = liveSheetAttrNodes(sheetAttrSelector(resolvedName));
     var changed = Boolean(repeatingRow && repeatingRow.created);
     for (var i = 0; i < nodes.length; i++) {
       var el = nodes[i];
@@ -1928,13 +1949,14 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     var changedAttrs = [];
     settingAttrs = true;
     Object.keys(values || {}).forEach(function (k) {
-      var previousValue = Object.prototype.hasOwnProperty.call(sheetWorkerAttrValues, k)
-        ? sheetWorkerAttrValues[k]
-        : readSheetAttr(k);
-      if (writeSheetAttr(k, values[k])) {
-        var newValue = readSheetAttr(k);
-        sheetWorkerAttrValues[k] = newValue;
-        changedAttrs.push({ key: k, previousValue: previousValue, newValue: newValue });
+      var resolvedKey = resolveSheetWorkerAttrName(k);
+      var previousValue = Object.prototype.hasOwnProperty.call(sheetWorkerAttrValues, resolvedKey)
+        ? sheetWorkerAttrValues[resolvedKey]
+        : readSheetAttr(resolvedKey);
+      if (writeSheetAttr(resolvedKey, values[k])) {
+        var newValue = readSheetAttr(resolvedKey);
+        sheetWorkerAttrValues[resolvedKey] = newValue;
+        changedAttrs.push({ key: resolvedKey, previousValue: previousValue, newValue: newValue });
       }
     });
     settingAttrs = false;
@@ -1963,7 +1985,10 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
         processed += 1;
         var list = (sheetWorkerHandlers[queued.evt] || []).slice();
         for (var i = 0; i < list.length; i++) {
+          var previousContext = sheetWorkerEventContext;
+          sheetWorkerEventContext = repeatingEventContext(queued.payload);
           try { list[i](queued.payload); } catch (e) { console.error('[sheet worker]', queued.evt, e); }
+          finally { sheetWorkerEventContext = previousContext; }
         }
       }
       if (sheetWorkerEventQueue.length) {
@@ -2091,20 +2116,35 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     }
     return { fieldset: fieldset, container: container, control: control, groupName: groupName };
   }
-  function repeatingRuntimeForGroup(groupName) {
-    var fieldsets = document.querySelectorAll('fieldset[class^="repeating_"], fieldset[class*=" repeating_"]');
+  function repeatingFieldsets() {
+    return document.querySelectorAll('fieldset[class^="repeating_"], fieldset[class*=" repeating_"]');
+  }
+  function repeatingRuntimesForGroup(groupName) {
+    var fieldsets = repeatingFieldsets();
+    var runtimes = [];
     for (var i = 0; i < fieldsets.length; i += 1) {
       var candidate = repeatingGroupNameOf(fieldsets[i]);
       if (candidate && candidate.toLowerCase() === String(groupName || '').toLowerCase()) {
-        return ensureRepeatingRuntime(fieldsets[i]);
+        var runtime = ensureRepeatingRuntime(fieldsets[i]);
+        if (runtime) runtimes.push(runtime);
       }
+    }
+    return runtimes;
+  }
+  function repeatingRuntimeForGroup(groupName) {
+    return repeatingRuntimesForGroup(groupName)[0] || null;
+  }
+  function repeatingRuntimeForControl(control) {
+    var groupName = control ? control.getAttribute('data-groupname') || '' : '';
+    var runtimes = repeatingRuntimesForGroup(groupName);
+    for (var i = 0; i < runtimes.length; i += 1) {
+      if (runtimes[i].control === control) return runtimes[i];
     }
     return null;
   }
-  function parseRepeatingAttrName(name) {
-    var normalized = String(name || '').replace(/^attr_/, '');
-    var normalizedLower = normalized.toLowerCase();
-    var fieldsets = document.querySelectorAll('fieldset[class^="repeating_"], fieldset[class*=" repeating_"]');
+  function matchingRepeatingGroupName(name) {
+    var normalizedLower = String(name || '').toLowerCase();
+    var fieldsets = repeatingFieldsets();
     var bestGroup = '';
     for (var i = 0; i < fieldsets.length; i += 1) {
       var groupName = repeatingGroupNameOf(fieldsets[i]);
@@ -2113,6 +2153,11 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
         bestGroup = groupName;
       }
     }
+    return bestGroup;
+  }
+  function parseRepeatingAttrName(name) {
+    var normalized = String(name || '').replace(/^attr_/, '');
+    var bestGroup = matchingRepeatingGroupName(normalized);
     if (!bestGroup) return null;
     var rest = normalized.substring(bestGroup.length + 1);
     var separator = rest.indexOf('_');
@@ -2125,19 +2170,35 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   }
   function parseRepeatingRowName(name) {
     var normalized = String(name || '').replace(/^attr_/, '');
-    var normalizedLower = normalized.toLowerCase();
-    var fieldsets = document.querySelectorAll('fieldset[class^="repeating_"], fieldset[class*=" repeating_"]');
-    var bestGroup = '';
-    for (var i = 0; i < fieldsets.length; i += 1) {
-      var groupName = repeatingGroupNameOf(fieldsets[i]);
-      var prefix = groupName.toLowerCase() + '_';
-      if (groupName && normalizedLower.indexOf(prefix) === 0 && groupName.length > bestGroup.length) {
-        bestGroup = groupName;
-      }
-    }
+    var bestGroup = matchingRepeatingGroupName(normalized);
     if (!bestGroup) return null;
     var rowId = normalized.substring(bestGroup.length + 1);
     return rowId ? { groupName: bestGroup, rowId: rowId } : null;
+  }
+  function parseRepeatingOrderAttrName(name) {
+    var normalized = String(name || '').replace(/^attr_/, '');
+    if (normalized.toLowerCase().indexOf('_reporder_repeating_') !== 0) return '';
+    var candidate = normalized.substring('_reporder_'.length);
+    var runtimes = repeatingRuntimesForGroup(candidate);
+    return runtimes.length ? runtimes[0].groupName : '';
+  }
+  function resolveSheetWorkerAttrName(name) {
+    var normalized = String(name || '').replace(/^attr_/, '');
+    if (!sheetWorkerEventContext) return normalized;
+    var groupName = sheetWorkerEventContext.groupName;
+    var rowId = sheetWorkerEventContext.rowId;
+    var fullPrefix = groupName + '_' + rowId + '_';
+    if (normalized.toLowerCase().indexOf(fullPrefix.toLowerCase()) === 0) return normalized;
+    var shorthandPrefix = groupName + '_';
+    if (normalized.toLowerCase().indexOf(shorthandPrefix.toLowerCase()) !== 0) return normalized;
+    return groupName + '_' + rowId + '_' + normalized.substring(shorthandPrefix.length);
+  }
+  function repeatingEventContext(payload) {
+    var sourceAttribute = payload && payload.sourceAttribute ? String(payload.sourceAttribute) : '';
+    var parsed = parseRepeatingAttrName(sourceAttribute);
+    if (parsed) return { groupName: parsed.groupName, rowId: parsed.rowId };
+    var row = parseRepeatingRowName(sourceAttribute);
+    return row ? { groupName: row.groupName, rowId: row.rowId } : null;
   }
   function rewriteRepeatingRowNames(row, groupName, rowId) {
     row.querySelectorAll('[name]').forEach(function (el) {
@@ -2158,13 +2219,16 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       if (key) sheetWorkerAttrValues[key] = readSheetAttr(key);
     });
   }
-  function createRepeatingRow(groupName, rowId) {
-    var runtime = repeatingRuntimeForGroup(groupName);
-    if (!runtime || !rowId) return { row: null, created: false };
+  function repeatingRowInRuntime(runtime, rowId) {
     var rows = runtime.container.querySelectorAll('.repitem[data-reprowid]');
     for (var i = 0; i < rows.length; i += 1) {
-      if (rows[i].getAttribute('data-reprowid') === rowId) return { row: rows[i], created: false };
+      if (rows[i].getAttribute('data-reprowid') === rowId) return rows[i];
     }
+    return null;
+  }
+  function createRepeatingRowInRuntime(runtime, rowId) {
+    var existing = repeatingRowInRuntime(runtime, rowId);
+    if (existing) return { row: existing, created: false };
     var row = document.createElement('div');
     row.className = 'repitem';
     row.setAttribute('data-reprowid', rowId);
@@ -2187,6 +2251,35 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     cacheRepeatingRowAttrs(row);
     return { row: row, created: true };
   }
+  function syncRepeatingRowValues(groupName, rowId) {
+    var keys = [];
+    repeatingRuntimesForGroup(groupName).forEach(function (runtime) {
+      var row = repeatingRowInRuntime(runtime, rowId);
+      if (!row) return;
+      row.querySelectorAll('input[name^="attr_"],select[name^="attr_"],textarea[name^="attr_"]').forEach(function (el) {
+        var key = String(el.getAttribute('name') || '').substring(5);
+        if (key && keys.indexOf(key) < 0) keys.push(key);
+      });
+    });
+    keys.forEach(function (key) {
+      var value = readSheetAttr(key);
+      writeSheetAttr(key, value);
+      sheetWorkerAttrValues[key] = readSheetAttr(key);
+    });
+  }
+  function createRepeatingRow(groupName, rowId) {
+    if (!rowId) return { row: null, created: false };
+    var runtimes = repeatingRuntimesForGroup(groupName);
+    var firstRow = null;
+    var created = false;
+    for (var i = 0; i < runtimes.length; i += 1) {
+      var result = createRepeatingRowInRuntime(runtimes[i], rowId);
+      if (!firstRow) firstRow = result.row;
+      if (result.created) created = true;
+    }
+    if (created) syncRepeatingRowValues(groupName, rowId);
+    return { row: firstRow, created: created };
+  }
   function ensureRepeatingRowForAttr(name) {
     var parsed = parseRepeatingAttrName(name);
     return parsed ? createRepeatingRow(parsed.groupName, parsed.rowId) : null;
@@ -2196,9 +2289,67 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       ensureRepeatingRowForAttr(name);
     });
   }
+  function repeatingRowIds(runtime) {
+    var ids = [];
+    if (!runtime) return ids;
+    runtime.container.querySelectorAll('.repitem[data-reprowid]').forEach(function (row) {
+      var rowId = row.getAttribute('data-reprowid') || '';
+      if (rowId && ids.indexOf(rowId) < 0) ids.push(rowId);
+    });
+    return ids;
+  }
+  function allRepeatingRowIds(groupName) {
+    var ids = [];
+    repeatingRuntimesForGroup(groupName).forEach(function (runtime) {
+      repeatingRowIds(runtime).forEach(function (rowId) {
+        if (ids.indexOf(rowId) < 0) ids.push(rowId);
+      });
+    });
+    return ids.sort();
+  }
+  function repeatingDisplayOrder(groupName) {
+    return repeatingRowIds(repeatingRuntimeForGroup(groupName));
+  }
+  function applyRepeatingOrder(groupName, requestedOrder) {
+    var available = allRepeatingRowIds(groupName);
+    var ordered = [];
+    (requestedOrder || []).forEach(function (rowId) {
+      if (available.indexOf(rowId) >= 0 && ordered.indexOf(rowId) < 0) ordered.push(rowId);
+    });
+    available.forEach(function (rowId) {
+      if (ordered.indexOf(rowId) < 0) ordered.push(rowId);
+    });
+    repeatingRuntimesForGroup(groupName).forEach(function (runtime) {
+      ordered.forEach(function (rowId) {
+        var row = repeatingRowInRuntime(runtime, rowId);
+        if (row) runtime.container.appendChild(row);
+      });
+    });
+    return ordered;
+  }
+  function commitRepeatingOrder(groupName, requestedOrder, sourceType) {
+    var key = '_reporder_' + String(groupName || '').toLowerCase();
+    var previousValue = Object.prototype.hasOwnProperty.call(sheetWorkerAttrValues, key)
+      ? String(sheetWorkerAttrValues[key] || '')
+      : '';
+    var newValue = applyRepeatingOrder(groupName, requestedOrder).join(',');
+    sheetWorkerAttrValues[key] = newValue;
+    if (previousValue === newValue) return false;
+    triggerSheetWorkerChange(key, {
+      sourceAttribute: key,
+      sourceType: sourceType,
+      previousValue: previousValue,
+      newValue: newValue
+    });
+    return true;
+  }
   function repeatingChangeEvents(name) {
     var key = String(name || '').toLowerCase();
     var events = ['change:' + key];
+    var orderGroup = parseRepeatingOrderAttrName(key);
+    if (orderGroup) {
+      events.push('change:_reporder:' + orderGroup.toLowerCase().replace(/^repeating_/, ''));
+    }
     var parsed = parseRepeatingAttrName(key);
     if (parsed) {
       var fieldName = parsed.attrName.toLowerCase();
@@ -2217,25 +2368,40 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       triggerSheetWorker(eventName, eventPayload);
     });
   }
-  function collectRepeatingRowInfo(row) {
+  function collectRepeatingRowInfo(groupName, rowId) {
     var out = {};
-    row.querySelectorAll('input[name^="attr_"],select[name^="attr_"],textarea[name^="attr_"]').forEach(function (el) {
-      var key = String(el.getAttribute('name') || '').substring(5);
-      if (key && !Object.prototype.hasOwnProperty.call(out, key)) out[key] = readSheetAttr(key);
+    repeatingRuntimesForGroup(groupName).forEach(function (runtime) {
+      var row = repeatingRowInRuntime(runtime, rowId);
+      if (!row) return;
+      row.querySelectorAll('input[name^="attr_"],select[name^="attr_"],textarea[name^="attr_"]').forEach(function (el) {
+        var key = String(el.getAttribute('name') || '').substring(5);
+        if (key && !Object.prototype.hasOwnProperty.call(out, key)) out[key] = readSheetAttr(key);
+      });
     });
     return out;
   }
-  function removeRepeatingRowElement(row, sourceType) {
-    if (!row || !row.parentElement) return false;
-    var container = row.parentElement;
-    var groupName = container.getAttribute('data-groupname') || '';
-    var rowId = row.getAttribute('data-reprowid') || '';
+  function removeRepeatingRowById(groupName, rowId, sourceType) {
     if (!groupName || !rowId) return false;
-    var removedInfo = collectRepeatingRowInfo(row);
+    var removedInfo = collectRepeatingRowInfo(groupName, rowId);
     var removedKeys = Object.keys(removedInfo);
     var sourceAttribute = String(removedKeys[0] || (groupName + '_' + rowId)).toLowerCase();
-    row.remove();
+    var removed = false;
+    repeatingRuntimesForGroup(groupName).forEach(function (runtime) {
+      var row = repeatingRowInRuntime(runtime, rowId);
+      if (row) {
+        row.remove();
+        removed = true;
+      }
+    });
+    if (!removed) return false;
     removedKeys.forEach(function (key) { delete sheetWorkerAttrValues[key]; });
+    var orderKey = '_reporder_' + groupName.toLowerCase();
+    if (Object.prototype.hasOwnProperty.call(sheetWorkerAttrValues, orderKey)) {
+      sheetWorkerAttrValues[orderKey] = String(sheetWorkerAttrValues[orderKey] || '')
+        .split(',')
+        .filter(function (id) { return id && id !== rowId; })
+        .join(',');
+    }
     var baseEvent = 'remove:' + groupName.toLowerCase();
     var rowEvent = baseEvent + ':' + rowId.toLowerCase();
     [baseEvent, rowEvent].forEach(function (eventName) {
@@ -2249,25 +2415,22 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     scheduleResize();
     return true;
   }
+  function removeRepeatingRowElement(row, sourceType) {
+    if (!row || !row.parentElement) return false;
+    var groupName = row.parentElement.getAttribute('data-groupname') || '';
+    var rowId = row.getAttribute('data-reprowid') || '';
+    return removeRepeatingRowById(groupName, rowId, sourceType);
+  }
   function sheetWorkerRemoveRepeatingRow(rowName) {
     var parsed = parseRepeatingRowName(rowName);
-    var runtime = parsed ? repeatingRuntimeForGroup(parsed.groupName) : null;
-    if (!runtime) return;
-    var rows = runtime.container.querySelectorAll('.repitem[data-reprowid]');
-    for (var i = 0; i < rows.length; i += 1) {
-      if (rows[i].getAttribute('data-reprowid') === parsed.rowId) {
-        removeRepeatingRowElement(rows[i], 'sheetworker');
-        return;
-      }
-    }
+    if (parsed) removeRepeatingRowById(parsed.groupName, parsed.rowId, 'sheetworker');
   }
   function sheetWorkerGenerateRowID() {
     sheetWorkerRowSequence += 1;
     return '-' + Date.now().toString(36) + sheetWorkerRowSequence.toString(36) + Math.random().toString(36).slice(2, 10);
   }
   function setRepeatingEditMode(control) {
-    var groupName = control.getAttribute('data-groupname') || '';
-    var runtime = repeatingRuntimeForGroup(groupName);
+    var runtime = repeatingRuntimeForControl(control);
     if (!runtime) return;
     var editing = !runtime.container.classList.contains('editmode');
     runtime.container.classList.toggle('editmode', editing);
@@ -2276,8 +2439,68 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (edit) edit.textContent = editing ? 'Done' : 'Modify';
     if (add) add.style.display = editing ? 'none' : '';
   }
+  function sameRepeatingOrder(a, b) {
+    return a.length === b.length && a.every(function (rowId, index) { return rowId === b[index]; });
+  }
+  function beginRepeatingMove(handle, event) {
+    var row = handle && handle.closest ? handle.closest('.repitem') : null;
+    var container = row ? row.parentElement : null;
+    if (!row || !container || !container.classList.contains('editmode')) return false;
+    var groupName = container.getAttribute('data-groupname') || '';
+    var rowId = row.getAttribute('data-reprowid') || '';
+    if (!groupName || !rowId) return false;
+    activeRepeatingMove = {
+      pointerId: event.pointerId,
+      captureNode: container,
+      container: container,
+      groupName: groupName,
+      rowId: rowId,
+      originOrder: repeatingDisplayOrder(groupName),
+      moved: false
+    };
+    try { container.setPointerCapture(event.pointerId); } catch (_) {}
+    return true;
+  }
+  function moveRepeatingRow(event) {
+    if (!activeRepeatingMove || activeRepeatingMove.pointerId !== event.pointerId) return false;
+    var hit = document.elementFromPoint(event.clientX, event.clientY);
+    var targetRow = hit && hit.closest ? hit.closest('.repitem[data-reprowid]') : null;
+    if (!targetRow || targetRow.parentElement !== activeRepeatingMove.container) return true;
+    var targetId = targetRow.getAttribute('data-reprowid') || '';
+    if (!targetId || targetId === activeRepeatingMove.rowId) return true;
+    var nextOrder = repeatingDisplayOrder(activeRepeatingMove.groupName);
+    var fromIndex = nextOrder.indexOf(activeRepeatingMove.rowId);
+    if (fromIndex < 0) return true;
+    nextOrder.splice(fromIndex, 1);
+    var targetIndex = nextOrder.indexOf(targetId);
+    if (targetIndex < 0) return true;
+    if (event.clientY >= targetRow.getBoundingClientRect().top + targetRow.getBoundingClientRect().height / 2) {
+      targetIndex += 1;
+    }
+    nextOrder.splice(targetIndex, 0, activeRepeatingMove.rowId);
+    applyRepeatingOrder(activeRepeatingMove.groupName, nextOrder);
+    activeRepeatingMove.moved = !sameRepeatingOrder(activeRepeatingMove.originOrder, nextOrder);
+    return true;
+  }
+  function endRepeatingMove(event) {
+    if (!activeRepeatingMove || activeRepeatingMove.pointerId !== event.pointerId) return false;
+    var move = activeRepeatingMove;
+    activeRepeatingMove = null;
+    try { move.captureNode.releasePointerCapture(event.pointerId); } catch (_) {}
+    if (move.moved) commitRepeatingOrder(move.groupName, repeatingDisplayOrder(move.groupName), 'player');
+    scheduleResize();
+    return true;
+  }
+  function cancelRepeatingMove(event) {
+    if (!activeRepeatingMove || activeRepeatingMove.pointerId !== event.pointerId) return false;
+    var move = activeRepeatingMove;
+    activeRepeatingMove = null;
+    applyRepeatingOrder(move.groupName, move.originOrder);
+    try { move.captureNode.releasePointerCapture(event.pointerId); } catch (_) {}
+    return true;
+  }
   function emulateRoll20RepeatingSections() {
-    document.querySelectorAll('fieldset[class^="repeating_"], fieldset[class*=" repeating_"]').forEach(function (fieldset) {
+    repeatingFieldsets().forEach(function (fieldset) {
       ensureRepeatingRuntime(fieldset);
     });
   }
@@ -2297,15 +2520,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   function sheetWorkerGetSectionIDs(section, cb) {
     var groupName = String(section || '');
     if (groupName.indexOf('repeating_') !== 0) groupName = 'repeating_' + groupName;
-    var runtime = repeatingRuntimeForGroup(groupName);
-    var ids = [];
-    if (runtime) {
-      runtime.container.querySelectorAll('.repitem[data-reprowid]').forEach(function (row) {
-        var rowId = row.getAttribute('data-reprowid') || '';
-        if (rowId && ids.indexOf(rowId) < 0) ids.push(rowId);
-      });
-    }
-    if (typeof cb === 'function') cb(ids);
+    if (typeof cb === 'function') cb(allRepeatingRowIds(groupName));
   }
   function installSheetWorkers() {
     snapshotSheetAttrs();
@@ -2417,7 +2632,13 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     mirrorChangedSheetAttr(target);
   }, true);
   document.addEventListener('pointermove', function (e) {
-    if (!editBridgeEnabled) return;
+    if (!editBridgeEnabled) {
+      if (moveRepeatingRow(e)) {
+        try { e.preventDefault(); } catch (_) {}
+        try { e.stopImmediatePropagation(); } catch (_) {}
+      }
+      return;
+    }
     if (!activeEditPointer || activeEditPointer.pointerId !== e.pointerId) return;
     activeEditPointer.lastX = e.clientX;
     activeEditPointer.lastY = e.clientY;
@@ -2450,7 +2671,14 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     });
   }, true);
   document.addEventListener('pointerdown', function (e) {
-    if (!editBridgeEnabled) return;
+    if (!editBridgeEnabled) {
+      var repeatingMoveHandle = e.target && e.target.closest && e.target.closest('.repcontrol_move');
+      if (e.button === 0 && repeatingMoveHandle && beginRepeatingMove(repeatingMoveHandle, e)) {
+        try { e.preventDefault(); } catch (_) {}
+        try { e.stopImmediatePropagation(); } catch (_) {}
+      }
+      return;
+    }
     if (e.button !== 0) return;
     var subjectNode = blockNodeOf(e.target);
     if (!subjectNode) return;
@@ -2506,7 +2734,13 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     try { e.stopImmediatePropagation(); } catch (_) {}
   }, true);
   document.addEventListener('pointerup', function (e) {
-    if (!editBridgeEnabled) return;
+    if (!editBridgeEnabled) {
+      if (endRepeatingMove(e)) {
+        try { e.preventDefault(); } catch (_) {}
+        try { e.stopImmediatePropagation(); } catch (_) {}
+      }
+      return;
+    }
     if (!activeEditPointer || activeEditPointer.pointerId !== e.pointerId) return;
     var subjectNode = activeEditPointer.subjectNode;
     activeEditPointer.ending = true;
@@ -2564,12 +2798,22 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     return true;
   }
   document.addEventListener('lostpointercapture', function (e) {
+    if (!editBridgeEnabled && activeRepeatingMove && e.target === activeRepeatingMove.captureNode) {
+      cancelRepeatingMove({ pointerId: activeRepeatingMove.pointerId });
+      return;
+    }
     if (!editBridgeEnabled || !activeEditPointer) return;
     if (activeEditPointer.ending || e.target !== activeEditPointer.subjectNode) return;
     cancelActiveEditPointer(activeEditPointer.lastX, activeEditPointer.lastY, e.target);
   }, true);
   document.addEventListener('pointercancel', function (e) {
-    if (!editBridgeEnabled) return;
+    if (!editBridgeEnabled) {
+      if (cancelRepeatingMove(e)) {
+        try { e.preventDefault(); } catch (_) {}
+        try { e.stopImmediatePropagation(); } catch (_) {}
+      }
+      return;
+    }
     if (!activeEditPointer || activeEditPointer.pointerId !== e.pointerId) return;
     cancelActiveEditPointer(e.clientX, e.clientY, hitNodeAt(e.clientX, e.clientY, e.target));
     try { e.preventDefault(); } catch (_) {}

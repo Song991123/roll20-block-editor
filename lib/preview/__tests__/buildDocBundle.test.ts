@@ -43,7 +43,7 @@ const rendererModelBundle = buildSheetRenderBundle({
 }, { includeParts: true });
 const repeatingBundle = buildSheetRenderBundle({
   ...options,
-  html: '<fieldset class="repeating_items"><input type="text" name="attr_item_name" value="New item"></fieldset>',
+  html: '<fieldset class="repeating_items"><input type="text" name="attr_item_name" value="New item"></fieldset><fieldset class="repeating_items sheet-summary"><input type="text" name="attr_item_name" readonly></fieldset>',
 });
 
 assert.equal(bundle.doc, buildSheetDoc(options), 'bundled document matches the standalone builder');
@@ -157,6 +157,11 @@ assert.match(
   /<div class="repcontainer" data-groupname="repeating_items"><\/div><div class="repcontrol" data-groupname="repeating_items">/,
   'repeating templates receive Roll20 data-groupname runtime siblings',
 );
+assert.equal(
+  (repeatingBundle.livePatch.html.match(/class="repcontainer" data-groupname="repeating_items"/g) ?? []).length,
+  2,
+  'duplicate repeating templates each receive a runtime container',
+);
 assert.match(
   repeatingBundle.doc,
   /fieldset\.style\.display = 'none'[\s\S]*?className = 'repitem'[\s\S]*?setAttribute\('data-reprowid', rowId\)/,
@@ -254,7 +259,7 @@ assert.match(
 );
 assert.match(
   bundle.doc,
-  /var changedAttrs = \[\][\s\S]*?if \(writeSheetAttr\(k, values\[k\]\)\)[\s\S]*?changedAttrs\.push\(\{ key: k, previousValue: previousValue, newValue: newValue \}\)/,
+  /var changedAttrs = \[\][\s\S]*?var resolvedKey = resolveSheetWorkerAttrName\(k\)[\s\S]*?if \(writeSheetAttr\(resolvedKey, values\[k\]\)\)[\s\S]*?changedAttrs\.push\(\{ key: resolvedKey, previousValue: previousValue, newValue: newValue \}\)/,
   'worker setAttrs records only changed values with their previous and new state',
 );
 assert.match(
@@ -284,12 +289,27 @@ assert.match(
 );
 assert.match(
   repeatingBundle.doc,
+  /function repeatingRuntimesForGroup\(groupName\)[\s\S]*?runtimes\.push\(runtime\)[\s\S]*?function createRepeatingRow\(groupName, rowId\)[\s\S]*?createRepeatingRowInRuntime\(runtimes\[i\], rowId\)/,
+  'duplicate repeating displays share each created row ID',
+);
+assert.match(
+  repeatingBundle.doc,
+  /function resolveSheetWorkerAttrName\(name\)[\s\S]*?sheetWorkerEventContext\.rowId[\s\S]*?return groupName \+ '_' \+ rowId \+ '_'/,
+  'repeating worker shorthand resolves against the triggering row',
+);
+assert.match(
+  repeatingBundle.doc,
   /events\.push\('change:' \+ parsed\.groupName\.toLowerCase\(\) \+ ':' \+ fieldName\)[\s\S]*?events\.push\('change:' \+ parsed\.groupName\.toLowerCase\(\)\)[\s\S]*?events\.push\('change:' \+ baseFieldName\)[\s\S]*?events\.push\('change:' \+ baseFieldName \+ '_max'\)/,
   'repeating changes dispatch section-field, whole-section, and plain-field aliases',
 );
 assert.match(
   repeatingBundle.doc,
-  /removedInfo: removedInfo[\s\S]*?sheetWorkerRemoveRepeatingRow[\s\S]*?removeRepeatingRowElement\(rows\[i\], 'sheetworker'\)/,
+  /function commitRepeatingOrder\(groupName, requestedOrder, sourceType\)[\s\S]*?change:_reporder:[\s\S]*?beginRepeatingMove[\s\S]*?endRepeatingMove/,
+  'repeating row moves persist order state and dispatch the Roll20 reorder alias',
+);
+assert.match(
+  repeatingBundle.doc,
+  /removedInfo: removedInfo[\s\S]*?sheetWorkerRemoveRepeatingRow[\s\S]*?removeRepeatingRowById\(parsed\.groupName, parsed\.rowId, 'sheetworker'\)/,
   'repeating deletion exposes removed values for both user and Worker paths',
 );
 assert.match(

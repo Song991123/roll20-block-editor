@@ -67,6 +67,13 @@ const SYNTHETIC_SHEET = {
   <input type="text" name="attr_item_name" value="New item">
   <input type="number" name="attr_item_qty" value="1">
 </fieldset>
+<div class="item-summary">
+  <fieldset class="repeating_items summary-items">
+    <input type="text" name="attr_item_name" readonly>
+    <input type="number" name="attr_item_qty" readonly>
+    <input type="number" name="attr_item_total" value="0" readonly>
+  </fieldset>
+</div>
 <input type="text" name="attr_loop_probe" value="idle">
 <input type="text" name="attr_second_probe" value="idle">
 <input type="hidden" name="attr_event_source" value="">
@@ -83,6 +90,10 @@ const SYNTHETIC_SHEET = {
 <input type="hidden" name="attr_repeat_change_new" value="">
 <input type="hidden" name="attr_repeat_section_changed" value="">
 <input type="hidden" name="attr_repeat_plain_changed" value="">
+<input type="hidden" name="attr_repeat_context_name" value="">
+<input type="hidden" name="attr_repeat_context_qty" value="">
+<input type="hidden" name="attr_repeat_order_value" value="">
+<input type="hidden" name="attr_repeat_order_source" value="">
 <input type="hidden" name="attr_repeat_remove_source" value="">
 <input type="hidden" name="attr_repeat_remove_attr" value="">
 <input type="hidden" name="attr_repeat_remove_trigger" value="">
@@ -125,11 +136,28 @@ const SYNTHETIC_SHEET = {
       repeat_change_new: eventInfo.newValue
     }, { silent: true });
   });
+  on("change:repeating_items:item_qty", function () {
+    getAttrs(["repeating_items_item_name", "repeating_items_item_qty"], function (values) {
+      setAttrs({
+        repeat_context_name: values.repeating_items_item_name,
+        repeat_context_qty: values.repeating_items_item_qty,
+        repeating_items_item_total: parseInt(values.repeating_items_item_qty || "0", 10) * 2
+      }, { silent: true });
+    });
+  });
   on("change:repeating_items", function () {
     setAttrs({ repeat_section_changed: "yes" }, { silent: true });
   });
   on("change:item_qty", function () {
     setAttrs({ repeat_plain_changed: "yes" }, { silent: true });
+  });
+  on("change:_reporder:items", function (eventInfo) {
+    getAttrs(["_reporder_repeating_items"], function (values) {
+      setAttrs({
+        repeat_order_value: values._reporder_repeating_items,
+        repeat_order_source: eventInfo.sourceType
+      }, { silent: true });
+    });
   });
   on("remove:repeating_items", function (eventInfo) {
     var removedKeys = Object.keys(eventInfo.removedInfo || {});
@@ -237,6 +265,12 @@ async function readState(frame) {
     const charStyle = character ? getComputedStyle(character) : null;
     const combatStyle = combat ? getComputedStyle(combat) : null;
     const choiceStyle = choice ? getComputedStyle(choice) : null;
+    const repeatingContainers = Array.from(document.querySelectorAll('.repcontainer'));
+    const primaryRepeating = repeatingContainers[0] ?? null;
+    const mirrorRepeating = repeatingContainers[1] ?? null;
+    const rowIds = (container) => Array.from(container?.querySelectorAll('.repitem') ?? [])
+      .map((row) => row.getAttribute('data-reprowid'))
+      .filter(Boolean);
     return {
       inputValueProperty: input?.value ?? null,
       inputValueAttribute: input?.getAttribute('value') ?? null,
@@ -262,12 +296,20 @@ async function readState(frame) {
       repeatingTemplateDisplay: getComputedStyle(document.querySelector('fieldset.repeating_items')).display,
       repeatingGroup: document.querySelector('.repcontainer')?.getAttribute('data-groupname') ?? null,
       repeatingControlGroup: document.querySelector('.repcontrol')?.getAttribute('data-groupname') ?? null,
-      repeatingRowCount: document.querySelectorAll('.repcontainer .repitem').length,
-      repeatingRowId: document.querySelector('.repcontainer .repitem')?.getAttribute('data-reprowid') ?? null,
-      repeatingName: document.querySelector('.repcontainer [name$="_item_name"]')?.value ?? null,
-      repeatingQty: document.querySelector('.repcontainer [name$="_item_qty"]')?.value ?? null,
-      repeatingNameAttr: document.querySelector('.repcontainer [name$="_item_name"]')?.getAttribute('name') ?? null,
-      repeatingEditMode: document.querySelector('.repcontainer')?.classList.contains('editmode') ?? false,
+      repeatingContainerCount: repeatingContainers.length,
+      repeatingRowCount: primaryRepeating?.querySelectorAll('.repitem').length ?? 0,
+      repeatingMirrorRowCount: mirrorRepeating?.querySelectorAll('.repitem').length ?? 0,
+      repeatingTotalRowNodes: document.querySelectorAll('.repcontainer .repitem').length,
+      repeatingRowId: primaryRepeating?.querySelector('.repitem')?.getAttribute('data-reprowid') ?? null,
+      repeatingName: primaryRepeating?.querySelector('[name$="_item_name"]')?.value ?? null,
+      repeatingQty: primaryRepeating?.querySelector('[name$="_item_qty"]')?.value ?? null,
+      repeatingMirrorName: mirrorRepeating?.querySelector('[name$="_item_name"]')?.value ?? null,
+      repeatingMirrorQty: mirrorRepeating?.querySelector('[name$="_item_qty"]')?.value ?? null,
+      repeatingMirrorTotal: mirrorRepeating?.querySelector('[name$="_item_total"]')?.value ?? null,
+      repeatingNameAttr: primaryRepeating?.querySelector('[name$="_item_name"]')?.getAttribute('name') ?? null,
+      repeatingOrder: rowIds(primaryRepeating),
+      repeatingMirrorOrder: rowIds(mirrorRepeating),
+      repeatingEditMode: primaryRepeating?.classList.contains('editmode') ?? false,
       repeatingEditText: document.querySelector('.repcontrol_edit')?.textContent?.trim() ?? '',
       repeatingAddDisplay: document.querySelector('.repcontrol_add') ? getComputedStyle(document.querySelector('.repcontrol_add')).display : null,
       repeatChangeSource: document.querySelector('[name="attr_repeat_change_source"]')?.value ?? null,
@@ -276,6 +318,10 @@ async function readState(frame) {
       repeatChangeNew: document.querySelector('[name="attr_repeat_change_new"]')?.value ?? null,
       repeatSectionChanged: document.querySelector('[name="attr_repeat_section_changed"]')?.value ?? null,
       repeatPlainChanged: document.querySelector('[name="attr_repeat_plain_changed"]')?.value ?? null,
+      repeatContextName: document.querySelector('[name="attr_repeat_context_name"]')?.value ?? null,
+      repeatContextQty: document.querySelector('[name="attr_repeat_context_qty"]')?.value ?? null,
+      repeatOrderValue: document.querySelector('[name="attr_repeat_order_value"]')?.value ?? null,
+      repeatOrderSource: document.querySelector('[name="attr_repeat_order_source"]')?.value ?? null,
       repeatRemoveSource: document.querySelector('[name="attr_repeat_remove_source"]')?.value ?? null,
       repeatRemoveAttr: document.querySelector('[name="attr_repeat_remove_attr"]')?.value ?? null,
       repeatRemoveTrigger: document.querySelector('[name="attr_repeat_remove_trigger"]')?.value ?? null,
@@ -383,13 +429,15 @@ async function main() {
         initial.repeatingTemplateDisplay === 'none' &&
         initial.repeatingGroup === 'repeating_items' &&
         initial.repeatingControlGroup === 'repeating_items' &&
-        initial.repeatingRowCount === 0,
+        initial.repeatingContainerCount === 2 &&
+        initial.repeatingRowCount === 0 &&
+        initial.repeatingMirrorRowCount === 0,
     });
 
     await frame.locator('button[name="act_worker_add_row"]').click({ timeout: 10000 });
     try {
       await frame.waitForFunction(() => (
-        document.querySelectorAll('.repcontainer .repitem').length === 1 &&
+        Array.from(document.querySelectorAll('.repcontainer')).every((container) => container.querySelectorAll('.repitem').length === 1) &&
         document.querySelector('.repcontainer [name$="_item_name"]')?.value === 'Worker item' &&
         document.querySelector('[name="attr_repeat_change_source"]')?.value === 'sheetworker'
       ), null, { timeout: 10000 });
@@ -408,17 +456,24 @@ async function main() {
       state: workerAddedRow,
       pass:
         workerAddedRow.repeatingRowCount === 1 &&
+        workerAddedRow.repeatingMirrorRowCount === 1 &&
+        workerAddedRow.repeatingTotalRowNodes === 2 &&
         workerAddedRow.repeatingRowId?.startsWith('-') &&
         !workerAddedRow.repeatingRowId.includes('_') &&
         workerAddedRow.repeatingName === 'Worker item' &&
         workerAddedRow.repeatingQty === '2' &&
+        workerAddedRow.repeatingMirrorName === 'Worker item' &&
+        workerAddedRow.repeatingMirrorQty === '2' &&
+        workerAddedRow.repeatingMirrorTotal === '4' &&
         workerAddedRow.repeatingNameAttr?.startsWith(`attr_repeating_items_${workerAddedRow.repeatingRowId}_`) &&
         workerAddedRow.repeatChangeSource === 'sheetworker' &&
         workerAddedRow.repeatChangeAttr?.endsWith('_item_qty') &&
         workerAddedRow.repeatChangePrevious === '1' &&
         workerAddedRow.repeatChangeNew === '2' &&
         workerAddedRow.repeatSectionChanged === 'yes' &&
-        workerAddedRow.repeatPlainChanged === 'yes',
+        workerAddedRow.repeatPlainChanged === 'yes' &&
+        workerAddedRow.repeatContextName === 'Worker item' &&
+        workerAddedRow.repeatContextQty === '2',
     });
 
     await frame.locator('button[name="act_worker_remove_row"]').click({ timeout: 10000 });
@@ -432,16 +487,19 @@ async function main() {
       state: workerRemovedRow,
       pass:
         workerRemovedRow.repeatingRowCount === 0 &&
+        workerRemovedRow.repeatingMirrorRowCount === 0 &&
         workerRemovedRow.repeatRemoveSource === 'sheetworker' &&
         workerRemovedRow.repeatRemoveAttr?.startsWith('repeating_items_') &&
         workerRemovedRow.repeatRemoveAttr?.endsWith('_item_name') &&
         workerRemovedRow.repeatRemoveTrigger === 'remove:repeating_items' &&
-        workerRemovedRow.repeatRemovedCount === '2' &&
+        workerRemovedRow.repeatRemovedCount === '3' &&
         workerRemovedRow.repeatRemovedName === 'Worker item',
     });
 
-    await frame.locator('button.repcontrol_add').click({ timeout: 10000 });
-    await frame.waitForFunction(() => document.querySelectorAll('.repcontainer .repitem').length === 1, null, { timeout: 10000 });
+    await frame.locator('button.repcontrol_add').first().click({ timeout: 10000 });
+    await frame.waitForFunction(() => (
+      Array.from(document.querySelectorAll('.repcontainer')).every((container) => container.querySelectorAll('.repitem').length === 1)
+    ), null, { timeout: 10000 });
     const userAddedRow = await readState(frame);
     report.repeatingSteps.push({
       name: 'user-added-row',
@@ -449,10 +507,13 @@ async function main() {
       pass:
         userAddedRow.repeatingName === 'New item' &&
         userAddedRow.repeatingQty === '1' &&
+        userAddedRow.repeatingMirrorName === 'New item' &&
+        userAddedRow.repeatingMirrorQty === '1' &&
         userAddedRow.repeatingRowId?.startsWith('-'),
     });
 
-    const repeatingQty = frame.locator('.repcontainer [name$="_item_qty"]');
+    const primaryRepeating = frame.locator('.repcontainer').first();
+    const repeatingQty = primaryRepeating.locator('[name$="_item_qty"]').first();
     await repeatingQty.fill('4');
     await repeatingQty.evaluate((node) => node.dispatchEvent(new Event('change', { bubbles: true })));
     await frame.waitForFunction(() => (
@@ -469,10 +530,52 @@ async function main() {
         userChangedRow.repeatChangePrevious === '1' &&
         userChangedRow.repeatChangeNew === '4' &&
         userChangedRow.repeatSectionChanged === 'yes' &&
-        userChangedRow.repeatPlainChanged === 'yes',
+        userChangedRow.repeatPlainChanged === 'yes' &&
+        userChangedRow.repeatContextName === 'New item' &&
+        userChangedRow.repeatContextQty === '4' &&
+        userChangedRow.repeatingMirrorQty === '4' &&
+        userChangedRow.repeatingMirrorTotal === '8',
     });
 
-    await frame.locator('button.repcontrol_edit').click({ timeout: 10000 });
+    const firstRowId = userChangedRow.repeatingRowId;
+    const firstName = primaryRepeating.locator('[name$="_item_name"]').first();
+    await firstName.fill('First item');
+    await firstName.evaluate((node) => node.dispatchEvent(new Event('change', { bubbles: true })));
+    await frame.locator('button.repcontrol_add').first().click({ timeout: 10000 });
+    await frame.waitForFunction(() => (
+      Array.from(document.querySelectorAll('.repcontainer')).every((container) => container.querySelectorAll('.repitem').length === 2)
+    ), null, { timeout: 10000 });
+    const secondRow = primaryRepeating.locator('.repitem').nth(1);
+    const secondName = secondRow.locator('[name$="_item_name"]');
+    const secondQty = secondRow.locator('[name$="_item_qty"]');
+    await secondName.fill('Second item');
+    await secondName.evaluate((node) => node.dispatchEvent(new Event('change', { bubbles: true })));
+    await secondQty.fill('3');
+    await secondQty.evaluate((node) => node.dispatchEvent(new Event('change', { bubbles: true })));
+    await frame.waitForFunction(() => {
+      const containers = document.querySelectorAll('.repcontainer');
+      const mirrorRows = containers[1]?.querySelectorAll('.repitem');
+      return mirrorRows?.[1]?.querySelector('[name$="_item_name"]')?.value === 'Second item'
+        && mirrorRows?.[1]?.querySelector('[name$="_item_qty"]')?.value === '3'
+        && mirrorRows?.[1]?.querySelector('[name$="_item_total"]')?.value === '6';
+    }, null, { timeout: 10000 });
+    const twoSharedRows = await readState(frame);
+    const secondRowId = twoSharedRows.repeatingOrder[1];
+    report.repeatingSteps.push({
+      name: 'duplicate-section-shared-rows',
+      state: twoSharedRows,
+      pass:
+        Boolean(firstRowId && secondRowId) &&
+        twoSharedRows.repeatingRowCount === 2 &&
+        twoSharedRows.repeatingMirrorRowCount === 2 &&
+        twoSharedRows.repeatingTotalRowNodes === 4 &&
+        twoSharedRows.repeatingOrder.join(',') === twoSharedRows.repeatingMirrorOrder.join(',') &&
+        twoSharedRows.repeatingMirrorName === 'First item' &&
+        twoSharedRows.repeatContextName === 'Second item' &&
+        twoSharedRows.repeatContextQty === '3',
+    });
+
+    await frame.locator('button.repcontrol_edit').first().click({ timeout: 10000 });
     await frame.waitForFunction(() => (
       document.querySelector('.repcontainer')?.classList.contains('editmode') &&
       document.querySelector('.repcontrol_edit')?.textContent?.trim() === 'Done' &&
@@ -488,9 +591,49 @@ async function main() {
         userEditMode.repeatingAddDisplay === 'none',
     });
 
-    await frame.locator('button.repcontrol_del').click({ timeout: 10000 });
+    const moveHandle = primaryRepeating.locator('.repitem').nth(1).locator('.repcontrol_move');
+    const targetRow = primaryRepeating.locator('.repitem').nth(0);
+    const moveBox = await moveHandle.boundingBox();
+    const targetBox = await targetRow.boundingBox();
+    if (!moveBox || !targetBox) throw new Error('repeating move geometry unavailable');
+    await page.mouse.move(moveBox.x + moveBox.width / 2, moveBox.y + moveBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + 2, { steps: 8 });
+    await page.mouse.up();
+    try {
+      await frame.waitForFunction((rowId) => (
+        Array.from(document.querySelectorAll('.repcontainer')).every((container) => (
+          container.querySelector('.repitem')?.getAttribute('data-reprowid') === rowId
+        )) &&
+        document.querySelector('[name="attr_repeat_order_source"]')?.value === 'player'
+      ), secondRowId, { timeout: 10000 });
+    } catch (error) {
+      const state = await readState(frame);
+      throw new Error(`repeating reorder timeout: ${JSON.stringify({
+        expectedFirst: secondRowId,
+        primaryOrder: state.repeatingOrder,
+        mirrorOrder: state.repeatingMirrorOrder,
+        orderValue: state.repeatOrderValue,
+        orderSource: state.repeatOrderSource,
+        moveBox,
+        targetBox,
+      })}`, { cause: error });
+    }
+    const reorderedRows = await readState(frame);
+    report.repeatingSteps.push({
+      name: 'shared-row-reorder',
+      state: reorderedRows,
+      pass:
+        reorderedRows.repeatingOrder[0] === secondRowId &&
+        reorderedRows.repeatingMirrorOrder[0] === secondRowId &&
+        reorderedRows.repeatingOrder.join(',') === reorderedRows.repeatingMirrorOrder.join(',') &&
+        reorderedRows.repeatOrderValue === [secondRowId, firstRowId].join(',') &&
+        reorderedRows.repeatOrderSource === 'player',
+    });
+
+    await primaryRepeating.locator('button.repcontrol_del').first().click({ timeout: 10000 });
     await frame.waitForFunction(() => (
-      document.querySelectorAll('.repcontainer .repitem').length === 0 &&
+      Array.from(document.querySelectorAll('.repcontainer')).every((container) => container.querySelectorAll('.repitem').length === 1) &&
       document.querySelector('[name="attr_repeat_remove_source"]')?.value === 'player'
     ), null, { timeout: 10000 });
     const userRemovedRow = await readState(frame);
@@ -498,12 +641,17 @@ async function main() {
       name: 'user-removed-row',
       state: userRemovedRow,
       pass:
-        userRemovedRow.repeatingRowCount === 0 &&
+        userRemovedRow.repeatingRowCount === 1 &&
+        userRemovedRow.repeatingMirrorRowCount === 1 &&
         userRemovedRow.repeatRemoveSource === 'player' &&
         userRemovedRow.repeatRemoveTrigger === 'remove:repeating_items' &&
-        userRemovedRow.repeatRemovedCount === '2' &&
-        userRemovedRow.repeatRemovedName === 'New item',
+        userRemovedRow.repeatRemovedCount === '3' &&
+        userRemovedRow.repeatRemovedName === 'Second item' &&
+        userRemovedRow.repeatingOrder[0] === firstRowId &&
+        userRemovedRow.repeatingMirrorOrder[0] === firstRowId,
     });
+    await primaryRepeating.locator('button.repcontrol_del').first().click({ timeout: 10000 });
+    await frame.waitForFunction(() => document.querySelectorAll('.repcontainer .repitem').length === 0, null, { timeout: 10000 });
 
     await frame.locator('button[name="act_character"]').click({ timeout: 10000 });
     await frame.waitForFunction(() => {
