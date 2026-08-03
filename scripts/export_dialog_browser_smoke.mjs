@@ -439,9 +439,9 @@ async function verifyExportAssetDraft(page) {
     const map = window.__perfHook.getAssetReplacementMap();
     return {
       hasSourceUrl: map.includes(url),
-      isCommentedDraft: map.includes(`# ${url} => <paste-user-owned-https-url-here>`),
-      hasCanonicalSuggestion: map.includes(`# ${url} => ${canonicalUrl} # imgur-direct-image:verify-permission`),
-      hasExportSourceLabel: map.includes('Asset replacement draft from export preflight.'),
+      isCommentedDraft: map.includes(`# ${url} => <여기에-사용자-소유-HTTPS-주소-입력>`),
+      hasCanonicalSuggestion: map.includes(`# ${url} => ${canonicalUrl} # Imgur 바로 열기 후보 · 권한 확인 필요`),
+      hasExportSourceLabel: map.includes('자산 주소 교체 초안: 내보내기.'),
     };
   }, { url: sourceUrl, canonicalUrl });
   await page.keyboard.press('Escape');
@@ -450,6 +450,49 @@ async function verifyExportAssetDraft(page) {
     timeout: 5000,
   }).catch(() => {});
   return { sourceUrl, before, after };
+}
+
+async function verifyLegacyExportAssetCompatibility(page) {
+  await warmPerfHook(page);
+  await page.evaluate(async () => {
+    window.__perfHook.clearAll();
+    window.__perfHook.setRoll20CompatibilityMode('modern');
+    await window.__perfHook.importSheet({
+      html: '<div class="font-probe">Font probe</div>',
+      css: '@font-face { font-family: Probe; src: url("#font"); }',
+      i18n: '{}',
+    });
+    window.__perfHook.setMainMode('edit');
+  });
+
+  await page.click('[data-testid="header-export-button"]');
+  await page.waitForSelector('[data-testid="export-asset-preflight"]', { timeout: 15000 });
+  const modernHidden = await page.evaluate(() =>
+    !document.querySelector('[data-testid="legacy-asset-compatibility"]'),
+  );
+
+  await page.evaluate(() => {
+    document.querySelector('[data-testid="export-legacy-toggle"]')?.click();
+  });
+  await page.waitForSelector('[data-testid="legacy-asset-compatibility"]', { timeout: 5000 });
+  const legacy = await page.evaluate(() => {
+    const notice = document.querySelector('[data-testid="legacy-asset-compatibility"]');
+    return {
+      restrictedCount: notice?.getAttribute('data-restricted-count') ?? '',
+      text: notice?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+    };
+  });
+  await page.waitForSelector('[data-sonner-toast]', { state: 'detached', timeout: 10000 }).catch(() => {});
+  await page.locator('[data-testid="legacy-asset-compatibility"]').scrollIntoViewIfNeeded();
+  await safeScreenshot(page, path.join(REPORT_DIR, 'legacy-asset-warning.png'));
+
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('[data-testid="legacy-asset-compatibility"]', {
+    state: 'detached',
+    timeout: 5000,
+  }).catch(() => {});
+  await page.evaluate(() => window.__perfHook.setRoll20CompatibilityMode('modern'));
+  return { modernHidden, legacy };
 }
 
 async function main() {
@@ -608,13 +651,13 @@ async function main() {
         hasLocalVsActualCopy: dialogText.includes('실제 Roll20 화면 일치는 Sandbox나 새 테스트 방에 올린 뒤 스크린샷으로 다시 확인해야 합니다.'),
         hasFileAccessClutter: dialogText.includes('Chrome 파일 선택이 막히면'),
         hasModeSyncCopy: dialogText.includes('sheet.json') && dialogText.includes('동시에 반영됩니다.'),
-        hasAssetPreflightCopy: dialogText.includes('zip에는 HTML, CSS, translation만 들어갑니다.'),
-        hasAssetRiskCopy: dialogText.includes('외부 이미지/폰트는 zip에 포함되지 않습니다.'),
-        hasAssetProxyMetric: dialogText.includes('Roll20 프록시'),
-        hasAssetPlaceholderMetric: dialogText.includes('placeholder 위험'),
-        hasAssetHttpMetric: dialogText.includes('HTTP URL'),
-        hasAssetCanonicalMetric: dialogText.includes('직링크 후보'),
-        hasAssetImgurDirectMetric: dialogText.includes('Imgur 직링크'),
+        hasAssetPreflightCopy: dialogText.includes('ZIP에는 HTML, CSS, 번역 파일만 들어갑니다.'),
+        hasAssetRiskCopy: dialogText.includes('외부 이미지·글꼴은 ZIP에 포함되지 않습니다.'),
+        hasAssetProxyMetric: dialogText.includes('Roll20 경유 주소'),
+        hasAssetPlaceholderMetric: dialogText.includes('대체 이미지 위험'),
+        hasAssetHttpMetric: dialogText.includes('보안 연결 아님'),
+        hasAssetCanonicalMetric: dialogText.includes('바로 열기 후보'),
+        hasAssetImgurDirectMetric: dialogText.includes('Imgur 바로 열기'),
         hasAssetReplacementMap: Boolean(document.querySelector('[data-testid="export-asset-replacement-map"]')),
         hasAssetReplacementInput: Boolean(document.querySelector('[data-testid="export-asset-replacement-input"]')),
         hasAssetReplacementDraft: Boolean(document.querySelector('[data-testid="export-asset-replacement-draft"]')),
@@ -708,9 +751,19 @@ async function main() {
 
     await page.click('[data-testid="header-import-button"]');
     await page.waitForSelector('[role="dialog"]', { timeout: 15000 });
-    await page.fill('[role="dialog"] textarea', '<img src="https://imgur.com/import-dead.png">');
+    await page.fill('[data-testid="import-html-textarea"]', '<img src="https://imgur.com/import-dead.png">');
+    await page.click('[data-testid="import-tab-css"]');
+    await page.fill(
+      '[data-testid="import-css-textarea"]',
+      "@import url('https://fonts.googleapis.com/css?family=Example&display=swap'); @font-face { font-family: Probe; src: url('#font'); }",
+    );
     await page.waitForSelector('[data-testid="import-asset-replacement-draft"]', { timeout: 5000 });
-    result.checks.importDialog = await page.evaluate(() => ({
+    const modernLegacyAssetHidden = await page.evaluate(() =>
+      !document.querySelector('[data-testid="legacy-asset-compatibility"]'),
+    );
+    await page.evaluate(() => window.__perfHook.setRoll20CompatibilityMode('legacy'));
+    await page.waitForSelector('[data-testid="legacy-asset-compatibility"]', { timeout: 5000 });
+    result.checks.importDialog = await page.evaluate(({ modernHidden }) => ({
       hasTitle:
         document.body.innerText.includes('시트 파일 불러오기') ||
         document.body.innerText.includes('외부 시트 불러오기'),
@@ -718,25 +771,34 @@ async function main() {
       hasProgressNode: Boolean(document.querySelector('[data-testid="import-progress"]')),
       hasAssetPreflight: Boolean(document.querySelector('[data-testid="import-asset-preflight"]')),
       assetPreflightStatus: document.querySelector('[data-testid="import-asset-preflight-status"]')?.textContent?.trim() ?? '',
-      hasAssetProxyMetric: document.body.innerText.includes('Roll20 프록시'),
-      hasAssetPlaceholderMetric: document.body.innerText.includes('placeholder 위험'),
-      hasAssetHttpMetric: document.body.innerText.includes('HTTP URL'),
-      hasAssetCanonicalMetric: document.body.innerText.includes('직링크 후보'),
-      hasAssetImgurDirectMetric: document.body.innerText.includes('Imgur 직링크'),
+      hasAssetProxyMetric: document.body.innerText.includes('Roll20 경유 주소'),
+      hasAssetPlaceholderMetric: document.body.innerText.includes('대체 이미지 위험'),
+      hasAssetHttpMetric: document.body.innerText.includes('보안 연결 아님'),
+      hasAssetCanonicalMetric: document.body.innerText.includes('바로 열기 후보'),
+      hasAssetImgurDirectMetric: document.body.innerText.includes('Imgur 바로 열기'),
       hasAssetReplacementDraft: Boolean(document.querySelector('[data-testid="import-asset-replacement-draft"]')),
-    }));
+      modernLegacyAssetHidden: modernHidden,
+      legacyAssetRestrictedCount:
+        document.querySelector('[data-testid="legacy-asset-compatibility"]')?.getAttribute('data-restricted-count') ?? '',
+      legacyAssetText:
+        document.querySelector('[data-testid="legacy-asset-compatibility"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+      hasLegacyGoogleFontCount: Boolean(document.querySelector('[data-testid="legacy-google-font-count"]')),
+    }), { modernHidden: modernLegacyAssetHidden });
     await page.waitForFunction(() => Boolean(window.__perfHook), null, { timeout: 15000 });
     await page.click('[data-testid="import-asset-replacement-draft"]');
     result.checks.importAssetDraft = await page.evaluate(() => {
       const map = window.__perfHook.getAssetReplacementMap();
       return {
         hasSourceUrl: map.includes('https://imgur.com/import-dead.png'),
-        isCommentedDraft: map.includes('# https://imgur.com/import-dead.png => <paste-user-owned-https-url-here>'),
-        hasCanonicalSuggestion: map.includes('# https://imgur.com/import-dead.png => https://i.imgur.com/import-dead.png # imgur-direct-image:verify-permission'),
+        isCommentedDraft: map.includes('# https://imgur.com/import-dead.png => <여기에-사용자-소유-HTTPS-주소-입력>'),
+        hasCanonicalSuggestion: map.includes('# https://imgur.com/import-dead.png => https://i.imgur.com/import-dead.png # Imgur 바로 열기 후보 · 권한 확인 필요'),
       };
     });
 
+    await page.evaluate(() => window.__perfHook.setRoll20CompatibilityMode('modern'));
+
     await page.keyboard.press('Escape');
+    result.checks.exportLegacyAssetCompatibility = await verifyLegacyExportAssetCompatibility(page);
     result.checks.exportAssetDraft = await verifyExportAssetDraft(page);
     result.checks.exportAssetPlaceholderGuard = await verifyAssetReplacementPlaceholderGuard(page);
     result.checks.assetReplacementRender = await verifyAssetReplacementRender(page);
@@ -861,9 +923,22 @@ async function main() {
     if (!result.checks.importDialog.hasAssetCanonicalMetric) failures.push('import asset canonical metric missing');
     if (!result.checks.importDialog.hasAssetImgurDirectMetric) failures.push('import asset Imgur direct metric missing');
     if (!result.checks.importDialog.hasAssetReplacementDraft) failures.push('import asset replacement draft button missing');
+    if (!result.checks.importDialog.modernLegacyAssetHidden) failures.push('legacy asset warning visible in modern import mode');
+    if (result.checks.importDialog.legacyAssetRestrictedCount !== '1') failures.push('legacy import asset restriction count mismatch');
+    if (!result.checks.importDialog.legacyAssetText.includes('구버전에서는 일부 글꼴이 빠질 수 있어요')) {
+      failures.push('plain-language legacy import asset warning missing');
+    }
+    if (!result.checks.importDialog.hasLegacyGoogleFontCount) failures.push('legacy Google Fonts distinction missing');
     if (!result.checks.importAssetDraft.hasSourceUrl) failures.push('import asset draft missing source URL');
     if (!result.checks.importAssetDraft.isCommentedDraft) failures.push('import asset draft should be commented until user relinks');
     if (!result.checks.importAssetDraft.hasCanonicalSuggestion) failures.push('import asset draft missing canonical/direct suggestion');
+    if (!result.checks.exportLegacyAssetCompatibility.modernHidden) failures.push('legacy asset warning visible in modern export mode');
+    if (result.checks.exportLegacyAssetCompatibility.legacy.restrictedCount !== '1') {
+      failures.push('legacy export asset restriction count mismatch');
+    }
+    if (!result.checks.exportLegacyAssetCompatibility.legacy.text.includes('구버전에서는 일부 글꼴이 빠질 수 있어요')) {
+      failures.push('plain-language legacy export asset warning missing');
+    }
     if (result.checks.exportAssetDraft.before.disabled) failures.push('export asset draft button disabled for export asset URL');
     if (!result.checks.exportAssetDraft.after.hasSourceUrl) failures.push('export asset draft missing source URL');
     if (!result.checks.exportAssetDraft.after.isCommentedDraft) failures.push('export asset draft should be commented until user relinks');
@@ -899,8 +974,8 @@ async function main() {
     if (result.checks.exportAssetPlaceholderGuard.ui.placeholderTargets !== '1') failures.push('placeholder target readiness count missing');
     if (result.checks.exportAssetPlaceholderGuard.ui.roll20ReadyTargets !== '0') failures.push('placeholder guard should not count Roll20-ready targets');
     if (result.checks.exportAssetPlaceholderGuard.ui.riskyRoll20Targets !== '0') failures.push('placeholder guard should not count risky Roll20 targets');
-    if (!/미입력|placeholder 대상|채워/.test(result.checks.exportAssetPlaceholderGuard.ui.readinessText)) failures.push('placeholder target readiness copy missing');
-    if (!/placeholder 대상|http/.test(result.checks.exportAssetPlaceholderGuard.ui.warningText)) failures.push('placeholder target parser warning missing');
+    if (!/미입력 주소|채워/.test(result.checks.exportAssetPlaceholderGuard.ui.readinessText)) failures.push('placeholder target readiness copy missing');
+    if (!/미입력 주소|HTTPS 주소/.test(result.checks.exportAssetPlaceholderGuard.ui.warningText)) failures.push('placeholder target parser warning missing');
     if (result.checks.mainModeEdit.editSelected !== 'true') failures.push('main mode edit did not select');
     if (consoleIssues.length > 0) failures.push('console errors/warnings present');
     if (pageErrors.length > 0) failures.push('page errors present');

@@ -153,8 +153,10 @@ function isPlaceholderReplacementTarget(value) {
   const normalized = String(value ?? '').trim().toLowerCase();
   return (
     normalized === '<paste-user-owned-https-url-here>' ||
+    normalized === '<여기에-사용자-소유-https-주소-입력>' ||
     normalized.includes('paste-user-owned') ||
-    normalized.includes('user-owned-https-url')
+    normalized.includes('user-owned-https-url') ||
+    normalized.includes('사용자-소유-https-주소')
   );
 }
 

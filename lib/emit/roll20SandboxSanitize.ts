@@ -8,6 +8,8 @@
  * sandbox HTML/CSS prefixing and allow-list behavior observed in Chrome.
  */
 
+import { hasUnsupportedLegacyCssImport } from '@/lib/validation/legacyCssAssets';
+
 export type Roll20SandboxWarningCode =
   | 'css-mobile-stripped'
   | 'css-selector-prefixed'
@@ -318,10 +320,10 @@ function stripMobileCss(css: string, warnings: Roll20SandboxWarning[]): string {
 
 function hasUnsafeCssToken(css: string): boolean {
   if (hasUnquotedLessThan(css)) return true;
+  if (hasUnsupportedLegacyCssImport(css)) return true;
   return [
     /(\bdata:\b|eval|cookie|\bwindow\b|\bparent\b|\bthis\b)/i,
     /behaviou?r|expression|moz-binding|@charset|javascript|vbscript|\\\w/i,
-    /@import (?!url\(['"]https:\/\/fonts\.googleapis\.com\/css\?family=)/i,
     /[\x7f-\xff]/,
     /[\x00-\x08\x0b\x0c\x0e-\x1f]/,
     /&#/,

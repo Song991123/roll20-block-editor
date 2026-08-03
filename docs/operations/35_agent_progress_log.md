@@ -16,6 +16,24 @@ or source-derived measurement here.
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
 
+## 2026-08-04 - Legacy Asset Compatibility Guidance
+
+- Import/export preflight now distinguishes the documented legacy Google Fonts
+  form from CSS imports and direct font files that legacy Roll20 may restrict.
+  The extra warning follows the shared compatibility mode, stays hidden in
+  modern mode, and does not change or bypass the measured runtime proxy policy.
+- The affected UI uses plain Korean action language. New replacement drafts use
+  a Korean placeholder and Korean comments, while previously saved English
+  placeholders remain safely recognized as incomplete instead of being
+  applied.
+- Focused asset, replacement, sanitizer, UI-copy, full `ci:verify`, lint,
+  production build, and import/export browser checks pass. The browser run
+  verifies both mode transitions with zero console, page, request, or
+  external-resource errors. Final server hygiene reports zero project and CDP
+  listeners.
+- Claim boundary: this proves local diagnostics and interaction only. Actual
+  user-owned hosted image/font loading still requires Roll20 evidence.
+
 ## 2026-08-04 - Bounded Import Process Isolation
 
 - Added a bounded repeated-import harness that gives every iteration its own

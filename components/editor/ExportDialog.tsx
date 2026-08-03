@@ -23,6 +23,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { AssetCompatibilityNotice } from './AssetCompatibilityNotice';
 import {
   useWorkspaceStore,
   hasBlockingError,
@@ -274,15 +275,15 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
   function handleCreateAssetReplacementDraft() {
     const draft = buildAssetReplacementDraft(assetPreflight, {
-      sourceLabel: 'export preflight',
+      sourceLabel: '내보내기',
     });
     if (!draft) {
-      toast('교체할 외부 자산 URL이 없습니다.', { duration: 2200 });
+      toast('교체할 외부 자산 주소가 없습니다.', { duration: 2200 });
       return;
     }
     const next = [assetReplacementText.trim(), draft].filter(Boolean).join('\n\n');
     setAssetReplacementText(next);
-    toast.success('현재 내보내기 기준으로 자산 URL 교체 초안을 만들었습니다.', {
+    toast.success('현재 내보내기 기준으로 자산 주소 교체 초안을 만들었습니다.', {
       duration: 3500,
     });
   }
@@ -444,7 +445,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             )}
           </section>
 
-          <AssetPreflightPanel result={assetPreflight} />
+          <AssetPreflightPanel result={assetPreflight} legacyMode={legacyMode} />
           <AssetReplacementPanel
             value={assetReplacementText}
             onChange={setAssetReplacementText}
@@ -656,9 +657,18 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
   );
 }
 
-function AssetPreflightPanel({ result }: { result: AssetPreflight }) {
-  const hasRisk =
-    result.externalRefs > 0 || result.relativeRefs > 0 || result.placeholderRiskRefs > 0;
+function AssetPreflightPanel({
+  result,
+  legacyMode,
+}: {
+  result: AssetPreflight;
+  legacyMode: boolean;
+}) {
+  const hasExternalRisk =
+    result.externalRefs > 0
+    || result.relativeRefs > 0
+    || result.placeholderRiskRefs > 0;
+  const hasRisk = hasExternalRisk || (legacyMode && result.legacyRestrictedCssRefs > 0);
   return (
     <section
       className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3.5"
@@ -668,8 +678,8 @@ function AssetPreflightPanel({ result }: { result: AssetPreflight }) {
         <div>
           <div className="text-sm font-medium">외부 자산 점검</div>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            zip에는 HTML, CSS, translation만 들어갑니다. 이미지와 폰트 URL은 Roll20에서
-            다시 불러오기 때문에 원본처럼 보이려면 링크가 살아 있어야 합니다.
+            ZIP에는 HTML, CSS, 번역 파일만 들어갑니다. 이미지와 글꼴은 Roll20에서
+            주소로 다시 불러오므로 원본처럼 보이려면 링크가 살아 있어야 합니다.
           </p>
         </div>
         <span
@@ -684,32 +694,34 @@ function AssetPreflightPanel({ result }: { result: AssetPreflight }) {
         </span>
       </div>
       <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
-        <Metric label="전체 참조" value={result.totalRefs} />
-        <Metric label="외부 URL" value={result.externalRefs} />
+        <Metric label="전체 주소" value={result.totalRefs} />
+        <Metric label="외부 주소" value={result.externalRefs} />
         <Metric label="상대 경로" value={result.relativeRefs} />
-        <Metric label="데이터 URL" value={result.dataRefs} />
-        <Metric label="Roll20 프록시" value={result.roll20ProxyRefs} />
-        <Metric label="placeholder 위험" value={result.placeholderRiskRefs} />
-        <Metric label="HTTP URL" value={result.insecureHttpRefs} />
-        <Metric label="직링크 후보" value={result.canonicalDirectRefs} />
-        <Metric label="Imgur 직링크" value={result.imgurDirectCandidateRefs} />
+        <Metric label="파일 안에 포함" value={result.dataRefs} />
+        <Metric label="Roll20 경유 주소" value={result.roll20ProxyRefs} />
+        <Metric label="대체 이미지 위험" value={result.placeholderRiskRefs} />
+        <Metric label="보안 연결 아님" value={result.insecureHttpRefs} />
+        <Metric label="바로 열기 후보" value={result.canonicalDirectRefs} />
+        <Metric label="Imgur 바로 열기" value={result.imgurDirectCandidateRefs} />
+        {legacyMode ? <Metric label="구버전 제한" value={result.legacyRestrictedCssRefs} /> : null}
       </div>
-      {hasRisk ? (
+      <AssetCompatibilityNotice result={result} legacyMode={legacyMode} />
+      {hasExternalRisk ? (
         <div className="mt-2 rounded border border-amber-500/25 bg-amber-500/10 px-2.5 py-2 text-xs leading-relaxed text-amber-900 dark:text-amber-100">
-          외부 이미지/폰트는 zip에 포함되지 않습니다. Roll20 프록시, Imgur, 원본 서버가
-          이미지를 placeholder로 바꾸면 실제 화면이 달라질 수 있습니다. 배포 전에 직접
-          보는 URL로 교체하거나 Roll20 Sandbox에서 자산 로딩을 확인하세요.
+          외부 이미지·글꼴은 ZIP에 포함되지 않습니다. 원본이 사라졌거나 막히면
+          대체 이미지가 보여 실제 화면이 달라질 수 있습니다. 배포 전에 바로 열리는
+          사용자 소유 주소로 바꾸거나 Roll20 Sandbox에서 표시 상태를 확인하세요.
           {result.canonicalDirectRefs > 0 ? (
             <span className="mt-1 block" data-testid="export-asset-canonical-candidates">
-              교체 초안에 {result.canonicalDirectRefs}개의 HTTPS/직링크 후보를 함께 적습니다.
-              권한과 소유 여부를 확인한 뒤 실제 교체 URL로 사용하세요.
+              교체 초안에 바로 열 수 있는 HTTPS 후보 {result.canonicalDirectRefs}개를 함께 적습니다.
+              권한과 소유 여부를 확인한 뒤 실제 교체 주소로 사용하세요.
             </span>
           ) : null}
           {result.placeholderRiskRefs > 0 ? (
             <span className="mt-1 block" data-testid="export-asset-placeholder-risk">
-              Roll20 프록시나 Imgur 페이지 URL은 원본이 삭제되면 placeholder 이미지로
-              바뀔 수 있습니다. 실제 동일성을 말하기 전에 해당 자산을 다시 올리거나
-              사용자가 소유한 URL로 교체하세요.
+              Roll20 경유 주소나 Imgur 페이지 주소는 원본이 삭제되면 대체 이미지로
+              바뀔 수 있습니다. 실제 동일성을 확인하기 전에 해당 자산을 다시 올리거나
+              사용자가 소유한 주소로 교체하세요.
             </span>
           ) : null}
           {result.hosts.length > 0 ? (
@@ -719,11 +731,11 @@ function AssetPreflightPanel({ result }: { result: AssetPreflight }) {
             </span>
           ) : null}
         </div>
-      ) : (
+      ) : !hasRisk ? (
         <div className="mt-2 text-xs text-muted-foreground">
-          현재 내보내기 기준으로 외부 이미지나 폰트 참조가 감지되지 않았습니다.
+          현재 내보내기 기준으로 외부 이미지나 글꼴 주소가 감지되지 않았습니다.
         </div>
-      )}
+      ) : null}
     </section>
   );
 }
@@ -795,10 +807,10 @@ function AssetReplacementPanel({
     >
       <div className="mb-2 flex items-start justify-between gap-3">
         <div>
-          <div className="text-sm font-medium">자산 URL 교체</div>
+          <div className="text-sm font-medium">자산 주소 교체</div>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            삭제된 이미지나 폰트를 사용자가 다시 올린 URL로 바꾼 뒤 zip을 만들 수 있습니다.
-            실제 파일은 저장하지 않고, HTML/CSS 안의 URL 문자만 교체합니다.
+            삭제된 이미지나 글꼴을 사용자가 다시 올린 주소로 바꾼 뒤 ZIP을 만들 수 있습니다.
+            실제 파일은 저장하지 않고 HTML/CSS 안의 주소만 교체합니다.
           </p>
         </div>
         <span
@@ -838,8 +850,8 @@ function AssetReplacementPanel({
           교체 목록 초안 만들기
         </Button>
         <span className="text-xs leading-relaxed text-muted-foreground">
-          현재 내보내기 HTML/CSS에서 감지한 외부 URL과 상대 경로를 commented map으로 넣습니다.
-          실제 Roll20 검증에는 사용자가 다시 올린 http(s) URL이 필요합니다.
+          현재 HTML/CSS에서 찾은 외부 주소와 상대 경로를 아직 적용되지 않는 주석 목록으로 넣습니다.
+          실제 Roll20 검증에는 웹에서 바로 열 수 있는 사용자 소유 주소가 필요합니다.
         </span>
       </div>
       <div
@@ -854,7 +866,7 @@ function AssetReplacementPanel({
             <input
               value={profileName}
               onChange={(event) => setProfileName(event.target.value)}
-              placeholder="예: legacy-sheet-corpus legacy corpus 이미지"
+              placeholder="예: 오래된 이미지 교체"
               className="h-8 rounded border border-border bg-[var(--bg-elevated)] px-2 text-sm"
               data-testid="export-asset-profile-name"
             />
@@ -956,24 +968,24 @@ function AssetReplacementPanel({
           >
             {readiness.hasPlaceholderTargets ? (
               <>
-                교체 초안의 placeholder 대상 {readiness.placeholderTargets}건이 아직 채워지지 않았습니다.
-                실제 Roll20 검증 전에 사용자가 직접 다시 올린 http(s) URL로 바꿔 주세요.
+                교체 초안의 미입력 주소 {readiness.placeholderTargets}건이 아직 채워지지 않았습니다.
+                실제 Roll20 검증 전에 사용자가 직접 다시 올린 HTTPS 주소로 바꿔 주세요.
               </>
             ) : readiness.hasRiskyRoll20Targets ? (
               <>
-                Roll20용 URL {readiness.roll20ReadyTargets}건 중 {readiness.riskyRoll20Targets}건은 Roll20 프록시나
-                Imgur 페이지라 placeholder로 바뀔 수 있습니다. 사용 권한을 확인한 직접 이미지 URL이나
-                사용자가 직접 호스팅한 HTTPS URL로 바꾼 뒤 Sandbox에서 다시 비교해 주세요.
+                Roll20용 주소 {readiness.roll20ReadyTargets}건 중 {readiness.riskyRoll20Targets}건은 Roll20 경유 주소나
+                Imgur 페이지라 대체 이미지로 바뀔 수 있습니다. 사용 권한을 확인한 이미지 주소나
+                사용자가 직접 올린 HTTPS 주소로 바꾼 뒤 Sandbox에서 다시 비교해 주세요.
               </>
             ) : readiness.hasLocalOnlyTargets ? (
               <>
-                Roll20 Sandbox 재검증에는 http(s)로 직접 접근 가능한 사용자 소유 URL이 필요합니다.
+                Roll20 Sandbox 재검증에는 웹에서 바로 열 수 있는 사용자 소유 주소가 필요합니다.
                 현재 교체 목록에는 로컬 미리보기 전용 대상 {readiness.localOnlyTargets}건이 있습니다.
               </>
             ) : (
               <>
                 교체 대상 {readiness.roll20ReadyTargets}건이 Roll20 업로드 검증에 쓸 수 있는
-                http(s) URL 형식입니다.
+                웹 주소 형식입니다.
               </>
             )}
           </div>
@@ -981,12 +993,12 @@ function AssetReplacementPanel({
         {profiles.length > 0 ? (
           <div className="text-xs leading-relaxed text-muted-foreground sm:col-span-2">
             {profiles.length}개 묶음이 이 브라우저 작업공간에 저장되어 있습니다. 실제 이미지 파일은
-            저장하지 않고 URL 교체 규칙만 보관합니다.
+            저장하지 않고 주소 교체 규칙만 보관합니다.
           </div>
         ) : null}
       </div>
       <div className="mt-1 text-xs leading-relaxed text-muted-foreground">
-        한 줄에 하나씩 입력하세요. 이 맵은 현재 export에만 적용되며, 원본 작업공간이나 외부 시트
+        한 줄에 하나씩 입력하세요. 이 목록은 현재 내보내기에만 적용되며, 원본 작업공간이나 외부 시트
         폴더를 변경하지 않습니다.
       </div>
       {warnings.length > 0 ? (

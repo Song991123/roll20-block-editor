@@ -169,6 +169,28 @@ function testCssRejectsUnsafeTokens(): void {
   assert(markup.warnings.some((w) => w.code === 'css-rejected'), 'markup rejection warning present');
 }
 
+function testCssLegacyFontImports(): void {
+  const supported = sanitizeRoll20SandboxCss(`
+    @import url('https://fonts.googleapis.com/css?family=Example&display=swap');
+    .a { font-family: Example, sans-serif; }
+  `);
+  expectContains(supported.css, 'https://imgsrv.roll20.net/?src=', 'legacy Google Fonts form follows sandbox proxy policy');
+  assert(!supported.warnings.some((w) => w.code === 'css-rejected'), 'legacy Google Fonts form accepted');
+  assert(supported.warnings.some((w) => w.code === 'css-url-proxied'), 'legacy Google Fonts proxy warning present');
+
+  const css2 = sanitizeRoll20SandboxCss(
+    "@import url('https://fonts.googleapis.com/css2?family=Example&display=swap'); .a { color: red; }",
+  );
+  assert(css2.css === '', 'modern Google Fonts form rejected by legacy rule');
+  assert(css2.warnings.some((w) => w.code === 'css-rejected'), 'modern Google Fonts form warning present');
+
+  const external = sanitizeRoll20SandboxCss(
+    '@import "https://cdn.example.com/theme.css"; .a { color: red; }',
+  );
+  assert(external.css === '', 'external stylesheet import rejected');
+  assert(external.warnings.some((w) => w.code === 'css-rejected'), 'external stylesheet warning present');
+}
+
 function testHtmlClassPrefixAndAllowList(): void {
   const r = sanitizeRoll20SandboxHtml(`
     <section class="outer">gone wrapper</section>
@@ -227,6 +249,7 @@ const tests: Array<[string, () => void]> = [
   ['CSS URL rewrite', testCssUrlRewrite],
   ['CSS inline data URL drop', testCssDropsInlineDataUrlWithoutRejectingStylesheet],
   ['CSS unsafe rejection', testCssRejectsUnsafeTokens],
+  ['CSS legacy font imports', testCssLegacyFontImports],
   ['HTML allow-list/class prefix', testHtmlClassPrefixAndAllowList],
   ['HTML modern class preservation', testModernHtmlPreservesClasses],
   ['HTML multi-select state preservation', testHtmlPreservesMultiSelectState],

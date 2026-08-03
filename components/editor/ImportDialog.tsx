@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { AssetCompatibilityNotice } from './AssetCompatibilityNotice';
 import { importSheet, type ImportWarning } from '@/lib/import';
 import {
   analyzeAssetRefs,
@@ -118,6 +119,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
   const [busy, setBusy] = useState(false);
   const assetReplacementMap = usePreviewStore((state) => state.assetReplacementMap);
   const setAssetReplacementMap = usePreviewStore((state) => state.setAssetReplacementMap);
+  const legacyMode = usePreviewStore((state) => state.legacyCssSanitize);
   const [report, setReport] = useState<null | {
     coverage: number;
     cssCoverage: number;
@@ -313,13 +315,13 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
   }
 
   function handleCreateAssetReplacementDraft() {
-    const draft = buildAssetReplacementDraft(assetPreflight, { sourceLabel: 'import preflight' });
+    const draft = buildAssetReplacementDraft(assetPreflight, { sourceLabel: '불러오기' });
     if (!draft) {
-      toast('교체할 외부 자산 URL이 없습니다.', { duration: 2200 });
+      toast('교체할 외부 자산 주소가 없습니다.', { duration: 2200 });
       return;
     }
     setAssetReplacementMap([assetReplacementMap.trim(), draft].filter(Boolean).join('\n\n'));
-    toast.success('자산 교체 목록 초안을 만들었습니다. 내보내기 창에서 사용자 소유 URL을 입력해 주세요.', {
+    toast.success('자산 교체 목록 초안을 만들었습니다. 내보내기 창에서 사용자 소유 주소를 입력해 주세요.', {
       duration: 3500,
     });
   }
@@ -341,8 +343,8 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
 
         <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)} className="w-full">
           <TabsList className="w-full">
-            <TabsTrigger value="html">HTML</TabsTrigger>
-            <TabsTrigger value="css">CSS</TabsTrigger>
+            <TabsTrigger value="html" data-testid="import-tab-html">HTML</TabsTrigger>
+            <TabsTrigger value="css" data-testid="import-tab-css">CSS</TabsTrigger>
             <TabsTrigger value="i18n">번역</TabsTrigger>
             <TabsTrigger value="js">JS</TabsTrigger>
           </TabsList>
@@ -361,6 +363,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
               placeholder="<input type='text' name='attr_character_name'> 같은 HTML을 붙여 넣으세요."
               className={textareaClassName}
               spellCheck={false}
+              data-testid="import-html-textarea"
             />
           </TabsContent>
 
@@ -378,6 +381,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
               placeholder=".sheet-header { color: red; } 같은 CSS를 붙여 넣으세요."
               className={textareaClassName}
               spellCheck={false}
+              data-testid="import-css-textarea"
             />
           </TabsContent>
 
@@ -455,7 +459,11 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
           </TabsContent>
         </Tabs>
 
-        <ImportAssetPreflight result={assetPreflight} onCreateDraft={handleCreateAssetReplacementDraft} />
+        <ImportAssetPreflight
+          result={assetPreflight}
+          legacyMode={legacyMode}
+          onCreateDraft={handleCreateAssetReplacementDraft}
+        />
 
         <label className="flex gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3.5 text-sm leading-relaxed">
           <input
@@ -589,12 +597,17 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
 
 function ImportAssetPreflight({
   result,
+  legacyMode,
   onCreateDraft,
 }: {
   result: AssetPreflight;
+  legacyMode: boolean;
   onCreateDraft: () => void;
 }) {
-  const hasRisk = result.externalRefs > 0 || result.relativeRefs > 0 || result.placeholderRiskRefs > 0;
+  const hasExternalRisk = result.externalRefs > 0
+    || result.relativeRefs > 0
+    || result.placeholderRiskRefs > 0;
+  const hasRisk = hasExternalRisk || (legacyMode && result.legacyRestrictedCssRefs > 0);
   const draftableRefs = result.refs.filter((ref) => ref.kind !== 'data-url').length;
 
   return (
@@ -621,22 +634,26 @@ function ImportAssetPreflight({
         </span>
       </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        <ImportAssetMetric label="외부 URL" value={result.externalRefs} />
+        <ImportAssetMetric label="외부 주소" value={result.externalRefs} />
         <ImportAssetMetric label="상대 경로" value={result.relativeRefs} />
-        <ImportAssetMetric label="Roll20 프록시" value={result.roll20ProxyRefs} />
+        <ImportAssetMetric label="Roll20 경유 주소" value={result.roll20ProxyRefs} />
         <ImportAssetMetric label="Imgur 페이지" value={result.imgurPageRefs} />
-        <ImportAssetMetric label="placeholder 위험" value={result.placeholderRiskRefs} />
-        <ImportAssetMetric label="데이터 URL" value={result.dataRefs} />
-        <ImportAssetMetric label="HTTP URL" value={result.insecureHttpRefs} />
-        <ImportAssetMetric label="직링크 후보" value={result.canonicalDirectRefs} />
-        <ImportAssetMetric label="Imgur 직링크" value={result.imgurDirectCandidateRefs} />
+        <ImportAssetMetric label="대체 이미지 위험" value={result.placeholderRiskRefs} />
+        <ImportAssetMetric label="파일 안에 포함" value={result.dataRefs} />
+        <ImportAssetMetric label="보안 연결 아님" value={result.insecureHttpRefs} />
+        <ImportAssetMetric label="바로 열기 후보" value={result.canonicalDirectRefs} />
+        <ImportAssetMetric label="Imgur 바로 열기" value={result.imgurDirectCandidateRefs} />
+        {legacyMode ? (
+          <ImportAssetMetric label="구버전 제한" value={result.legacyRestrictedCssRefs} />
+        ) : null}
       </div>
-      {hasRisk ? (
+      <AssetCompatibilityNotice result={result} legacyMode={legacyMode} />
+      {hasExternalRisk ? (
         <div className="mt-2 rounded-lg border border-[color-mix(in_srgb,var(--warning)_30%,transparent)] bg-[var(--warning-soft)] px-3 py-2.5 text-xs leading-relaxed text-foreground">
-          실제 Roll20와 같은 화면을 확인하려면 자산이 로드되는지 먼저 봐야 합니다. 삭제됐거나 막힌 URL은 내보내기의 자산 교체 목록에서 사용자 소유 URL로 직접 바꿔 주세요.
+          실제 Roll20와 같은 화면을 확인하려면 이미지와 글꼴이 제대로 보이는지 먼저 봐야 합니다. 삭제됐거나 막힌 주소는 내보내기의 자산 교체 목록에서 사용자 소유 주소로 바꿔 주세요.
           {result.canonicalDirectRefs > 0 ? (
             <span className="mt-1 block" data-testid="import-asset-canonical-candidates">
-              교체 초안에 HTTPS 직접 후보 {result.canonicalDirectRefs}개를 담았습니다. 후보 URL의 권한과 로딩 상태를 확인한 뒤 사용해야 합니다.
+              교체 초안에 바로 열 수 있는 HTTPS 후보 {result.canonicalDirectRefs}개를 담았습니다. 주소의 사용 권한과 표시 상태를 확인한 뒤 사용하세요.
             </span>
           ) : null}
           {result.hosts.length > 0 ? (

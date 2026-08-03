@@ -38,7 +38,7 @@ corepack pnpm run plan:roll20-asset-relink -- reports\roll20-actual-compare\<lab
 - The app does not download, embed, publish, or commit the referenced assets.
 - The zip includes only a small `asset-replacements.json` summary with counts/warnings, not the original URL list.
 - Browser smoke verifies a synthetic replacement reaches both preview iframe `srcdoc` and edit Shadow DOM render without leaking the original URL.
-- Import-side and export-side detection can generate a commented replacement-map draft from detected external/relative asset refs. The draft is inert until the user replaces `<paste-user-owned-https-url-here>` with a user-owned hosted URL and removes the comment marker.
+- Import-side and export-side detection can generate a commented replacement-map draft from detected external/relative asset refs. New drafts use the Korean `<여기에-사용자-소유-HTTPS-주소-입력>` placeholder. The older English placeholder remains recognized for saved-workspace compatibility. Both remain inert until the user fills a user-owned hosted URL and removes the comment marker.
 - If a draft placeholder target is accidentally uncommented, the replacement parsers reject it, report a warning, and count it as `placeholderTargets` instead of applying it to preview/edit/export output or actual-verification CLI payloads.
 - The current replacement map is persisted in the IndexedDB autosave/manual-save XML under preview metadata and restored through the autosave recovery banner.
 - Browser smoke verifies the synthetic replacement map is saved into IndexedDB, survives reload, and is restored into `previewStore`.
@@ -49,7 +49,11 @@ corepack pnpm run plan:roll20-asset-relink -- reports\roll20-actual-compare\<lab
   preview/edit/export plus Roll20 re-comparison. Placeholder targets stay
   `MISSING_RELINK`.
 - The export dialog can copy the active replacement-map text or save it as a local txt file. The text file is the handoff format for `plan:roll20-asset-relink --map-file`; it stores URL rules only and no asset bytes.
-- Import/export asset preflight now detects insecure `http://` asset URLs and canonical direct URL candidates such as `https://imgur.com/<id>.png` -> `https://i.imgur.com/<id>.png`, protocol-relative URLs, and proxied Roll20 `src=` values. These are written as commented verification candidates in the replacement-map draft with `verify-permission`; they are not applied silently and do not prove ownership.
+- Import/export asset preflight now detects insecure `http://` asset URLs and canonical direct URL candidates such as `https://imgur.com/<id>.png` -> `https://i.imgur.com/<id>.png`, protocol-relative URLs, and proxied Roll20 `src=` values. These are written as commented verification candidates in the replacement-map draft with a plain-language permission reminder; they are not applied silently and do not prove ownership. Previously saved English placeholders remain recognized as incomplete for backward compatibility.
+- Import/export preflight also counts CSS imports and direct `@font-face` URL
+  sources. In legacy mode it separates the documented Google Fonts import form
+  from references that legacy Roll20 may restrict and displays a plain-language
+  warning. Modern mode does not inherit this legacy-only warning.
 - `plan:roll20-asset-relink` also writes an ignored `asset-relink-map-template.txt` beside its report. The template lists commented candidate source/proxy URL rules for unresolved blockers, so the user can fill user-owned HTTP(S) targets without agents copying asset bytes into the repo.
 - The same relink-plan template now includes commented canonical/direct candidates with `verify-permission`, matching the import/export UI behavior. Replacement map parsers strip trailing inline notes such as `# imgur-direct-image:verify-permission` after a user removes the leading comment marker, so activating a generated line does not accidentally include the explanation text in the URL.
 - `roll20_actual_local_baseline.mjs` and `verify:roll20-preupload` accept `--asset-map-file <local-map.txt>`. When provided, the map is applied to local preview/edit screenshots and to the emitted Roll20 upload payload HTML/CSS before Sandbox comparison.

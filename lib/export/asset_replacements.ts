@@ -32,6 +32,7 @@ export interface AssetReplacementReadiness {
 }
 
 const USER_OWNED_URL_PLACEHOLDER = '<paste-user-owned-https-url-here>';
+const USER_OWNED_URL_PLACEHOLDER_KO = '<여기에-사용자-소유-https-주소-입력>';
 
 export function parseAssetReplacementMap(text: string): ParsedAssetReplacementMap {
   const entries: AssetReplacementEntry[] = [];
@@ -48,7 +49,7 @@ export function parseAssetReplacementMap(text: string): ParsedAssetReplacementMa
     if (!parts) {
       warnings.push({
         line: lineNumber,
-        message: '각 줄은 "기존 URL => 새 URL" 형식으로 입력하세요.',
+        message: '각 줄은 "기존 주소 => 새 주소" 형식으로 입력하세요.',
       });
       return;
     }
@@ -56,29 +57,29 @@ export function parseAssetReplacementMap(text: string): ParsedAssetReplacementMa
     const from = cleanReplacementValue(parts[0]);
     const to = cleanReplacementValue(parts[1]);
     if (!from || !to) {
-      warnings.push({ line: lineNumber, message: '기존 URL과 새 URL을 모두 입력하세요.' });
+      warnings.push({ line: lineNumber, message: '기존 주소와 새 주소를 모두 입력하세요.' });
       return;
     }
     if (from === to) {
-      warnings.push({ line: lineNumber, message: '기존 URL과 새 URL이 같습니다.' });
+      warnings.push({ line: lineNumber, message: '기존 주소와 새 주소가 같습니다.' });
       return;
     }
     if (isPlaceholderReplacementTarget(to)) {
       warnings.push({
         line: lineNumber,
-        message: '이 목록을 적용하기 전에 placeholder 대상을 사용자가 소유한 http(s) URL로 바꿔 주세요.',
+        message: '이 목록을 적용하기 전에 미입력 주소를 사용자가 소유한 HTTPS 주소로 바꿔 주세요.',
       });
       return;
     }
     if (!isAllowedReplacementTarget(to)) {
       warnings.push({
         line: lineNumber,
-        message: '교체 대상은 http(s), 프로토콜 생략 URL, 데이터 URL, 또는 Roll20에서 허용되는 상대 경로여야 합니다.',
+        message: '새 주소는 웹 주소, 파일 안에 포함된 데이터 주소, 또는 Roll20에서 허용되는 상대 경로여야 합니다.',
       });
       return;
     }
     if (seen.has(from)) {
-      warnings.push({ line: lineNumber, message: '같은 기존 URL이 중복되었습니다. 첫 번째 규칙만 사용합니다.' });
+      warnings.push({ line: lineNumber, message: '같은 기존 주소가 중복되었습니다. 첫 번째 규칙만 사용합니다.' });
       return;
     }
     seen.add(from);
@@ -177,8 +178,10 @@ function isPlaceholderReplacementTarget(value: string): boolean {
   const normalized = value.trim().toLowerCase();
   return (
     normalized === USER_OWNED_URL_PLACEHOLDER ||
+    normalized === USER_OWNED_URL_PLACEHOLDER_KO ||
     normalized.includes('paste-user-owned') ||
-    normalized.includes('user-owned-https-url')
+    normalized.includes('user-owned-https-url') ||
+    normalized.includes('사용자-소유-https-주소')
   );
 }
 

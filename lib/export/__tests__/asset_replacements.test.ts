@@ -51,20 +51,25 @@ function testUnsafeTargetWarning(): void {
 }
 
 function testPlaceholderTargetWarning(): void {
-  const map = 'https://old.example/a.png => <paste-user-owned-https-url-here>';
-  const parsed = parseAssetReplacementMap(map);
-  assert.equal(parsed.entries.length, 0);
-  assert.equal(parsed.warnings.length, 1);
-  assert.match(parsed.warnings[0].message, /placeholder 대상/);
+  for (const placeholder of [
+    '<paste-user-owned-https-url-here>',
+    '<여기에-사용자-소유-HTTPS-주소-입력>',
+  ]) {
+    const map = `https://old.example/a.png => ${placeholder}`;
+    const parsed = parseAssetReplacementMap(map);
+    assert.equal(parsed.entries.length, 0);
+    assert.equal(parsed.warnings.length, 1);
+    assert.match(parsed.warnings[0].message, /미입력 주소/);
 
-  const result = applyAssetReplacements({ html: '<img src="https://old.example/a.png">', css: '' }, map);
-  assert.equal(result.replacements, 0);
-  assert.match(result.html, /https:\/\/old\.example\/a\.png/);
+    const result = applyAssetReplacements({ html: '<img src="https://old.example/a.png">', css: '' }, map);
+    assert.equal(result.replacements, 0);
+    assert.match(result.html, /https:\/\/old\.example\/a\.png/);
 
-  const summary = summarizeAssetReplacementReadiness(map);
-  assert.equal(summary.entries, 0);
-  assert.equal(summary.placeholderTargets, 1);
-  assert.equal(summary.hasPlaceholderTargets, true);
+    const summary = summarizeAssetReplacementReadiness(map);
+    assert.equal(summary.entries, 0);
+    assert.equal(summary.placeholderTargets, 1);
+    assert.equal(summary.hasPlaceholderTargets, true);
+  }
 }
 
 function testRoll20ReadinessSummary(): void {

@@ -171,10 +171,14 @@ belong in tracked documents.
   `select`/`optgroup`/`option` structure, and inert Page JS in one browser path.
   Continue with broader uncommon form semantics, user-owned hosted assets,
   malformed selector families, and unsupported worker syntax.
-- `VERIFY ASSET UX`: do not bypass Roll20 legacy asset restrictions merely to
-  make local Preview look cleaner. Keep structure, resource loading, console,
-  and page status as separate evidence; add a plain-language warning for
-  unsupported hosted fonts or assets before calling this user-complete.
+- `DONE LOCAL / VERIFY ACTUAL ASSETS`: import and export preflight now classify
+  CSS imports, direct font-file references, the documented legacy Google Fonts
+  form, and legacy-restricted style/font references separately. The warning is
+  visible only in legacy mode, uses plain Korean action copy, and keeps modern
+  mode unchanged. Unit, UI-copy, full `ci:verify`, lint, production build, and
+  browser checks pass with zero console, page, request, external-resource, or
+  lingering-server errors. Actual user-owned hosted asset loading in Roll20
+  remains `VERIFY`; local diagnostics do not prove it.
 - `DONE LOCAL`: the anonymous browser matrix now also covers native range,
   color, and date inputs, details/progress/meter/output structure, a local-only
   data image, `@font-face`, paused animation, a custom at-rule, and malformed

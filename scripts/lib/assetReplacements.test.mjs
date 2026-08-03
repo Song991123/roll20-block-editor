@@ -47,7 +47,7 @@ function testInlineDraftNoteIsNotPartOfTarget() {
 }
 
 function testPlaceholderTargetWarning() {
-  const map = 'https://old.example/a.png => <paste-user-owned-https-url-here>';
+  const map = 'https://old.example/a.png => <여기에-사용자-소유-HTTPS-주소-입력>';
   const parsed = parseAssetReplacementMap(map);
   const result = applyAssetReplacements(
     { html: '<img src="https://old.example/a.png">', css: '' },

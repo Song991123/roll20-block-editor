@@ -1,3 +1,5 @@
+import { analyzeCssImportReferences } from '@/lib/validation/legacyCssAssets';
+
 export type AssetRefKind = 'external-url' | 'relative-url' | 'data-url';
 
 export interface AssetRefSummary {
@@ -27,6 +29,10 @@ export interface AssetPreflight {
   imgurDirectCandidateRefs: number;
   canonicalDirectRefs: number;
   placeholderRiskRefs: number;
+  cssImportRefs: number;
+  fontFileRefs: number;
+  legacyGoogleFontImports: number;
+  legacyRestrictedCssRefs: number;
   hosts: string[];
   refs: AssetRefSummary[];
 }
@@ -38,7 +44,20 @@ export interface AssetReplacementDraftOptions {
 }
 
 export function analyzeAssetRefs(html: string, css: string): AssetPreflight {
-  const refs = Array.from(new Set([...extractCssUrls(css), ...extractHtmlAssetUrls(html)]));
+  const cssImports = analyzeCssImportReferences(css);
+  const cssImportRefs = uniqueNonEmpty(cssImports.map((item) => item.ref));
+  const fontFileRefs = uniqueNonEmpty(extractFontFaceUrls(css));
+  const legacyRestrictedCssRefs = uniqueNonEmpty([
+    ...fontFileRefs,
+    ...cssImports
+      .filter((item) => !item.legacyGoogleFont)
+      .map((item) => item.ref),
+  ]);
+  const refs = Array.from(new Set([
+    ...extractCssUrls(css),
+    ...cssImportRefs,
+    ...extractHtmlAssetUrls(html),
+  ]));
   let externalRefs = 0;
   let relativeRefs = 0;
   let dataRefs = 0;
@@ -140,6 +159,10 @@ export function analyzeAssetRefs(html: string, css: string): AssetPreflight {
     imgurDirectCandidateRefs,
     canonicalDirectRefs,
     placeholderRiskRefs,
+    cssImportRefs: cssImportRefs.length,
+    fontFileRefs: fontFileRefs.length,
+    legacyGoogleFontImports: cssImports.filter((item) => item.legacyGoogleFont).length,
+    legacyRestrictedCssRefs: legacyRestrictedCssRefs.length,
     hosts: Array.from(hosts).sort(),
     refs: refSummaries,
   };
@@ -150,21 +173,21 @@ export function buildAssetReplacementDraft(
   options: AssetReplacementDraftOptions = {},
 ): string {
   const limit = Math.max(1, Math.floor(options.limit ?? 50));
-  const targetPlaceholder = options.targetPlaceholder ?? '<paste-user-owned-https-url-here>';
-  const sourceLabel = options.sourceLabel ?? 'asset preflight';
+  const targetPlaceholder = options.targetPlaceholder ?? '<여기에-사용자-소유-HTTPS-주소-입력>';
+  const sourceLabel = options.sourceLabel ?? '자산 점검';
   const refs = result.refs.flatMap((ref) => {
     if (ref.kind === 'data-url') return [];
     const reason = ref.placeholderRisk
-      ? 'placeholder-risk'
+      ? '원본이 사라질 수 있음'
       : ref.kind === 'relative-url'
-        ? 'relative-path'
+        ? 'Roll20에서 찾을 수 없는 상대 경로'
         : ref.insecureHttp
-          ? 'external-url:http'
-        : 'external-url';
+          ? '보안 연결 아님'
+        : '외부 주소';
     const sourceRules = (ref.replacementRefs.length ? ref.replacementRefs : [ref.ref]).map((candidate) => ({
       candidate,
       target: targetPlaceholder,
-      reason: candidate === ref.proxySourceRef ? `${reason}:proxy-source` : reason,
+      reason: candidate === ref.proxySourceRef ? `${reason} · 원본 주소` : reason,
     }));
     if (!ref.canonicalDirectRef || ref.canonicalDirectRef === ref.ref) return sourceRules;
     return [
@@ -172,7 +195,7 @@ export function buildAssetReplacementDraft(
       {
         candidate: ref.ref,
         target: ref.canonicalDirectRef,
-        reason: `${ref.canonicalReason ?? 'canonical-direct-url'}:verify-permission`,
+        reason: `${describeCanonicalReason(ref.canonicalReason)} · 권한 확인 필요`,
       },
     ];
   });
@@ -181,17 +204,23 @@ export function buildAssetReplacementDraft(
   );
   if (uniqueRefs.length === 0) return '';
   const lines = [
-    `# Asset replacement draft from ${sourceLabel}.`,
-    `# Replace ${targetPlaceholder} with a user-owned http(s) URL that Roll20 can fetch.`,
-    '# Remove the leading "# " after filling each URL.',
+    `# 자산 주소 교체 초안: ${sourceLabel}.`,
+    `# ${targetPlaceholder} 부분을 사용자가 소유하고 Roll20에서 불러올 수 있는 HTTPS 주소로 바꾸세요.`,
+    '# 주소를 채운 뒤 줄 앞의 "# "를 지우면 적용됩니다.',
   ];
   for (const item of uniqueRefs.slice(0, limit)) {
     lines.push(`# ${item.candidate} => ${item.target} # ${item.reason}`);
   }
   if (uniqueRefs.length > limit) {
-    lines.push(`# ... ${uniqueRefs.length - limit} more refs omitted from this draft.`);
+    lines.push(`# ... 나머지 ${uniqueRefs.length - limit}개 주소는 초안에서 생략했습니다.`);
   }
   return lines.join('\n');
+}
+
+function describeCanonicalReason(reason: string | null): string {
+  if (reason?.includes('imgur')) return 'Imgur 바로 열기 후보';
+  if (reason?.includes('https') || reason === 'protocol-relative-https') return 'HTTPS 주소 후보';
+  return '바로 열기 후보';
 }
 
 function extractCssUrls(css: string): string[] {
@@ -199,6 +228,14 @@ function extractCssUrls(css: string): string[] {
   const re = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^'")]+))\s*\)/gi;
   for (const match of css.matchAll(re)) {
     refs.push(match[1] ?? match[2] ?? match[3] ?? '');
+  }
+  return refs;
+}
+
+function extractFontFaceUrls(css: string): string[] {
+  const refs: string[] = [];
+  for (const match of css.matchAll(/@font-face\s*\{([\s\S]*?)\}/gi)) {
+    refs.push(...extractCssUrls(match[1] ?? ''));
   }
   return refs;
 }

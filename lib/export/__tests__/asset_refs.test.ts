@@ -136,14 +136,14 @@ assert.deepEqual(
   ],
 );
 
-const draft = buildAssetReplacementDraft(result, { sourceLabel: 'unit test' });
-assert.match(draft, /Asset replacement draft from unit test/);
-assert.match(draft, /https:\/\/imgsrv\.roll20\.net\/\?src=https:\/\/imgur\.com\/dead => <paste-user-owned-https-url-here> # placeholder-risk/);
-assert.match(draft, /https:\/\/imgur\.com\/dead => <paste-user-owned-https-url-here> # placeholder-risk/);
-assert.match(draft, /https:\/\/imgur\.com\/OsEX9Qg\.png => https:\/\/i\.imgur\.com\/OsEX9Qg\.png # imgur-direct-image:verify-permission/);
-assert.match(draft, /http:\/\/i\.imgur\.com\/OjBPJL9\.jpg => https:\/\/i\.imgur\.com\/OjBPJL9\.jpg # imgur-https-upgrade:verify-permission/);
-assert.match(draft, /https:\/\/imgsrv\.roll20\.net\/\?src=http:\/\/i\.imgur\.com\/RNob7Yh\.jpg => https:\/\/i\.imgur\.com\/RNob7Yh\.jpg # roll20-proxy-imgur-https-upgrade:verify-permission/);
-assert.match(draft, /local\/background\.png => <paste-user-owned-https-url-here> # relative-path/);
+const draft = buildAssetReplacementDraft(result, { sourceLabel: '단위 테스트' });
+assert.match(draft, /자산 주소 교체 초안: 단위 테스트/);
+assert.match(draft, /https:\/\/imgsrv\.roll20\.net\/\?src=https:\/\/imgur\.com\/dead => <여기에-사용자-소유-HTTPS-주소-입력> # 원본이 사라질 수 있음/);
+assert.match(draft, /https:\/\/imgur\.com\/dead => <여기에-사용자-소유-HTTPS-주소-입력> # 원본이 사라질 수 있음/);
+assert.match(draft, /https:\/\/imgur\.com\/OsEX9Qg\.png => https:\/\/i\.imgur\.com\/OsEX9Qg\.png # Imgur 바로 열기 후보 · 권한 확인 필요/);
+assert.match(draft, /http:\/\/i\.imgur\.com\/OjBPJL9\.jpg => https:\/\/i\.imgur\.com\/OjBPJL9\.jpg # Imgur 바로 열기 후보 · 권한 확인 필요/);
+assert.match(draft, /https:\/\/imgsrv\.roll20\.net\/\?src=http:\/\/i\.imgur\.com\/RNob7Yh\.jpg => https:\/\/i\.imgur\.com\/RNob7Yh\.jpg # Imgur 바로 열기 후보 · 권한 확인 필요/);
+assert.match(draft, /local\/background\.png => <여기에-사용자-소유-HTTPS-주소-입력> # Roll20에서 찾을 수 없는 상대 경로/);
 assert.doesNotMatch(draft, /data:image\/png/);
 
 const htmlAttributeRefs = analyzeAssetRefs(
@@ -171,5 +171,22 @@ assert.deepEqual(
     './inline-background.png',
   ],
 );
+
+const legacyFontRefs = analyzeAssetRefs(
+  '',
+  [
+    "@import url('https://fonts.googleapis.com/css?family=Example&display=swap');",
+    "@import url('https://fonts.googleapis.com/css2?family=Example:wght@400;700&display=swap');",
+    '@import "https://cdn.example.com/theme.css";',
+    '@font-face { font-family: Custom; src: url("https://cdn.example.com/custom.woff2") format("woff2"), url(data:font/woff2;base64,AAAA); }',
+  ].join('\n'),
+);
+
+assert.equal(legacyFontRefs.cssImportRefs, 3);
+assert.equal(legacyFontRefs.fontFileRefs, 2);
+assert.equal(legacyFontRefs.legacyGoogleFontImports, 1);
+assert.equal(legacyFontRefs.legacyRestrictedCssRefs, 4);
+assert.equal(legacyFontRefs.externalRefs, 4);
+assert.equal(legacyFontRefs.dataRefs, 1);
 
 console.log('asset_refs.test PASS');
