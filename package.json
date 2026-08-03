@@ -52,6 +52,7 @@
     "generate:rolltemplate-synthetic": "node scripts/generate_rolltemplate_synthetic_matrix.mjs",
     "test:rolltemplate-synthetic": "node scripts/generate_rolltemplate_synthetic_matrix.mjs --self-test",
     "smoke:rolltemplate-chat:synthetic": "node scripts/generate_rolltemplate_synthetic_matrix.mjs && node scripts/rolltemplate_chat_smoke.mjs --fixtures .tmp/rolltemplate-synthetic --report-dir reports/rolltemplate-chat-synthetic --require-unclipped",
+    "smoke:rolltemplate-chat:synthetic:legacy": "node scripts/generate_rolltemplate_synthetic_matrix.mjs && node scripts/rolltemplate_chat_smoke.mjs --fixtures .tmp/rolltemplate-synthetic --report-dir reports/rolltemplate-chat-synthetic-legacy --compatibility-mode legacy --require-unclipped",
     "check:server-hygiene": "node scripts/server_hygiene_check.mjs",
     "test:legacy-css-sanitize": "tsx lib/emit/__tests__/sanitize.test.ts",
     "test:roll20-sandbox-sanitize": "tsx lib/emit/__tests__/roll20SandboxSanitize.test.ts",

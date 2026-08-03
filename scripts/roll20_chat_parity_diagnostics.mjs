@@ -70,6 +70,7 @@ async function main() {
   const actualChatCssInactive = applicableFixtures.filter((fixture) => fixture.actualChatCss?.classification === 'CSS_RULE_MISSING_IN_PAGE_STYLES');
   const actualChatCssScopedMismatch = applicableFixtures.filter((fixture) => fixture.actualChatCss?.classification === 'ROLLTEMPLATE_CSS_SCOPED_OR_PREFIX_MISMATCH');
   const actualChatCssUnknown = applicableFixtures.filter((fixture) => fixture.actualChatCss?.classification === 'UNKNOWN');
+  const actualChatCssNotExpected = applicableFixtures.filter((fixture) => fixture.actualChatCss?.classification === 'NOT_EXPECTED');
   const actualCaptureScaleSuspect = applicableFixtures.filter((fixture) => fixture.status === 'DIFFED' && isActualCaptureScaleSuspect(fixture));
   const actualCaptureUntrusted = applicableFixtures.filter(
     (fixture) => fixture.status === 'DIFFED'
@@ -97,6 +98,7 @@ async function main() {
       actualChatCssInactive: actualChatCssInactive.length,
       actualChatCssScopedMismatch: actualChatCssScopedMismatch.length,
       actualChatCssUnknown: actualChatCssUnknown.length,
+      actualChatCssNotExpected: actualChatCssNotExpected.length,
       actualCaptureScaleSuspect: actualCaptureScaleSuspect.length,
       actualCaptureUntrusted: actualCaptureUntrusted.length,
       maxMismatchRatio: compared.reduce((max, fixture) => Math.max(max, fixture.mismatchRatio ?? 0), 0),
@@ -159,8 +161,11 @@ async function readFixtureIds(baselineDir) {
 
 async function compareFixture(page, fixtureId) {
   const payloadHtml = path.join(runDir, 'local-baseline', fixtureId, 'payload', 'sheet.html');
+  const payloadCss = path.join(runDir, 'local-baseline', fixtureId, 'payload', 'sheet.css');
   const chatApplicable = existsSync(payloadHtml)
     && payloadRequiresChat(await readFile(payloadHtml, 'utf8'));
+  const expectsCustomRolltemplateCss = existsSync(payloadCss)
+    && payloadHasCustomRolltemplateCss(await readFile(payloadCss, 'utf8'));
   if (!chatApplicable) {
     return {
       fixtureId,
@@ -185,7 +190,7 @@ async function compareFixture(page, fixtureId) {
       local: rel(local),
       actual: rel(actual),
       sidecar: rel(sidecar),
-      actualChatCss: summarizeActualChatCss(sidecarJson),
+      actualChatCss: summarizeActualChatCss(sidecarJson, expectsCustomRolltemplateCss),
       note: !existsSync(local) ? 'missing local ChatPane screenshot' : 'missing actual Roll20 chat screenshot',
     };
   }
@@ -199,7 +204,7 @@ async function compareFixture(page, fixtureId) {
       actual: rel(actual),
       sidecar: rel(sidecar),
       sidecarRolltemplateCount: Number(sidecarJson?.rolltemplateCount ?? sidecarJson?.rolltemplates?.length ?? 0),
-      actualChatCss: summarizeActualChatCss(sidecarJson),
+      actualChatCss: summarizeActualChatCss(sidecarJson, expectsCustomRolltemplateCss),
       foreground,
       note: foreground.note,
     };
@@ -214,7 +219,7 @@ async function compareFixture(page, fixtureId) {
       actual: rel(actual),
       sidecar: rel(sidecar),
       sidecarRolltemplateCount: Number(sidecarJson?.rolltemplateCount ?? sidecarJson?.rolltemplates?.length ?? 0),
-      actualChatCss: summarizeActualChatCss(sidecarJson),
+      actualChatCss: summarizeActualChatCss(sidecarJson, expectsCustomRolltemplateCss),
       note: 'actual Roll20 chat sidecar lacks rolltemplate rect/clip metadata for element-level comparison',
     };
   }
@@ -235,7 +240,7 @@ async function compareFixture(page, fixtureId) {
     actual: rel(actual),
     sidecar: rel(sidecar),
     sidecarRolltemplateCount: Number(sidecarJson?.rolltemplateCount ?? sidecarJson?.rolltemplates?.length ?? 0),
-    actualChatCss: summarizeActualChatCss(sidecarJson),
+    actualChatCss: summarizeActualChatCss(sidecarJson, expectsCustomRolltemplateCss),
     compareMode: actualCrop ? 'rolltemplate-crop' : 'full-chat-fallback',
     actualCrop,
     actualCropGeometry,
@@ -360,8 +365,25 @@ async function sniffImageFormat(file) {
   return 'unknown';
 }
 
-function summarizeActualChatCss(sidecar) {
+function payloadHasCustomRolltemplateCss(css) {
+  return /sheet-rolltemplate-[a-z0-9_-]+/i.test(String(css ?? '').replace(/\/\*[\s\S]*?\*\//g, ''));
+}
+
+function summarizeActualChatCss(sidecar, expectsCustomRolltemplateCss = true) {
   const evidence = sidecar?.chatCssEvidence;
+  if (!expectsCustomRolltemplateCss) {
+    return {
+      classification: 'NOT_EXPECTED',
+      anyExpectedRulePresent: Boolean(evidence?.anyExpectedRulePresent),
+      expectedRules: evidence?.expectedRules ?? {},
+      scopedUnprefixedRules: evidence?.scopedUnprefixedRules ?? evidence?.scopedUnprefixedRolltemplateRules ?? [],
+      unprefixedRules: evidence?.unprefixedRules ?? evidence?.unprefixedRolltemplateRules ?? [],
+      styleTextLength: Number(evidence?.styleTextLength ?? 0),
+      templateCount: Number(evidence?.templateCount ?? 0),
+      capturedAt: evidence?.capturedAt ?? null,
+      note: 'Payload CSS has no custom .sheet-rolltemplate-* rule; Roll20 built-in template styling is expected.',
+    };
+  }
   if (!evidence) {
     return {
       classification: 'UNKNOWN',
@@ -741,6 +763,7 @@ function renderMarkdown(report) {
   lines.push(`Actual chat CSS inactive: ${report.summary.actualChatCssInactive}`);
   lines.push(`Actual chat CSS scoped/prefix mismatch: ${report.summary.actualChatCssScopedMismatch}`);
   lines.push(`Actual chat CSS unknown: ${report.summary.actualChatCssUnknown}`);
+  lines.push(`Actual chat custom CSS not expected: ${report.summary.actualChatCssNotExpected}`);
   lines.push(`Actual capture scale/format suspect: ${report.summary.actualCaptureScaleSuspect}`);
   lines.push(`Actual capture untrusted: ${report.summary.actualCaptureUntrusted}`);
   lines.push(`Max mismatch: ${pct(report.summary.maxMismatchRatio)}`);

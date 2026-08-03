@@ -28,6 +28,8 @@ Run scripts from the repository root. Generated output belongs in ignored
 | `corepack pnpm run smoke:import-dialog` | User import flow. |
 | `corepack pnpm run smoke:export-dialog` | Export flow and compatibility controls. |
 | `corepack pnpm run smoke:worker-state` | Controlled Sheet Worker and default-state behavior. |
+| `corepack pnpm run smoke:rolltemplate-chat:synthetic` | Anonymous modern-mode result-card and chat rendering. |
+| `corepack pnpm run smoke:rolltemplate-chat:synthetic:legacy` | The same result-card matrix with the local legacy contract selected explicitly. |
 
 ## Roll20 Local Preparation
 

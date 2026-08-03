@@ -118,6 +118,14 @@ const fixtures = {
             backgroundColor: 'rgb(248, 255, 249)',
           },
         },
+        {
+          className: 'sheet-conditional-state',
+          styles: {
+            borderTopWidth: '1px',
+            borderTopStyle: 'solid',
+            borderTopColor: 'rgb(185, 219, 196)',
+          },
+        },
       ],
     },
   },
@@ -219,6 +227,11 @@ function assertFixtureMatrix() {
   }
   if (!fixtures['card-conditional'].css.includes('@supports (display: grid)')) {
     throw new Error('nested supports regression is missing');
+  }
+  const conditionalBorderExpectation = fixtures['card-conditional'].chatExpectations.childStyles
+    ?.find((item) => item.className === 'sheet-conditional-state');
+  if (conditionalBorderExpectation?.styles?.borderTopWidth !== '1px') {
+    throw new Error('conditional layered-border cascade regression is missing');
   }
   if (fixtures['card-default'].html.includes('<rolltemplate')) {
     throw new Error('default card must exercise the Roll20 built-in fallback');

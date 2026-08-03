@@ -368,11 +368,11 @@ const roll20ChatShellCss = `
   width: ${ROLL20_CHAT_SHELL_WIDTH}px;
   min-width: 0;
 }
-:where(.r20-chat-pane .r20-chat-card-group) [class*="sheet-rolltemplate-"] {
+.r20-chat-pane :where(.r20-chat-card-group [class*="sheet-rolltemplate-"]) {
   box-sizing: content-box;
   line-height: 17.0625px;
 }
-:where(.r20-chat-pane .r20-chat-card-group [class*="sheet-rolltemplate-"], .r20-chat-pane .r20-chat-card-group [class*="sheet-rolltemplate-"] *) {
+.r20-chat-pane :where(.r20-chat-card-group [class*="sheet-rolltemplate-"], .r20-chat-card-group [class*="sheet-rolltemplate-"] *) {
   box-sizing: content-box;
 }
 :where(.r20-chat-pane .textchatcontainer) .inlinerollresult {

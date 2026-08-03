@@ -8,6 +8,20 @@ belong in tracked documents.
 
 ## P0 - Roll20 Render Truth
 
+- `DONE ACTUAL SYNTHETIC MATRIX`: four anonymous result-card shapes were
+  uploaded separately to owner-only modern and legacy verification
+  destinations. Every upload preserved HTML/CSS exactly and translation JSON
+  semantically; the legacy destination kept legacy sanitization enabled. Both
+  modes produced 8/8 authoritative generated-sheet screenshots (four authored
+  roots and four chat cards), trusted full-root evidence 4/4, no cutoff risk,
+  matching chat structure 4/4, no inactive custom result-card CSS, and no
+  renderer blockers. Ignored local reports are the only evidence store.
+- `DONE RENDER ISOLATION`: local result-card rendering no longer inherits the
+  app shell's universal `box-sizing: border-box` or zero-border reset. Actual
+  Roll20 comparison proved both failures: table cell allocation and a layered
+  conditional border. Modern normalized card differences are 5.00%-9.56%; the
+  legacy range is 5.67%-9.60%, with no aligned or authoritative high-mismatch
+  fixture. These numbers cover only the current anonymous matrix.
 - `DONE ACTUAL SYNTHETIC`: a new owner-only modern test room persisted and
   rendered the five current anonymous generated payloads. Persisted HTML/CSS
   matched exactly, translation JSON matched semantically, modern mode remained
@@ -26,13 +40,13 @@ belong in tracked documents.
   tools, and then returned `Not allowed` when the supported HTML chooser tried
   to select the newly exported file. No file was transferred. No hidden input,
   endpoint, or existing-room workaround is allowed.
-- `PARTIAL`: local Preview/Edit and the dedicated modern and legacy destinations now have
+- `DONE CURRENT SYNTHETIC MATRIX`: local Preview/Edit and the dedicated modern and legacy destinations now have
   same-payload root comparisons against the exact authored top-level element,
   not the surrounding Roll20 wrapper. Authored-root dimensions and capture
-  completeness agree. The current product baseline is closer than the tested
-  generic CSS candidates, and different fixtures prefer different micro-fixes.
-  The renderer-action gate therefore holds one global-patch blocker instead of
-  introducing source-specific CSS. Broad-sheet parity is not proven.
+  completeness agree. The no-change authored-root candidate remains best for
+  all four fixtures at 4.96%-4.97% with a one-pixel height delta. The renderer
+  action gate has zero blockers and keeps additional tuning experiment-only.
+  Broad-sheet parity is not proven.
 - `DONE TOOLING`: generated handoffs now include a read-only persisted-payload
   check for dedicated legacy settings. It distinguishes exact HTML/CSS,
   newline normalization, translation JSON formatting normalization, missing
@@ -57,10 +71,10 @@ belong in tracked documents.
   HTML/CSS, semantically matching translation, expected nested-at-rule layout,
   helper output, and matching chat DOM/text. Existing user rooms were not
   modified.
-- `VERIFY`: the additional card does not yet have an authoritative lossless
-  element capture from the active browser surface. Lossy viewport output and a
-  manually aligned crop remain diagnostic only. The remaining matrix cards and
-  equivalent dedicated legacy-room checks are still open.
+- `DONE ACTUAL SYNTHETIC STRUCTURE`: the conditional card and the remaining
+  matrix cards now have true-PNG, DPR-corrected element captures in both modern
+  and legacy verification destinations. Foreground, current-metric, structure,
+  and capture-quality checks pass; no lossy screenshot is used as pixel proof.
 - `DONE LOCAL CURRENT SYNTHETIC`: five anonymous fixtures now cover ordinary
   controls, Roll/runtime content, tables, lists, repeating structure, checked
   and selected defaults, grouped radios, multi-select state, readonly and

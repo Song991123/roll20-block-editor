@@ -16,6 +16,33 @@ or source-derived measurement here.
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
 
+## 2026-08-03 - Modern And Legacy Result-Card Actual Matrix
+
+- Completed separate owner-only modern and legacy actual-screen runs for four
+  anonymous deterministic result-card shapes. The legacy run used a dedicated
+  room because Custom Sheet Sandbox does not support that contract.
+- Each destination passed fresh participant preflight, persisted HTML/CSS and
+  translation checks, expected-mode checks, real sheet-button activation,
+  Roll20 chat rendering, true-PNG foreground capture, and DPR normalization.
+  Existing user rooms were not modified.
+- Both modes now report 8/8 authoritative generated screenshots, trusted
+  full-root evidence 4/4, zero cutoff risk, matching chat structure 4/4, zero
+  capture or CSS-activation suspects, zero renderer blockers, and
+  `rendererReady=YES` for this matrix.
+- Isolated two app-shell cascade leaks from result cards: universal border-box
+  sizing changed authored table cell allocation, and the zero-border reset
+  erased a layered conditional border. The product now excludes authored
+  result-card content from those resets.
+- Added an explicit legacy compatibility option to the result-card browser
+  smoke so modern and legacy actual screenshots never share an unlabelled local
+  baseline. Both four-card smokes pass independently.
+- Current normalized chat differences are 5.00%-9.56% in modern mode and
+  5.67%-9.60% in legacy mode. Full authored-root candidates are 4.96%-4.97%
+  with a one-pixel height delta. These are ignored local synthetic metrics, not
+  broad-sheet parity or support for every third-party sheet.
+- Commit, push, remote CI, and final server/browser cleanup remain pending for
+  this batch.
+
 ## 2026-08-03 - Result-Card CSS And Short-Sheet Geometry
 
 - Replaced flat Rolltemplate CSS matching with a dependency-free structural

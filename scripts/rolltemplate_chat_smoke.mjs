@@ -41,6 +41,7 @@ const CHAT_SHADOW_POLICY = argOf('--chat-shadow-policy', 'default');
 const CHAT_GEOMETRY_POLICY = argOf('--chat-geometry-policy', 'default');
 const CHAT_TYPOGRAPHY_POLICY = argOf('--chat-typography-policy', 'default');
 const CHAT_PAINT_POLICY = argOf('--chat-paint-policy', 'default');
+const COMPATIBILITY_MODE = argOf('--compatibility-mode', 'modern');
 const DEVICE_SCALE_FACTOR = Number(argOf('--device-scale-factor', '1'));
 const VIEWPORT = { width: 2200, height: 1200 };
 const LOCAL_HTML_PATH = process.env.R20_ROLL_CHAT_HTML_PATH || '';
@@ -51,6 +52,9 @@ const REQUIRE_UNCLIPPED = args.includes('--require-unclipped')
 
 if (!Number.isFinite(DEVICE_SCALE_FACTOR) || DEVICE_SCALE_FACTOR <= 0) {
   throw new Error('--device-scale-factor must be a positive number');
+}
+if (!['modern', 'legacy'].includes(COMPATIBILITY_MODE)) {
+  throw new Error('--compatibility-mode must be modern or legacy');
 }
 
 const MIME = {
@@ -160,10 +164,11 @@ async function warmPerfHook(page) {
 }
 
 async function importFixture(page, fixture) {
-  return page.evaluate(async ({ html, css, i18n }) => {
+  return page.evaluate(async ({ html, css, i18n, compatibilityMode }) => {
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     window.__perfHook.clearAll();
     window.__perfHook.clearChat?.();
+    window.__perfHook.setRoll20CompatibilityMode(compatibilityMode);
     await sleep(700);
     let last = null;
     for (let i = 0; i < 40; i += 1) {
@@ -172,7 +177,7 @@ async function importFixture(page, fixture) {
       await sleep(500);
     }
     return last;
-  }, fixture);
+  }, { ...fixture, compatibilityMode: COMPATIBILITY_MODE });
 }
 
 async function chooseRollButton(frame) {
@@ -347,6 +352,9 @@ async function clickRollAndReadChat(page, fixtureId) {
         margin: style.margin,
         padding: style.padding,
         border: style.border,
+        borderTopWidth: style.borderTopWidth,
+        borderTopStyle: style.borderTopStyle,
+        borderTopColor: style.borderTopColor,
         fontFamily: style.fontFamily,
         fontSize: style.fontSize,
         fontWeight: style.fontWeight,
@@ -973,6 +981,7 @@ async function main() {
     chatGeometryPolicy: CHAT_GEOMETRY_POLICY,
     chatTypographyPolicy: CHAT_TYPOGRAPHY_POLICY,
     chatPaintPolicy: CHAT_PAINT_POLICY,
+    compatibilityMode: COMPATIBILITY_MODE,
     deviceScaleFactor: DEVICE_SCALE_FACTOR,
     screenshotScale: 'css',
     fixtures: [],
@@ -1077,7 +1086,7 @@ async function main() {
       const onPageError = (err) => pageErrors.push(String(err));
       page.on('console', onConsole);
       page.on('pageerror', onPageError);
-      const entry = { id: fixture.id, consoleErrors, pageErrors };
+      const entry = { id: fixture.id, compatibilityMode: COMPATIBILITY_MODE, consoleErrors, pageErrors };
       try {
         entry.import = await importFixture(page, fixture);
         const clicked = await clickRollAndReadChat(page, fixture.id);

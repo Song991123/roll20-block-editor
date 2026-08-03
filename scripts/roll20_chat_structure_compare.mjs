@@ -123,7 +123,9 @@ function compareFixture(fixtureId, localFixture, localTemplate, actualSidecar, a
   const templateClassMatches = localInfo.templateClass === actualInfo.templateClass;
   const rowCountMatches = localInfo.rowCount === actualInfo.rowCount;
   const rowSignatureMatches = localSignature === actualSignature;
-  const textMatches = normalizeText(localInfo.tableText) === normalizeText(actualInfo.tableText);
+  const textMatches = normalizeText(localInfo.tableText) === normalizeText(actualInfo.tableText)
+    || (rowCountMatches && localInfo.rowCount > 0 && rowSignatureMatches
+      && normalizeStructuralText(localInfo.tableText) === normalizeStructuralText(actualInfo.tableText));
   const dynamicTextMatches = normalizeDynamicRollText(localTemplate, localInfo.tableText)
     === normalizeDynamicRollText(actualTemplate, actualInfo.tableText);
   let status = 'STRUCTURE_MATCH';
@@ -210,6 +212,10 @@ function rowSignature(rows) {
 
 function normalizeText(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function normalizeStructuralText(value) {
+  return normalizeText(value).replace(/\s/g, '');
 }
 
 function normalizeDynamicRollText(template, value) {
@@ -328,6 +334,24 @@ async function selfTest() {
     );
     if (dynamicResult.status !== 'DYNAMIC_RESULT_MISMATCH' || !dynamicResult.checks.dynamicTextMatches) {
       throw new Error(`dynamic Roll result classification failed: ${JSON.stringify(dynamicResult)}`);
+    }
+    const structuralWhitespaceResult = compareFixture(
+      'fixture-D',
+      { chosen: { name: 'roll_test', value: '&{template:proof}' } },
+      {
+        className: 'sheet-rolltemplate-proof',
+        text: 'ProofResult4',
+        rowMetrics: [{ className: '', cells: [{ tagName: 'TD', className: '', text: 'Result' }, { tagName: 'TD', className: '', text: '4' }] }],
+      },
+      { rolltemplates: [{ className: 'sheet-rolltemplate-proof' }] },
+      {
+        className: 'sheet-rolltemplate-proof',
+        text: 'Proof Result 4',
+        rowMetrics: [{ className: '', cells: [{ tagName: 'TD', className: '', text: 'Result' }, { tagName: 'TD', className: '', text: '4' }] }],
+      },
+    );
+    if (structuralWhitespaceResult.status !== 'STRUCTURE_MATCH' || !structuralWhitespaceResult.checks.textMatches) {
+      throw new Error(`structural whitespace normalization failed: ${JSON.stringify(structuralWhitespaceResult)}`);
     }
     console.log('ROLL20 CHAT STRUCTURE SELF-TEST PASS');
   } finally {

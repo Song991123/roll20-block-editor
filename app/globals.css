@@ -410,6 +410,11 @@ body {
 .app-shell *::before,
 .app-shell *::after {
   box-sizing: border-box;
+}
+
+.app-shell *:not([class*='sheet-rolltemplate-'], [class*='sheet-rolltemplate-'] *),
+.app-shell *:not([class*='sheet-rolltemplate-'], [class*='sheet-rolltemplate-'] *)::before,
+.app-shell *:not([class*='sheet-rolltemplate-'], [class*='sheet-rolltemplate-'] *)::after {
   border-width: 0;
   border-style: solid;
   border-color: var(--border-default);

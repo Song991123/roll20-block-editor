@@ -35,6 +35,7 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
   creator names, sheet names, source fixture labels, source URLs, distinctive
   markup, image/font URLs, machine paths, or source-derived measurements.
 - Roll20 preview/edit/export must support both modern and legacy Roll20 paths as separate render contracts. Keep the legacy sanitizer distinct from modern authored-class preservation, switch preview/edit/HTML/CSS/manifest/verification destination together, and never use evidence from one mode to pass the other.
+- Result-card browser smoke and actual-chat comparison must record an explicit modern or legacy compatibility mode. Never compare a legacy Roll20 capture against an unlabelled or modern-only local chat baseline.
 - The product goal is universal mapping: imported HTML, CSS, translation/i18n, and future worker JS must map to editable blocks/layers without hard-coding one commissioned sheet or one reference sheet family.
 - Commit only from the active Next/React worktree (`web-push-main/`). Confirm with `git rev-parse --show-toplevel` before committing.
 - Roll20 actual-screen verification has generation-specific destinations: Custom Sheet Sandbox is modern-only; legacy mode must be applied and verified in a dedicated legacy-enabled test room. Existing solo rooms remain read-only observation targets.
