@@ -3057,6 +3057,32 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   window.addEventListener('message', function (e) {
     if (e.source !== parent || !e.data) return;
     if (
+      e.data.type === 'r20:external-pointer-drag'
+      && e.data.protocol === 1
+      && e.data.bridgeId === editBridgeId
+    ) {
+      if (!editBridgeEnabled) return;
+      var externalPhase = e.data.phase;
+      if (externalPhase !== 'dragover' && externalPhase !== 'dragleave' && externalPhase !== 'drop') return;
+      var externalX = Number(e.data.pointer && e.data.pointer.x);
+      var externalY = Number(e.data.pointer && e.data.pointer.y);
+      if (!Number.isFinite(externalX) || !Number.isFinite(externalY)) return;
+      var externalTarget = hitNodeAt(externalX, externalY, document.body);
+      var externalEvent = { clientX: externalX, clientY: externalY, target: externalTarget };
+      if (e.data.kind === 'widget') {
+        var externalPayload = typeof e.data.payload === 'string' && e.data.payload.length <= 1024
+          ? e.data.payload
+          : '';
+        postWidgetDrag(externalPhase, externalEvent, externalPayload);
+      } else if (e.data.kind === 'layer') {
+        var externalBlockId = typeof e.data.blockId === 'string' && e.data.blockId.length <= 256
+          ? e.data.blockId
+          : '';
+        postLayerDrag(externalPhase, externalEvent, externalBlockId);
+      }
+      return;
+    }
+    if (
       e.data.type === 'r20:edit-nudge-command'
       && e.data.protocol === 1
       && e.data.bridgeId === editBridgeId

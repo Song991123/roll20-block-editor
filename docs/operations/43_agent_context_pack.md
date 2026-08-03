@@ -98,8 +98,11 @@ contain private source evidence or historical test dumps.
 - Direct canvas touch shares that persistent iframe path. Edit-only gesture
   ownership prevents page/sheet scrolling, iframe scale is honored, and a
   secondary contact cannot replace the primary drag. Current two-contact
-  browser proof preserves managed CSS and exact Preview/Edit geometry; gallery
-  and layer-panel touch insertion remain open.
+  browser proof preserves managed CSS and exact Preview/Edit geometry. A
+  shared parent pointer session now also covers gallery insertion on an empty
+  sheet and inside Flow, layer-panel reorder, and result-card insertion through
+  the existing mouse target/commit paths. Landscape-phone and dense imported
+  sheet ergonomics remain open.
 - Transformed containing frames report an accumulated 2D local-to-viewport
   matrix for common `transform`, individual `translate`/`rotate`/`scale`, and
   CSS zoom chains. Free placement and its optimistic paint invert the relevant

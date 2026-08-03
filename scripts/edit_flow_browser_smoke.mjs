@@ -2671,6 +2671,35 @@ async function main() {
       y: touchIframeBox.height / touchIframeViewport.height,
     };
     const touchPoint = (x, y, id = 1) => ({ x, y, id, radiusX: 1, radiusY: 1, force: 1 });
+    const dispatchSingleTouchDrag = async (targetPage, start, end, inspectHover) => {
+      const session = await targetPage.context().newCDPSession(targetPage);
+      let ended = false;
+      try {
+        await session.send('Input.dispatchTouchEvent', {
+          type: 'touchStart',
+          touchPoints: [touchPoint(start.x, start.y)],
+        });
+        for (let step = 1; step <= 8; step += 1) {
+          await session.send('Input.dispatchTouchEvent', {
+            type: 'touchMove',
+            touchPoints: [touchPoint(
+              start.x + (end.x - start.x) * step / 8,
+              start.y + (end.y - start.y) * step / 8,
+            )],
+          });
+          await targetPage.waitForTimeout(16);
+        }
+        await targetPage.waitForTimeout(80);
+        if (inspectHover) await inspectHover();
+        await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        ended = true;
+      } finally {
+        if (!ended) {
+          await session.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] }).catch(() => {});
+        }
+        await session.detach();
+      }
+    };
     const readTouchPlacement = (blockId) => frame.evaluate((subjectId) => {
       const node = document.querySelector(`[data-r20-block-id="${CSS.escape(subjectId)}"]`);
       const rect = node?.getBoundingClientRect();
@@ -2817,6 +2846,364 @@ async function main() {
       'touch placement diverged between Preview and Edit',
     );
 
+    const touchPage = await browser.newPage({ viewport: { width: 1480, height: 960 }, hasTouch: true });
+    touchPage.on('console', (message) => {
+      if (message.type() === 'error') consoleErrors.push(message.text());
+    });
+    touchPage.on('pageerror', (error) => pageErrors.push(String(error)));
+    await touchPage.addInitScript(() => {
+      try {
+        window.localStorage.setItem('__perfOn', '1');
+        window.localStorage.removeItem('r20be-autosave');
+        window.localStorage.removeItem('r20-ui');
+      } catch {}
+    });
+    await touchPage.goto(result.url, { waitUntil: 'load' });
+    await touchPage.waitForFunction(() => Boolean(window.__perfHook), null, { timeout: 30000 });
+    await touchPage.click('[data-testid="main-mode-edit"]');
+    const emptyTouchSurface = touchPage.locator('[data-testid="preview-drop-surface"]');
+    const emptyTouchGalleryCard = touchPage.locator('[data-testid="widget-card-heading"]');
+    await emptyTouchGalleryCard.scrollIntoViewIfNeeded();
+    const emptyTouchSurfaceBox = await emptyTouchSurface.boundingBox();
+    const emptyTouchGalleryCardBox = await emptyTouchGalleryCard.boundingBox();
+    assert(emptyTouchSurfaceBox && emptyTouchGalleryCardBox, 'empty touch canvas source or target is missing');
+    const emptyHeadingIdsBefore = await touchPage.evaluate(() => (
+      window.__perfHook.getLayerSnapshot('html')
+        .filter((node) => node.type === 'r20_heading')
+        .map((node) => node.id)
+    ));
+    await dispatchSingleTouchDrag(
+      touchPage,
+      {
+        x: emptyTouchGalleryCardBox.x + emptyTouchGalleryCardBox.width / 2,
+        y: emptyTouchGalleryCardBox.y + emptyTouchGalleryCardBox.height / 2,
+      },
+      {
+        x: emptyTouchSurfaceBox.x + emptyTouchSurfaceBox.width * 0.62,
+        y: emptyTouchSurfaceBox.y + Math.min(220, emptyTouchSurfaceBox.height * 0.42),
+      },
+      async () => {
+        result.tests.touchEmptyCanvasHover = await touchPage.evaluate(() => ({
+          ghostCount: document.querySelectorAll('[data-r20-pointer-drag-ghost="1"]').length,
+          sourceDragging: document.querySelector('[data-testid="widget-card-heading"]')
+            ?.getAttribute('data-r20-pointer-dragging') ?? null,
+          targetHighlighted: document.querySelector('[data-testid="preview-drop-surface"]')
+            ?.classList.contains('ring-2') ?? false,
+        }));
+      },
+    );
+    await touchPage.waitForFunction((beforeIds) => (
+      window.__perfHook.getLayerSnapshot('html')
+        .some((node) => node.type === 'r20_heading' && !beforeIds.includes(node.id))
+    ), emptyHeadingIdsBefore);
+    result.tests.touchEmptyCanvasDrop = await touchPage.evaluate((beforeIds) => {
+      const created = window.__perfHook.getLayerSnapshot('html')
+        .find((node) => node.type === 'r20_heading' && !beforeIds.includes(node.id));
+      const emitted = window.__perfHook.getEmitContent();
+      return {
+        created,
+        selectedId: window.__perfHook.getSelectedBlockId?.() ?? null,
+        ghostCount: document.querySelectorAll('[data-r20-pointer-drag-ghost="1"]').length,
+        emittedHasBlock: created ? emitted.html.includes(`data-r20-block-id="${created.id}"`) : false,
+      };
+    }, emptyHeadingIdsBefore);
+    const emptyTouchHeadingId = result.tests.touchEmptyCanvasDrop.created?.id;
+    assert(result.tests.touchEmptyCanvasHover.ghostCount === 1, 'empty touch canvas did not show a held-card ghost');
+    assert(result.tests.touchEmptyCanvasHover.sourceDragging === '1', 'empty touch canvas source did not enter dragging state');
+    assert(result.tests.touchEmptyCanvasHover.targetHighlighted, 'empty touch canvas did not highlight');
+    assert(emptyTouchHeadingId, 'empty touch canvas did not create a heading');
+    assert(
+      result.tests.touchEmptyCanvasDrop.selectedId === emptyTouchHeadingId,
+      'empty touch canvas did not select the created layer',
+    );
+    assert(result.tests.touchEmptyCanvasDrop.emittedHasBlock, 'empty touch canvas layer did not reach emitted HTML');
+    assert(result.tests.touchEmptyCanvasDrop.ghostCount === 0, 'empty touch canvas ghost remained after drop');
+    const emptyTouchIframe = touchPage.locator('[data-testid="preview-iframe"]');
+    await emptyTouchIframe.waitFor({ state: 'visible', timeout: 20000 });
+    const emptyTouchFrame = touchPage.frames().find((candidate) => candidate !== touchPage.mainFrame());
+    assert(emptyTouchFrame, 'empty touch canvas iframe is missing after drop');
+    await emptyTouchFrame.waitForFunction(
+      (blockId) => Boolean(document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`)),
+      emptyTouchHeadingId,
+      { timeout: 20000 },
+    );
+    result.tests.touchEmptyCanvasDrop.rendered = await emptyTouchFrame.evaluate((blockId) => {
+      const node = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+      return {
+        exists: Boolean(node),
+        position: node ? getComputedStyle(node).position : '',
+      };
+    }, emptyTouchHeadingId);
+    assert(result.tests.touchEmptyCanvasDrop.rendered.exists, 'empty touch canvas layer did not render in Edit');
+    assert(
+      result.tests.touchEmptyCanvasDrop.rendered.position === 'absolute',
+      'empty touch canvas layer did not keep free placement',
+    );
+    let touchFixture = null;
+    const touchFixtureDeadline = Date.now() + 20000;
+    while (Date.now() < touchFixtureDeadline) {
+      touchFixture = await touchPage.evaluate(() => {
+        window.__perfHook.clearAll();
+        return {
+          first: window.__perfHook.appendFriendlyWidgetForEditSmoke({ mode: 'flow' }),
+          second: window.__perfHook.appendFriendlyWidgetForEditSmoke({ mode: 'flow' }),
+        };
+      });
+      if (touchFixture.first.containerId && touchFixture.second.containerId) break;
+      await touchPage.waitForTimeout(250);
+    }
+    assert(
+      touchFixture?.first.containerId && touchFixture?.second.containerId,
+      'touch insertion fixture did not initialize',
+    );
+    const touchIframe = touchPage.locator('[data-testid="preview-iframe"]');
+    await touchIframe.waitFor({ state: 'visible', timeout: 20000 });
+    const touchFrame = touchPage.frames().find((candidate) => candidate !== touchPage.mainFrame());
+    assert(touchFrame, 'touch insertion iframe is missing');
+    await touchFrame.waitForFunction(
+      () => document.body?.getAttribute('data-r20-edit-mode') === '1',
+      null,
+      { timeout: 20000 },
+    );
+    await touchPage.click('[data-testid="edit-placement-flow"]');
+    const touchGalleryCard = touchPage.locator('[data-testid="widget-card-heading"]');
+    await touchGalleryCard.scrollIntoViewIfNeeded();
+    const touchGalleryCardBox = await touchGalleryCard.boundingBox();
+    const touchGalleryTargetBox = await touchFrame.locator(
+      `[data-r20-block-id="${touchFixture.first.containerId}"]`,
+    ).boundingBox();
+    assert(touchGalleryCardBox && touchGalleryTargetBox, 'touch gallery source or target is missing');
+    const headingIdsBeforeTouchDrop = await touchPage.evaluate(() => (
+      window.__perfHook.getLayerSnapshot('html')
+        .filter((node) => node.type === 'r20_heading')
+        .map((node) => node.id)
+    ));
+    await dispatchSingleTouchDrag(
+      touchPage,
+      {
+        x: touchGalleryCardBox.x + touchGalleryCardBox.width / 2,
+        y: touchGalleryCardBox.y + touchGalleryCardBox.height / 2,
+      },
+      {
+        x: touchGalleryTargetBox.x + touchGalleryTargetBox.width - 12,
+        y: touchGalleryTargetBox.y + touchGalleryTargetBox.height - 12,
+      },
+      async () => {
+        result.tests.touchGalleryHover = await touchPage.evaluate(() => {
+          const overlay = document.querySelector('[data-testid="iframe-edit-drop-overlay"]');
+          return {
+            ghostCount: document.querySelectorAll('[data-r20-pointer-drag-ghost="1"]').length,
+            sourceDragging: document.querySelector('[data-testid="widget-card-heading"]')
+              ?.getAttribute('data-r20-pointer-dragging') ?? null,
+            targetId: overlay?.getAttribute('data-r20-drop-target-id') ?? null,
+            mode: overlay?.getAttribute('data-r20-drop-mode') ?? null,
+          };
+        });
+      },
+    );
+    await touchPage.waitForFunction((beforeIds) => (
+      window.__perfHook.getLayerSnapshot('html')
+        .some((node) => node.type === 'r20_heading' && !beforeIds.includes(node.id))
+    ), headingIdsBeforeTouchDrop);
+    result.tests.touchGalleryDrop = await touchPage.evaluate((beforeIds) => {
+      const created = window.__perfHook.getLayerSnapshot('html')
+        .find((node) => node.type === 'r20_heading' && !beforeIds.includes(node.id));
+      const emitted = window.__perfHook.getEmitContent();
+      return {
+        created,
+        selectedId: window.__perfHook.getSelectedBlockId?.() ?? null,
+        ghostCount: document.querySelectorAll('[data-r20-pointer-drag-ghost="1"]').length,
+        emittedHasBlock: created ? emitted.html.includes(`data-r20-block-id="${created.id}"`) : false,
+      };
+    }, headingIdsBeforeTouchDrop);
+    const touchHeadingId = result.tests.touchGalleryDrop.created?.id;
+    assert(result.tests.touchGalleryHover.ghostCount === 1, 'touch gallery did not show a held-card ghost');
+    assert(result.tests.touchGalleryHover.sourceDragging === '1', 'touch gallery source did not enter dragging state');
+    assert(result.tests.touchGalleryHover.targetId, 'touch gallery did not expose an iframe drop target');
+    assert(touchHeadingId, 'touch gallery did not create a heading');
+    assert(result.tests.touchGalleryDrop.selectedId === touchHeadingId, 'touch gallery did not select the created layer');
+    assert(result.tests.touchGalleryDrop.emittedHasBlock, 'touch gallery layer did not reach emitted HTML');
+    assert(result.tests.touchGalleryDrop.ghostCount === 0, 'touch gallery ghost remained after drop');
+    result.tests.touchGalleryDrop.rendered = await touchFrame.evaluate((blockId) => {
+      const node = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`);
+      return {
+        exists: Boolean(node),
+        position: node ? getComputedStyle(node).position : '',
+      };
+    }, touchHeadingId);
+    assert(result.tests.touchGalleryDrop.rendered.exists, 'touch gallery layer did not render in Edit');
+    assert(result.tests.touchGalleryDrop.rendered.position !== 'absolute', 'Flow touch gallery drop became absolute');
+    const touchLayerSearch = touchPage.locator('[data-testid="edit-layer-search"]');
+    await touchLayerSearch.fill('');
+    const touchLayerPair = {
+      sourceId: touchFixture.first.containerId,
+      targetId: touchFixture.second.containerId,
+    };
+    const touchLayerSourceRow = touchPage.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${touchLayerPair.sourceId}"]`,
+    );
+    const touchLayerTargetRow = touchPage.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${touchLayerPair.targetId}"]`,
+    );
+    await touchLayerSourceRow.scrollIntoViewIfNeeded();
+    await touchLayerTargetRow.scrollIntoViewIfNeeded();
+    const touchLayerHandle = touchPage.locator(
+      `[data-testid="edit-layer-pointer-handle"][data-r20-block-id="${touchLayerPair.sourceId}"]`,
+    );
+    const touchLayerHandleBox = await touchLayerHandle.boundingBox();
+    const touchLayerTargetRowBox = await touchLayerTargetRow.boundingBox();
+    assert(touchLayerHandleBox && touchLayerTargetRowBox, 'touch layer source handle or target row is missing');
+    const touchLayerBefore = await touchPage.evaluate(({ sourceId, targetId }) => {
+      const graph = window.__perfHook.getLayerSnapshot('html');
+      const source = graph.find((node) => node.id === sourceId);
+      const target = graph.find((node) => node.id === targetId);
+      return {
+        source,
+        target,
+        siblingIds: graph
+          .filter((node) => node.layerParentId === target?.layerParentId)
+          .map((node) => node.id),
+      };
+    }, touchLayerPair);
+    assert(touchLayerBefore.source && touchLayerBefore.target, 'touch layer graph nodes are missing');
+    assert(
+      touchLayerBefore.source.layerParentId === touchLayerBefore.target.layerParentId,
+      'touch layer fixtures must remain siblings',
+    );
+    const touchLayerBeforeSourceIndex = touchLayerBefore.siblingIds.indexOf(touchLayerPair.sourceId);
+    const touchLayerBeforeTargetIndex = touchLayerBefore.siblingIds.indexOf(touchLayerPair.targetId);
+    const touchLayerMode = touchLayerBeforeSourceIndex < touchLayerBeforeTargetIndex ? 'after' : 'before';
+    const touchLayerTargetY = touchLayerMode === 'after'
+      ? touchLayerTargetRowBox.y + touchLayerTargetRowBox.height * 0.92
+      : touchLayerTargetRowBox.y + touchLayerTargetRowBox.height * 0.08;
+    await dispatchSingleTouchDrag(
+      touchPage,
+      {
+        x: touchLayerHandleBox.x + touchLayerHandleBox.width / 2,
+        y: touchLayerHandleBox.y + touchLayerHandleBox.height / 2,
+      },
+      {
+        x: touchLayerTargetRowBox.x + touchLayerTargetRowBox.width / 2,
+        y: touchLayerTargetY,
+      },
+      async () => {
+        result.tests.touchLayerHover = await touchPage.evaluate((targetId) => ({
+          ghostCount: document.querySelectorAll('[data-r20-pointer-drag-ghost="1"]').length,
+          mode: document.querySelector(
+            `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(targetId)}"]`,
+          )?.getAttribute('data-r20-layer-drop-mode') ?? null,
+        }), touchLayerPair.targetId);
+      },
+    );
+    await touchPage.waitForFunction(({ sourceId, targetId, mode }) => {
+      const graph = window.__perfHook.getLayerSnapshot('html');
+      const target = graph.find((node) => node.id === targetId);
+      const siblings = graph
+        .filter((node) => node.layerParentId === target?.layerParentId)
+        .map((node) => node.id);
+      const sourceIndex = siblings.indexOf(sourceId);
+      const targetIndex = siblings.indexOf(targetId);
+      return mode === 'after'
+        ? sourceIndex === targetIndex + 1
+        : sourceIndex + 1 === targetIndex;
+    }, { ...touchLayerPair, mode: touchLayerMode });
+    await touchPage.waitForTimeout(350);
+    result.tests.touchLayerDrop = await touchPage.evaluate(({ sourceId, targetId }) => {
+      const graph = window.__perfHook.getLayerSnapshot('html');
+      const target = graph.find((node) => node.id === targetId);
+      return {
+        siblingIds: graph
+          .filter((node) => node.layerParentId === target?.layerParentId)
+          .map((node) => node.id),
+        selectedId: window.__perfHook.getSelectedBlockId?.() ?? null,
+        ghostCount: document.querySelectorAll('[data-r20-pointer-drag-ghost="1"]').length,
+      };
+    }, touchLayerPair);
+    result.tests.touchLayerDrop.renderedOrder = await touchFrame.evaluate(({ sourceId, targetId }) => {
+      const source = document.querySelector(`[data-r20-block-id="${CSS.escape(sourceId)}"]`);
+      const target = document.querySelector(`[data-r20-block-id="${CSS.escape(targetId)}"]`);
+      return source && target
+        ? source.compareDocumentPosition(target)
+        : 0;
+    }, touchLayerPair);
+    const sourceBeforeTarget = Boolean(
+      result.tests.touchLayerDrop.renderedOrder & 4,
+    );
+    assert(result.tests.touchLayerHover.ghostCount === 1, 'touch layer drag did not show a held-layer ghost');
+    assert(result.tests.touchLayerHover.mode === touchLayerMode, 'touch layer target did not show the exact insertion mode');
+    assert(result.tests.touchLayerDrop.selectedId === touchLayerPair.sourceId, 'touch layer drop did not keep the moved layer selected');
+    assert(result.tests.touchLayerDrop.ghostCount === 0, 'touch layer ghost remained after drop');
+    assert(
+      touchLayerMode === 'before' ? sourceBeforeTarget : !sourceBeforeTarget,
+      'touch layer DOM order diverged from the layer panel',
+    );
+
+    await touchPage.click('[data-testid="edit-submode-rolltemplate"]');
+    const touchTemplateCreate = touchPage.locator('[data-testid="rolltemplate-create"]');
+    await touchTemplateCreate.waitFor({ state: 'visible', timeout: 10000 });
+    await touchTemplateCreate.click();
+    const touchTemplateCard = touchPage.locator('[data-testid="rolltemplate-edit-card"]');
+    await touchTemplateCard.waitFor({ state: 'visible', timeout: 10000 });
+    const touchTemplatePreset = touchPage.locator('[data-testid="widget-card-rolltemplate-label"]');
+    await touchTemplatePreset.scrollIntoViewIfNeeded();
+    const touchTemplatePresetBox = await touchTemplatePreset.boundingBox();
+    const touchTemplateTargetBox = await touchTemplateCard.locator('.sheet-result-row').boundingBox();
+    assert(touchTemplatePresetBox && touchTemplateTargetBox, 'touch result-card source or target is missing');
+    const touchTemplateIdsBefore = await touchPage.evaluate(() => (
+      window.__perfHook.getLayerSnapshot('html')
+        .filter((node) => node.type === 'r20_static_text')
+        .map((node) => node.id)
+    ));
+    await dispatchSingleTouchDrag(
+      touchPage,
+      {
+        x: touchTemplatePresetBox.x + touchTemplatePresetBox.width / 2,
+        y: touchTemplatePresetBox.y + touchTemplatePresetBox.height / 2,
+      },
+      {
+        x: touchTemplateTargetBox.x + touchTemplateTargetBox.width / 2,
+        y: touchTemplateTargetBox.y + touchTemplateTargetBox.height / 2,
+      },
+      async () => {
+        result.tests.touchRolltemplateHover = await touchPage.evaluate(() => ({
+          ghostCount: document.querySelectorAll('[data-r20-pointer-drag-ghost="1"]').length,
+          sourceDragging: document.querySelector('[data-testid="widget-card-rolltemplate-label"]')
+            ?.getAttribute('data-r20-pointer-dragging') ?? null,
+          dropActive: document.querySelector('[data-testid="rolltemplate-edit-surface"]')
+            ?.getAttribute('data-drop-active') ?? null,
+        }));
+      },
+    );
+    await touchPage.waitForFunction((beforeIds) => (
+      window.__perfHook.getLayerSnapshot('html')
+        .some((node) => node.type === 'r20_static_text' && !beforeIds.includes(node.id))
+    ), touchTemplateIdsBefore);
+    result.tests.touchRolltemplateDrop = await touchPage.evaluate((beforeIds) => {
+      const created = window.__perfHook.getLayerSnapshot('html')
+        .find((node) => node.type === 'r20_static_text' && !beforeIds.includes(node.id));
+      const emitted = window.__perfHook.getEmitContent();
+      return {
+        created,
+        selectedId: window.__perfHook.getSelectedBlockId?.() ?? null,
+        rendered: created ? Boolean(document.querySelector(
+          `[data-testid="rolltemplate-edit-card"] [data-r20-block-id="${CSS.escape(created.id)}"]`,
+        )) : false,
+        emittedHasBlock: created ? emitted.html.includes(`data-r20-block-id="${created.id}"`) : false,
+        ghostCount: document.querySelectorAll('[data-r20-pointer-drag-ghost="1"]').length,
+      };
+    }, touchTemplateIdsBefore);
+    assert(result.tests.touchRolltemplateHover.ghostCount === 1, 'touch result-card drag did not show a held-card ghost');
+    assert(result.tests.touchRolltemplateHover.sourceDragging === '1', 'touch result-card source did not enter dragging state');
+    assert(result.tests.touchRolltemplateHover.dropActive === '1', 'touch result-card target did not highlight');
+    assert(result.tests.touchRolltemplateDrop.created?.id, 'touch result-card drop did not create a layer');
+    assert(
+      result.tests.touchRolltemplateDrop.selectedId === result.tests.touchRolltemplateDrop.created.id,
+      'touch result-card drop did not select the new layer',
+    );
+    assert(result.tests.touchRolltemplateDrop.rendered, 'touch result-card layer did not render');
+    assert(result.tests.touchRolltemplateDrop.emittedHasBlock, 'touch result-card layer did not reach emitted HTML');
+    assert(result.tests.touchRolltemplateDrop.ghostCount === 0, 'touch result-card ghost remained after drop');
+    await touchPage.close();
     result.tests.layerDropModes = await page.evaluate(async ({ movingId, targetId }) => {
       const target = document.querySelector(`[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(targetId)}"]`);
       if (!target) return { modes: [], reason: 'missing target layer row' };
@@ -4104,6 +4491,17 @@ async function main() {
     await page.locator(
       `[data-testid="edit-layer-row"][data-r20-block-id="${ids.tableCellAId}"]`,
     ).click();
+    await page.waitForTimeout(80);
+    const tableCellSelection = await page.evaluate((blockId) => ({
+      selectedId: window.__perfHook.getSelectedBlockId?.() ?? null,
+      rowSelected: document.querySelector(
+        `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(blockId)}"]`,
+      )?.getAttribute('data-r20-layer-selected') ?? null,
+    }), ids.tableCellAId);
+    assert(
+      tableCellSelection.selectedId === ids.tableCellAId && tableCellSelection.rowSelected === '1',
+      `table-cell layer selection failed: ${JSON.stringify(tableCellSelection)}`,
+    );
     const tableCellRosePreset = page.locator('[data-testid="design-preset-table-rose"]');
     await tableCellRosePreset.waitFor({ state: 'visible', timeout: 10000 });
     await tableCellRosePreset.click();
@@ -5167,7 +5565,7 @@ async function main() {
         `- Status: ${result.pass ? 'PASS' : 'FAIL'}`,
         `- Console errors: ${consoleErrors.length}`,
         `- Page errors: ${pageErrors.length}`,
-        '- Coverage: flow/free placement including scaled and rotated/skewed nested coordinates, direct on-sheet keyboard nudge and resize, docked resizing plus constrained-width layer overlay with synchronized iframe/drop-slot origin, virtualized layer Tab navigation, canvas widget and block gallery drops, layer edge auto-scroll, layer collapse/drag-hover expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, managed visual styles, preview Roll/chat, sheet width, and the dedicated rolltemplate card editor with click/style/drop/chat synchronization plus empty-workspace template creation.',
+        '- Coverage: flow/free placement including scaled and rotated/skewed nested coordinates, direct on-sheet keyboard nudge, resize, and touch movement, touch gallery insertion on empty/Flow surfaces, touch layer reorder, touch result-card insertion, docked resizing plus constrained-width layer overlay with synchronized iframe/drop-slot origin, virtualized layer Tab navigation, canvas widget and block gallery drops, layer edge auto-scroll, layer collapse/drag-hover expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, managed visual styles, preview Roll/chat, sheet width, and the dedicated rolltemplate card editor with click/style/drop/chat synchronization plus empty-workspace template creation.',
         '',
       ].join('\n'),
       'utf8',

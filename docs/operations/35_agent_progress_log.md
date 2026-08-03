@@ -1013,5 +1013,25 @@ parity.
   sheet scroll remains unchanged, Preview/Edit coordinates match exactly, and
   console/page error counts remain zero.
 - Claim boundary: direct movement on the shared synthetic sheet surface only.
-  Gallery and layer-panel touch insertion, landscape-phone ergonomics, real
-  imported sheets, and actual Roll20 destinations remain separate gates.
+  Landscape-phone ergonomics, real imported sheets, and actual Roll20
+  destinations remain separate gates.
+
+## 2026-08-04 - Touch Gallery And Layer Insertion
+
+- Added one touch/pen drag session for gallery cards and layer rows. It uses
+  native Pointer Events, emits a temporary visual clone outside source HTML,
+  and forwards into the existing mouse target and commit contracts.
+- The persistent sheet iframe translates parent viewport coordinates to its
+  scaled CSS coordinates before resolving the same Flow/free/table target. The
+  empty sheet uses the existing centered-canvas coordinate resolver, and the
+  result-card editor uses its existing container resolver.
+- The layer role chip doubles as the compact touch reorder handle. This keeps
+  narrow row selection geometry stable while preserving before/inside/after
+  markers, auto-scroll, delayed container expansion, selection, and emitted
+  DOM order.
+- Full synthetic browser touch input passes gallery-to-empty, gallery-to-Flow,
+  layer before/after reorder, and result-card insertion. Every path proves held
+  feedback, target highlighting, cleanup, emitted HTML, rendered output, and
+  zero console or page errors.
+- Claim boundary: anonymous local editor proof only. Landscape-phone usability,
+  dense real imports, and actual modern/legacy Roll20 destinations remain open.

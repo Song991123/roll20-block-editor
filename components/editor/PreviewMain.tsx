@@ -101,6 +101,10 @@ import {
   SHEET_RENDER_MIN_HEIGHT,
 } from '@/lib/preview/canvasDimensions';
 import { buildTargetedHtmlPatchPlan } from '@/lib/preview/targetedHtmlPatch';
+import {
+  EDITOR_POINTER_DRAG_EVENT,
+  type EditorPointerDragDetail,
+} from './useEditorPointerDrag';
 
 type OptimisticFlowCommit = {
   subjectBlockId: string;
@@ -2029,6 +2033,105 @@ export default function PreviewMain() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [iframeEditBridgeId, iframeKeyboardNudgeSelection, iframeStructureReady]);
+
+  useEffect(() => {
+    let pointerInsideIframe = false;
+    const sendIframePointerDrag = (
+      detail: EditorPointerDragDetail,
+      phase: EditorPointerDragDetail['phase'],
+      iframe: HTMLIFrameElement,
+    ) => {
+      const rect = iframe.getBoundingClientRect();
+      const scaleX = iframe.offsetWidth > 0 ? rect.width / iframe.offsetWidth : 1;
+      const scaleY = iframe.offsetHeight > 0 ? rect.height / iframe.offsetHeight : scaleX;
+      iframe.contentWindow?.postMessage({
+        type: 'r20:external-pointer-drag',
+        protocol: R20_IFRAME_EDIT_PROTOCOL,
+        bridgeId: iframeEditBridgeId,
+        kind: detail.kind,
+        phase,
+        payload: detail.kind === 'widget' ? detail.payload : undefined,
+        blockId: detail.kind === 'layer' ? detail.blockId : undefined,
+        pointer: {
+          x: (detail.clientX - rect.left) / scaleX,
+          y: (detail.clientY - rect.top) / scaleY,
+        },
+      }, '*');
+    };
+    const onPointerDrag = (event: Event) => {
+      if (!(event instanceof CustomEvent)) return;
+      const detail = event.detail as EditorPointerDragDetail | undefined;
+      if (!detail || useUiStore.getState().mainMode !== 'edit' || editSubmode !== 'sheet') return;
+      const iframe = iframeRef.current;
+      if (iframe && iframeRenderReady && iframeEditBridgeId) {
+        const rect = iframe.getBoundingClientRect();
+        const inside = detail.clientX >= rect.left
+          && detail.clientX <= rect.right
+          && detail.clientY >= rect.top
+          && detail.clientY <= rect.bottom;
+        if (detail.phase === 'dragover' && inside) {
+          pointerInsideIframe = true;
+          setDragOver(false);
+          sendIframePointerDrag(detail, 'dragover', iframe);
+          return;
+        }
+        if (detail.phase === 'drop' && inside) {
+          pointerInsideIframe = false;
+          setDragOver(false);
+          sendIframePointerDrag(detail, 'drop', iframe);
+          return;
+        }
+        if (pointerInsideIframe) {
+          pointerInsideIframe = false;
+          sendIframePointerDrag(detail, 'dragleave', iframe);
+        }
+        setDragOver(false);
+        return;
+      }
+
+      const surface = previewAreaRef.current;
+      if (!surface || !isEmpty || detail.kind !== 'widget') return;
+      const rect = surface.getBoundingClientRect();
+      const inside = detail.clientX >= rect.left
+        && detail.clientX <= rect.right
+        && detail.clientY >= rect.top
+        && detail.clientY <= rect.bottom;
+      if (detail.phase === 'dragover') {
+        setDragOver(inside);
+        return;
+      }
+      setDragOver(false);
+      if (detail.phase !== 'drop' || !inside) return;
+      const preset = decodeFriendlyWidgetDrag(detail.payload);
+      if (!preset || !preset.targets.includes('sheet')) return;
+      const style = window.getComputedStyle(surface);
+      const position = resolveEmptyCanvasDropPoint({
+        pointer: { x: detail.clientX, y: detail.clientY },
+        surface: {
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          paddingLeft: Number.parseFloat(style.paddingLeft) || 0,
+          paddingRight: Number.parseFloat(style.paddingRight) || 0,
+          paddingTop: Number.parseFloat(style.paddingTop) || 0,
+        },
+        canvasWidth,
+        scale,
+        snapSize: useUiStore.getState().snapEnabled ? 8 : 1,
+      });
+      const id = appendFriendlyWidgetPreset(preset, position, { mode: 'absolute' });
+      if (!id) {
+        playSfx('toast.error');
+        toast.error('조각을 추가하지 못했어요. 잠시 후 다시 시도해 주세요.', { duration: 2200 });
+        return;
+      }
+      setSelected(id, 'preview');
+      playSfx('block.add');
+      toast(`'${preset.label}' 추가 완료`, { duration: 1600 });
+    };
+    window.addEventListener(EDITOR_POINTER_DRAG_EVENT, onPointerDrag);
+    return () => window.removeEventListener(EDITOR_POINTER_DRAG_EVENT, onPointerDrag);
+  }, [canvasWidth, editSubmode, iframeEditBridgeId, iframeRenderReady, isEmpty, scale, setSelected]);
 
   useEffect(() => {
     if (!iframeEditBridgeId) return;

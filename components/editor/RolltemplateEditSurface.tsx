@@ -20,12 +20,17 @@ import {
   appendFriendlyWidgetPreset,
   decodeFriendlyWidgetDrag,
   FRIENDLY_WIDGET_MIME,
+  type FriendlyWidgetPreset,
 } from '@/lib/widgets/presets';
 import {
   parseRolltemplateTranslations,
   RolltemplateCardContent,
   RolltemplateRenderSurface,
 } from './ChatPane';
+import {
+  EDITOR_POINTER_DRAG_EVENT,
+  type EditorPointerDragDetail,
+} from './useEditorPointerDrag';
 
 export default function RolltemplateEditSurface() {
   const emittedHtml = useWorkspaceStore((state) => state.emitCache.html);
@@ -38,6 +43,7 @@ export default function RolltemplateEditSurface() {
   const canvasWidth = useUiStore((state) => state.rolltemplateCanvasWidth);
   const zoom = useUiStore((state) => state.previewZoom);
   const [dragActive, setDragActive] = useState(false);
+  const surfaceRef = useRef<HTMLDivElement | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
 
   const nodes = useMemo(() => {
@@ -110,6 +116,49 @@ export default function RolltemplateEditSurface() {
     }
     return adapter.canNestTypeInContainer('html', blockType, activeRootId) ? activeRootId : null;
   }, [activeRootId, nodes]);
+
+  const insertPreset = useCallback((preset: FriendlyWidgetPreset, target: EventTarget | null) => {
+    if (!preset.targets.includes('rolltemplate')) return false;
+    const containerBlockId = resolveDropContainer(preset.blockType, target);
+    if (!containerBlockId) {
+      toast.error('이 조각은 현재 위치에 넣을 수 없어요.');
+      return false;
+    }
+    const id = appendFriendlyWidgetPreset(preset, undefined, {
+      target: 'rolltemplate',
+      mode: 'flow',
+      containerBlockId,
+      placement: 'inside',
+    });
+    if (!id) toast.error('결과 조각을 추가하지 못했어요.');
+    else setSelectedBlockId(id, 'preview');
+    return Boolean(id);
+  }, [resolveDropContainer, setSelectedBlockId]);
+
+  useEffect(() => {
+    const onPointerDrag = (event: Event) => {
+      if (!(event instanceof CustomEvent)) return;
+      const detail = event.detail as EditorPointerDragDetail | undefined;
+      if (!detail || detail.kind !== 'widget') return;
+      const surface = surfaceRef.current;
+      if (!surface) return;
+      const rect = surface.getBoundingClientRect();
+      const inside = detail.clientX >= rect.left
+        && detail.clientX <= rect.right
+        && detail.clientY >= rect.top
+        && detail.clientY <= rect.bottom;
+      if (detail.phase === 'dragover') {
+        setDragActive(inside);
+        return;
+      }
+      setDragActive(false);
+      if (detail.phase !== 'drop' || !inside) return;
+      const preset = decodeFriendlyWidgetDrag(detail.payload);
+      if (preset) insertPreset(preset, document.elementFromPoint(detail.clientX, detail.clientY));
+    };
+    window.addEventListener(EDITOR_POINTER_DRAG_EVENT, onPointerDrag);
+    return () => window.removeEventListener(EDITOR_POINTER_DRAG_EVENT, onPointerDrag);
+  }, [insertPreset]);
 
   const createTemplate = useCallback(() => {
     const adapter = getBlocklyAdapter();
@@ -205,6 +254,7 @@ export default function RolltemplateEditSurface() {
 
   return (
     <div
+      ref={surfaceRef}
       className="h-full overflow-auto bg-[var(--bg-canvas)] px-6 py-7"
       data-testid="rolltemplate-edit-surface"
       data-active-template-id={activeRoot.id}
@@ -224,20 +274,9 @@ export default function RolltemplateEditSurface() {
       onDrop={(event) => {
         const preset = decodeFriendlyWidgetDrag(event.dataTransfer.getData(FRIENDLY_WIDGET_MIME));
         setDragActive(false);
-        if (!preset || !preset.targets.includes('rolltemplate')) return;
+        if (!preset) return;
         event.preventDefault();
-        const containerBlockId = resolveDropContainer(preset.blockType, event.target);
-        if (!containerBlockId) {
-          toast.error('이 조각은 현재 위치에 넣을 수 없어요.');
-          return;
-        }
-        const id = appendFriendlyWidgetPreset(preset, undefined, {
-          target: 'rolltemplate',
-          mode: 'flow',
-          containerBlockId,
-          placement: 'inside',
-        });
-        if (!id) toast.error('결과 조각을 추가하지 못했어요.');
+        insertPreset(preset, event.target);
       }}
     >
       <style>{`

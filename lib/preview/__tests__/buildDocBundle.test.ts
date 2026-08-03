@@ -252,6 +252,11 @@ assert.match(
 );
 assert.match(
   bundle.doc,
+  /e\.data\.type === 'r20:external-pointer-drag'[\s\S]*?postWidgetDrag\(externalPhase, externalEvent, externalPayload\)[\s\S]*?postLayerDrag\(externalPhase, externalEvent, externalBlockId\)/,
+  'touch and pen sources are forwarded through the same iframe widget/layer drop bridge',
+);
+assert.match(
+  bundle.doc,
   /#dialog-window\.r20-preview-dialog > \.dialog > \.tab-content > \.sheetform[\s\S]*?width: 100% !important/,
   'Roll20 form keeps the iframe/dialog width',
 );

@@ -1,6 +1,6 @@
 # DOM Layer Editing Plan
 
-Updated: 2026-08-03
+Updated: 2026-08-04
 
 This document defines how imported Roll20 DOM structures are represented in
 the editor. It is a product contract for the layer panel and the shared iframe
@@ -374,6 +374,12 @@ already-selected insertion position.
   before the existing local-coordinate commit. Current browser proof covers an
   overlapping topmost layer, optimistic paint, a secondary contact, managed
   CSS emission, and zero Preview/Edit geometry drift.
+- Touch and pen gallery insertion use one parent-owned pointer session, a
+  visual clone that never enters source HTML, and the same target/commit
+  resolver used by mouse drag. The layer role chip is the compact touch handle
+  for structural reorder, so narrow rows keep their selection geometry and no
+  second layer model is introduced. The result-card editor consumes the same
+  event and existing container resolver.
 - A long virtualized list also covers forward and reverse Tab navigation,
   unique sequential focus, automatic edge scrolling, active-row visibility,
   one roving tab stop, and an unchanged HTML/CSS emit.
@@ -402,11 +408,13 @@ re-import -> emit. A value-switch case panel owns the internal marker for its
 case block, and the parent switch preserves an imported checked radio as its
 editable initial value. Protected real-fixture and actual modern/legacy Roll20
 coverage remain future acceptance work.
-Touch insertion from the gallery or layer panel and landscape-phone ergonomics
-remain outside this direct-canvas movement proof.
-The fresh-sheet browser path additionally performs a real friendly-card drag
-onto the empty Edit surface and verifies preset presentation, pointer-aligned
-850px sheet coordinates, selection, and reuse of the first persistent iframe.
+Browser touch input now covers gallery insertion onto the empty Edit surface,
+gallery insertion into an existing Flow container, layer-panel before/after
+reorder, and result-card insertion. It verifies held-object feedback, exact
+drop markers, selection, emitted HTML, rendered order, and cleanup after drop.
+Landscape-phone ergonomics and dense real imports remain outside this proof.
+The fresh-sheet path additionally verifies pointer-aligned 850px sheet
+coordinates and reuse of the first persistent iframe.
 It also verifies Direct Edit as the clean-browser default and requires the
 visible empty sheet and first iframe to share their horizontal origin and width.
 

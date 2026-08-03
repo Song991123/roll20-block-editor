@@ -279,6 +279,14 @@ belong in tracked documents.
   topmost layer follows the primary finger immediately, a secondary contact
   cannot replace the active drag, the sheet does not scroll, managed CSS owns
   the committed position, and Preview/Edit geometry remains identical.
+- `DONE LOCAL`: touch and pen insertion now reuse the mouse drag target and
+  commit contracts instead of maintaining a second editor model. Browser touch
+  input covers a gallery card dropped on an empty sheet, a card inserted after
+  an existing Flow child, layer-panel before/after reordering, and a result-card
+  gallery insertion. Each path shows a held-card ghost and exact target marker,
+  clears temporary state after release, selects the committed layer, reaches
+  emitted HTML, and renders through the same persistent surface with zero
+  console or page errors.
 - `DONE LOCAL`: two or more absolute visual siblings sharing the same rendered
   coordinate parent expose left/center/right and top/center/bottom alignment.
   Unit coverage checks all six calculations. Browser coverage checks that a
@@ -359,9 +367,9 @@ belong in tracked documents.
   Preview/Edit and empty-drop width from 376px to 580px. Opening the layer tree
   leaves the iframe and drop-slot origin and width unchanged; its exposed scrim
   closes reliably. Full edit-flow and fresh-sheet desktop/mobile smokes pass.
-- `PARTIAL`: landscape phones, touch-based gallery/layer-panel insertion, and
-  dense imported sheets still need broader viewport review. Direct movement on
-  the shared sheet surface has current two-contact browser proof.
+- `PARTIAL`: landscape phones and dense imported sheets still need broader
+  viewport review. Direct movement and gallery/layer-panel insertion have
+  current browser touch proof on the anonymous synthetic editor.
 - `DONE LOCAL`: alignment actions are shown only for same-parent absolute
   selections whose logical and rendered coordinate parents agree. Flow, table,
   list, mixed-parent, and mixed-coordinate selections remain structure-driven.

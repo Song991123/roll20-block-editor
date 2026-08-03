@@ -54,11 +54,27 @@ import {
   SHEET_CANVAS_MAX_WIDTH,
   SHEET_CANVAS_MIN_WIDTH,
 } from '@/lib/preview/canvasDimensions';
+import {
+  EDITOR_POINTER_DRAG_EVENT,
+  type EditorPointerDragDetail,
+  useEditorPointerDrag,
+} from './useEditorPointerDrag';
 
 function formatDropModeLabel(mode: LayerDropMode): string {
   if (mode === 'inside') return '안에 넣기';
   if (mode === 'before') return '앞에 넣기';
   return '뒤에 넣기';
+}
+
+function pickLayerDropMode(
+  pointerY: number,
+  rect: Pick<DOMRect, 'top' | 'height'>,
+  canReceiveChildren: boolean,
+): LayerDropMode {
+  const y = rect.height > 0 ? (pointerY - rect.top) / rect.height : 0.5;
+  if (y < 0.28) return 'before';
+  if (y > 0.72) return 'after';
+  return canReceiveChildren ? 'inside' : y < 0.5 ? 'before' : 'after';
 }
 
 function matchesLayerSearch(node: BlockSnapshot, query: string): boolean {
@@ -685,6 +701,12 @@ function EditLayerPanel({
   const bumpStructure = useWorkspaceStore((s) => s.bumpStructure);
   const structureVersion = useWorkspaceStore((s) => s.workspaces[tab].structureVersion);
   const [collapsedLayerIds, setCollapsedLayerIds] = useState<Set<string>>(() => new Set());
+  const [pointerDropTarget, setPointerDropTarget] = useState<{
+    blockId: string;
+    mode: LayerDropMode;
+  } | null>(null);
+  const pointerExpandTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pointerExpandTargetRef = useRef<string | null>(null);
 
   const stopAutoScroll = useCallback(() => {
     autoScrollDeltaRef.current = 0;
@@ -860,6 +882,87 @@ function EditLayerPanel({
     },
     [bumpStructure, canMoveLayer, setSelected, tab],
   );
+
+  useEffect(() => {
+    const cancelPointerExpand = () => {
+      if (pointerExpandTimerRef.current !== null) clearTimeout(pointerExpandTimerRef.current);
+      pointerExpandTimerRef.current = null;
+      pointerExpandTargetRef.current = null;
+    };
+    const clearPointerTarget = () => {
+      cancelPointerExpand();
+      setPointerDropTarget(null);
+      stopAutoScroll();
+    };
+    const onPointerDrag = (event: Event) => {
+      if (!(event instanceof CustomEvent)) return;
+      const detail = event.detail as EditorPointerDragDetail | undefined;
+      if (!detail || detail.kind !== 'layer') return;
+      if (detail.phase === 'dragleave') {
+        clearPointerTarget();
+        return;
+      }
+      const scroll = scrollRef.current;
+      if (!scroll) return;
+      const bounds = scroll.getBoundingClientRect();
+      const inside = detail.clientX >= bounds.left
+        && detail.clientX <= bounds.right
+        && detail.clientY >= bounds.top
+        && detail.clientY <= bounds.bottom;
+      if (!inside) {
+        clearPointerTarget();
+        return;
+      }
+
+      autoScrollDeltaRef.current = getLayerPanelAutoScrollDelta(detail.clientY, bounds);
+      if (autoScrollDeltaRef.current === 0) stopAutoScroll();
+      else runAutoScroll();
+
+      const hit = document.elementFromPoint(detail.clientX, detail.clientY);
+      const row = hit?.closest<HTMLElement>('[data-testid="edit-layer-row"]');
+      const targetId = row?.dataset.r20BlockId ?? '';
+      if (!row || !targetId || targetId === detail.blockId) {
+        cancelPointerExpand();
+        setPointerDropTarget(null);
+        return;
+      }
+      const mode = pickLayerDropMode(
+        detail.clientY,
+        row.getBoundingClientRect(),
+        row.dataset.r20CanDrop === '1',
+      );
+      if (!canMoveLayer(detail.blockId, targetId, mode)) {
+        cancelPointerExpand();
+        setPointerDropTarget(null);
+        return;
+      }
+
+      setPointerDropTarget({ blockId: targetId, mode });
+      const targetNode = nodes.find((node) => node.id === targetId);
+      if (mode === 'inside' && targetNode?.childCount && collapsedLayerIds.has(targetId)) {
+        if (pointerExpandTargetRef.current !== targetId) {
+          cancelPointerExpand();
+          pointerExpandTargetRef.current = targetId;
+          pointerExpandTimerRef.current = setTimeout(() => {
+            pointerExpandTimerRef.current = null;
+            pointerExpandTargetRef.current = null;
+            toggleLayer(targetId);
+          }, 450);
+        }
+      } else {
+        cancelPointerExpand();
+      }
+      if (detail.phase !== 'drop') return;
+      clearPointerTarget();
+      moveLayer(detail.blockId, targetId, mode);
+    };
+    window.addEventListener(EDITOR_POINTER_DRAG_EVENT, onPointerDrag);
+    return () => {
+      window.removeEventListener(EDITOR_POINTER_DRAG_EVENT, onPointerDrag);
+      cancelPointerExpand();
+      stopAutoScroll();
+    };
+  }, [canMoveLayer, collapsedLayerIds, moveLayer, nodes, runAutoScroll, stopAutoScroll, toggleLayer]);
 
   const ejectLayer = useCallback(
     (blockId: string) => {
@@ -1059,6 +1162,7 @@ function EditLayerPanel({
                     onNavigate={(direction) => focusLayerAt(row.index + direction)}
                     onMove={moveLayer}
                     canDrop={canMoveLayer}
+                    pointerDropMode={pointerDropTarget?.blockId === node.id ? pointerDropTarget.mode : null}
                     onEject={ejectLayer}
                     collapsed={collapsedLayerIds.has(node.id)}
                     onToggleCollapse={toggleLayer}
@@ -1084,6 +1188,7 @@ const EditLayerRow = memo(function EditLayerRow({
   onNavigate,
   onMove,
   canDrop,
+  pointerDropMode,
   onEject,
   collapsed,
   onToggleCollapse,
@@ -1098,6 +1203,7 @@ const EditLayerRow = memo(function EditLayerRow({
   onNavigate: (direction: -1 | 1) => boolean;
   onMove: (draggedId: string, targetId: string, mode: LayerDropMode) => void;
   canDrop: (draggedId: string, targetId: string, mode: LayerDropMode) => boolean;
+  pointerDropMode: LayerDropMode | null;
   onEject: (blockId: string) => void;
   collapsed: boolean;
   onToggleCollapse: (blockId: string) => void;
@@ -1105,6 +1211,14 @@ const EditLayerRow = memo(function EditLayerRow({
   const [dropMode, setDropMode] = useState<LayerDropMode | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const autoExpandTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pointerDrag = useEditorPointerDrag(
+    { kind: 'layer', blockId: node.id, label: node.label },
+    {
+      getGhostSource: (captureElement) => captureElement.closest<HTMLElement>(
+        '[data-testid="edit-layer-row"]',
+      ),
+    },
+  );
   const role = useMemo(() => {
     const base = getLayerRole(node.type);
     return {
@@ -1114,13 +1228,11 @@ const EditLayerRow = memo(function EditLayerRow({
     };
   }, [node.id, node.type, workspace]);
   const pickMode = useCallback(
-    (e: ReactDragEvent<HTMLElement>): LayerDropMode => {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const y = rect.height > 0 ? (e.clientY - rect.top) / rect.height : 0.5;
-      if (y < 0.28) return 'before';
-      if (y > 0.72) return 'after';
-      return role.canReceiveChildren ? 'inside' : y < 0.5 ? 'before' : 'after';
-    },
+    (e: ReactDragEvent<HTMLElement>): LayerDropMode => pickLayerDropMode(
+      e.clientY,
+      e.currentTarget.getBoundingClientRect(),
+      role.canReceiveChildren,
+    ),
     [role.canReceiveChildren],
   );
   const cancelAutoExpand = useCallback(() => {
@@ -1135,6 +1247,7 @@ const EditLayerRow = memo(function EditLayerRow({
     }, 450);
   }, [collapsed, node.childCount, node.id, onToggleCollapse]);
   useEffect(() => cancelAutoExpand, [cancelAutoExpand]);
+  const visibleDropMode = dropMode ?? pointerDropMode;
   return (
     <div
       draggable
@@ -1145,7 +1258,7 @@ const EditLayerRow = memo(function EditLayerRow({
       data-r20-layer-role-kind={role.kind}
       data-r20-can-drop={role.canReceiveChildren ? '1' : '0'}
       data-r20-default-drop-mode={role.defaultDropMode}
-      data-r20-layer-drop-mode={dropMode ?? ''}
+      data-r20-layer-drop-mode={visibleDropMode ?? ''}
       data-r20-layer-parent-id={node.layerParentId ?? ''}
       data-r20-layer-previous-id={node.layerPreviousId ?? ''}
       data-r20-layer-relation={node.layerRelation}
@@ -1153,8 +1266,8 @@ const EditLayerRow = memo(function EditLayerRow({
       data-r20-layer-search-match={searchMatch ? '1' : '0'}
       data-r20-layer-context-only={contextOnly ? '1' : '0'}
       data-r20-layer-selected={selected ? '1' : '0'}
-      data-r20-layer-dragging={isDragging ? '1' : '0'}
-      aria-grabbed={isDragging}
+      data-r20-layer-dragging={isDragging || pointerDrag.dragging ? '1' : '0'}
+      aria-grabbed={isDragging || pointerDrag.dragging}
       aria-selected={selected}
       aria-level={node.depth + 1}
       aria-expanded={node.childCount > 0 ? !collapsed : undefined}
@@ -1173,7 +1286,10 @@ const EditLayerRow = memo(function EditLayerRow({
           onSelect(false);
         }
       }}
-      onClick={(e) => onSelect(e.metaKey || e.ctrlKey)}
+      onClick={(e) => {
+        pointerDrag.consumeClick(e);
+        if (!e.defaultPrevented) onSelect(e.metaKey || e.ctrlKey);
+      }}
       onDragStart={(e) => {
         e.dataTransfer.setData('application/x-r20-layer-block', node.id);
         e.dataTransfer.effectAllowed = 'move';
@@ -1245,14 +1361,14 @@ const EditLayerRow = memo(function EditLayerRow({
             ? 'text-muted-foreground/70 hover:bg-[var(--bg-hover)] hover:text-muted-foreground'
             : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-foreground'
       } ${
-        dropMode === 'inside'
+        visibleDropMode === 'inside'
           ? 'ring-[1.5px] ring-rose-500'
-          : dropMode === 'before'
+          : visibleDropMode === 'before'
             ? 'shadow-[inset_0_3px_0_var(--info)]'
-            : dropMode === 'after'
+            : visibleDropMode === 'after'
               ? 'shadow-[inset_0_-3px_0_var(--info)]'
               : ''
-      } ${isDragging ? 'cursor-grabbing opacity-60' : 'cursor-grab'}`}
+      } ${isDragging || pointerDrag.dragging ? 'cursor-grabbing opacity-60' : 'touch-pan-y cursor-grab'}`}
       style={{ paddingLeft: `${8 + node.depth * 12}px` }}
     >
       {node.depth > 0 && (
@@ -1273,15 +1389,15 @@ const EditLayerRow = memo(function EditLayerRow({
           selected && 'bg-[var(--primary)]',
         )}
       />
-      {dropMode && (
+      {visibleDropMode && (
         <span
           aria-hidden="true"
           data-testid="edit-layer-drop-marker"
           className={cn(
             'pointer-events-none absolute z-[2] rounded-full',
-            dropMode === 'inside'
+            visibleDropMode === 'inside'
               ? 'inset-0 rounded-lg border-2 border-rose-500 bg-rose-400/10'
-              : dropMode === 'before'
+              : visibleDropMode === 'before'
                 ? 'left-0 right-0 top-0 h-1 bg-teal-600 shadow-[0_0_0_2px_rgba(20,184,166,0.18)]'
                 : 'bottom-0 left-0 right-0 h-1 bg-teal-600 shadow-[0_0_0_2px_rgba(20,184,166,0.18)]',
           )}
@@ -1289,17 +1405,23 @@ const EditLayerRow = memo(function EditLayerRow({
           <span
             className={cn(
               'absolute left-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold leading-4 text-white shadow-sm',
-              dropMode === 'inside' ? 'top-1 bg-rose-600' : dropMode === 'before' ? 'top-1 bg-teal-700' : '-top-6 bg-teal-700',
+              visibleDropMode === 'inside' ? 'top-1 bg-rose-600' : visibleDropMode === 'before' ? 'top-1 bg-teal-700' : '-top-6 bg-teal-700',
             )}
           >
-            {formatDropModeLabel(dropMode)}
+            {formatDropModeLabel(visibleDropMode)}
           </span>
         </span>
       )}
       <span
         aria-hidden
-        title={role.canReceiveChildren ? `${role.label} — 다른 요소를 담을 수 있어요` : role.label}
-        className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border text-[10px] font-bold ${role.className}`}
+        title={role.canReceiveChildren
+          ? `${role.label} · 누른 채 옮기거나 다른 요소를 담을 수 있어요`
+          : `${role.label} · 누른 채 옮길 수 있어요`}
+        data-testid="edit-layer-pointer-handle"
+        data-r20-block-id={node.id}
+        data-r20-pointer-dragging={pointerDrag.dragging ? '1' : '0'}
+        className={`grid h-5 w-5 shrink-0 touch-none cursor-grab place-items-center rounded-md border text-[10px] font-bold ${role.className}`}
+        {...pointerDrag.pointerHandlers}
       >
         {role.icon}
       </span>

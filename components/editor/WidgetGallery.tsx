@@ -35,6 +35,7 @@ import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
 import { cn } from '@/lib/utils/cn';
 import HelpTip from './HelpTip';
 import { WIDGET_DISPLAY, WIDGET_GROUP_DISPLAY } from './fieldLabels';
+import { useEditorPointerDrag } from './useEditorPointerDrag';
 
 const GROUP_ORDER: FriendlyWidgetGroup[] = ['layout', 'text', 'input', 'action', 'media'];
 
@@ -177,19 +178,30 @@ function WidgetPresetCard({
   preset: FriendlyWidgetPreset;
   onClick: () => void;
 }) {
+  const pointerDrag = useEditorPointerDrag({
+    kind: 'widget',
+    payload: encodeFriendlyWidgetDrag(preset.id),
+    label: displayName(preset),
+  });
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(event) => {
+        pointerDrag.consumeClick(event);
+        if (!event.defaultPrevented) onClick();
+      }}
+      {...pointerDrag.pointerHandlers}
       className={cn(
         'r20-lift group flex w-full items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-2.5 text-left shadow-[0_1px_2px_rgba(var(--shadow-tint),0.05)]',
         'hover:border-[var(--primary-soft-border)] hover:bg-[var(--primary-soft)]/40',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-        'cursor-grab active:cursor-grabbing',
+        'touch-pan-y cursor-grab active:cursor-grabbing',
       )}
       data-widget-type={preset.id}
       data-block-type={preset.blockType}
       data-testid={`widget-card-${preset.id}`}
+      data-r20-pointer-dragging={pointerDrag.dragging ? '1' : '0'}
+      aria-grabbed={pointerDrag.dragging}
       draggable
       onDragStart={(e) => {
         e.dataTransfer.effectAllowed = 'copy';
