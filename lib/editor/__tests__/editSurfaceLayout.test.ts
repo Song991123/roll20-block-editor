@@ -1,6 +1,7 @@
 import { strict as assert } from 'node:assert';
 import {
   clampEditLayerPanelWidth,
+  EDIT_SURFACE_CANVAS_COMFORTABLE_WIDTH_PX,
   EDIT_SURFACE_LAYER_PANEL_DEFAULT_WIDTH_PX,
   EDIT_SURFACE_LAYER_PANEL_MAX_WIDTH_PX,
   EDIT_SURFACE_LAYER_PANEL_MIN_WIDTH_PX,
@@ -21,6 +22,10 @@ assert.equal(
 );
 assert.equal(shouldOverlayEditLayerPanel(EDIT_SURFACE_LAYER_PANEL_OVERLAY_WIDTH_PX - 1), true);
 assert.equal(shouldOverlayEditLayerPanel(EDIT_SURFACE_LAYER_PANEL_OVERLAY_WIDTH_PX), false);
+assert.equal(
+  EDIT_SURFACE_LAYER_PANEL_OVERLAY_WIDTH_PX - EDIT_SURFACE_LAYER_PANEL_DEFAULT_WIDTH_PX,
+  EDIT_SURFACE_CANVAS_COMFORTABLE_WIDTH_PX,
+);
 assert.equal(shouldOverlayEditLayerPanel(Number.NaN), false);
 
 console.log('editSurfaceLayout.test PASS');

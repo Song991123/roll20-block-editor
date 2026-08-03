@@ -93,7 +93,7 @@ async function main() {
   await fs.mkdir(REPORT_DIR, { recursive: true });
   const server = await startServer();
   const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: { width: 1480, height: 960 }, hasTouch: true });
+  const page = await browser.newPage({ viewport: { width: 1800, height: 960 }, hasTouch: true });
   await page.route('https://imgsrv.roll20.net/**', async (route) => {
     const requestUrl = route.request().url();
     if (requestUrl.includes('synthetic-background.png')) {
@@ -307,11 +307,6 @@ async function main() {
       reset: resetLayerPanel,
     };
 
-    await page.setViewportSize({ width: 1280, height: 720 });
-    await page.waitForFunction(() => (
-      document.querySelector('[data-testid="edit-canvas-root"]')
-        ?.getAttribute('data-r20-layer-panel-overlay') === 'true'
-    ));
     const readCompactLayerGeometry = () => page.evaluate(() => {
       const root = document.querySelector('[data-testid="edit-canvas-root"]');
       const preview = document.querySelector('[data-testid="preview-pane"]');
@@ -336,6 +331,37 @@ async function main() {
         scrimVisible: Boolean(document.querySelector('[data-testid="edit-layer-panel-scrim"]')),
       };
     });
+
+    await page.setViewportSize({ width: 1480, height: 960 });
+    await page.waitForFunction(() => (
+      document.querySelector('[data-testid="edit-canvas-root"]')
+        ?.getAttribute('data-r20-layer-panel-overlay') === 'true'
+    ));
+    const desktopLayerOverlay = await readCompactLayerGeometry();
+    assert(desktopLayerOverlay.found, 'desktop layer overlay geometry is unavailable');
+    assert(
+      desktopLayerOverlay.rootWidth >= 760
+        && Math.abs(desktopLayerOverlay.rootLeft - desktopLayerOverlay.previewLeft) <= 1
+        && Math.abs(desktopLayerOverlay.rootWidth - desktopLayerOverlay.previewWidth) <= 1,
+      `desktop layer overlay did not preserve the sheet surface: ${JSON.stringify(desktopLayerOverlay)}`,
+    );
+    assert(
+      desktopLayerOverlay.toggleVisible
+        && !desktopLayerOverlay.panelVisible
+        && !desktopLayerOverlay.resizerVisible,
+      `desktop layer panel stayed docked beside the sheet: ${JSON.stringify(desktopLayerOverlay)}`,
+    );
+    result.tests.desktopLayerPanelOverlay = desktopLayerOverlay;
+    await page.screenshot({
+      path: path.join(REPORT_DIR, 'desktop-layer-overlay.png'),
+      fullPage: false,
+    });
+
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.waitForFunction(() => (
+      document.querySelector('[data-testid="edit-canvas-root"]')
+        ?.getAttribute('data-r20-layer-panel-overlay') === 'true'
+    ));
     const compactLayerClosed = await readCompactLayerGeometry();
     assert(compactLayerClosed.found, 'compact layer geometry is unavailable');
     assert(
@@ -477,7 +503,7 @@ async function main() {
       result.tests.compactEditToolbar.controls.every((control) => control.ariaLabel.length > 0),
       `compact edit toolbar control lost its accessible name: ${JSON.stringify(result.tests.compactEditToolbar.controls)}`,
     );
-    await page.setViewportSize({ width: 1480, height: 960 });
+    await page.setViewportSize({ width: 1800, height: 960 });
     await page.waitForFunction(() => (
       document.querySelector('[data-testid="edit-canvas-root"]')
         ?.getAttribute('data-r20-layer-panel-overlay') === 'false'
@@ -1257,6 +1283,7 @@ async function main() {
         third: read(thirdId),
       };
     }, { firstId: ids.groupOneId, secondId: ids.groupTwoId, thirdId: ids.groupThreeId });
+    await canvasSecond.scrollIntoViewIfNeeded();
     const multiDragTarget = await canvasSecond.boundingBox();
     assert(
       multiDragTarget && multiBefore.first && multiBefore.second && multiBefore.third,
@@ -3034,6 +3061,11 @@ async function main() {
     assert(result.tests.touchGalleryDrop.rendered.exists, 'touch gallery layer did not render in Edit');
     assert(result.tests.touchGalleryDrop.rendered.position !== 'absolute', 'Flow touch gallery drop became absolute');
     const touchLayerSearch = touchPage.locator('[data-testid="edit-layer-search"]');
+    const touchLayerToggle = touchPage.locator('[data-testid="edit-layer-panel-toggle"]');
+    if (!(await touchLayerSearch.isVisible())) {
+      await touchLayerToggle.click();
+      await touchLayerSearch.waitFor({ state: 'visible' });
+    }
     await touchLayerSearch.fill('');
     const touchLayerPair = {
       sourceId: touchFixture.first.containerId,
@@ -3137,6 +3169,10 @@ async function main() {
       touchLayerMode === 'before' ? sourceBeforeTarget : !sourceBeforeTarget,
       'touch layer DOM order diverged from the layer panel',
     );
+    if (await touchLayerToggle.isVisible()) {
+      await touchLayerToggle.click();
+      await touchLayerSearch.waitFor({ state: 'detached' });
+    }
 
     await touchPage.click('[data-testid="edit-submode-rolltemplate"]');
     const touchTemplateCreate = touchPage.locator('[data-testid="rolltemplate-create"]');

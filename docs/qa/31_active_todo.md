@@ -388,11 +388,13 @@ belong in tracked documents.
   the pastel shell inside the viewport. Narrow screens replace the unusable
   split view with direct edit, give the persistent Roll20 iframe the full
   editor width, and open app sidebars and the layer tree as contained overlays.
-- `DONE LOCAL`: when the center editor falls below 760px, its layer tree becomes
-  an on-demand overlay. At the current 1280px shell this restores the shared
-  Preview/Edit and empty-drop width from 376px to 580px. Opening the layer tree
-  leaves the iframe and drop-slot origin and width unchanged; its exposed scrim
-  closes reliably. Full edit-flow and fresh-sheet desktop/mobile smokes pass.
+- `DONE LOCAL`: the layer tree becomes an on-demand overlay whenever docking
+  its default 248px track would leave less than the default 850px sheet width.
+  The 1480px shell now keeps the shared Preview/Edit surface at 780px instead
+  of squeezing it to 532px; the 1280px shell keeps 580px. At 1800px the layer
+  tree remains docked and retains pointer, keyboard, reset, and persistence
+  behavior. Opening the overlay never changes the iframe or empty-drop origin
+  or width. Full edit-flow and fresh-sheet desktop/mobile smokes pass.
 - `DONE LOCAL`: the 844x390 landscape phone shell keeps primary 44px touch
   targets while compacting short-screen chrome. Visible sheet height increases
   from 148px to 206px, horizontal overflow remains zero, and the layer overlay

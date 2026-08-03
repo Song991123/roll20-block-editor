@@ -16,6 +16,24 @@ or source-derived measurement here.
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
 
+## 2026-08-04 - Canvas-First Responsive Layer Panel
+
+- A synthetic desktop browser audit found that the fixed 760-pixel breakpoint
+  still docked a 248-pixel layer tree inside a 780-pixel center editor. This
+  left only 532 pixels for the default 850-pixel sheet.
+- The responsive contract now overlays the layer tree whenever its default
+  track and the 850-pixel sheet cannot both fit. The 1480-pixel shell preserves
+  a 780-pixel shared Preview/Edit surface, while the 1280-pixel shell preserves
+  580 pixels. A wide 1800-pixel shell still docks and resizes the layer tree.
+- The browser smoke now scrolls a full-size long sheet target into view before
+  multi-move and explicitly opens and closes the layer overlay for touch layer
+  reordering. This removes accidental dependence on a scaled-down canvas.
+- Full `ci:verify`, `lint`, production `build`, modern and legacy render-mode
+  checks, modern and legacy Worker-state smokes, and the full edit-flow browser
+  smoke pass. The browser run reports zero console and page errors.
+- Claim boundary: this is anonymous local editor evidence. Actual Roll20 upload
+  and normalized visual parity were not rerun in this batch.
+
 ## 2026-08-04 - Import Roundtrip And Worker Callback Stability
 
 - Fixed a generic emission corruption where JavaScript replacement-token
