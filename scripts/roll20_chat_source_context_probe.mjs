@@ -651,7 +651,7 @@ function renderMarkdown(report) {
     '| --- | --- | --- | ---: | --- | --- | --- | ---: | ---: | --- |',
   ];
   for (const fixture of report.fixtures) {
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | ${fixture.decision} | ${fixture.alignedMismatchPct || ''} | ${fixture.cssEvidence.classification || ''} | ${fixture.fontActivation.decision || ''} | ${fixture.tableContext.decision || ''} | ${fmtPx(fixture.tableContext.tableWidthDelta)} | ${fixture.textMeasure.comparedSamples ?? 0} | ${fixture.nextAction} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | ${fixture.decision} | ${fixture.alignedMismatchPct || ''} | ${fixture.cssEvidence.classification || ''} | ${fixture.fontActivation.decision || ''} | ${fixture.tableContext.decision || ''} | ${fmtPx(fixture.tableContext.tableWidthDelta)} | ${fixture.textMeasure?.comparedSamples ?? 0} | ${fixture.nextAction} |`);
   }
   lines.push('', '## Evidence Notes', '');
   for (const fixture of report.fixtures) {

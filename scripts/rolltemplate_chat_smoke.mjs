@@ -393,6 +393,14 @@ async function clickRollAndReadChat(page, fixtureId) {
         text: (node.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 500),
       };
     };
+    const summarizeGenericChildren = (root) => Array.from(root?.querySelectorAll('*') ?? [])
+      .filter((node) => {
+        const rect = node.getBoundingClientRect();
+        const style = getComputedStyle(node);
+        return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+      })
+      .slice(0, 40)
+      .map((node, index) => summarizeElement(node, `dom:${index}`));
     const summarizeTextProfile = (node) => {
       const text = (node?.textContent || '').replace(/\s+/g, ' ').trim();
       const tokens = text.split(/\s+/).filter(Boolean);
@@ -482,6 +490,13 @@ async function clickRollAndReadChat(page, fixtureId) {
         '400 13px sans-serif',
         '700 13px sans-serif',
         '13px "Proxima Nova"',
+        '12px BookkMyungjo-Bd',
+        '700 12px BookkMyungjo-Bd',
+        '12px "BookkMyungjo-Bd"',
+        '700 12px "BookkMyungjo-Bd"',
+        '13px "BookkMyungjo-Bd"',
+        '700 13px "BookkMyungjo-Bd"',
+        '12px sans-serif',
       ];
       return {
         status: document.fonts?.status ?? null,
@@ -711,6 +726,7 @@ async function clickRollAndReadChat(page, fixtureId) {
               summarizeElement(template.querySelector('td.sheet-template_label, .sheet-template_label'), 'sheet-template_label:first'),
               summarizeElement(template.querySelector('td.sheet-template_value, .sheet-template_value'), 'sheet-template_value:first'),
               summarizeElement(template.querySelector('.inlinerollresult'), '.inlinerollresult:first'),
+              ...summarizeGenericChildren(template),
             ].filter(Boolean),
             rowMetrics: summarizeRows(template),
             tableStructure: summarizeTableStructure(template),

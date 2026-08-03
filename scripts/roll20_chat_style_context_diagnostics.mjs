@@ -97,7 +97,9 @@ function childMap(template) {
 function getComparableNodes(localTemplate, actualTemplate) {
   const localChildren = childMap(localTemplate);
   const actualChildren = childMap(actualTemplate);
-  return IMPORTANT_SELECTORS.map((selector) => ({
+  const genericSelectors = [...localChildren.keys()]
+    .filter((selector) => selector.startsWith('dom:') && actualChildren.has(selector));
+  return [...IMPORTANT_SELECTORS, ...genericSelectors].map((selector) => ({
     selector,
     local: selector === 'root' ? localTemplate : localChildren.get(selector),
     actual: selector === 'root' ? actualTemplate : actualChildren.get(selector),

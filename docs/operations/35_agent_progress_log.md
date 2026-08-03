@@ -15,6 +15,31 @@ or source-derived measurement here.
 - Remote CI: passed safety/unit verification, lint, and production build.
 - Worktree and project server state were clean after the run.
 
+## 2026-08-03 - Modern Actual Render And Chat Evidence
+
+- Applied all current anonymous generated payloads to a new owner-only modern
+  test room through visible settings and verified persisted HTML/CSS,
+  translation meaning, compatibility mode, authored-root geometry, and current
+  rendered screenshots. Existing user rooms were not modified.
+- Replaced the result-card capture with a deterministic same-state, true PNG
+  CDP capture. High-DPR physical coordinates are corrected back to the exact
+  CSS crop and recorded in the ignored sidecar.
+- Added generic descendant capture for non-table result cards. Diagnostics now
+  compare card, title, row, and inline result styles instead of treating every
+  Rolltemplate as a table.
+- Excluded non-Roll payloads from chat renderer policy, stopped requiring a new
+  CSS candidate when the default renderer is below the high-mismatch threshold,
+  and made unavailable table-only glyph evidence secondary for non-table cards.
+- Current policy keeps the default chat renderer. The global sheet renderer
+  remains on hold because the anonymous full-root fixtures prefer different
+  micro-fixes; no production renderer CSS was changed.
+- Focused capture, structure, renderer-policy, and font/glyph tests plus the
+  full ignored chat diagnostic refresh passed. Tracked-doc privacy, lint,
+  production build, and the full local CI verification suite also passed;
+  commit, push, and remote CI follow in this batch.
+- Claim boundary: current anonymous modern suite and existing anonymous legacy
+  contracts only. Broad all-sheet parity remains open.
+
 ## 2026-08-03 - Scaled Nested Free Placement
 
 - Added rendered-to-local scale geometry to the iframe edit bridge and one

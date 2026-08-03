@@ -13,21 +13,18 @@ contain private source evidence or historical test dumps.
 - Modern and legacy compatibility paths are separate.
 - Structural layer and friendly-widget selection channels are isolated.
 - Public product assets contain no bundled real sheet sample.
-- Actual modern Sandbox remains open. A dedicated legacy-room synthetic
-  baseline now covers full-root rendering, translation, controls, Worker
-  action state, Roll execution, and result-card output. Current foreground
-  chat DOM metrics are captured, but the available chat image has a lossy
-  source and stays diagnostic-only. The current structure check also finds
-  different rendered content despite matching template class/row count;
-  deterministic same-state lossless chat capture and broad-sheet parity remain
-  open.
-- Full-root diagnostics now compare the exact authored top-level element rather
-  than the surrounding Roll20 wrapper. Authored-root dimensions agree for the
-  current ignored synthetic legacy run, and the existing product baseline is
-  closer than the tested generic CSS candidates. Both current anonymous legacy
-  payloads now have actual element geometry/computed-style evidence for their
-  applicable structure and controls. Collection counts agree and the evidence
-  still does not justify a global renderer patch.
+- Dedicated owner-only modern and legacy test rooms now cover current anonymous
+  synthetic full-root rendering, translation, controls, Worker action state,
+  Roll execution, and result-card output. The modern result-card comparison
+  uses deterministic matching content plus a true DPR-corrected PNG. Structure
+  matches and the aligned difference stays below the configured high-mismatch
+  threshold, so the default chat renderer remains selected. Broad-sheet and
+  broader result-card parity remain open.
+- Full-root diagnostics compare the exact authored top-level element rather
+  than the surrounding Roll20 wrapper. The current anonymous modern suite and
+  legacy contracts have actual geometry/computed-style evidence. The existing
+  baseline remains closer than the tested generic CSS candidates, and split
+  fixture preferences still do not justify a global renderer patch.
 - Legacy settings handoffs include a read-only persisted-payload checker.
   Visible code editors must be replaced as whole documents; after save/reload,
   HTML/CSS source and translation JSON meaning must match before render capture.

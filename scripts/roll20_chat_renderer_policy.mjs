@@ -9,6 +9,7 @@
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
@@ -47,10 +48,14 @@ async function main() {
   console.log(`out=${path.relative(process.cwd(), outDir)}`);
 }
 
-function buildPolicy({ runDir, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof }) {
-  const parityFixtures = new Map((chatParity.fixtures ?? []).map((fixture) => [fixture.fixtureId, fixture]));
+export function buildPolicy({ runDir, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof }) {
+  const parityFixtures = new Map(
+    (chatParity.fixtures ?? [])
+      .filter((fixture) => fixture.status !== 'NOT_APPLICABLE')
+      .map((fixture) => [fixture.fixtureId, fixture]),
+  );
   const styleFixtures = new Map((chatStyle.fixtures ?? []).map((fixture) => [fixture.id, fixture]));
-  const fixtureIds = [...new Set([...parityFixtures.keys(), ...styleFixtures.keys()])].sort();
+  const fixtureIds = [...parityFixtures.keys()].sort();
   const candidates = chatCandidates.candidates ?? [];
   const styleProofByName = new Map(
     (chatCandidateStyleProof?.candidates ?? []).map((candidate) => [candidate.name, candidate]),
@@ -90,7 +95,7 @@ function buildPolicy({ runDir, chatParity, chatStyle, chatCandidates, chatCandid
   if (hasPositiveWidthDelta && hasNegativeWidthDelta) {
     globalBlockers.push(`actual Roll20 table width deltas conflict: ${tableWidthDeltas.map((item) => `${item.fixtureId}:${formatSignedPx(item.value)}`).join(', ')}`);
   }
-  if (!globalSafeCandidates.length) {
+  if (highMismatch.length && !globalSafeCandidates.length) {
     globalBlockers.push('no chat renderer candidate improves enough fixtures without regression and with required style-proof status');
   }
   const unsafeFixtureDecisions = fixtures.filter((fixture) => fixture.decision !== 'KEEP_DEFAULT_CHAT_RENDERER');
@@ -326,4 +331,6 @@ function formatSignedPx(value) {
   return `${value > 0 ? '+' : ''}${Number(value.toFixed(3))}px`;
 }
 
-await main();
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  await main();
+}

@@ -8,10 +8,12 @@ belong in tracked documents.
 
 ## P0 - Roll20 Render Truth
 
-- `VERIFY EXTERNAL`: apply a newly generated anonymous modern payload through
-  the supported Custom Sheet Sandbox file chooser. Confirm initial sheet state,
-  translation, worker behavior, Roll button output, result-card rendering,
-  assets, and intrinsic sheet size. Keep all evidence ignored and local.
+- `DONE ACTUAL SYNTHETIC`: a new owner-only modern test room persisted and
+  rendered the five current anonymous generated payloads. Persisted HTML/CSS
+  matched exactly, translation JSON matched semantically, modern mode remained
+  selected, and the captured authored roots covered controls, translation,
+  state changes, intrinsic size, and the applicable Roll/result-card path.
+  Evidence remains ignored and proves only this synthetic suite.
 - `DONE ACTUAL SYNTHETIC`: a dedicated owner-only legacy-enabled test room
   rendered fresh anonymous payloads with the expected wrapper, translation,
   controls, flow/table layout, intrinsic roots, action-driven Sheet Worker
@@ -24,31 +26,26 @@ belong in tracked documents.
   tools, and then returned `Not allowed` when the supported HTML chooser tried
   to select the newly exported file. No file was transferred. No hidden input,
   endpoint, or existing-room workaround is allowed.
-- `PARTIAL`: local Preview/Edit and the dedicated legacy destination now have
+- `PARTIAL`: local Preview/Edit and the dedicated modern and legacy destinations now have
   same-payload root comparisons against the exact authored top-level element,
   not the surrounding Roll20 wrapper. Authored-root dimensions and capture
-  completeness agree, and the current product baseline is closer than the
-  tested generic CSS candidates. Both current anonymous legacy payloads now
-  have actual element geometry/computed-style evidence for their applicable
-  structure and controls; collection counts agree and the remaining visible
-  deltas do not justify a global renderer patch. The renderer-action gate
-  holds, broad-sheet parity is not proven, and modern comparison remains open.
+  completeness agree. The current product baseline is closer than the tested
+  generic CSS candidates, and different fixtures prefer different micro-fixes.
+  The renderer-action gate therefore holds one global-patch blocker instead of
+  introducing source-specific CSS. Broad-sheet parity is not proven.
 - `DONE TOOLING`: generated handoffs now include a read-only persisted-payload
   check for dedicated legacy settings. It distinguishes exact HTML/CSS,
   newline normalization, translation JSON formatting normalization, missing
   fields, and real source mismatch. The Sandbox upload helper no longer treats
   legacy campaign settings fields as a supported upload destination.
-- `PARTIAL ACTUAL`: Roll-capable and non-Roll payloads now share one chat
-  applicability rule across status, capture planning, metric audit, and pixel
-  diagnostics. Current foreground DOM/style/font evidence passes for the
-  tested non-table result card, while table-only metrics are conditional. The
-  available browser screenshot is a crop derived from a lossy viewport source,
-  so it remains diagnostic-only and the renderer-action gate correctly holds.
-  The structure comparator now discovers the current run instead of using old
-  fixed fixture names and skips payloads without Roll capability. Its current
-  comparison finds matching template class/row count but different rendered
-  content, so a deterministic same-state recapture plus a lossless source PNG
-  is still required for chat pixel conclusions.
+- `DONE ACTUAL SYNTHETIC`: chat applicability is shared across status, capture
+  planning, metric audit, and pixel diagnostics. The applicable anonymous
+  payload now has deterministic matching content, foreground proof, generic
+  descendant styles, and a true PNG captured through DPR-corrected CDP. Local
+  and actual structure match, the aligned pixel difference is below the
+  configured high-mismatch threshold, and policy keeps the default renderer.
+  Payloads without Roll content are excluded instead of reported as missing.
+  Broader result-card families remain unverified.
 - `DONE LOCAL CURRENT SYNTHETIC`: five anonymous fixtures now cover ordinary
   controls, Roll/runtime content, tables, lists, repeating structure, checked
   and selected defaults, grouped radios, multi-select state, readonly and

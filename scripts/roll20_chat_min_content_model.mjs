@@ -357,7 +357,7 @@ function renderMarkdown(report) {
     '| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
   ];
   for (const fixture of report.fixtures) {
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | ${fixture.decision} | ${fmtPx(fixture.deltas.tableWidth)} | ${fmtPx(fixture.textMetrics.tableTextDelta)} | ${fmtPx(fixture.textMetrics.tableTextResidual)} | ${fmtRatio(fixture.ratios.localTableToTextRatio)} | ${fmtRatio(fixture.ratios.actualTableToTextRatio)} | ${fmtRatio(fixture.ratios.tableToTextRatioDelta)} | ${fmtPx(fixture.rowModel.rowWidthDeltaSpread)} | ${fmtPx(fixture.rowModel.maxAbsCellDelta)} | ${fixture.nextAction} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | ${fixture.decision} | ${fmtPx(fixture.deltas.tableWidth)} | ${fmtPx(fixture.textMetrics.tableTextDelta)} | ${fmtPx(fixture.textMetrics.tableTextResidual)} | ${fmtRatio(fixture.ratios.localTableToTextRatio)} | ${fmtRatio(fixture.ratios.actualTableToTextRatio)} | ${fmtRatio(fixture.ratios.tableToTextRatioDelta)} | ${fmtPx(fixture.rowModel?.rowWidthDeltaSpread)} | ${fmtPx(fixture.rowModel?.maxAbsCellDelta)} | ${fixture.nextAction} |`);
   }
   lines.push('', '## Evidence Notes', '');
   for (const fixture of report.fixtures) {

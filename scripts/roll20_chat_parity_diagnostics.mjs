@@ -11,6 +11,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
+import { normalizeRect, selectRolltemplateCaptureRect } from './lib/roll20ChatCaptureRects.mjs';
 import { classifyCaptureQuality } from './lib/roll20CaptureQuality.mjs';
 import { payloadRequiresChat } from './lib/roll20PayloadCapabilities.mjs';
 
@@ -408,8 +409,12 @@ function buildActualTemplateCrop(sidecar) {
     [...templates].reverse().find((item) => item?.rect?.width && item?.rect?.height && rectIntersectsClip(item.rect, clip)) ??
     [...templates].reverse().find((item) => item?.rect?.width && item?.rect?.height);
   if (!template?.rect || !clip?.width || !clip?.height) return null;
+  const selectedRect = selectRolltemplateCaptureRect({ template, sidecar, clip });
+  if (!selectedRect) return null;
   return {
-    rect: template.rect,
+    rect: selectedRect.rect,
+    layoutRect: selectedRect.layoutRect,
+    rectSource: selectedRect.rectSource,
     clip,
     clipSource: correctedClip ? 'captureDprCorrection.cssClip' : 'sidecar.clip',
     captureDprCorrection: dprCorrection
@@ -424,24 +429,6 @@ function buildActualTemplateCrop(sidecar) {
     templateClassName: template.className ?? '',
     templateSelection: latest === template ? 'latestTemplate' : 'rolltemplates-reverse',
     intersectsClip: rectIntersectsClip(template.rect, clip),
-  };
-}
-
-function normalizeRect(rect) {
-  const x = Number(rect.x ?? rect.left ?? 0);
-  const y = Number(rect.y ?? rect.top ?? 0);
-  const width = Number(rect.width ?? 0);
-  const height = Number(rect.height ?? 0);
-  return {
-    ...rect,
-    x,
-    y,
-    left: Number(rect.left ?? x),
-    top: Number(rect.top ?? y),
-    width,
-    height,
-    right: Number(rect.right ?? x + width),
-    bottom: Number(rect.bottom ?? y + height),
   };
 }
 

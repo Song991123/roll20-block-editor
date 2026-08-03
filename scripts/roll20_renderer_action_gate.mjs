@@ -432,6 +432,9 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   const chatFontIntrinsicProbeSummary = summarizeChatFontIntrinsicProbe(chatFontIntrinsicProbe);
   const chatSourceContextProbeSummary = summarizeChatSourceContextProbe(chatSourceContextProbe);
   const chatSourceIntrinsicMatrixSummary = summarizeChatSourceIntrinsicMatrix(chatSourceIntrinsicMatrix);
+  const chatHighMismatchCount = Number(
+    chatRendererPolicySummary?.highMismatch ?? chatParitySummary?.alignedHighMismatch ?? 0,
+  );
   const chatSourceIntrinsicCandidateAuditSummary = summarizeChatSourceIntrinsicCandidateAudit(chatSourceIntrinsicCandidateAudit);
   const chatRowPaintSourceProbeSummary = summarizeChatRowPaintSourceProbe(chatRowPaintSourceProbe);
   const chatRowRasterProbeSummary = summarizeChatRowRasterProbe(chatRowRasterProbe);
@@ -720,7 +723,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     warnings.push('chat font/glyph model has not been run; run diagnose:roll20-chat-font-glyph before trying another font, typography, or text-width candidate');
   } else {
     positiveFindings.push(`chat font/glyph model: status=${chatFontGlyphModelSummary.status}, actionable=${chatFontGlyphModelSummary.actionable}/${chatFontGlyphModelSummary.totalFixtures}, textMeasureMissing=${chatFontGlyphModelSummary.textMeasureMissing}, decisions=${formatFindingCounts(chatFontGlyphModelSummary.decisions)}`);
-    if (chatFontGlyphModelSummary.textMeasureMissing > 0) {
+    if (chatHighMismatchCount > 0 && chatFontGlyphModelSummary.textMeasureMissing > 0) {
       blockers.push(`chat font/glyph model needs textMeasureEvidence recapture for ${chatFontGlyphModelSummary.actionableFixtures.filter((fixture) => fixture.textMeasureMissing).map((fixture) => fixture.fixtureId).join(', ') || `${chatFontGlyphModelSummary.textMeasureMissing} fixture(s)`}; recapture actual Roll20 chat DOM sidecars before another ChatPane text-width candidate`);
     }
     for (const fixture of chatFontGlyphModelSummary.actionableFixtures) {
@@ -748,7 +751,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     for (const fixture of chatSourceIntrinsicMatrixSummary.actionableFixtures) {
       positiveFindings.push(`${fixture.fixtureId} source/intrinsic=${fixture.decision}, tableDelta=${fmtPx(fixture.tableWidthDelta)}, sourceMax=${fmtPx(fixture.tableMaxWidthPx)}, rowSpread=${fmtPx(fixture.rowWidthDeltaSpread)}, cell=${fmtPx(fixture.maxAbsCellDelta)}, top=${fmtPx(fixture.maxAbsTopDelta)}, next=${fixture.nextAction}`);
     }
-    if (chatSourceIntrinsicMatrixSummary.promotionBlocked > 0) {
+    if (chatHighMismatchCount > 0 && chatSourceIntrinsicMatrixSummary.promotionBlocked > 0) {
       blockers.push(`chat source/intrinsic matrix blocks renderer CSS: ${chatSourceIntrinsicMatrixSummary.blockingFixtures.map((fixture) => `${fixture.fixtureId}:${fixture.decision}`).join(', ')}`);
     }
   } else if (needsSourceIntrinsicMatrix) {
@@ -759,7 +762,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     for (const fixture of chatSourceIntrinsicCandidateAuditSummary.fixtures) {
       positiveFindings.push(`${fixture.fixtureId} source/intrinsic candidate audit ready=${fixture.readyCandidates}, partial=${fixture.partialCandidates}, rejected=${fixture.rejectedCandidates}, next=${fixture.nextAction}`);
     }
-    if (chatSourceIntrinsicCandidateAuditSummary.readyCandidates === 0 && chatSourceIntrinsicCandidateAuditSummary.blockers > 0) {
+    if (chatHighMismatchCount > 0 && chatSourceIntrinsicCandidateAuditSummary.readyCandidates === 0 && chatSourceIntrinsicCandidateAuditSummary.blockers > 0) {
       blockers.push(`chat source/intrinsic candidate audit has no candidate ready for renderer CSS review: ${chatSourceIntrinsicCandidateAuditSummary.blockerMessages.join('; ') || chatSourceIntrinsicCandidateAuditSummary.status}`);
     }
   } else if (chatSourceIntrinsicMatrixSummary?.promotionBlocked > 0) {

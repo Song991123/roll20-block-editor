@@ -585,6 +585,14 @@ function renderDomProbeSnippet(entry) {
       text: (el.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 500),
     };
   };
+  const summarizeGenericChildren = (root) => Array.from(root?.querySelectorAll('*') ?? [])
+    .filter((el) => {
+      const rect = el.getBoundingClientRect();
+      const style = window.getComputedStyle(el);
+      return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+    })
+    .slice(0, 40)
+    .map((el, index) => summarizeElement(el, 'dom:' + index));
   const summarizeTextProfile = (el) => {
     const text = (el?.textContent || '').replace(/\\s+/g, ' ').trim();
     const tokens = text.split(/\\s+/).filter(Boolean);
@@ -646,6 +654,10 @@ function renderDomProbeSnippet(entry) {
   }));
   const checkFonts = () => {
     const specs = [
+      '13px sans-serif',
+      '400 13px sans-serif',
+      '700 13px sans-serif',
+      '13px "Proxima Nova"',
       '12px BookkMyungjo-Bd',
       '700 12px BookkMyungjo-Bd',
       '12px "BookkMyungjo-Bd"',
@@ -783,6 +795,7 @@ function renderDomProbeSnippet(entry) {
       summarizeElement(template.querySelector('td.sheet-template_label, .sheet-template_label'), 'sheet-template_label:first'),
       summarizeElement(template.querySelector('td.sheet-template_value, .sheet-template_value'), 'sheet-template_value:first'),
       summarizeElement(template.querySelector('.inlinerollresult'), '.inlinerollresult:first'),
+      ...summarizeGenericChildren(template),
     ].filter(Boolean),
     rowMetrics: summarizeRows(template),
     tableStructure: summarizeTableStructure(template),
@@ -1091,6 +1104,7 @@ function runSelfTest() {
     outerHTML: '<div class="sheet-rolltemplate-aw"><table><tbody><tr><td>rolls</td></tr></tbody></table></div>',
     contains: (node) => node === table,
     queryMap: { table },
+    queryAllMap: { '*': [table] },
   });
   const message = fakeElement({
     className: 'message general you',
@@ -1224,6 +1238,9 @@ function runSelfTest() {
   if (!Object.prototype.hasOwnProperty.call(tableEvidence?.computedStyle ?? {}, 'filter')) {
     failures.push('missing table computedStyle.filter');
   }
+  if (!evidence.latestTemplate?.computedChildren?.some((child) => child?.selector === 'dom:0')) {
+    failures.push('missing generic descendant evidence');
+  }
   if (!capturedLogs.some((value) => String(value).includes('"rolltemplates"'))) failures.push('console JSON did not include rolltemplates');
   try {
     const json = JSON.stringify(evidence);
@@ -1241,7 +1258,7 @@ function runSelfTest() {
     return;
   }
   console.log('ROLL20 CHAT CAPTURE PLAN SELF_TEST PASS');
-  console.log('fields=clip,screenshotClipApplied,screenshotCssClip,rolltemplates,chatCssEvidence,textMeasureEvidence,tableStructure,computedStyle.filter,templateForegroundEvidence');
+  console.log('fields=clip,screenshotClipApplied,screenshotCssClip,rolltemplates,chatCssEvidence,textMeasureEvidence,tableStructure,genericDescendants,computedStyle.filter,templateForegroundEvidence');
 }
 
 function fakeElement({ id = '', tagName = 'DIV', className = '', rect, textContent = '', outerHTML = '', contains = () => false, queryMap = {}, queryAllMap = {} }) {

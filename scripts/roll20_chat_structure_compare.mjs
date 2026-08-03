@@ -99,7 +99,10 @@ function compareFixture(fixtureId, localFixture, localTemplate, actualSidecar, a
     templateClass: localTemplate?.className ?? '',
     rowCount: localRows.length,
     rowSignature: localSignature,
-    tableText: findTemplateChild(localTemplate, 'table')?.text ?? localTemplate?.text ?? '',
+    tableText: findTemplateChild(localTemplate, 'table')?.text
+      ?? localTemplate?.text
+      ?? localFixture?.cardInfo?.latestMessage?.text
+      ?? '',
   };
   const actualInfo = {
     selectedTemplateStrategy: actualSidecar?.selectedTemplateStrategy ?? '',
@@ -121,6 +124,8 @@ function compareFixture(fixtureId, localFixture, localTemplate, actualSidecar, a
   const rowCountMatches = localInfo.rowCount === actualInfo.rowCount;
   const rowSignatureMatches = localSignature === actualSignature;
   const textMatches = normalizeText(localInfo.tableText) === normalizeText(actualInfo.tableText);
+  const dynamicTextMatches = normalizeDynamicRollText(localTemplate, localInfo.tableText)
+    === normalizeDynamicRollText(actualTemplate, actualInfo.tableText);
   let status = 'STRUCTURE_MATCH';
   let decision = 'COMPARE_PIXELS';
   let nextAction = 'Rolltemplate class and row structure match; continue renderer pixel diagnostics.';
@@ -134,9 +139,15 @@ function compareFixture(fixtureId, localFixture, localTemplate, actualSidecar, a
     decision = 'FIX_ROLLTEMPLATE_FIELD_OR_CONDITION_RENDERING';
     nextAction = 'Rolltemplate class matches but rows differ. Compare Mustache conditions, field values, defaults, and rendered rolltemplate HTML before CSS.';
   } else if (!textMatches) {
-    status = 'TEXT_MISMATCH';
-    decision = 'FIX_ROLLTEMPLATE_TEXT_OR_I18N';
-    nextAction = 'Rows match but rendered text differs. Compare translation/i18n, field values, and roll result substitutions before CSS.';
+    if (dynamicTextMatches) {
+      status = 'DYNAMIC_RESULT_MISMATCH';
+      decision = 'RECAPTURE_DETERMINISTIC_ROLL_RESULT';
+      nextAction = 'Rows and static text match; only inline Roll result substitutions differ. Use the same deterministic result before drawing pixel conclusions.';
+    } else {
+      status = 'TEXT_MISMATCH';
+      decision = 'FIX_ROLLTEMPLATE_TEXT_OR_I18N';
+      nextAction = 'Rows match but rendered text differs. Compare translation/i18n, field values, defaults, and Roll substitutions before CSS.';
+    }
   }
 
   return {
@@ -151,6 +162,7 @@ function compareFixture(fixtureId, localFixture, localTemplate, actualSidecar, a
       rowCountMatches,
       rowSignatureMatches,
       textMatches,
+      dynamicTextMatches,
     },
   };
 }
@@ -168,6 +180,7 @@ function baseResult(fixtureId, status, localInfo, actualInfo, nextAction) {
       rowCountMatches: false,
       rowSignatureMatches: false,
       textMatches: false,
+      dynamicTextMatches: false,
     },
   };
 }
@@ -197,6 +210,25 @@ function rowSignature(rows) {
 
 function normalizeText(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function normalizeDynamicRollText(template, value) {
+  let normalized = normalizeText(value);
+  const rawChildren = template?.computedChildren ?? template?.elements ?? [];
+  const children = Array.isArray(rawChildren)
+    ? rawChildren
+    : rawChildren && typeof rawChildren === 'object'
+      ? Object.values(rawChildren)
+      : [];
+  const dynamicValues = [...new Set(children
+    .filter((child) => /inlinerollresult/i.test(String(child?.selector ?? child?.className ?? '')))
+    .map((child) => normalizeText(child?.text))
+    .filter(Boolean))]
+    .sort((a, b) => b.length - a.length);
+  for (const dynamicValue of dynamicValues) {
+    normalized = normalized.split(dynamicValue).join('<inline-roll>');
+  }
+  return normalized.replace(/\s*<inline-roll>\s*/g, '<inline-roll>');
 }
 
 function summarize(fixtures, allFixtures = fixtures.length) {
@@ -274,6 +306,28 @@ async function selfTest() {
     const tableChild = { selector: 'table', text: 'proof' };
     if (findTemplateChild({ computedChildren: { table: tableChild } }, 'table') !== tableChild) {
       throw new Error('object-form computedChildren must be normalized');
+    }
+    const dynamicResult = compareFixture(
+      'fixture-C',
+      {
+        chosen: { name: 'roll_test', value: '&{template:proof}' },
+        cardInfo: { latestMessage: { text: 'Result6' } },
+      },
+      {
+        className: 'sheet-rolltemplate-proof',
+        rowMetrics: [],
+        computedChildren: [{ selector: '.inlinerollresult:first', text: '6' }],
+      },
+      { rolltemplates: [{ className: 'sheet-rolltemplate-proof' }] },
+      {
+        className: 'sheet-rolltemplate-proof',
+        text: 'Result 1',
+        rowMetrics: [],
+        computedChildren: [{ selector: '.inlinerollresult:first', text: '1' }],
+      },
+    );
+    if (dynamicResult.status !== 'DYNAMIC_RESULT_MISMATCH' || !dynamicResult.checks.dynamicTextMatches) {
+      throw new Error(`dynamic Roll result classification failed: ${JSON.stringify(dynamicResult)}`);
     }
     console.log('ROLL20 CHAT STRUCTURE SELF-TEST PASS');
   } finally {

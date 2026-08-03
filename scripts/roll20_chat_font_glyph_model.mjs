@@ -10,6 +10,7 @@
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
 const optionNamesWithValues = new Set(['--out-dir', '--report-dir', '--actual-sidecar']);
@@ -67,8 +68,9 @@ async function main() {
   }
 
   const compared = fixtures.filter((fixture) => fixture.status === 'COMPARED');
-  const textMeasureMissing = fixtures.filter((fixture) => fixture.textMeasureSignals?.missing).length;
   const actionable = compared.filter((fixture) => fixture.glyphDecision !== 'GLYPH_MODEL_SECONDARY_OR_ACCEPTABLE');
+  const textMeasureMissing = actionable.filter((fixture) => fixture.textMeasureSignals?.missing).length;
+  const observedTextMeasureMissing = fixtures.filter((fixture) => fixture.textMeasureSignals?.missing).length;
   const report = {
     generatedAt: new Date().toISOString(),
     runDir: runDirArg,
@@ -84,6 +86,7 @@ async function main() {
       compared: compared.length,
       actionable: actionable.length,
       textMeasureMissing,
+      observedTextMeasureMissing,
       decisions: countBy(compared.map((fixture) => fixture.glyphDecision)),
       productionSafe: false,
     },
@@ -119,6 +122,7 @@ async function compareFixture(localFixture, reports) {
 
   const localTable = childBySelector(localTemplate, 'table');
   const actualTable = childBySelector(actualTemplate, 'table');
+  const tableApplicable = Boolean(localTable || actualTable);
   const intrinsicFixture = findByFixtureId(reports.intrinsic?.fixtures, fixtureId);
   const styleFixture = findByFixtureId(reports.style?.fixtures, fixtureId);
   const candidateEvidence = extractCandidateEvidence(reports.candidateComparison, fixtureId);
@@ -142,6 +146,7 @@ async function compareFixture(localFixture, reports) {
   };
   const textWidthModel = buildTextWidthModel({ textMeasureSignals, widthDeltas });
   const glyphDecision = decideGlyphModel({
+    tableApplicable,
     widthDeltas,
     fontSignals,
     textMeasureSignals,
@@ -156,6 +161,7 @@ async function compareFixture(localFixture, reports) {
     status: 'COMPARED',
     glyphDecision,
     nextAction: nextAction(glyphDecision, textWidthModel),
+    tableApplicable,
     intrinsicDecision: intrinsicFixture?.intrinsicDecision ?? '',
     styleFindings: styleFixture?.findings ?? [],
     widthDeltas,
@@ -445,7 +451,10 @@ function extractCandidateEvidence(candidateComparison, fixtureId) {
   };
 }
 
-function decideGlyphModel({ widthDeltas, fontSignals, textMeasureSignals, textWidthModel, rowGlyphMetrics, candidateEvidence, intrinsicFixture }) {
+export function decideGlyphModel({ tableApplicable = true, widthDeltas, fontSignals, textMeasureSignals, textWidthModel, rowGlyphMetrics, candidateEvidence, intrinsicFixture }) {
+  if (!tableApplicable) {
+    return 'GLYPH_MODEL_SECONDARY_OR_ACCEPTABLE';
+  }
   const intrinsicDecision = intrinsicFixture?.intrinsicDecision ?? '';
   if (!intrinsicDecision || intrinsicDecision === 'INTRINSIC_WIDTH_SECONDARY_OR_ACCEPTABLE') {
     return 'GLYPH_MODEL_SECONDARY_OR_ACCEPTABLE';
@@ -683,4 +692,6 @@ function rel(file) {
   return path.relative(process.cwd(), file);
 }
 
-await main();
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  await main();
+}
