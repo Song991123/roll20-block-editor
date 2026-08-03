@@ -871,3 +871,19 @@ or source-derived measurement here.
 
 Do not turn any local pass into a claim of all-sheet support or Roll20 visual
 parity.
+
+## 2026-08-03 - Dense Edit Recheck And Valid Repeating Actual Gate
+
+- Re-ran the anonymous 9,000-item direct-edit path instead of adding another
+  speculative optimization. It passed every current performance budget with
+  13ms optimistic paint, 12.7ms parent scheduling, 5.5ms target planning,
+  0.5ms transfer, 2ms iframe apply, and 294ms final ACK.
+- Preview/Edit state matched, reimport remained stable, drift was zero, and no
+  console, page, or resource error occurred.
+- Re-ran actual-status gates for the corrected valid-repeating modern and
+  legacy runs. Both remain pre-upload ready with 0/8 generated Roll20 captures;
+  fresh visible upload and actual root/chat evidence remain required.
+- Chrome control timed out twice before tab inventory. Read-only diagnostics
+  found the enabled extension and native host, but no tab or Roll20 room was
+  opened or changed. Opening a fresh Chrome window remains a user-visible
+  recovery action, not an automatic workaround.

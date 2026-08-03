@@ -17,7 +17,9 @@ belong in tracked documents.
   payload. The corrected seven-fixture anonymous suite passes modern and legacy
   local pre-upload gates; fresh valid Roll20 upload and screenshot proof remain
   `VERIFY` because Chrome extension communication timed out before participant
-  preflight and no room was opened or changed.
+  preflight and no room was opened or changed. The current actual-status gate
+  confirms 0/8 generated Roll20 captures in both corrected modern and legacy
+  runs; local readiness is not being reported as actual parity.
 - `DONE LOCAL / VERIFY ACTUAL PIXELS`: the shared legacy Preview/Edit contract
   now applies the observed Roll20 HTML allow-list as well as legacy CSS
   sanitizing. Unsupported semantic wrappers are removed while supported
@@ -287,6 +289,11 @@ belong in tracked documents.
   scheduling, target-plan, message-transfer, final-ACK, iframe-apply, drift,
   resource, and page-error budgets. Source emission remains the authority;
   this optimization does not replace it with a visual-only state.
+- `DONE LOCAL PERFORMANCE RECHECK`: a fresh anonymous 9,000-item run measured
+  13ms optimistic paint, 12.7ms parent scheduling, 5.5ms target planning,
+  0.5ms transfer, 2ms iframe apply, and 294ms pointer-up-to-ACK with zero drift,
+  matching Preview/Edit state, stable reimport, and zero console/page/resource
+  errors. No speculative performance patch is warranted by this path.
 - `PARTIAL`: continue usability review for dense imported structures, longer
   or dynamically changing/animated transform stacks, and 3D/perspective
   transforms. Add longer mixed history runs for imported structures while
