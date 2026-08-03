@@ -98,8 +98,7 @@ export function matchTree(root: DomNode, ctx: MatchContext): MatchedBlock[] {
   for (let index = 0; index < root.children.length; index += 1) {
     const c = root.children[index];
     if (c.type === 'comment') {
-      const slot = parsePageJsSlotComment(c.text || '');
-      if (slot) out.push({ blockType: 'r20_page_js_slot', fields: { SLOT: slot }, children: {} });
+      out.push(commentNodeBlock(c.text || ''));
       continue;
     }
     if (c.type === 'text') {
@@ -217,6 +216,8 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   const tag = node.tag;
   if (!tag) return null;
   const a = node.attrs ?? {};
+
+  if (tag !== 'input' && hasHtmlCommentDescendant(node)) return null;
 
   if (tag === 'input') {
     const inputType = (a.type || 'text').toLowerCase();
@@ -440,6 +441,7 @@ function matchDice(node: DomNode, _ctx: MatchContext): MatchedBlock | null {
   const a = node.attrs ?? {};
 
   if (tag === 'button') {
+    if (hasHtmlCommentDescendant(node)) return null;
     const btype = (a.type || 'button').toLowerCase();
     const label = firstTextContent(node);
     const rawName = a.name || '';
@@ -499,6 +501,8 @@ function matchI18n(node: DomNode, _ctx: MatchContext): MatchedBlock | null {
   const tag = node.tag;
   if (!tag) return null;
   const a = node.attrs ?? {};
+
+  if (hasHtmlCommentDescendant(node) && !a['data-i18n-html']) return null;
 
   // data-i18n="KEY" 가 있으면 i18n 우선.
   //
@@ -704,6 +708,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       };
     }
   }
+  if (hasHtmlCommentDescendant(node)) return null;
   if (/^h[1-6]$/.test(tag)) {
     return {
       blockType: 'r20_heading',
@@ -919,11 +924,12 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     // The composite generator emits a deliberately specific marker. Match it
     // before the generic row branch so import -> export keeps the user's
     // dual-roll grouping and authored class fields intact.
-    const dualRoll = matchDualRollButton(node, cls);
+    const canCollapseChildren = !hasHtmlCommentDescendant(node);
+    const dualRoll = canCollapseChildren ? matchDualRollButton(node, cls) : null;
     if (dualRoll) return dualRoll;
     // value switch panel 매칭 (Stage 22 §4) — `sheet-X-switch` wrapper.
     // 내부에 inline `<style>` + radio + panel div 들이 묶여 있을 때 묶음 분해.
-    const switchMatch = matchValueSwitchPanel(node, cls, ctx);
+    const switchMatch = canCollapseChildren ? matchValueSwitchPanel(node, cls, ctx) : null;
     if (switchMatch) {
       // matcher 가 totalCount 카운트는 직접 안 함 — 매칭 자체로 1 으로 침.
       return switchMatch;
@@ -1159,7 +1165,6 @@ function matchDualRollButton(node: DomNode, cls: string): MatchedBlock | null {
     const hasOnlyRadioAndText = node.children.every(
       (child) =>
         child.type === 'text' ||
-        child.type === 'comment' ||
         (child.type === 'element' && child.tag === 'input' && (child.attrs?.type || '').toLowerCase() === 'radio'),
     );
     if (radioChildren.length === 1 && hasOnlyRadioAndText) {
@@ -1387,13 +1392,41 @@ function textNodeBlock(text: string): MatchedBlock {
   };
 }
 
+function commentNodeBlock(text: string): MatchedBlock {
+  const slot = parsePageJsSlotComment(text);
+  if (slot) {
+    return {
+      blockType: 'r20_page_js_slot',
+      fields: { SLOT: slot },
+      children: {},
+    };
+  }
+  return {
+    blockType: 'r20_html_comment',
+    fields: { TEXT: text },
+    children: {},
+  };
+}
+
+const htmlCommentDescendantCache = new WeakMap<DomNode, boolean>();
+
+function hasHtmlCommentDescendant(node: DomNode): boolean {
+  const cached = htmlCommentDescendantCache.get(node);
+  if (cached !== undefined) return cached;
+  const result = node.children.some((child) => (
+    child.type === 'comment'
+    || (child.type === 'element' && hasHtmlCommentDescendant(child))
+  ));
+  htmlCommentDescendantCache.set(node, result);
+  return result;
+}
+
 function matchChildren(node: DomNode, ctx: MatchContext): MatchedBlock[] {
   const out: MatchedBlock[] = [];
   for (let index = 0; index < node.children.length; index += 1) {
     const c = node.children[index];
     if (c.type === 'comment') {
-      const slot = parsePageJsSlotComment(c.text || '');
-      if (slot) out.push({ blockType: 'r20_page_js_slot', fields: { SLOT: slot }, children: {} });
+      out.push(commentNodeBlock(c.text || ''));
       continue;
     }
     if (c.type === 'text') {

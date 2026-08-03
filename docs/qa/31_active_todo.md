@@ -136,6 +136,15 @@ belong in tracked documents.
 
 ## P0 - Universal Import And Export
 
+- `DONE LOCAL / VERIFY BROAD`: ordinary HTML comments now map to the existing
+  hidden-note block at the document root and inside nested structure. Compact
+  title, button, radio-label, select, option, and inline shapes fall back to a
+  structure-preserving element block when comments would otherwise be
+  flattened. Reserved Page JS slot comments remain internal, and top-level
+  comments emit without a layout wrapper. Import/emit tests plus anonymous
+  modern and legacy browser roundtrips keep comment count, block count, HTML,
+  and CSS stable with zero console or page errors. Broader malformed-comment
+  recovery remains part of the general parser boundary.
 - `DONE LOCAL / VERIFY BROAD`: HTML emission now preserves RCDATA and preformatted
   content, multiline quoted attributes, inline sibling order, and edited
   boundary whitespace across import -> emit -> import. Internal editor IDs are

@@ -223,7 +223,11 @@ class EmitEngine implements GeneratorContext {
    */
   wrapTopLevel(block: Blockly.Block, code: string): string {
     if (!code) return '';
-    if (this.kind === 'js' || block.type === 'r20_page_js_slot') return code;
+    if (
+      this.kind === 'js'
+      || block.type === 'r20_page_js_slot'
+      || (this.kind === 'html' && block.type === 'r20_html_comment')
+    ) return code;
     if (this.kind === 'html' && block.type === 'r20_text_node') {
       // A top-level text node needs an inline selectable surface. A div
       // wrapper changes Roll20 inline spacing and is not stable on reimport.

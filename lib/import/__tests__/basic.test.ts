@@ -163,6 +163,35 @@ function testDirectTextNodePreserved(): void {
   assert(r.stats.htmlRawFallback === 0, 'no raw fallback for direct text');
 }
 
+function testHtmlCommentsStayEditable(): void {
+  const html = [
+    '<!-- top note -->',
+    '<div class="sheet-comment-root">',
+    '  <span>Before<!-- inline note -->After</span>',
+    '  <!-- nested note -->',
+    '  <h2>Heading<!-- heading note --></h2>',
+    '  <button type="roll" name="roll_probe" value="1d20">Roll<!-- button note --></button>',
+    '  <label><input type="radio" name="attr_mode" value="a"><!-- label note -->Choice</label>',
+    '  <select name="attr_kind"><!-- select note --><option value="a">One<!-- option note --></option></select>',
+    '</div>',
+  ].join('\n');
+  const r = importSheet({ html });
+  assert(
+    (r.html.match(/r20_html_comment/g) || []).length === 8,
+    'comments should remain editable across roots, containers, and compact element shapes',
+  );
+  assert(r.html.includes('top note'), 'top-level comment text is preserved');
+  assert(r.html.includes('nested note'), 'nested comment text is preserved');
+  assert(r.html.includes('inline note'), 'inline comment text is preserved');
+  assert(r.html.includes('heading note'), 'heading comment text is preserved');
+  assert(r.html.includes('button note'), 'button comment text is preserved');
+  assert(r.html.includes('label note'), 'label comment text is preserved');
+  assert(r.html.includes('select note'), 'select comment text is preserved');
+  assert(r.html.includes('option note'), 'option comment text is preserved');
+  assert(!r.html.includes('r20_page_js_slot'), 'ordinary comments are not internal Page JS slots');
+  assert(r.stats.htmlRawFallback === 0, 'ordinary comments do not force raw fallback');
+}
+
 function testRolltemplateDirectMustacheTextPreserved(): void {
   const html = [
     '<rolltemplate class="sheet-rolltemplate-demo">',
@@ -599,6 +628,7 @@ const tests = [
   ['structural label container', testStructuralLabelContainer],
   ['list containers', testListContainers],
   ['direct text node', testDirectTextNodePreserved],
+  ['HTML comments', testHtmlCommentsStayEditable],
   ['rolltemplate direct Mustache text', testRolltemplateDirectMustacheTextPreserved],
   ['whitespace-only text', testWhitespaceOnlyTextDoesNotInflate],
   ['inline sibling whitespace', testInlineWhitespaceBetweenSiblingsPreserved],

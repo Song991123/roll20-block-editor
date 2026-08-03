@@ -17,6 +17,11 @@ contain private source evidence or historical test dumps.
   import/emit, ZIP, mode, and fourteen-pair Preview/Edit browser gates pass.
   The corrected legacy suite now also has exact-upload actual evidence; modern
   Sandbox transfer remains a separate open gate.
+- Ordinary HTML comments map to hidden note blocks instead of disappearing.
+  Commented compact elements use the generic structure-preserving path, while
+  reserved Page JS slot comments remain internal. Top-level comments emit
+  without adding an editor layout wrapper; modern and legacy local roundtrips
+  are stable.
 - Structural layer and friendly-widget selection channels are isolated.
 - Public product assets contain no bundled real sheet sample.
 - Dedicated owner-only modern and legacy test rooms now cover current anonymous

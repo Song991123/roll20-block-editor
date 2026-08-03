@@ -211,6 +211,23 @@ const BUILTIN_FIXTURES = [
     i18n: '{}',
     synthetic: true,
   },
+  {
+    id: 'synthetic-html-comments',
+    html: [
+      '<!-- top note -->',
+      '<div class="sheet-comment-root">',
+      '  <span>Before<!-- inline note -->After</span>',
+      '  <!-- nested note -->',
+      '  <h2>Heading<!-- heading note --></h2>',
+      '  <button type="roll" name="roll_probe" value="1d20">Roll<!-- button note --></button>',
+      '  <label><input type="radio" name="attr_mode" value="a"><!-- label note -->Choice</label>',
+      '  <select name="attr_kind"><!-- select note --><option value="a">One<!-- option note --></option></select>',
+      '</div>',
+    ].join('\n'),
+    css: '.sheet-comment-root { width: 320px; min-height: 80px; padding: 12px; background: #fff; }',
+    i18n: '{}',
+    synthetic: true,
+  },
 ];
 
 function denseFreePlacementFixture(itemCount) {

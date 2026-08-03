@@ -34,6 +34,22 @@ or source-derived measurement here.
 - Claim boundary: this proves local diagnostics and interaction only. Actual
   user-owned hosted image/font loading still requires Roll20 evidence.
 
+## 2026-08-04 - Lossless HTML Comment Mapping
+
+- Connected ordinary HTML comment nodes to the existing hidden-note block.
+  Root comments and comments inside structure containers now keep source order;
+  reserved Page JS slot comments still use their separate internal block.
+- Elements whose compact block shape would flatten commented children now use
+  the generic structure-preserving element path. This keeps the authored tag,
+  attributes, visible text, and comment order instead of silently discarding
+  the comment.
+- Top-level comment blocks no longer receive an editor-only `div` wrapper, so
+  an invisible source note cannot add layout or an extra block on re-import.
+- Import and emit unit tests pass. Anonymous modern and legacy browser
+  roundtrips keep block count and eight comment blocks stable with matching
+  HTML/CSS and zero console or page errors. This is local source-fidelity
+  evidence, not actual Roll20 visual proof.
+
 ## 2026-08-04 - Bounded Import Process Isolation
 
 - Added a bounded repeated-import harness that gives every iteration its own

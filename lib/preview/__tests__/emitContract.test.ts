@@ -163,6 +163,24 @@ function testSemanticContainerEmit(): void {
   workspace.dispose();
 }
 
+function testTopLevelHtmlCommentDoesNotGainLayoutWrapper(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const comment = workspace.newBlock('r20_html_comment');
+  comment.setFieldValue('top note', 'TEXT');
+
+  const emitted = emitWorkspace(workspace, 'html').code;
+  assert(emitted === '<!-- top note -->', 'top-level HTML comment emits without a layout wrapper');
+  assert(!emitted.includes('<div'), 'hidden source comment does not create a visible sheet object');
+
+  const imported = importSheet({ html: emitted });
+  assert(
+    (imported.html.match(/r20_html_comment/g) || []).length === 1,
+    'top-level HTML comment remains one block after re-import',
+  );
+  workspace.dispose();
+}
+
 function testBlockIdAttributeEscaping(): void {
   registerAllBlocks();
   const workspace = new Blockly.Workspace();
@@ -854,6 +872,7 @@ testGeneratedPositionCss();
 testComposedWorkspaceCacheResultsKeepTheOutputContract();
 testBuilderLayoutCssIsEmittedWithItsBlock();
 testSemanticContainerEmit();
+testTopLevelHtmlCommentDoesNotGainLayoutWrapper();
 testBlockIdAttributeEscaping();
 testStaleRawBlockIdIsReplaced();
 testNestedStaleRawBlockIdIsRemoved();
