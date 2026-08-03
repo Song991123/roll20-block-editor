@@ -166,6 +166,83 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     }
     return null;
   }
+  function multiplyLinear(outer, inner) {
+    return {
+      a: outer.a * inner.a + outer.c * inner.b,
+      b: outer.b * inner.a + outer.d * inner.b,
+      c: outer.a * inner.c + outer.c * inner.d,
+      d: outer.b * inner.c + outer.d * inner.d
+    };
+  }
+  var linearTransformCache = new WeakMap();
+  function resetLinearTransformCache() {
+    linearTransformCache = new WeakMap();
+  }
+  function localToViewportOf(node) {
+    if (!node || node.nodeType !== 1) return { a: 1, b: 0, c: 0, d: 1 };
+    if (linearTransformCache.has(node)) return linearTransformCache.get(node);
+    var parent = localToViewportOf(node.parentElement);
+    if (!parent) {
+      linearTransformCache.set(node, null);
+      return null;
+    }
+    try {
+      var style = window.getComputedStyle(node);
+      var zoom = parseFloat(style.zoom);
+      if (!Number.isFinite(zoom) || zoom <= 0) zoom = 1;
+      var own = { a: zoom, b: 0, c: 0, d: zoom };
+      if (style.transform && style.transform !== 'none') {
+        if (typeof DOMMatrixReadOnly !== 'function') return null;
+        var matrix = new DOMMatrixReadOnly(style.transform);
+        if (!matrix.is2D) return null;
+        own = multiplyLinear({
+          a: matrix.a,
+          b: matrix.b,
+          c: matrix.c,
+          d: matrix.d
+        }, own);
+      }
+      var result = multiplyLinear(parent, own);
+      linearTransformCache.set(node, result);
+      return result;
+    } catch (e) {
+      linearTransformCache.set(node, null);
+      return null;
+    }
+  }
+  function invertViewportDelta(linear, x, y) {
+    if (!linear) return { x: x, y: y };
+    var determinant = linear.a * linear.d - linear.b * linear.c;
+    if (!Number.isFinite(determinant) || Math.abs(determinant) <= 0.000001) {
+      return { x: x, y: y };
+    }
+    return {
+      x: (linear.d * x - linear.c * y) / determinant,
+      y: (-linear.b * x + linear.a * y) / determinant
+    };
+  }
+  function viewportOriginOf(node, rect, linear) {
+    if (!linear) return { x: rect.left, y: rect.top };
+    var width = Number(node.offsetWidth) || 0;
+    var height = Number(node.offsetHeight) || 0;
+    if (width <= 0 || height <= 0) return { x: rect.left, y: rect.top };
+    var x1 = linear.a * width;
+    var x2 = linear.c * height;
+    var y1 = linear.b * width;
+    var y2 = linear.d * height;
+    return {
+      x: rect.left - Math.min(0, x1, x2, x1 + x2),
+      y: rect.top - Math.min(0, y1, y2, y1 + y2)
+    };
+  }
+  function renderedTransformOf(node) {
+    try {
+      var transform = window.getComputedStyle(node).transform;
+      return transform && transform !== 'none' ? transform : '';
+    } catch (e) {
+      return '';
+    }
+  }
   function geometryOf(node) {
     if (!node || !node.dataset || !node.dataset.r20BlockId) return null;
     var rect = node.getBoundingClientRect();
@@ -190,7 +267,8 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       if (offsetWidth > 0 && rect.width > 0) scaleX = rect.width / offsetWidth;
       if (offsetHeight > 0 && rect.height > 0) scaleY = rect.height / offsetHeight;
     } catch (e) {}
-    return {
+    var linear = localToViewportOf(node);
+    var geometry = {
       blockId: node.dataset.r20BlockId,
       rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
       offsetLeft: Number(node.offsetLeft) || 0,
@@ -211,6 +289,11 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
         : null,
       offsetParentPosition: offsetParentPosition
     };
+    if (linear) {
+      geometry.localToViewport = linear;
+      geometry.viewportOrigin = viewportOriginOf(node, rect, linear);
+    }
+    return geometry;
   }
   function hitPathOf(node) {
     var path = [];
@@ -242,6 +325,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   }
   function postEditHit(phase, subjectNode, hitNode, pointer) {
     if (!editBridgeEnabled) return;
+    resetLinearTransformCache();
     var subject = geometryOf(subjectNode);
     if (!subject) return;
     var selectedNodes = activeEditPointer && activeEditPointer.selectedNodes
@@ -308,6 +392,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   }
   function postWidgetDrag(phase, event, payload) {
     if (!editBridgeEnabled) return;
+    resetLinearTransformCache();
     var hitNode = hitNodeAt(event.clientX, event.clientY, event.target);
     try {
       parent.postMessage({
@@ -323,6 +408,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   }
   function postBlockTypeDrag(phase, event, blockType) {
     if (!editBridgeEnabled) return;
+    resetLinearTransformCache();
     var hitNode = hitNodeAt(event.clientX, event.clientY, event.target);
     try {
       parent.postMessage({
@@ -338,6 +424,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   }
   function postLayerDrag(phase, event, blockId) {
     if (!editBridgeEnabled || !blockId) return;
+    resetLinearTransformCache();
     var hitNode = hitNodeAt(event.clientX, event.clientY, event.target);
     var subject = document.querySelector('[data-r20-block-id="' + cssEscape(blockId) + '"]');
     try {
@@ -467,6 +554,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   }
   function syncActiveEditSelection() {
     if (!activeEditPointer || !activeEditPointer.subjectNode) return;
+    resetLinearTransformCache();
     var existing = activeEditPointer.selectedNodes || [];
     var dragSelectionIds = activeEditPointer.dragSelectionIds || [];
     var nodes;
@@ -488,6 +576,8 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       var created = {
         node: node,
         originTransform: node.style.transform,
+        originRenderedTransform: renderedTransformOf(node),
+        movementTransform: localToViewportOf(node.parentElement),
         originTransition: node.style.transition,
         originWillChange: node.style.willChange,
       };
@@ -759,6 +849,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       || Math.abs(deltaY) > 10
       || (deltaX === 0 && deltaY === 0)
     ) return false;
+    resetLinearTransformCache();
     var nodes = selectedNodesForIds(selectedEditBlockIds);
     if (!nodes.length || nodes.length !== selectedEditBlockIds.length) return false;
     var selectionKey = nodes.map(function (node) {
@@ -914,10 +1005,11 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
         selected.node.style.transform = selected.originTransform;
         continue;
       }
-      var base = selected.originTransform && selected.originTransform !== 'none'
-        ? selected.originTransform + ' '
+      var localDelta = invertViewportDelta(selected.movementTransform, dx, dy);
+      var base = selected.originRenderedTransform && selected.originRenderedTransform !== 'none'
+        ? ' ' + selected.originRenderedTransform
         : '';
-      selected.node.style.transform = base + 'translate3d(' + dx + 'px, ' + dy + 'px, 0)';
+      selected.node.style.transform = 'translate3d(' + localDelta.x + 'px, ' + localDelta.y + 'px, 0)' + base;
     }
     return true;
   }
@@ -1823,10 +1915,13 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     }
     rollbackOptimisticFlowMove();
     clearValidatedFlowTarget();
+    resetLinearTransformCache();
     var selectedNodes = selectedEditNodes(subjectNode).map(function (node) {
       return {
         node: node,
         originTransform: node.style.transform,
+        originRenderedTransform: renderedTransformOf(node),
+        movementTransform: localToViewportOf(node.parentElement),
         originTransition: node.style.transition,
         originWillChange: node.style.willChange,
       };

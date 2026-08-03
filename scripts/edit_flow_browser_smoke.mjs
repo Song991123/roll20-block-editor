@@ -439,6 +439,9 @@ async function main() {
       '<div class="outside" style="width:180px; min-height:54px; padding:8px">Outside</div>',
       '<div class="scaled-frame">',
       '  <div class="scaled-child">Scaled</div>',
+      '  <div class="affine-frame">',
+      '    <div class="affine-child">Turned</div>',
+      '  </div>',
       '</div>',
       '<div class="group-one" style="padding:4px">Group A</div>',
       '<div class="group-two" style="padding:4px">Group B</div>',
@@ -463,6 +466,8 @@ async function main() {
       '.sheet-group-one { margin-bottom: 18px; }',
       '.sheet-scaled-frame { position: relative; width: 260px; height: 150px; margin: 20px 0; padding: 12px; border: 4px solid #d7a5b6; transform: scale(0.75); transform-origin: top left; }',
       '.sheet-scaled-child { position: absolute; left: 24px; top: 32px; width: 80px; height: 28px; }',
+      '.sheet-affine-frame { position: absolute; left: 170px; top: 86px; width: 108px; height: 66px; padding: 6px; border: 3px solid #8abfae; transform: rotate(18deg) skewX(10deg) scale(0.85); transform-origin: top left; }',
+      '.sheet-affine-child { position: absolute; left: 20px; top: 22px; width: 52px; height: 20px; transform: rotate(-7deg); }',
     ].join('\n');
     await page.evaluate(
       ({ html, css }) => window.__perfHook.importSheet({ html, css, i18n: '{}' }),
@@ -488,6 +493,8 @@ async function main() {
       const outside = document.querySelector('.sheet-outside');
       const scaledFrame = document.querySelector('.sheet-scaled-frame');
       const scaledChild = document.querySelector('.sheet-scaled-child');
+      const affineFrame = document.querySelector('.sheet-affine-frame');
+      const affineChild = document.querySelector('.sheet-affine-child');
       const groupOne = document.querySelector('.sheet-group-one');
       const groupTwo = document.querySelector('.sheet-group-two');
       const groupThree = document.querySelector('.sheet-group-three');
@@ -513,6 +520,8 @@ async function main() {
         outsideId: outside?.getAttribute('data-r20-block-id') ?? null,
         scaledFrameId: scaledFrame?.getAttribute('data-r20-block-id') ?? null,
         scaledChildId: scaledChild?.getAttribute('data-r20-block-id') ?? null,
+        affineFrameId: affineFrame?.getAttribute('data-r20-block-id') ?? null,
+        affineChildId: affineChild?.getAttribute('data-r20-block-id') ?? null,
         groupOneId: groupOne?.getAttribute('data-r20-block-id') ?? null,
         groupTwoId: groupTwo?.getAttribute('data-r20-block-id') ?? null,
         groupThreeId: groupThree?.getAttribute('data-r20-block-id') ?? null,
@@ -526,6 +535,7 @@ async function main() {
     assert(
       ids.frameId && ids.titleId && ids.labelId && ids.rowAId && ids.rowAInputId && ids.rowBId && ids.rowBInputId && ids.imageId && ids.tableId && ids.tableBodyId
         && ids.tableRowId && ids.outsideId && ids.scaledFrameId && ids.scaledChildId
+        && ids.affineFrameId && ids.affineChildId
         && ids.groupOneId && ids.groupTwoId && ids.groupThreeId
         && ids.layoutProofId && ids.layoutProofTitleId && ids.layoutProofAId && ids.layoutProofBId && ids.layoutProofCId,
       `synthetic structural IDs were not emitted: ${JSON.stringify(ids)}`,
@@ -586,6 +596,14 @@ async function main() {
       scaledBox.x + scaledBox.width / 2 + scaledVisualDelta.x,
       scaledBox.y + scaledBox.height / 2 + scaledVisualDelta.y,
       { steps: 4 },
+    );
+    await page.waitForTimeout(80);
+    const scaledBoxDuring = await scaledChild.boundingBox();
+    assert(
+      scaledBoxDuring
+        && Math.abs(scaledBoxDuring.x - scaledBox.x - scaledVisualDelta.x) <= 2
+        && Math.abs(scaledBoxDuring.y - scaledBox.y - scaledVisualDelta.y) <= 2,
+      `scaled optimistic drag did not follow the top-level pointer: ${JSON.stringify({ scaledBox, scaledBoxDuring, scaledVisualDelta })}`,
     );
     await page.mouse.up();
     await page.waitForTimeout(900);
@@ -667,12 +685,142 @@ async function main() {
     );
     assert(!/(?:^|;)\s*(?:position|left|top)\s*:/i.test(scaledModel.emittedInlineStyle), 'scaled placement position leaked into emitted HTML');
 
+    const readAffinePlacement = () => frame.evaluate(({ frameId, childId }) => {
+      const container = document.querySelector(`[data-r20-block-id="${CSS.escape(frameId)}"]`);
+      const child = document.querySelector(`[data-r20-block-id="${CSS.escape(childId)}"]`);
+      if (!(container instanceof HTMLElement) || !(child instanceof HTMLElement)) return null;
+      const multiply = (outer, inner) => ({
+        a: outer.a * inner.a + outer.c * inner.b,
+        b: outer.b * inner.a + outer.d * inner.b,
+        c: outer.a * inner.c + outer.c * inner.d,
+        d: outer.b * inner.c + outer.d * inner.d,
+      });
+      let matrix = { a: 1, b: 0, c: 0, d: 1 };
+      let current = container;
+      while (current instanceof HTMLElement) {
+        const style = getComputedStyle(current);
+        const zoom = Number.parseFloat(style.zoom);
+        const ownZoom = Number.isFinite(zoom) && zoom > 0 ? zoom : 1;
+        let own = { a: ownZoom, b: 0, c: 0, d: ownZoom };
+        if (style.transform && style.transform !== 'none') {
+          const transform = new DOMMatrixReadOnly(style.transform);
+          own = multiply({
+            a: transform.a,
+            b: transform.b,
+            c: transform.c,
+            d: transform.d,
+          }, own);
+        }
+        matrix = multiply(own, matrix);
+        current = current.parentElement;
+      }
+      const childRect = child.getBoundingClientRect();
+      return {
+        parentId: child.parentElement?.getAttribute('data-r20-block-id') ?? null,
+        offsetParentId: child.offsetParent?.getAttribute('data-r20-block-id') ?? null,
+        offsetLeft: child.offsetLeft,
+        offsetTop: child.offsetTop,
+        rectLeft: childRect.left,
+        rectTop: childRect.top,
+        rectWidth: childRect.width,
+        rectHeight: childRect.height,
+        matrix,
+        transform: getComputedStyle(child).transform,
+        inlineStyle: child.getAttribute('style') ?? '',
+      };
+    }, { frameId: ids.affineFrameId, childId: ids.affineChildId });
+    const affineChild = frame.locator(`[data-r20-block-id="${ids.affineChildId}"]`);
+    await affineChild.scrollIntoViewIfNeeded();
+    const affineBefore = await readAffinePlacement();
+    const affineBox = await affineChild.boundingBox();
+    assert(affineBefore && affineBox, 'affine nested free-placement geometry is unavailable');
+    const affineVisualDelta = { x: 28, y: 20 };
+    await page.evaluate((childId) => {
+      window.__r20AffinePointerTrace = [];
+      window.addEventListener('message', (event) => {
+        const message = event.data;
+        if (
+          message?.type === 'r20:edit-hit'
+          && message.blockId === childId
+          && (message.phase === 'pointerdown' || message.phase === 'pointerup')
+        ) {
+          window.__r20AffinePointerTrace.push({ phase: message.phase, pointer: message.pointer });
+        }
+      });
+    }, ids.affineChildId);
+    await page.mouse.move(affineBox.x + affineBox.width / 2, affineBox.y + affineBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(
+      affineBox.x + affineBox.width / 2 + affineVisualDelta.x,
+      affineBox.y + affineBox.height / 2 + affineVisualDelta.y,
+      { steps: 4 },
+    );
+    await page.waitForTimeout(80);
+    const affineDuring = await readAffinePlacement();
+    const affineBoxDuring = await affineChild.boundingBox();
+    assert(
+      affineDuring && affineBoxDuring
+        && Math.abs(affineBoxDuring.x - affineBox.x - affineVisualDelta.x) <= 2
+        && Math.abs(affineBoxDuring.y - affineBox.y - affineVisualDelta.y) <= 2,
+      `affine optimistic drag did not follow the top-level pointer: ${JSON.stringify({ affineBox, affineBoxDuring, affineVisualDelta })}`,
+    );
+    assert(
+      Math.abs(affineDuring.rectWidth - affineBefore.rectWidth) <= 0.5
+        && Math.abs(affineDuring.rectHeight - affineBefore.rectHeight) <= 0.5,
+      `affine optimistic drag dropped the authored child transform: ${JSON.stringify({ affineBefore, affineDuring })}`,
+    );
+    await page.mouse.up();
+    await page.waitForTimeout(900);
+    const affineAfterEdit = await readAffinePlacement();
+    const affinePointerTrace = await page.evaluate(() => window.__r20AffinePointerTrace ?? []);
+    const affinePointerDown = affinePointerTrace.find((entry) => entry.phase === 'pointerdown');
+    const affinePointerUp = [...affinePointerTrace].reverse().find((entry) => entry.phase === 'pointerup');
+    assert(affineAfterEdit && affinePointerDown && affinePointerUp, `affine pointer bridge trace is incomplete: ${JSON.stringify(affinePointerTrace)}`);
+    const affinePointerDelta = {
+      x: affinePointerUp.pointer.x - affinePointerDown.pointer.x,
+      y: affinePointerUp.pointer.y - affinePointerDown.pointer.y,
+    };
+    const determinant = affineBefore.matrix.a * affineBefore.matrix.d - affineBefore.matrix.b * affineBefore.matrix.c;
+    const affineLocalDelta = {
+      x: (affineBefore.matrix.d * affinePointerDelta.x - affineBefore.matrix.c * affinePointerDelta.y) / determinant,
+      y: (-affineBefore.matrix.b * affinePointerDelta.x + affineBefore.matrix.a * affinePointerDelta.y) / determinant,
+    };
+    const expectedAffineLeft = Math.round((affineBefore.offsetLeft + affineLocalDelta.x) / 8) * 8;
+    const expectedAffineTop = Math.round((affineBefore.offsetTop + affineLocalDelta.y) / 8) * 8;
+    const committedAffineViewportDelta = {
+      x: affineBefore.matrix.a * (expectedAffineLeft - affineBefore.offsetLeft)
+        + affineBefore.matrix.c * (expectedAffineTop - affineBefore.offsetTop),
+      y: affineBefore.matrix.b * (expectedAffineLeft - affineBefore.offsetLeft)
+        + affineBefore.matrix.d * (expectedAffineTop - affineBefore.offsetTop),
+    };
+    assert(
+      affineAfterEdit.parentId === ids.affineFrameId
+        && affineAfterEdit.offsetParentId === ids.affineFrameId
+        && Math.abs(affineAfterEdit.offsetLeft - expectedAffineLeft) <= 0.5
+        && Math.abs(affineAfterEdit.offsetTop - expectedAffineTop) <= 0.5,
+      `affine nested drop stored the wrong local coordinates: ${JSON.stringify({ affineBefore, affineAfterEdit, expectedAffineLeft, expectedAffineTop, affineLocalDelta })}`,
+    );
+    assert(
+      Math.abs(affineAfterEdit.rectLeft - affineBefore.rectLeft - committedAffineViewportDelta.x) <= 1
+        && Math.abs(affineAfterEdit.rectTop - affineBefore.rectTop - committedAffineViewportDelta.y) <= 1,
+      `affine nested drop visually rolled back after model commit: ${JSON.stringify({ affineBefore, affineAfterEdit, committedAffineViewportDelta })}`,
+    );
+    assert(
+      affineAfterEdit.transform !== 'none'
+        && Math.abs(affineAfterEdit.rectWidth - affineBefore.rectWidth) <= 0.5
+        && Math.abs(affineAfterEdit.rectHeight - affineBefore.rectHeight) <= 0.5,
+      `affine nested drop lost the authored child transform: ${JSON.stringify({ affineBefore, affineAfterEdit })}`,
+    );
+    assert(!/(?:^|;)\s*(?:position|left|top|transform)\s*:/i.test(affineAfterEdit.inlineStyle), 'affine placement leaked managed geometry into inline HTML');
+
     await page.click('[data-testid="main-mode-preview"]');
     await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '0');
     const scaledPreview = await readScaledPlacement();
+    const affinePreview = await readAffinePlacement();
     await page.click('[data-testid="preview-exit-edit"]');
     await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '1');
     const scaledEditAgain = await readScaledPlacement();
+    const affineEditAgain = await readAffinePlacement();
     assert(
       scaledPreview && scaledEditAgain
         && Math.abs(scaledPreview.rectLeft - scaledAfterEdit.rectLeft) <= 0.5
@@ -681,6 +829,14 @@ async function main() {
         && Math.abs(scaledEditAgain.rectTop - scaledPreview.rectTop) <= 0.5,
       `scaled nested placement diverged across Preview/Edit: ${JSON.stringify({ scaledAfterEdit, scaledPreview, scaledEditAgain })}`,
     );
+    assert(
+      affinePreview && affineEditAgain
+        && Math.abs(affinePreview.rectLeft - affineAfterEdit.rectLeft) <= 0.5
+        && Math.abs(affinePreview.rectTop - affineAfterEdit.rectTop) <= 0.5
+        && Math.abs(affineEditAgain.rectLeft - affinePreview.rectLeft) <= 0.5
+        && Math.abs(affineEditAgain.rectTop - affinePreview.rectTop) <= 0.5,
+      `affine nested placement diverged across Preview/Edit: ${JSON.stringify({ affineAfterEdit, affinePreview, affineEditAgain })}`,
+    );
     result.tests.scaledNestedPlacement = {
       before: scaledBefore,
       afterEdit: scaledAfterEdit,
@@ -688,6 +844,15 @@ async function main() {
       editAgain: scaledEditAgain,
       expected: { left: expectedScaledLeft, top: expectedScaledTop },
       pointerDelta: iframePointerDelta,
+    };
+    result.tests.affineNestedPlacement = {
+      before: affineBefore,
+      during: affineDuring,
+      afterEdit: affineAfterEdit,
+      preview: affinePreview,
+      editAgain: affineEditAgain,
+      expected: { left: expectedAffineLeft, top: expectedAffineTop },
+      pointerDelta: affinePointerDelta,
     };
 
     const readLayoutProof = () => frame.evaluate((proofIds) => {
@@ -740,6 +905,11 @@ async function main() {
     );
     await layoutProofCanvas.scrollIntoViewIfNeeded();
     await layoutProofCanvas.click({ position: { x: 4, y: 4 }, force: true });
+    await page.waitForFunction(
+      (rootId) => window.__perfHook.getSelectedBlockId?.() === rootId,
+      ids.layoutProofId,
+      { timeout: 5000 },
+    );
     const sectionMintSidebarComposition = page.locator(
       '[data-testid="design-section-composition-mint-sidebar"]',
     );
@@ -4351,7 +4521,7 @@ async function main() {
         `- Status: ${result.pass ? 'PASS' : 'FAIL'}`,
         `- Console errors: ${consoleErrors.length}`,
         `- Page errors: ${pageErrors.length}`,
-        '- Coverage: flow/free placement including scaled nested coordinates, direct on-sheet keyboard nudge and resize, resizable layer panel with synchronized iframe origin, virtualized layer Tab navigation, canvas widget and block gallery drops, layer edge auto-scroll, layer collapse/drag-hover expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, managed visual styles, preview Roll/chat, sheet width, and the dedicated rolltemplate card editor with click/style/drop/chat synchronization plus empty-workspace template creation.',
+        '- Coverage: flow/free placement including scaled and rotated/skewed nested coordinates, direct on-sheet keyboard nudge and resize, resizable layer panel with synchronized iframe origin, virtualized layer Tab navigation, canvas widget and block gallery drops, layer edge auto-scroll, layer collapse/drag-hover expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, managed visual styles, preview Roll/chat, sheet width, and the dedicated rolltemplate card editor with click/style/drop/chat synchronization plus empty-workspace template creation.',
         '',
       ].join('\n'),
       'utf8',

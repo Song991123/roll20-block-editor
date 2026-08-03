@@ -544,6 +544,24 @@ or source-derived measurement here.
 - Claim boundary: local output-contract proof based on the official Roll20
   script model. This batch did not add new actual-room evidence.
 
+## 2026-08-03 - Affine Nested Drag Coordinates
+
+- Replaced scale-only free-placement math with an optional invertible 2D
+  local-to-viewport matrix while retaining the existing scale fallback.
+- The iframe now keeps authored element transforms during optimistic movement
+  and converts the top-level pointer delta into each element's local parent
+  axes before painting.
+- A message-scoped `WeakMap` shares transformed-ancestor measurements across
+  subject, selection, and hit-path geometry without retaining stale frames.
+- Unit tests cover rotated point and movement inversion. The synthetic browser
+  smoke covers an axis-aligned scaled frame containing a rotate/skew/scale
+  frame and rotated child, including optimistic pointer tracking, managed CSS,
+  no inline geometry leak, and Preview/Edit equality after commit.
+- Claim boundary: common 2D `transform` cases in the local synthetic editor.
+  Longer or dynamically changing transform stacks, individual CSS
+  `rotate`/`scale` properties, 3D/perspective, dense real imports, and actual
+  Roll20 screens remain unverified by this batch.
+
 ## Current Product State
 
 - Preview and Edit share one persistent Roll20 iframe.

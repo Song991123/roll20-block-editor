@@ -57,10 +57,13 @@ contain private source evidence or historical test dumps.
 - Its virtualized tree uses one roving tab stop. Tab navigation keeps the
   active layer visible without recentering rows already inside the viewport or
   mutating emitted source.
-- Axis-aligned scaled containing frames now report rendered-to-local scale on
-  both axes. Free placement converts pointer deltas into local CSS coordinates
-  before snapping, so nested objects keep their parent and position across the
-  optimistic paint, model commit, and Preview/Edit switches.
+- Transformed containing frames report an accumulated 2D local-to-viewport
+  matrix for common `transform` and CSS zoom chains. Free placement and its
+  optimistic paint invert that matrix before snapping, while authored child
+  transforms remain intact. A per-message cache shares ancestor measurements.
+  Browser proof covers a scaled ancestor containing a rotate/skew/scale frame
+  and rotated child; longer dynamic chains, individual transform properties,
+  and 3D remain open.
 - Generated evidence and external validation inputs remain ignored, local, and
   ephemeral.
 - Ordinary JavaScript has a separate inert source workspace. Authored emission

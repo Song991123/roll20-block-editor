@@ -68,11 +68,48 @@ function geometryScale(value: number | undefined): number {
   return Number.isFinite(value) && Number(value) > 0 ? Number(value) : 1;
 }
 
+function resolveLocalDelta(
+  delta: { x: number; y: number },
+  geometry: IframeEditNodeGeometry | null,
+): { x: number; y: number } {
+  const matrix = geometry?.localToViewport;
+  if (matrix) {
+    const determinant = matrix.a * matrix.d - matrix.b * matrix.c;
+    if (Number.isFinite(determinant) && Math.abs(determinant) > 0.000001) {
+      return {
+        x: (matrix.d * delta.x - matrix.c * delta.y) / determinant,
+        y: (-matrix.b * delta.x + matrix.a * delta.y) / determinant,
+      };
+    }
+  }
+  return {
+    x: delta.x / geometryScale(geometry?.scaleX),
+    y: delta.y / geometryScale(geometry?.scaleY),
+  };
+}
+
 function snapCoordinate(value: number, snapSize: number): number {
   const step = Number.isFinite(snapSize)
     ? Math.max(1, Math.min(128, Math.round(snapSize)))
     : 1;
   return Math.max(0, Math.round(value / step) * step);
+}
+
+function resolveContainerLocalPoint(
+  pointer: { x: number; y: number },
+  geometry: IframeEditNodeGeometry | null,
+): IframeLocalPoint {
+  const origin = geometry?.viewportOrigin ?? (geometry
+    ? { x: geometry.rect.left, y: geometry.rect.top }
+    : { x: 0, y: 0 });
+  const local = resolveLocalDelta({
+    x: pointer.x - origin.x,
+    y: pointer.y - origin.y,
+  }, geometry);
+  return {
+    left: local.x - (geometry?.clientLeft ?? 0) + (geometry?.scrollLeft ?? 0),
+    top: local.y - (geometry?.clientTop ?? 0) + (geometry?.scrollTop ?? 0),
+  };
 }
 
 /** Convert iframe viewport coordinates into one container's local CSS pixels. */
@@ -81,19 +118,10 @@ export function resolveIframeContainerPoint(
   geometry: IframeEditNodeGeometry | null,
   snapSize = 1,
 ): IframeLocalPoint {
-  const left = geometry
-    ? (pointer.x - geometry.rect.left) / geometryScale(geometry.scaleX)
-      - geometry.clientLeft
-      + geometry.scrollLeft
-    : pointer.x;
-  const top = geometry
-    ? (pointer.y - geometry.rect.top) / geometryScale(geometry.scaleY)
-      - geometry.clientTop
-      + geometry.scrollTop
-    : pointer.y;
+  const local = resolveContainerLocalPoint(pointer, geometry);
   return {
-    left: snapCoordinate(left, snapSize),
-    top: snapCoordinate(top, snapSize),
+    left: snapCoordinate(local.left, snapSize),
+    top: snapCoordinate(local.top, snapSize),
   };
 }
 
@@ -348,29 +376,24 @@ export function resolveIframeFreePlacement(
   if (Math.hypot(deltaX, deltaY) < MIN_FREE_DRAG_DISTANCE) return null;
   let baseLeft = origin.subject.offsetLeft;
   let baseTop = origin.subject.offsetTop;
-  const scaleX = geometryScale(containingGeometry?.scaleX);
-  const scaleY = geometryScale(containingGeometry?.scaleY);
+  const localDelta = resolveLocalDelta({ x: deltaX, y: deltaY }, containingGeometry);
 
   if (
     containingGeometry
-    && (
-      origin.subject.offsetParentBlockId !== containingGeometry.blockId
-      || origin.subject.position === 'absolute'
-    )
+    && origin.subject.offsetParentBlockId !== containingGeometry.blockId
   ) {
-    baseLeft = (origin.subject.rect.left
-      - containingGeometry.rect.left) / scaleX
-      - containingGeometry.clientLeft
-      + containingGeometry.scrollLeft;
-    baseTop = (origin.subject.rect.top
-      - containingGeometry.rect.top) / scaleY
-      - containingGeometry.clientTop
-      + containingGeometry.scrollTop;
+    const subjectOrigin = origin.subject.viewportOrigin ?? {
+      x: origin.subject.rect.left,
+      y: origin.subject.rect.top,
+    };
+    const localOrigin = resolveContainerLocalPoint(subjectOrigin, containingGeometry);
+    baseLeft = localOrigin.left;
+    baseTop = localOrigin.top;
   }
 
   return {
-    left: snapCoordinate(baseLeft + deltaX / scaleX, snapSize),
-    top: snapCoordinate(baseTop + deltaY / scaleY, snapSize),
+    left: snapCoordinate(baseLeft + localDelta.x, snapSize),
+    top: snapCoordinate(baseTop + localDelta.y, snapSize),
     containingBlockId: containingGeometry?.blockId ?? null,
     containingBlockNeedsRelative: containingGeometry?.position === 'static',
   };
@@ -401,29 +424,24 @@ export function resolveIframeMultiFreePlacement(
   const deltaY = endPointer.y - originPointer.y;
   let baseLeft = origin.geometry.offsetLeft;
   let baseTop = origin.geometry.offsetTop;
-  const scaleX = geometryScale(currentParentGeometry?.scaleX);
-  const scaleY = geometryScale(currentParentGeometry?.scaleY);
+  const localDelta = resolveLocalDelta({ x: deltaX, y: deltaY }, currentParentGeometry);
 
   if (
     currentParentGeometry
-    && (
-      origin.geometry.offsetParentBlockId !== currentParentId
-      || origin.geometry.position === 'absolute'
-    )
+    && origin.geometry.offsetParentBlockId !== currentParentId
   ) {
-    baseLeft = (origin.geometry.rect.left
-      - currentParentGeometry.rect.left) / scaleX
-      - currentParentGeometry.clientLeft
-      + currentParentGeometry.scrollLeft;
-    baseTop = (origin.geometry.rect.top
-      - currentParentGeometry.rect.top) / scaleY
-      - currentParentGeometry.clientTop
-      + currentParentGeometry.scrollTop;
+    const subjectOrigin = origin.geometry.viewportOrigin ?? {
+      x: origin.geometry.rect.left,
+      y: origin.geometry.rect.top,
+    };
+    const localOrigin = resolveContainerLocalPoint(subjectOrigin, currentParentGeometry);
+    baseLeft = localOrigin.left;
+    baseTop = localOrigin.top;
   }
 
   return {
-    left: snapCoordinate(baseLeft + deltaX / scaleX, snapSize),
-    top: snapCoordinate(baseTop + deltaY / scaleY, snapSize),
+    left: snapCoordinate(baseLeft + localDelta.x, snapSize),
+    top: snapCoordinate(baseTop + localDelta.y, snapSize),
     containingBlockId: currentParentId,
     containingBlockNeedsRelative: currentParentGeometry?.position === 'static',
   };

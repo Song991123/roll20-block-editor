@@ -279,6 +279,22 @@ assert.deepEqual(
   'viewport point is converted into scaled container CSS coordinates',
 );
 
+const rotatedContainer = geometry('frame', 40, 120, {
+  rect: { left: 20, top: 40, width: 120, height: 200 },
+  viewportOrigin: { x: 140, y: 40 },
+  localToViewport: { a: 0, b: 1, c: -1, d: 0 },
+  clientLeft: 2,
+  clientTop: 3,
+  scrollLeft: 1,
+  scrollTop: 2,
+  position: 'relative',
+});
+assert.deepEqual(
+  resolveIframeContainerPoint({ x: 130, y: 60 }, rotatedContainer),
+  { left: 19, top: 9 },
+  'viewport point is inverted through a rotated container matrix',
+);
+
 const calls: string[] = [];
 const commitAdapter = {
   moveBlockBefore: (_workspace: 'html', blockId: string, targetId: string) => {
@@ -394,6 +410,80 @@ assert.deepEqual(resolveIframeMultiFreePlacement(
   containingBlockId: 'frame',
   containingBlockNeedsRelative: false,
 });
+
+const rotatedSubject = geometry('subject', 60, 40, {
+  rect: { left: 80, top: 60, width: 40, height: 100 },
+  offsetLeft: 30,
+  offsetTop: 40,
+  offsetParentBlockId: 'frame',
+  offsetParentPosition: 'relative',
+  position: 'absolute',
+});
+const rotatedParent = geometry('frame', 20, 200, {
+  rect: { left: 20, top: 20, width: 200, height: 240 },
+  viewportOrigin: { x: 220, y: 20 },
+  localToViewport: { a: 0, b: 1, c: -1, d: 0 },
+  position: 'relative',
+});
+const rotatedOrigin = message(
+  [rotatedSubject, rotatedParent],
+  80,
+  'pointerdown',
+  rotatedSubject,
+);
+const rotatedEnd = {
+  ...rotatedOrigin,
+  phase: 'pointerup' as const,
+  pointer: { x: rotatedOrigin.pointer.x + 10, y: rotatedOrigin.pointer.y },
+  buttons: 0,
+};
+assert.deepEqual(resolveIframeFreePlacement(rotatedOrigin, rotatedEnd, lookup), {
+  left: 30,
+  top: 30,
+  containingBlockId: 'frame',
+  containingBlockNeedsRelative: false,
+});
+assert.deepEqual(resolveIframeMultiFreePlacement(
+  { geometry: rotatedSubject, hitPath: [rotatedSubject, rotatedParent] },
+  { geometry: rotatedSubject, hitPath: [rotatedSubject, rotatedParent] },
+  rotatedOrigin.pointer,
+  rotatedEnd.pointer,
+  lookup,
+), {
+  left: 30,
+  top: 30,
+  containingBlockId: 'frame',
+  containingBlockNeedsRelative: false,
+});
+
+const reparentedFractionalSubject = geometry('subject', 20.4, 20, {
+  rect: { left: 15.4, top: 20.4, width: 20, height: 20 },
+  viewportOrigin: { x: 15.4, y: 20.4 },
+  offsetParentBlockId: null,
+});
+const fractionalParent = geometry('frame', 0, 100, {
+  rect: { left: 0, top: 0, width: 100, height: 100 },
+  viewportOrigin: { x: 0, y: 0 },
+  localToViewport: { a: 1, b: 0, c: 0, d: 1 },
+  position: 'relative',
+});
+const fractionalOrigin = message(
+  [reparentedFractionalSubject, fractionalParent],
+  25,
+  'pointerdown',
+  reparentedFractionalSubject,
+);
+assert.deepEqual(resolveIframeFreePlacement(fractionalOrigin, {
+  ...fractionalOrigin,
+  phase: 'pointerup' as const,
+  pointer: { x: fractionalOrigin.pointer.x + 4.1, y: fractionalOrigin.pointer.y },
+  buttons: 0,
+}, lookup), {
+  left: 20,
+  top: 20,
+  containingBlockId: 'frame',
+  containingBlockNeedsRelative: false,
+}, 'reparent base geometry stays fractional until the final snap');
 
 const multiSubject = geometry('subject', 30, 24, {
   rect: { left: 30, top: 30, width: 80, height: 24 },

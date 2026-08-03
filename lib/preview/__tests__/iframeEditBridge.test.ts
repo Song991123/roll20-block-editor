@@ -22,6 +22,8 @@ const subject = {
   computedHeight: 38,
   scaleX: 0.75,
   scaleY: 0.8,
+  viewportOrigin: { x: 8, y: 18 },
+  localToViewport: { a: 0.75, b: 0.2, c: -0.1, d: 0.8 },
   offsetParentBlockId: 'frame-1',
   offsetParentPosition: 'relative',
 };
@@ -161,6 +163,14 @@ assert.equal(parseIframeEditBridgeMessage({
 assert.equal(parseIframeEditBridgeMessage({
   ...hit,
   subject: { ...subject, scaleX: 0 },
+}), null);
+assert.equal(parseIframeEditBridgeMessage({
+  ...hit,
+  subject: { ...subject, viewportOrigin: { x: Number.NaN, y: 0 } },
+}), null);
+assert.equal(parseIframeEditBridgeMessage({
+  ...hit,
+  subject: { ...subject, localToViewport: { a: 1, b: 0, c: 0, d: Number.POSITIVE_INFINITY } },
 }), null);
 assert.equal(parseIframeEditBridgeMessage({
   ...hit,

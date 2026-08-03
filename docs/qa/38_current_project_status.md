@@ -16,7 +16,8 @@ inert source but cannot be presented as Roll20 behavior.
 - Separate modern and legacy compatibility modes.
 - HTML/CSS/translation import and block emission with explicit fallback paths.
 - Layer tree with container roles, grouping, before/inside/after movement,
-  flow placement, explicit free placement, multi-selection, and multi-move.
+  flow placement, explicit free placement, multi-selection, multi-move, and
+  local 2D affine coordinate conversion for transformed containing frames.
 - Managed visual CSS for common sections, controls, text, images, tables, Roll
   buttons, and result cards.
 - Local Sheet Worker subset, default-attribute behavior, Roll execution, chat
@@ -49,8 +50,9 @@ arbitrary-sheet or broad Roll20 parity.
   synthetic suite.
 - Broad uncommon-structure import/edit coverage.
 - Broader structured Sheet Worker blocks and unsupported-syntax diagnostics.
-- Dense imported-tree usability, rotated/skewed coordinate cases, and longer
-  mixed-operation history review.
+- Dense imported-tree usability, longer or dynamic transform stacks,
+  individual CSS transform properties, 3D/perspective cases, and mixed-operation
+  history review.
 - Final user-facing Korean copy and full responsive shell review.
 - Historical Git privacy decision after current-tree cleanup.
 

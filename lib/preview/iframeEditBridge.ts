@@ -9,6 +9,18 @@ export type IframeEditRect = {
   height: number;
 };
 
+export type IframeEditPoint = {
+  x: number;
+  y: number;
+};
+
+export type IframeEditLinearTransform = {
+  a: number;
+  b: number;
+  c: number;
+  d: number;
+};
+
 export type IframeEditModifiers = {
   altKey: boolean;
   ctrlKey: boolean;
@@ -33,6 +45,10 @@ export type IframeEditNodeGeometry = {
   /** Viewport pixels represented by one local CSS pixel on each axis. */
   scaleX?: number;
   scaleY?: number;
+  /** Local border-box origin after ancestor transforms, in iframe viewport pixels. */
+  viewportOrigin?: IframeEditPoint;
+  /** Local CSS vectors mapped into iframe viewport vectors. */
+  localToViewport?: IframeEditLinearTransform;
   offsetParentBlockId: string | null;
   offsetParentPosition: string;
 };
@@ -164,6 +180,19 @@ function isRect(value: unknown): value is IframeEditRect {
     && value.height >= 0;
 }
 
+function isPoint(value: unknown): value is IframeEditPoint {
+  if (!isRecord(value)) return false;
+  return isFiniteCoordinate(value.x) && isFiniteCoordinate(value.y);
+}
+
+function isLinearTransform(value: unknown): value is IframeEditLinearTransform {
+  if (!isRecord(value)) return false;
+  return isFiniteCoordinate(value.a)
+    && isFiniteCoordinate(value.b)
+    && isFiniteCoordinate(value.c)
+    && isFiniteCoordinate(value.d);
+}
+
 function isNodeGeometry(value: unknown): value is IframeEditNodeGeometry {
   if (!isRecord(value)) return false;
   return typeof value.blockId === 'string'
@@ -190,6 +219,8 @@ function isNodeGeometry(value: unknown): value is IframeEditNodeGeometry {
       || (isFiniteCoordinate(value.scaleX) && value.scaleX > 0 && value.scaleX <= 100))
     && (value.scaleY === undefined
       || (isFiniteCoordinate(value.scaleY) && value.scaleY > 0 && value.scaleY <= 100))
+    && (value.viewportOrigin === undefined || isPoint(value.viewportOrigin))
+    && (value.localToViewport === undefined || isLinearTransform(value.localToViewport))
     && (value.offsetParentBlockId === null
       || (typeof value.offsetParentBlockId === 'string' && value.offsetParentBlockId.length <= 256))
     && typeof value.offsetParentPosition === 'string'
