@@ -15,6 +15,19 @@ or source-derived measurement here.
 - Remote CI: passed safety/unit verification, lint, and production build.
 - Worktree and project server state were clean after the run.
 
+## 2026-08-03 - Virtualized Layer Keyboard Navigation
+
+- Replaced all-row tab stops with one roving tree-item tab stop. Tab and Shift
+  plus Tab select adjacent visible layers while preserving the existing arrow
+  key movement contract.
+- Selected rows now scroll only when outside the viewport instead of jumping
+  to the panel center on every change.
+- The full edit-flow browser smoke traverses a long virtualized list, confirms
+  automatic scrolling and active-row visibility, and proves that navigation
+  does not mutate emitted HTML or CSS. Console and page errors remain empty.
+- Claim boundary: local anonymous editor navigation only. Dense imported-sheet
+  ergonomics and actual Roll20 interaction remain open.
+
 ## 2026-08-03 - Resizable Layer Panel
 
 - Replaced the fixed layer-panel width with a persisted preference and an

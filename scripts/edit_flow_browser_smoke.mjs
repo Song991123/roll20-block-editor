@@ -1616,6 +1616,122 @@ async function main() {
       `layer drag identity survived a virtualized drop: ${JSON.stringify(result.tests.layerAutoScroll)}`,
     );
 
+    const layerKeyboardSourceBefore = await page.evaluate(() => window.__perfHook.getEmitContent());
+    const firstKeyboardLayer = page.locator('[data-testid="edit-layer-row"]').first();
+    await firstKeyboardLayer.focus();
+    await firstKeyboardLayer.press('Enter');
+    const layerKeyboardStart = await page.evaluate(() => {
+      const scroll = document.querySelector('[data-testid="edit-layer-scroll"]');
+      const active = document.activeElement;
+      if (!(scroll instanceof HTMLElement) || !(active instanceof HTMLElement)) {
+        return { found: false };
+      }
+      scroll.scrollTop = 0;
+      scroll.dispatchEvent(new Event('scroll', { bubbles: true }));
+      return {
+        found: true,
+        id: active.getAttribute('data-r20-block-id'),
+        count: Number(scroll.dataset.r20LayerCount ?? '0'),
+        scrollTop: scroll.scrollTop,
+      };
+    });
+    assert(layerKeyboardStart.found && layerKeyboardStart.id, 'layer keyboard start row is missing');
+    assert(layerKeyboardStart.count > 2, 'layer keyboard smoke needs at least three visible rows');
+    await page.keyboard.press('Tab');
+    await page.waitForFunction((previousId) => {
+      const active = document.activeElement;
+      return active instanceof HTMLElement
+        && active.matches('[data-testid="edit-layer-row"]')
+        && active.getAttribute('data-r20-block-id') !== previousId;
+    }, layerKeyboardStart.id);
+    const layerKeyboardNextId = await page.evaluate(() => (
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement.getAttribute('data-r20-block-id')
+        : null
+    ));
+    await page.keyboard.press('Shift+Tab');
+    await page.waitForFunction((expectedId) => (
+      document.activeElement instanceof HTMLElement
+      && document.activeElement.getAttribute('data-r20-block-id') === expectedId
+    ), layerKeyboardStart.id);
+
+    const keyboardSteps = Math.min(layerKeyboardStart.count - 1, 12);
+    const visitedLayerIds = [layerKeyboardStart.id];
+    for (let step = 0; step < keyboardSteps; step += 1) {
+      const previousId = visitedLayerIds[visitedLayerIds.length - 1];
+      await page.keyboard.press('Tab');
+      await page.waitForFunction((beforeId) => {
+        const active = document.activeElement;
+        return active instanceof HTMLElement
+          && active.matches('[data-testid="edit-layer-row"]')
+          && active.getAttribute('data-r20-block-id') !== beforeId;
+      }, previousId);
+      visitedLayerIds.push(await page.evaluate(() => (
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement.getAttribute('data-r20-block-id')
+          : null
+      )));
+    }
+    const layerKeyboardSourceAfter = await page.evaluate(() => window.__perfHook.getEmitContent());
+    result.tests.layerKeyboardNavigation = await page.evaluate(({ firstId, nextId, visitedIds }) => {
+      const scroll = document.querySelector('[data-testid="edit-layer-scroll"]');
+      const active = document.activeElement;
+      if (!(scroll instanceof HTMLElement) || !(active instanceof HTMLElement)) {
+        return { found: false };
+      }
+      const activeRect = active.getBoundingClientRect();
+      const scrollRect = scroll.getBoundingClientRect();
+      return {
+        found: true,
+        firstId,
+        nextId,
+        visitedIds,
+        uniqueVisited: new Set(visitedIds).size,
+        scrollTop: scroll.scrollTop,
+        activeId: active.getAttribute('data-r20-block-id'),
+        activeRole: active.getAttribute('role'),
+        activeLevel: Number(active.getAttribute('aria-level')),
+        activeSelected: active.getAttribute('aria-selected'),
+        activeInsideViewport: activeRect.top >= scrollRect.top - 1
+          && activeRect.bottom <= scrollRect.bottom + 1,
+        treeRole: scroll.getAttribute('role'),
+        tabStops: [...scroll.querySelectorAll('[data-testid="edit-layer-row"]')]
+          .filter((row) => row instanceof HTMLElement && row.tabIndex === 0)
+          .length,
+      };
+    }, {
+      firstId: layerKeyboardStart.id,
+      nextId: layerKeyboardNextId,
+      visitedIds: visitedLayerIds,
+    });
+    assert(result.tests.layerKeyboardNavigation.found, 'layer keyboard navigation surface is missing');
+    assert(
+      result.tests.layerKeyboardNavigation.nextId !== result.tests.layerKeyboardNavigation.firstId,
+      `Tab did not select the next layer: ${JSON.stringify(result.tests.layerKeyboardNavigation)}`,
+    );
+    assert(
+      result.tests.layerKeyboardNavigation.uniqueVisited === visitedLayerIds.length,
+      `layer keyboard navigation repeated or skipped focus: ${JSON.stringify(result.tests.layerKeyboardNavigation)}`,
+    );
+    assert(
+      result.tests.layerKeyboardNavigation.scrollTop > 0
+        && result.tests.layerKeyboardNavigation.activeInsideViewport,
+      `virtualized layer keyboard navigation did not keep focus visible: ${JSON.stringify(result.tests.layerKeyboardNavigation)}`,
+    );
+    assert(
+      result.tests.layerKeyboardNavigation.treeRole === 'tree'
+        && result.tests.layerKeyboardNavigation.activeRole === 'treeitem'
+        && result.tests.layerKeyboardNavigation.activeLevel >= 1
+        && result.tests.layerKeyboardNavigation.activeSelected === 'true'
+        && result.tests.layerKeyboardNavigation.tabStops === 1,
+      `layer tree semantics or roving tab stop are invalid: ${JSON.stringify(result.tests.layerKeyboardNavigation)}`,
+    );
+    assert(
+      layerKeyboardSourceBefore.html === layerKeyboardSourceAfter.html
+        && layerKeyboardSourceBefore.css === layerKeyboardSourceAfter.css,
+      'layer keyboard navigation mutated emitted HTML or CSS',
+    );
+
     const frameCollapseToggle = page.locator(
       `[data-testid="edit-layer-collapse-toggle"][data-r20-block-id="${ids.frameId}"]`,
     );
@@ -4066,7 +4182,7 @@ async function main() {
         `- Status: ${result.pass ? 'PASS' : 'FAIL'}`,
         `- Console errors: ${consoleErrors.length}`,
         `- Page errors: ${pageErrors.length}`,
-        '- Coverage: flow/free placement, direct on-sheet keyboard nudge and resize, resizable layer panel with synchronized iframe origin, canvas widget and block gallery drops, layer edge auto-scroll, layer collapse/drag-hover expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, managed visual styles, preview Roll/chat, sheet width, and the dedicated rolltemplate card editor with click/style/drop/chat synchronization plus empty-workspace template creation.',
+        '- Coverage: flow/free placement, direct on-sheet keyboard nudge and resize, resizable layer panel with synchronized iframe origin, virtualized layer Tab navigation, canvas widget and block gallery drops, layer edge auto-scroll, layer collapse/drag-hover expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, managed visual styles, preview Roll/chat, sheet width, and the dedicated rolltemplate card editor with click/style/drop/chat synchronization plus empty-workspace template creation.',
         '',
       ].join('\n'),
       'utf8',

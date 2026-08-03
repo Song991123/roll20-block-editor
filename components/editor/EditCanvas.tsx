@@ -738,8 +738,29 @@ function EditLayerPanel({
     if (!selectedId) return;
     const index = visibleNodes.findIndex((item) => item.node.id === selectedId);
     if (index < 0) return;
-    virtualizer.scrollToIndex(index, { align: 'center' });
+    virtualizer.scrollToIndex(index, { align: 'auto' });
   }, [selectedId, visibleNodes, virtualizer]);
+
+  const focusLayerAt = useCallback((index: number) => {
+    const target = visibleNodes[index];
+    if (!target) return false;
+    setSelected(target.node.id, 'tree');
+    virtualizer.scrollToIndex(index, { align: 'auto' });
+    let attempts = 0;
+    const focus = () => {
+      const row = document.querySelector(
+        `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(target.node.id)}"]`,
+      );
+      if (row instanceof HTMLElement) {
+        row.focus();
+      } else if (attempts < 3) {
+        attempts += 1;
+        requestAnimationFrame(focus);
+      }
+    };
+    requestAnimationFrame(focus);
+    return true;
+  }, [setSelected, virtualizer, visibleNodes]);
 
   const toggleLayer = useCallback((blockId: string) => {
     setCollapsedLayerIds((current) => {
@@ -824,6 +845,10 @@ function EditLayerPanel({
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [groupSelection, selectedIds.length]);
+
+  const focusableLayerId = visibleNodes.some((item) => item.node.id === selectedId)
+    ? selectedId
+    : visibleNodes[0]?.node.id ?? null;
 
   return (
     <aside
@@ -923,6 +948,10 @@ function EditLayerPanel({
         ref={scrollRef}
         className="min-h-0 flex-1 overflow-auto"
         data-testid="edit-layer-scroll"
+        data-r20-layer-count={visibleNodes.length}
+        role="tree"
+        aria-label={editSubmode === 'rolltemplate' ? '결과 카드 레이어' : '시트 레이어'}
+        aria-multiselectable="true"
         onDragOverCapture={updateAutoScroll}
         onDragLeave={(event) => {
           const relatedTarget = event.relatedTarget;
@@ -957,9 +986,11 @@ function EditLayerPanel({
                     node={node}
                     workspace={tab}
                     selected={selectedIds.includes(node.id)}
+                    tabIndex={focusableLayerId === node.id ? 0 : -1}
                     searchMatch={item.searchMatch}
                     contextOnly={item.contextOnly}
                     onSelect={(additive) => selectLayer(node.id, additive)}
+                    onNavigate={(direction) => focusLayerAt(row.index + direction)}
                     onMove={moveLayer}
                     canDrop={canMoveLayer}
                     onEject={ejectLayer}
@@ -980,9 +1011,11 @@ const EditLayerRow = memo(function EditLayerRow({
   node,
   workspace,
   selected,
+  tabIndex,
   searchMatch,
   contextOnly,
   onSelect,
+  onNavigate,
   onMove,
   canDrop,
   onEject,
@@ -992,9 +1025,11 @@ const EditLayerRow = memo(function EditLayerRow({
   node: BlockSnapshot;
   workspace: WorkspaceKey;
   selected: boolean;
+  tabIndex: 0 | -1;
   searchMatch: boolean;
   contextOnly: boolean;
   onSelect: (additive: boolean) => void;
+  onNavigate: (direction: -1 | 1) => boolean;
   onMove: (draggedId: string, targetId: string, mode: LayerDropMode) => void;
   canDrop: (draggedId: string, targetId: string, mode: LayerDropMode) => boolean;
   onEject: (blockId: string) => void;
@@ -1037,8 +1072,8 @@ const EditLayerRow = memo(function EditLayerRow({
   return (
     <div
       draggable
-      role="button"
-      tabIndex={0}
+      role="treeitem"
+      tabIndex={tabIndex}
       data-testid="edit-layer-row"
       data-r20-block-id={node.id}
       data-r20-layer-role-kind={role.kind}
@@ -1054,9 +1089,19 @@ const EditLayerRow = memo(function EditLayerRow({
       data-r20-layer-selected={selected ? '1' : '0'}
       data-r20-layer-dragging={isDragging ? '1' : '0'}
       aria-grabbed={isDragging}
-      aria-pressed={selected}
+      aria-selected={selected}
+      aria-level={node.depth + 1}
+      aria-expanded={node.childCount > 0 ? !collapsed : undefined}
       aria-label={`${node.label} ${role.label}${role.canReceiveChildren ? ' 컨테이너' : ''}`}
       onKeyDown={(e) => {
+        if (e.key === 'Tab' && e.target === e.currentTarget) {
+          const moved = onNavigate(e.shiftKey ? -1 : 1);
+          if (moved) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          return;
+        }
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           onSelect(false);

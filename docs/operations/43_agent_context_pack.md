@@ -43,6 +43,9 @@ contain private source evidence or historical test dumps.
 - The edit layer panel has a persisted, pointer- and keyboard-resizable width.
   One responsive track positions both its edge and the persistent iframe, so
   resizing editor chrome does not create a Preview/Edit coordinate split.
+- Its virtualized tree uses one roving tab stop. Tab navigation keeps the
+  active layer visible without recentering rows already inside the viewport or
+  mutating emitted source.
 - Generated evidence and external validation inputs remain ignored, local, and
   ephemeral.
 

@@ -108,6 +108,11 @@ belong in tracked documents.
   the persistent iframe and inactive canvas slot. Browser coverage checks
   248px to 320px pointer expansion, a 16px keyboard step, reset, persistence,
   and identical panel/iframe/slot origins.
+- `DONE LOCAL`: the virtualized layer list has tree semantics and one roving
+  tab stop. Tab and Shift plus Tab move selection across rendered boundaries,
+  scroll only when the next row leaves view, preserve an active visible row,
+  and leave emitted HTML/CSS unchanged. Arrow-key object movement remains a
+  separate existing contract.
 - `DONE LOCAL`: eligible visual layers expose direct resize handles on the same
   persistent iframe surface. The iframe element follows the pointer before
   release; pointer-up writes width/height to managed CSS, removes the temporary
@@ -140,11 +145,10 @@ belong in tracked documents.
   resize, and a coordinated multi-layer section preset. Multi-target section,
   control, result-card, Roll-button, layout, and composition presets all share
   one outer history group.
-- `PARTIAL`: continue usability review for dense imported structures, nested
-  coordinate systems, and layer-panel keyboard selection beyond width control.
-  Add longer mixed
-  operation history runs for imported structures while keeping current local
-  synthetic history coverage distinct from actual Roll20 verification.
+- `PARTIAL`: continue usability review for dense imported structures and
+  nested coordinate systems. Add longer mixed operation history runs for
+  imported structures while keeping current local synthetic history coverage
+  distinct from actual Roll20 verification.
 
 ## P1 - User Experience
 

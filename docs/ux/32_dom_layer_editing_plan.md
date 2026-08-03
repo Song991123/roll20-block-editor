@@ -35,7 +35,7 @@ same semantic information through `data-r20-layer-role` and
 `data-r20-can-drop`, so the visual layer panel and iframe drop overlay do not
 invent separate DOM models.
 
-## Layer Panel Sizing
+## Layer Panel Navigation
 
 - The layer panel width is a saved browser preference between 220 and 440
   pixels. A native pointer separator changes it without rebuilding the sheet
@@ -47,6 +47,12 @@ invent separate DOM models.
   least 280 pixels for the sheet surface.
 - Separator key events stop at the separator. They must not trigger the
   selected-layer keyboard movement contract below.
+- The virtualized layer list exposes `tree` / `treeitem` semantics and one
+  roving tab stop. Tab selects and focuses the next visible layer; Shift plus
+  Tab returns to the previous layer. Moving past the rendered window scrolls
+  and mounts the target before focus, without changing emitted HTML or CSS.
+- Selecting a row uses automatic visibility alignment. A row already inside
+  the viewport stays in place instead of jumping to the panel center.
 
 ## Drop Rules
 
@@ -333,6 +339,9 @@ already-selected insertion position.
 - The same browser path covers layer-panel pointer resize, keyboard resize,
   local preference persistence, default reset, and exact agreement between the
   panel edge, iframe origin, and inactive canvas-slot origin.
+- A long virtualized list also covers forward and reverse Tab navigation,
+  unique sequential focus, automatic edge scrolling, active-row visibility,
+  one roving tab stop, and an unchanged HTML/CSS emit.
 - Longer mixed-operation runs on dense imported structures and actual Roll20
   interaction remain outside this local synthetic proof.
 
