@@ -132,6 +132,11 @@ invent separate DOM models.
     the centered configured sheet canvas, including zoom and snap. A friendly
     card must keep its preset fields and managed presentation; it must not fall
     through to raw block creation or use application-screen coordinates.
+21. A fresh browser starts on Direct Edit, while a valid saved mode remains the
+    user's choice. The empty edit surface must visibly draw the configured sheet
+    width as editor chrome only. It cannot emit a placeholder DOM block. When
+    the first element creates the persistent iframe, the canvas origin and
+    scaled width must remain continuous so the dropped element does not jump.
 
 ## Visual Language
 
@@ -389,6 +394,8 @@ coverage remain future acceptance work.
 The fresh-sheet browser path additionally performs a real friendly-card drag
 onto the empty Edit surface and verifies preset presentation, pointer-aligned
 850px sheet coordinates, selection, and reuse of the first persistent iframe.
+It also verifies Direct Edit as the clean-browser default and requires the
+visible empty sheet and first iframe to share their horizontal origin and width.
 
 ## Composite And Shadow Role Contract
 

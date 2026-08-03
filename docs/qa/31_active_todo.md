@@ -145,6 +145,12 @@ belong in tracked documents.
   persistent iframe. Fresh-sheet drag, full edit-flow, six anonymous imported
   structures, and all anonymous synthetic modern/legacy Preview/Edit pairs
   pass; ignored reports remain the only screenshot store.
+- `DONE LOCAL`: a fresh browser now opens on Direct Edit instead of the
+  technical split/block workspace. A valid saved mode is still respected.
+  Before the first element exists, the editor displays an editor-only 850px
+  white canvas without emitting a placeholder block. The first iframe replaces
+  that canvas at the same horizontal origin and width, so the user's initial
+  drop does not jump when source generation finishes.
 - `DONE LOCAL`: structural layer selection and friendly-widget selection use
   separate iframe markers. Three consecutive full browser runs preserved
   multi-selection through the forced collision case and later multi-object

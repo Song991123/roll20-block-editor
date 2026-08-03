@@ -61,6 +61,10 @@ contain private source evidence or historical test dumps.
   friendly cards keep their preset and managed CSS instead of falling through
   to raw block creation. Browser proof covers the default 850px sheet and the
   same persistent iframe after creation.
+- A fresh browser enters Direct Edit while preserving any valid saved mode.
+  The empty surface visibly draws an editor-only 850px white sheet; it emits no
+  placeholder block, and the first persistent iframe takes over the same scaled
+  horizontal origin and width after a real gallery drop.
 - The edit layer panel has a persisted, pointer- and keyboard-resizable width.
   One responsive track positions both its edge and the persistent iframe, so
   resizing editor chrome does not create a Preview/Edit coordinate split.

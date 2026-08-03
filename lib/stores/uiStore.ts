@@ -24,7 +24,8 @@ export type SidebarRightTab = 'attrs' | 'code' | 'chat'; // D49 + chat (dice 굴
 export type CodeSubTab = 'html' | 'css' | 'i18n' | 'js' | 'worker';
 export type WorkspaceKey = 'html' | 'css' | 'i18n' | 'js' | 'worker';
 export type PreviewZoom = 'fit' | number;               // D52
-// D26 ②-재재 — 메인 영역 분할 뷰. 'split' default (양쪽 동시), 'assemble'/'preview' = 한쪽만 max.
+// Direct editing is the product's primary surface. Split/block modes remain
+// available for users who want to inspect or assemble the underlying model.
 export type MainMode = 'split' | 'assemble' | 'preview' | 'edit';
 
 // Phase A — WYSIWYG 모드. 편집 모드일 때 시트 / 굴림틀 sub-tab.
@@ -142,7 +143,7 @@ export interface UiState {
 }
 
 const DEFAULT_STATE = {
-  mainMode: 'split' as MainMode,
+  mainMode: 'edit' as MainMode,
   mainSplit: { left: 50, right: 50 } as MainSplit,
   sidebarLeftMode: 'blocks' as SidebarLeftMode,
   sidebarLeftCollapsed: false,
@@ -284,8 +285,8 @@ export const useUiStore = create<UiState>()(
             }
           : localStorage,
       ),
-      // 이전 버전의 persisted mainMode ('assemble' | 'preview' 만 알던 시절) 와 호환.
-      // 알 수 없는 값이면 'split' 로 떨어뜨림. mainSplit 누락 시 default 채움.
+      // Preserve a user's valid saved choice. Unknown legacy values fall back
+      // to the current first-run surface instead of the technical split view.
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<UiState>;
         const merged = { ...current, ...p } as UiState;
@@ -295,7 +296,7 @@ export const useUiStore = create<UiState>()(
           merged.mainMode !== 'preview' &&
           merged.mainMode !== 'edit'
         ) {
-          merged.mainMode = 'split';
+          merged.mainMode = 'edit';
         }
         if (!merged.mainSplit || typeof merged.mainSplit.left !== 'number') {
           merged.mainSplit = { left: 50, right: 50 };

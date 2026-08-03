@@ -16,6 +16,24 @@ or source-derived measurement here.
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
 
+## 2026-08-03 - First-Run Direct Edit Canvas
+
+- Reproduced a product-priority mismatch on a clean browser: the technical
+  split/block workspace opened before the primary direct-edit workflow, and an
+  instructional empty state hid the actual sheet boundary until the first
+  object was created.
+- Fresh browsers now enter Direct Edit. Existing valid saved mode choices stay
+  intact. The empty editor renders a non-emitted 850px white sheet at the same
+  scaled origin used by the persistent iframe after the first drop.
+- Fresh-sheet browser smoke now checks the default mode, visible empty canvas,
+  a real gallery drag, preset retention, pointer alignment, and canvas-to-iframe
+  origin continuity. Full edit-flow, six-fixture imported edit synchronization,
+  and twelve anonymous synthetic modern/legacy Preview/Edit comparisons pass.
+- A current visible modern Sandbox file chooser was reached with a freshly
+  verified anonymous payload, but Chrome rejected file selection before
+  transmission because local-file access remains disabled. No Roll20 source
+  was uploaded in this attempt.
+
 ## 2026-08-03 - Empty-Sheet Direct Gallery Drop
 
 - Reproduced a user-facing creation split: a friendly gallery card dropped on

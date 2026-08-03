@@ -2375,7 +2375,7 @@ export default function PreviewMain() {
         }}
       >
         {isEmpty ? (
-          <PreviewEmptyState />
+          <PreviewEmptyState canvasWidth={canvasWidth} scale={scale} />
         ) : (
           <div
             className="mx-auto"

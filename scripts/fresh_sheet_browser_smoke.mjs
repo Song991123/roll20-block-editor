@@ -111,6 +111,13 @@ async function main() {
       const snap = window.__perfHook.getWorkspace();
       return snap.blockCount.html === 0 && snap.blockCount.css === 0 && snap.blockCount.i18n === 0;
     }, null, { timeout: 15000 });
+    await page.waitForSelector('[data-testid="main-mode-edit"][aria-selected="true"]', {
+      state: 'visible',
+      timeout: 15000,
+    });
+    await page.waitForSelector('[data-testid="empty-sheet-canvas"]', { state: 'visible', timeout: 15000 });
+    await page.waitForSelector('[data-testid="widget-card-text-input"]', { state: 'visible', timeout: 15000 });
+    await page.screenshot({ path: path.join(REPORT_DIR, 'empty-sheet-canvas.png') });
 
     const blank = await page.evaluate(() => {
       const content = window.__perfHook.getEmitContent();
@@ -121,32 +128,32 @@ async function main() {
         html: content.html,
         hasGhostSection: /class=["'][^"']*sheet-section[^"']*["']/i.test(content.html),
         iframeCount: document.querySelectorAll('[data-testid="preview-iframe"]').length,
+        mainMode: document.querySelector('[data-testid="main-split-container"]')?.getAttribute('data-main-mode') ?? null,
       };
     });
     assert(blank.workspace.blockCount.html === 0, 'fresh sheet has HTML blocks');
     assert(blank.layerIds.length === 0, 'fresh sheet has layer entries');
     assert(!blank.hasGhostSection, 'fresh sheet emitted a ghost sheet-section');
+    assert(blank.mainMode === 'edit', 'fresh users do not start on the direct editing surface');
 
     await page.waitForSelector('[data-testid="empty-import-button"]', { state: 'visible', timeout: 15000 });
     await page.click('[data-testid="empty-import-button"]');
     await page.waitForSelector('[data-testid="import-dialog"]', { state: 'visible', timeout: 15000 });
     await page.keyboard.press('Escape');
 
-    await page.click('[data-testid="main-mode-edit"]');
-    await page.waitForSelector('[data-testid="widget-card-text-input"]', { state: 'visible', timeout: 15000 });
     await page.waitForTimeout(1300);
-    const emptyDropSurface = page.locator('[data-testid="preview-drop-surface"]');
-    const emptyDropSurfaceBox = await emptyDropSurface.boundingBox();
-    assert(emptyDropSurfaceBox, 'empty sheet drop surface is missing');
+    const emptyDropCanvas = page.locator('[data-testid="empty-sheet-canvas"]');
+    const emptyDropCanvasBox = await emptyDropCanvas.boundingBox();
+    assert(emptyDropCanvasBox, 'visible empty sheet canvas is missing');
     const emptyDropPoint = {
-      x: Math.min(420, Math.max(24, emptyDropSurfaceBox.width - 24)),
-      y: Math.min(220, Math.max(24, emptyDropSurfaceBox.height - 24)),
+      x: Math.min(420, Math.max(24, emptyDropCanvasBox.width - 24)),
+      y: Math.min(220, Math.max(24, emptyDropCanvasBox.height - 24)),
     };
     const emptyDropClientPoint = {
-      x: emptyDropSurfaceBox.x + emptyDropPoint.x,
-      y: emptyDropSurfaceBox.y + emptyDropPoint.y,
+      x: emptyDropCanvasBox.x + emptyDropPoint.x,
+      y: emptyDropCanvasBox.y + emptyDropPoint.y,
     };
-    await page.locator('[data-testid="widget-card-text-input"]').dragTo(emptyDropSurface, {
+    await page.locator('[data-testid="widget-card-text-input"]').dragTo(emptyDropCanvas, {
       targetPosition: emptyDropPoint,
     });
     await page.waitForFunction(
@@ -165,8 +172,15 @@ async function main() {
     const emptyDropInput = emptyDropFrame.locator('input.sheet-text-input');
     await emptyDropInput.waitFor({ state: 'visible', timeout: 15000 });
     const emptyDropInputBox = await emptyDropInput.boundingBox();
+    const mountedIframeBox = await page.locator('[data-testid="preview-iframe"]').boundingBox();
     const emptyDropSource = await page.evaluate(() => window.__perfHook.getEmitContent());
     assert(emptyDropInputBox, 'empty sheet drop input has no rendered box');
+    assert(mountedIframeBox, 'empty sheet drop iframe has no rendered box');
+    assert(
+      Math.abs(mountedIframeBox.x - emptyDropCanvasBox.x) <= 2
+        && Math.abs(mountedIframeBox.width - emptyDropCanvasBox.width) <= 2,
+      `first render replaced the visible canvas at a different horizontal origin: ${JSON.stringify({ emptyDropCanvasBox, mountedIframeBox })}`,
+    );
     assert(
       /width\s*:\s*180px/i.test(emptyDropSource.css),
       'empty sheet drag lost the friendly widget width preset',
