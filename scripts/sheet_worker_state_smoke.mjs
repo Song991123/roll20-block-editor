@@ -59,6 +59,8 @@ const SYNTHETIC_SHEET = {
   <button type="action" name="act_async_callbacks">Async callbacks</button>
   <button type="action" name="act_worker_add_row">Worker add row</button>
   <button type="action" name="act_worker_remove_row">Worker remove row</button>
+  <button type="action" name="act_worker_reorder_rows">Worker reorder rows</button>
+  <button type="action" name="act_worker_restore_rows">Worker restore rows</button>
   <div class="character">Character panel</div>
   <div class="combat">Combat panel</div>
 </div>
@@ -102,6 +104,8 @@ const SYNTHETIC_SHEET = {
 <input type="hidden" name="attr_repeat_context_qty" value="">
 <input type="hidden" name="attr_repeat_order_value" value="">
 <input type="hidden" name="attr_repeat_order_source" value="">
+<input type="hidden" name="attr_repeat_order_callback" value="">
+<input type="hidden" name="attr_repeat_order_timing" value="">
 <input type="hidden" name="attr_repeat_remove_source" value="">
 <input type="hidden" name="attr_repeat_remove_attr" value="">
 <input type="hidden" name="attr_repeat_remove_trigger" value="">
@@ -205,6 +209,23 @@ const SYNTHETIC_SHEET = {
   on("clicked:worker_remove_row", function () {
     getSectionIDs("repeating_items", function (ids) {
       if (ids[0]) removeRepeatingRow("repeating_items_" + ids[0]);
+    });
+  });
+  on("clicked:worker_reorder_rows", function () {
+    getSectionIDs("repeating_items", function (ids) {
+      var synchronous = true;
+      setSectionOrder("items", ids.slice().reverse(), function () {
+        setAttrs({
+          repeat_order_callback: "yes",
+          repeat_order_timing: synchronous ? "sync" : "async"
+        }, { silent: true });
+      });
+      synchronous = false;
+    });
+  });
+  on("clicked:worker_restore_rows", function () {
+    getSectionIDs("repeating_items", function (ids) {
+      setSectionOrder("items", ids);
     });
   });
 </script>
@@ -350,6 +371,8 @@ async function readState(frame) {
       repeatContextQty: document.querySelector('[name="attr_repeat_context_qty"]')?.value ?? null,
       repeatOrderValue: document.querySelector('[name="attr_repeat_order_value"]')?.value ?? null,
       repeatOrderSource: document.querySelector('[name="attr_repeat_order_source"]')?.value ?? null,
+      repeatOrderCallback: document.querySelector('[name="attr_repeat_order_callback"]')?.value ?? null,
+      repeatOrderTiming: document.querySelector('[name="attr_repeat_order_timing"]')?.value ?? null,
       repeatRemoveSource: document.querySelector('[name="attr_repeat_remove_source"]')?.value ?? null,
       repeatRemoveAttr: document.querySelector('[name="attr_repeat_remove_attr"]')?.value ?? null,
       repeatRemoveTrigger: document.querySelector('[name="attr_repeat_remove_trigger"]')?.value ?? null,
@@ -602,6 +625,49 @@ async function main() {
         twoSharedRows.repeatingMirrorName === 'First item' &&
         twoSharedRows.repeatContextName === 'Second item' &&
         twoSharedRows.repeatContextQty === '3',
+    });
+
+    const workerRequestedOrder = [...twoSharedRows.repeatingOrder].sort().reverse();
+    await frame.locator('button[name="act_worker_reorder_rows"]').click({ timeout: 10000 });
+    await frame.waitForFunction((expectedOrder) => (
+      Array.from(document.querySelectorAll('.repcontainer')).every((container) => (
+        Array.from(container.querySelectorAll('.repitem'))
+          .map((row) => row.getAttribute('data-reprowid'))
+          .join(',') === expectedOrder.join(',')
+      )) &&
+      document.querySelector('[name="attr_repeat_order_source"]')?.value === 'sheetworker' &&
+      document.querySelector('[name="attr_repeat_order_callback"]')?.value === 'yes' &&
+      document.querySelector('[name="attr_repeat_order_timing"]')?.value === 'async'
+    ), workerRequestedOrder, { timeout: 10000 });
+    const workerReorderedRows = await readState(frame);
+    report.repeatingSteps.push({
+      name: 'worker-set-section-order',
+      state: workerReorderedRows,
+      pass:
+        workerReorderedRows.repeatingOrder.join(',') === workerRequestedOrder.join(',') &&
+        workerReorderedRows.repeatingMirrorOrder.join(',') === workerRequestedOrder.join(',') &&
+        workerReorderedRows.repeatOrderValue === workerRequestedOrder.join(',') &&
+        workerReorderedRows.repeatOrderSource === 'sheetworker' &&
+        workerReorderedRows.repeatOrderCallback === 'yes' &&
+        workerReorderedRows.repeatOrderTiming === 'async',
+    });
+
+    const workerRestoredOrder = [...twoSharedRows.repeatingOrder].sort();
+    await frame.locator('button[name="act_worker_restore_rows"]').click({ timeout: 10000 });
+    await frame.waitForFunction((expectedOrder) => (
+      Array.from(document.querySelectorAll('.repcontainer')).every((container) => (
+        Array.from(container.querySelectorAll('.repitem'))
+          .map((row) => row.getAttribute('data-reprowid'))
+          .join(',') === expectedOrder.join(',')
+      ))
+    ), workerRestoredOrder, { timeout: 10000 });
+    const workerRestoredRows = await readState(frame);
+    report.repeatingSteps.push({
+      name: 'worker-restored-section-order',
+      state: workerRestoredRows,
+      pass:
+        workerRestoredRows.repeatingOrder.join(',') === workerRestoredOrder.join(',') &&
+        workerRestoredRows.repeatingMirrorOrder.join(',') === workerRestoredOrder.join(','),
     });
 
     await frame.locator('button.repcontrol_edit').first().click({ timeout: 10000 });

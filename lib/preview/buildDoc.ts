@@ -2666,6 +2666,18 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     var rowIds = allRepeatingRowIds(groupName);
     if (typeof cb === 'function') scheduleSheetWorkerTask(function () { cb(rowIds); });
   }
+  function sheetWorkerSetSectionOrder(section, rowIds, cb) {
+    var groupName = String(section || '');
+    if (groupName.indexOf('repeating_') !== 0) groupName = 'repeating_' + groupName;
+    var requestedOrder = Array.isArray(rowIds)
+      ? rowIds.map(function (rowId) { return String(rowId || ''); }).filter(Boolean)
+      : [];
+    commitRepeatingOrder(groupName, requestedOrder, 'sheetworker');
+    scheduleSheetWorkerTask(function () {
+      if (typeof cb === 'function') cb();
+      scheduleResize();
+    });
+  }
   function installSheetWorkers() {
     sheetWorkerRuntimeGeneration += 1;
     sheetWorkerAsyncTasks = [];
@@ -2676,7 +2688,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       if (!code.trim()) return;
       try {
         var fn = new Function(
-          'on', 'getAttrs', 'setAttrs', 'getSectionIDs', 'generateRowID', 'removeRepeatingRow', 'setDefaultToken',
+          'on', 'getAttrs', 'setAttrs', 'getSectionIDs', 'setSectionOrder', 'generateRowID', 'removeRepeatingRow', 'setDefaultToken',
           'getTranslationByKey', 'getTranslationByLang', 'getTranslationLanguage',
           code
         );
@@ -2685,6 +2697,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
           sheetWorkerGetAttrs,
           sheetWorkerSetAttrs,
           sheetWorkerGetSectionIDs,
+          sheetWorkerSetSectionOrder,
           sheetWorkerGenerateRowID,
           sheetWorkerRemoveRepeatingRow,
           function () {},

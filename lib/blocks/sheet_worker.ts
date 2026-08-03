@@ -16,6 +16,7 @@
  *   - getAttrs([...names], (v) => {...})
  *   - setAttrs({ name: value, ... })
  *   - getSectionIDs('repeating_S', (ids) => {...})
+ *   - setSectionOrder('S', [...ids], () => {...})
  *   - generateRowID(), removeRepeatingRow('repeating_S_id')
  *   - getTranslationByKey('key')
  *
@@ -458,6 +459,31 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     },
   },
 
+  // 8b) setSectionOrder ----------------------------------------------------
+  {
+    type: 'r20_set_section_order',
+    shape: 'stack',
+    category: SHEET_WORKER,
+    label: '반복 줄 순서 바꾸기',
+    tooltip: 'setSectionOrder("S", IDS, callback) - 반복 영역의 줄 순서를 ID 목록대로 바꿉니다.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('반복 영역')
+        .appendField(new Blockly.FieldTextInput('items'), 'SECTION');
+      b.appendValueInput('ORDER').setCheck(null).appendField('줄 ID 목록');
+      b.appendStatementInput('CALLBACK').setCheck(null).appendField('다 바꾼 뒤');
+      setStackHooks(b);
+    }),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const section = String(b.getFieldValue('SECTION') ?? '').trim() || 'section';
+      const order = ctx.valueToCode(block, 'ORDER', ORDER.NONE) || '[]';
+      const callbackBody = ctx.statementToCode(block, 'CALLBACK');
+      const callback = callbackBody.trim() ? `, ${wrapArrowBody(ctx, callbackBody)}` : '';
+      return `setSectionOrder('${escapeJSString(section)}', ${order}${callback});\n`;
+    },
+  },
+
   // 9) forEach over ids -----------------------------------------------------
   {
     type: 'r20_for_each_id',
@@ -507,7 +533,7 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
   },
 
   // ========================================================================
-  // Stack blocks ×8
+  // Stack blocks ×9
   // ========================================================================
 
   // 11) setAttrs single -----------------------------------------------------

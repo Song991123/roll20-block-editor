@@ -16,6 +16,24 @@ or source-derived measurement here.
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
 
+## 2026-08-04 - Structured Repeating Row Order Worker
+
+- Added a plain-language Sheet Worker block for `setSectionOrder`. Import keeps
+  the section, order expression, and optional completion body; generation emits
+  the official two- or three-argument shape without flattening unsupported
+  expressions.
+- The shared Preview/Edit iframe now applies the requested row order to every
+  rendered copy of a repeating section, persists `_reporder`, emits the
+  Roll20-shaped change event, and invokes the completion callback
+  asynchronously. Modern and legacy use the same runtime behavior.
+- Parser and generator tests pass. Anonymous modern and legacy browser smokes
+  both pass worker-driven reorder, restore, persisted order, asynchronous
+  completion, duplicate rendered sections, later player reorder, and zero
+  console or page errors.
+- Claim boundary: this closes one documented Worker API locally. Broader Worker
+  APIs and syntax remain partial, and actual Roll20 execution for this new API
+  remains a separate verification item.
+
 ## 2026-08-04 - Mode-Specific Roll20 Upload Handoff
 
 - Export guidance now follows the selected compatibility mode. Modern mode

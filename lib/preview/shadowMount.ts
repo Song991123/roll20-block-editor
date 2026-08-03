@@ -402,6 +402,16 @@ function installShadowSheetWorkerRuntime(scope: ParentNode, i18n?: string): void
       });
     if (typeof cb === 'function') cb(Object.keys(ids));
   };
+  const setSectionOrder = (section: string, rowIds: unknown, cb?: () => void) => {
+    const safe = String(section || '').replace(/^repeating_/, '');
+    const order = Array.isArray(rowIds)
+      ? rowIds.map((rowId) => String(rowId || '')).filter(Boolean)
+      : [];
+    const attrName = `_reporder_repeating_${safe}`;
+    writeSheetAttr(scope, attrName, order.join(','));
+    trigger(`change:_reporder:${safe}`, { sourceAttribute: attrName, sourceType: 'sheetworker' });
+    if (typeof cb === 'function') queueMicrotask(cb);
+  };
   const getTranslationByKey = (key: string) => {
     const value = translations[key];
     return value == null ? String(key || '') : String(value);
@@ -418,6 +428,7 @@ function installShadowSheetWorkerRuntime(scope: ParentNode, i18n?: string): void
         'getAttrs',
         'setAttrs',
         'getSectionIDs',
+        'setSectionOrder',
         'generateRowID',
         'removeRepeatingRow',
         'setDefaultToken',
@@ -431,6 +442,7 @@ function installShadowSheetWorkerRuntime(scope: ParentNode, i18n?: string): void
         getAttrs,
         setAttrs,
         getSectionIDs,
+        setSectionOrder,
         () => `row_${Math.random().toString(36).slice(2, 18)}`,
         () => {},
         () => {},

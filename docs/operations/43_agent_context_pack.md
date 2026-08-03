@@ -159,6 +159,10 @@ contain private source evidence or historical test dumps.
   also removes unsupported semantic wrappers; local legacy Preview/Edit now
   applies the same allow-list transform. The corrected exact-upload legacy run
   passes open-time row creation, field changes, Add/Delete, and drag reorder.
+  The documented `setSectionOrder` call now has a structured block, lossless
+  import/emit, and shared modern/legacy Preview/Edit behavior for persisted
+  order, change events, duplicate rendered sections, and asynchronous
+  completion. Actual Roll20 execution of this newly added API remains open.
   Broader Worker syntax and broad full-root candidate coverage remain open.
 - ImportDialog waits for every Blockly model workspace before hydration. Keep
   the cold-load early-click browser check; analysis percentages alone do not

@@ -86,7 +86,7 @@ function classifyRawStatement(statement: string): RawWorkerDiagnosticCode {
     return 'unsupported-loop';
   }
   if (/^(?:(?:async\s+)?function\b|class\b)/.test(code)) return 'declaration';
-  if (/^(?:on|getAttrs|setAttrs|getSectionIDs|generateRowID|removeRepeatingRow|getTranslationByKey|getCompendiumPage)\s*\(/.test(code)) {
+  if (/^(?:on|getAttrs|setAttrs|getSectionIDs|setSectionOrder|generateRowID|removeRepeatingRow|getTranslationByKey|getCompendiumPage)\s*\(/.test(code)) {
     return 'worker-api-shape';
   }
   return 'unsupported-statement';

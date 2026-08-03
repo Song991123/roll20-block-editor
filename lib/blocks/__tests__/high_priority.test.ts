@@ -349,6 +349,23 @@ function testWorkerRepeatingReorderEmit(): void {
   expectEq(code, `on('change:_reporder:items', () => {});\n`, 'repeating reorder emit');
 }
 
+function testWorkerSetSectionOrderEmit(): void {
+  const def = findBlock(SHEET_WORKER_BLOCKS as Array<{ type: string }>, 'r20_set_section_order');
+  assert(def.generator, 'r20_set_section_order has generator');
+  const b = new FakeBlock({
+    type: 'r20_set_section_order',
+    fields: { SECTION: 'items' },
+  });
+  const ctx = makeCtx({ ORDER: 'ids.slice().reverse()' }, { CALLBACK: `console.log('done');\n` });
+  const out = def.generator!(b, ctx);
+  const code = Array.isArray(out) ? out[0] : out;
+  expectEq(
+    code,
+    `setSectionOrder('items', ids.slice().reverse(), () => {\n  console.log('done');\n});\n`,
+    'setSectionOrder callback emit',
+  );
+}
+
 function testWorkerSetAttrsSilentCallbackEmit(): void {
   const def = findBlock(SHEET_WORKER_BLOCKS as Array<{ type: string }>, 'r20_set_attrs');
   assert(def.generator, 'r20_set_attrs has generator');
@@ -730,6 +747,7 @@ const tests: Array<[string, () => void]> = [
   ['worker eventInfo emit', testWorkerEventInfoEmit],
   ['worker whole repeating section change emit', testWorkerRepeatingSectionChangeEmit],
   ['worker repeating reorder emit', testWorkerRepeatingReorderEmit],
+  ['worker setSectionOrder emit', testWorkerSetSectionOrderEmit],
   ['worker setAttrs silent callback emit', testWorkerSetAttrsSilentCallbackEmit],
   ['compendium basic path', testCompendiumBasicPath],
   ['compendium with subpath', testCompendiumWithSubpath],

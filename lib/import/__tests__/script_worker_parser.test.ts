@@ -145,6 +145,26 @@ function testGetSectionIDs(): void {
   assert(r.blocks[0].fields.VAR === 'ids', 'VAR=ids');
 }
 
+function testSetSectionOrder(): void {
+  const js = `setSectionOrder('items', ids);`;
+  const r = parseSheetWorkerScript(js);
+  const block = r.blocks[0];
+  assert(block.blockType === 'r20_set_section_order', 'set_section_order');
+  assert(block.fields.SECTION === 'items', 'SECTION=items');
+  assert(Boolean(block.valueInputs?.ORDER), 'ORDER expression');
+  assert(r.stats.unparsed === 0, 'setSectionOrder is fully parsed');
+}
+
+function testSetSectionOrderCallback(): void {
+  const js = `setSectionOrder("items", ids.slice().reverse(), function() { console.log('done'); });`;
+  const r = parseSheetWorkerScript(js);
+  const block = r.blocks[0];
+  assert(block.blockType === 'r20_set_section_order', 'callback set_section_order');
+  assert(block.fields.SECTION === 'items', 'callback SECTION=items');
+  assert(block.children.CALLBACK?.[0]?.blockType === 'r20_worker_console_log', 'callback body');
+  assert(r.stats.unparsed === 0, 'callback setSectionOrder is fully parsed');
+}
+
 function testForEach(): void {
   const js = `myIds.forEach((id) => { setAttrs({ hp: 0 }); });`;
   const r = parseSheetWorkerScript(js);
@@ -415,6 +435,8 @@ const tests = [
   ['setAttrs callback without options', testSetAttrsCallbackWithoutOptions],
   ['getAttrs', testGetAttrs],
   ['getSectionIDs', testGetSectionIDs],
+  ['setSectionOrder', testSetSectionOrder],
+  ['setSectionOrder callback', testSetSectionOrderCallback],
   ['forEach', testForEach],
   ['if statement', testIfStatement],
   ['if else statement', testIfElseStatement],

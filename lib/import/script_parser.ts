@@ -804,6 +804,17 @@ function parseOneStatement(body: string, start: number, stats: ParseStats): OneM
     return rawStatementFallback(body, start, stats);
   }
 
+  // ---- setSectionOrder('S', ids, optionalCallback) ----
+  const ssoMatch = matchCall(body, i, 'setSectionOrder');
+  if (ssoMatch) {
+    const block = tryParseSetSectionOrder(ssoMatch.args, stats);
+    if (block) {
+      stats.matched++;
+      return { block, end: ssoMatch.end };
+    }
+    return rawStatementFallback(body, start, stats);
+  }
+
   // ---- removeRepeatingRow('repeating_X_' + id) ----
   const rrMatch = matchCall(body, i, 'removeRepeatingRow');
   if (rrMatch) {
@@ -1188,6 +1199,28 @@ function tryParseGetSectionIDs(args: string, stats: ParseStats): ParsedBlock | n
     blockType: 'r20_get_section_ids',
     fields: { SECTION: m[1], VAR: varName },
     children: { CHILDREN: innerBlocks },
+  };
+}
+
+function tryParseSetSectionOrder(args: string, stats: ParseStats): ParsedBlock | null {
+  const parts = splitArgs(args);
+  if (parts.length < 2 || parts.length > 3) return null;
+  const section = stripQuotes(parts[0]);
+  if (section === null || !/^[\w-]+$/.test(section)) return null;
+  const orderExpression = parts[1].trim();
+  if (!orderExpression) return null;
+
+  let callback: { params: string; body: string } | null = null;
+  if (parts.length === 3) {
+    callback = parseCallback(parts[2]);
+    if (!callback || callback.params.trim()) return null;
+  }
+
+  return {
+    blockType: 'r20_set_section_order',
+    fields: { SECTION: section },
+    children: callback ? { CALLBACK: parseStatements(callback.body, stats) } : {},
+    valueInputs: { ORDER: valueBlock(orderExpression) },
   };
 }
 

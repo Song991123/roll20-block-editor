@@ -253,12 +253,17 @@ belong in tracked documents.
   editable for repair, but import marks them as errors and export blocks them.
   The corrected exact-upload legacy payload now passes actual open-time row
   creation, field-change calculation, Add/Delete, and drag reorder proof.
-- `TODO`: expand structured Sheet Worker blocks beyond the current parser and
-  runtime subset. Raw Worker source remains the lossless fallback meanwhile;
-  diagnostics do not make unsupported syntax structurally editable. Arbitrary
-  source formatting can still remain raw when structured re-emission is not
-  byte-stable. The current repeating subset has actual legacy execution proof;
-  broader Worker APIs and syntax remain incomplete.
+- `PARTIAL / VERIFY ACTUAL`: the documented `setSectionOrder` call now imports
+  as a plain-language block, emits its section/order/optional completion body,
+  and runs through the shared modern/legacy Preview/Edit iframe. Anonymous
+  browser proof covers two rendered copies of a repeating section, persisted
+  `_reporder`, Worker change source, asynchronous completion, restore, later
+  player reorder, and zero console/page errors in both compatibility modes.
+  Raw Worker source remains the lossless fallback for unsupported shapes;
+  arbitrary formatting can remain raw when structured re-emission is not
+  byte-stable. The earlier repeating subset has actual legacy execution proof,
+  but this new API still needs actual Roll20 execution and broader Worker APIs
+  and syntax remain incomplete.
 
 ## P0 - Edit And Preview Unity
 
