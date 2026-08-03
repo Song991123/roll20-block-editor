@@ -2,6 +2,7 @@ import { strict as assert } from 'node:assert';
 import {
   clampCanvasWidth,
   clampSheetRenderHeight,
+  resolveEmptyCanvasDropPoint,
   ROLLTEMPLATE_CANVAS_MAX_WIDTH,
   ROLLTEMPLATE_CANVAS_MIN_WIDTH,
   SHEET_CANVAS_DEFAULT_WIDTH,
@@ -22,5 +23,35 @@ assert.equal(clampSheetRenderHeight(72), 72, 'short authored sheets keep their e
 assert.equal(clampSheetRenderHeight(0), SHEET_RENDER_MIN_HEIGHT, 'empty measurements keep a minimal host');
 assert.equal(clampSheetRenderHeight(Number.NaN), SHEET_RENDER_MIN_HEIGHT, 'invalid measurements are bounded');
 assert.equal(clampSheetRenderHeight(60001), SHEET_RENDER_MAX_HEIGHT, 'pathological measurements are capped');
+
+assert.deepEqual(resolveEmptyCanvasDropPoint({
+  pointer: { x: 510, y: 240 },
+  surface: {
+    left: 100,
+    top: 40,
+    width: 1050,
+    paddingLeft: 24,
+    paddingRight: 24,
+    paddingTop: 24,
+  },
+  canvasWidth: 850,
+  scale: 1,
+  snapSize: 8,
+}), { left: 312, top: 176 }, 'empty drops use the centered 850px sheet origin');
+
+assert.deepEqual(resolveEmptyCanvasDropPoint({
+  pointer: { x: 70, y: 30 },
+  surface: {
+    left: 100,
+    top: 40,
+    width: 600,
+    paddingLeft: 24,
+    paddingRight: 24,
+    paddingTop: 24,
+  },
+  canvasWidth: 850,
+  scale: 0.5,
+  snapSize: 8,
+}), { left: 0, top: 0 }, 'empty drops clamp before the visible canvas origin');
 
 console.log('canvasDimensions.test PASS');

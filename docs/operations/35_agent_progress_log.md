@@ -16,6 +16,25 @@ or source-derived measurement here.
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
 
+## 2026-08-03 - Empty-Sheet Direct Gallery Drop
+
+- Reproduced a user-facing creation split: a friendly gallery card dropped on
+  an empty sheet fell through to raw block creation, losing the card preset and
+  deriving position from the surrounding app surface.
+- Added an explicit sheet drop surface that maps its pointer to the centered
+  configured sheet canvas before the first iframe exists. Friendly payloads
+  now stay on the preset path, retain their starting presentation, select the
+  new layer, and use managed CSS coordinates.
+- The fresh-sheet browser smoke now performs a real gallery drag, checks the
+  preset width and pointer-aligned rendered box, and stores its screenshot only
+  in the ignored report directory.
+- Canvas-coordinate tests, fresh-sheet smoke, full edit-flow smoke, six-fixture
+  imported edit synchronization, both render-mode contracts, and all twelve
+  modern/legacy Preview/Edit comparisons pass. Actual Roll20 evidence is
+  unchanged by this local editor batch.
+- Final `ci:verify`, lint, production build, tracked-document privacy, and
+  browser fresh-sheet drag gates pass on the completed source batch.
+
 ## 2026-08-03 - Modern Sandbox CSS Rejection Boundary
 
 - Reproduced a false whole-stylesheet rejection in modern Sandbox preparation:

@@ -20,6 +20,21 @@ export const SHEET_RENDER_MAX_HEIGHT = 60000;
 
 export type CanvasDimensionKind = 'sheet' | 'rolltemplate';
 
+export type EmptyCanvasDropGeometry = {
+  pointer: { x: number; y: number };
+  surface: {
+    left: number;
+    top: number;
+    width: number;
+    paddingLeft: number;
+    paddingRight: number;
+    paddingTop: number;
+  };
+  canvasWidth: number;
+  scale: number;
+  snapSize?: number;
+};
+
 export function clampCanvasWidth(kind: CanvasDimensionKind, value: number): number {
   const bounds = kind === 'sheet'
     ? {
@@ -39,4 +54,30 @@ export function clampCanvasWidth(kind: CanvasDimensionKind, value: number): numb
 export function clampSheetRenderHeight(value: number): number {
   const numeric = Number.isFinite(value) ? Math.ceil(value) : SHEET_RENDER_MIN_HEIGHT;
   return Math.max(SHEET_RENDER_MIN_HEIGHT, Math.min(SHEET_RENDER_MAX_HEIGHT, numeric));
+}
+
+/** Map an empty editor surface drop to the centered sheet canvas it will create. */
+export function resolveEmptyCanvasDropPoint({
+  pointer,
+  surface,
+  canvasWidth,
+  scale,
+  snapSize = 1,
+}: EmptyCanvasDropGeometry): { left: number; top: number } {
+  const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+  const safeCanvasWidth = clampCanvasWidth('sheet', canvasWidth);
+  const contentWidth = Math.max(0, surface.width - surface.paddingLeft - surface.paddingRight);
+  const canvasLeft = surface.left
+    + surface.paddingLeft
+    + Math.max(0, (contentWidth - safeCanvasWidth * safeScale) / 2);
+  const canvasTop = surface.top + surface.paddingTop;
+  const step = Number.isFinite(snapSize)
+    ? Math.max(1, Math.min(128, Math.round(snapSize)))
+    : 1;
+  const snap = (value: number) => Math.max(0, Math.round(value / step) * step);
+
+  return {
+    left: Math.min(safeCanvasWidth, snap((pointer.x - canvasLeft) / safeScale)),
+    top: snap((pointer.y - canvasTop) / safeScale),
+  };
 }

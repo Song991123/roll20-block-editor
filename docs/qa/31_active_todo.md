@@ -138,6 +138,13 @@ belong in tracked documents.
 - `DONE LOCAL`: flow-aware before/inside/after moves, explicit free placement,
   grouping, container roles, table/list guards, layer auto-scroll, and
   collapsed-container opening have synthetic browser coverage.
+- `DONE LOCAL`: dragging a friendly gallery piece onto a completely empty
+  sheet now uses the piece preset instead of falling through to a raw block.
+  The first object maps the pointer to the visible centered 850px sheet,
+  preserves its authored starting size, becomes selected, and mounts the same
+  persistent iframe. Fresh-sheet drag, full edit-flow, six anonymous imported
+  structures, and all anonymous synthetic modern/legacy Preview/Edit pairs
+  pass; ignored reports remain the only screenshot store.
 - `DONE LOCAL`: structural layer selection and friendly-widget selection use
   separate iframe markers. Three consecutive full browser runs preserved
   multi-selection through the forced collision case and later multi-object

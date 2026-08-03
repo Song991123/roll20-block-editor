@@ -56,6 +56,11 @@ contain private source evidence or historical test dumps.
   unsafe-token audit. Quoted CSS grammar remains intact, but script URLs and
   unquoted markup still reject the stylesheet. The current anonymous
   six-fixture pre-upload gate passes; this is not actual-screen evidence.
+- The empty Edit surface is an explicit gallery drop target. Before the first
+  iframe exists, it maps the pointer to the centered configured sheet canvas;
+  friendly cards keep their preset and managed CSS instead of falling through
+  to raw block creation. Browser proof covers the default 850px sheet and the
+  same persistent iframe after creation.
 - The edit layer panel has a persisted, pointer- and keyboard-resizable width.
   One responsive track positions both its edge and the persistent iframe, so
   resizing editor chrome does not create a Preview/Edit coordinate split.

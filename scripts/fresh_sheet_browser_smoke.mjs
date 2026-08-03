@@ -132,6 +132,56 @@ async function main() {
     await page.waitForSelector('[data-testid="import-dialog"]', { state: 'visible', timeout: 15000 });
     await page.keyboard.press('Escape');
 
+    await page.click('[data-testid="main-mode-edit"]');
+    await page.waitForSelector('[data-testid="widget-card-text-input"]', { state: 'visible', timeout: 15000 });
+    await page.waitForTimeout(1300);
+    const emptyDropSurface = page.locator('[data-testid="preview-drop-surface"]');
+    const emptyDropSurfaceBox = await emptyDropSurface.boundingBox();
+    assert(emptyDropSurfaceBox, 'empty sheet drop surface is missing');
+    const emptyDropPoint = {
+      x: Math.min(420, Math.max(24, emptyDropSurfaceBox.width - 24)),
+      y: Math.min(220, Math.max(24, emptyDropSurfaceBox.height - 24)),
+    };
+    const emptyDropClientPoint = {
+      x: emptyDropSurfaceBox.x + emptyDropPoint.x,
+      y: emptyDropSurfaceBox.y + emptyDropPoint.y,
+    };
+    await page.locator('[data-testid="widget-card-text-input"]').dragTo(emptyDropSurface, {
+      targetPosition: emptyDropPoint,
+    });
+    await page.waitForFunction(
+      () => window.__perfHook.getWorkspace().blockCount.html === 1,
+      null,
+      { timeout: 15000 },
+    );
+    await page.waitForSelector('[data-testid="preview-iframe"]', { state: 'visible', timeout: 20000 });
+    await page.waitForFunction(
+      () => Number(document.querySelector('[data-r20-apply-acked]')?.getAttribute('data-r20-apply-acked') ?? 0) > 0,
+      null,
+      { timeout: 20000 },
+    );
+    const emptyDropFrame = page.frames().find((candidate) => candidate !== page.mainFrame());
+    assert(emptyDropFrame, 'empty sheet drop did not mount the shared iframe');
+    const emptyDropInput = emptyDropFrame.locator('input.sheet-text-input');
+    await emptyDropInput.waitFor({ state: 'visible', timeout: 15000 });
+    const emptyDropInputBox = await emptyDropInput.boundingBox();
+    const emptyDropSource = await page.evaluate(() => window.__perfHook.getEmitContent());
+    assert(emptyDropInputBox, 'empty sheet drop input has no rendered box');
+    assert(
+      /width\s*:\s*180px/i.test(emptyDropSource.css),
+      'empty sheet drag lost the friendly widget width preset',
+    );
+    assert(
+      Math.abs(emptyDropInputBox.x - emptyDropClientPoint.x) <= 16
+        && Math.abs(emptyDropInputBox.y - emptyDropClientPoint.y) <= 16,
+      `empty sheet drag used screen coordinates instead of the visible 850px canvas: ${JSON.stringify({ emptyDropClientPoint, emptyDropInputBox })}`,
+    );
+    await page.screenshot({ path: path.join(REPORT_DIR, 'empty-canvas-widget-drop.png') });
+
+    await page.evaluate(() => window.__perfHook.clearAll());
+    await page.waitForFunction(() => window.__perfHook.getWorkspace().blockCount.html === 0);
+    await page.waitForTimeout(1300);
+
     let appended = null;
     for (let attempt = 0; attempt < 20; attempt += 1) {
       appended = await page.evaluate(() =>

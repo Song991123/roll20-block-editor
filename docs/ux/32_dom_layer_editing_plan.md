@@ -127,6 +127,11 @@ invent separate DOM models.
 19. Every HTML void element remains a leaf in both the layer panel and iframe
     overlay. In particular, an uncommon native `<input>`, `<source>`, or `<wbr>`
     cannot expose an `inside` target because emitted HTML has no child slot.
+20. A completely empty sheet still exposes one direct gallery drop surface.
+    Before the first iframe exists, the surface resolves the pointer against
+    the centered configured sheet canvas, including zoom and snap. A friendly
+    card must keep its preset fields and managed presentation; it must not fall
+    through to raw block creation or use application-screen coordinates.
 
 ## Visual Language
 
@@ -381,6 +386,9 @@ re-import -> emit. A value-switch case panel owns the internal marker for its
 case block, and the parent switch preserves an imported checked radio as its
 editable initial value. Protected real-fixture and actual modern/legacy Roll20
 coverage remain future acceptance work.
+The fresh-sheet browser path additionally performs a real friendly-card drag
+onto the empty Edit surface and verifies preset presentation, pointer-aligned
+850px sheet coordinates, selection, and reuse of the first persistent iframe.
 
 ## Composite And Shadow Role Contract
 

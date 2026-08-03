@@ -90,10 +90,12 @@ import { dropIndicatorLabel, getDropIndicatorRect } from '@/lib/editor/dropIndic
 import {
   appendFriendlyWidgetPreset,
   decodeFriendlyWidgetDrag,
+  FRIENDLY_WIDGET_MIME,
 } from '@/lib/widgets/presets';
 import {
   clampCanvasWidth,
   clampSheetRenderHeight,
+  resolveEmptyCanvasDropPoint,
   SHEET_RENDER_MIN_HEIGHT,
 } from '@/lib/preview/canvasDimensions';
 import { buildTargetedHtmlPatchPlan } from '@/lib/preview/targetedHtmlPatch';
@@ -2275,11 +2277,15 @@ export default function PreviewMain() {
     >
       <div
         ref={previewAreaRef}
+        data-testid="preview-drop-surface"
         className={`relative flex-1 min-h-0 overflow-auto p-6 ${
           dragOver ? 'ring-2 ring-primary ring-inset' : ''
         }`}
         onDragOver={(e) => {
-          if (e.dataTransfer.types.includes('application/x-r20-block-type')) {
+          if (
+            e.dataTransfer.types.includes(FRIENDLY_WIDGET_MIME)
+            || e.dataTransfer.types.includes('application/x-r20-block-type')
+          ) {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'copy';
             if (!dragOver) setDragOver(true);
@@ -2289,25 +2295,63 @@ export default function PreviewMain() {
           if (e.currentTarget === e.target) setDragOver(false);
         }}
         onDrop={(e) => {
-          const type = e.dataTransfer.getData('application/x-r20-block-type');
+          const preset = decodeFriendlyWidgetDrag(e.dataTransfer.getData(FRIENDLY_WIDGET_MIME));
+          const type = preset?.blockType
+            ?? e.dataTransfer.getData('application/x-r20-block-type');
           setDragOver(false);
           if (!type) return;
           e.preventDefault();
           if (e.target === iframeRef.current) return;
+          const iframe = iframeRef.current;
+          let position: { left: number; top: number };
+          if (iframe) {
+            const rect = iframe.getBoundingClientRect();
+            const scaleX = iframe.offsetWidth > 0 ? rect.width / iframe.offsetWidth : 1;
+            const scaleY = iframe.offsetHeight > 0 ? rect.height / iframe.offsetHeight : scaleX;
+            position = {
+              left: Math.max(0, Math.round((e.clientX - rect.left) / scaleX)),
+              top: Math.max(0, Math.round((e.clientY - rect.top) / scaleY)),
+            };
+          } else {
+            const surfaceRect = e.currentTarget.getBoundingClientRect();
+            const surfaceStyle = window.getComputedStyle(e.currentTarget);
+            position = resolveEmptyCanvasDropPoint({
+              pointer: { x: e.clientX, y: e.clientY },
+              surface: {
+                left: surfaceRect.left,
+                top: surfaceRect.top,
+                width: surfaceRect.width,
+                paddingLeft: Number.parseFloat(surfaceStyle.paddingLeft) || 0,
+                paddingRight: Number.parseFloat(surfaceStyle.paddingRight) || 0,
+                paddingTop: Number.parseFloat(surfaceStyle.paddingTop) || 0,
+              },
+              canvasWidth,
+              scale,
+              snapSize: useUiStore.getState().snapEnabled ? 8 : 1,
+            });
+          }
+          if (preset) {
+            const id = appendFriendlyWidgetPreset(preset, position, { mode: 'absolute' });
+            if (id) {
+              setSelected(id, 'preview');
+              playSfx('block.add');
+              toast(`'${preset.label}' 추가 완료`, { duration: 1600 });
+            } else {
+              playSfx('toast.error');
+              toast.error('조각을 추가하지 못했어요. 잠시 뒤 다시 시도해 주세요.', { duration: 2200 });
+            }
+            return;
+          }
           const id = appendBlock(type);
           const def = getBlockDef(type);
           if (id) {
             if (activeWs === 'html' && mainMode === 'edit') {
               const adapter = getBlocklyAdapter();
-              const iframe = iframeRef.current;
-              const rect = iframe?.getBoundingClientRect() ?? e.currentTarget.getBoundingClientRect();
-              const scaleX = iframe && iframe.offsetWidth > 0 ? rect.width / iframe.offsetWidth : 1;
-              const scaleY = iframe && iframe.offsetHeight > 0 ? rect.height / iframe.offsetHeight : scaleX;
               const committed = commitManagedDesignPosition(adapter, {
                 workspace: 'html',
                 blockId: id,
-                left: Math.max(0, Math.round((e.clientX - rect.left) / scaleX)),
-                top: Math.max(0, Math.round((e.clientY - rect.top) / scaleY)),
+                left: position.left,
+                top: position.top,
                 containingBlockId: null,
                 containingBlockNeedsRelative: false,
               });
