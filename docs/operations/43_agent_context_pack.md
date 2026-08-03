@@ -163,6 +163,9 @@ contain private source evidence or historical test dumps.
   import/emit, and shared modern/legacy Preview/Edit behavior for persisted
   order, change events, duplicate rendered sections, and asynchronous
   completion. Actual Roll20 execution of this newly added API remains open.
+  `getTranslationLanguage()` also has a structured reporter block. The shared
+  runtime returns the primary language code and follows Roll20's missing-key
+  `false` behavior in both local compatibility modes.
   Broader Worker syntax and broad full-root candidate coverage remain open.
 - ImportDialog waits for every Blockly model workspace before hydration. Keep
   the cold-load early-click browser check; analysis percentages alone do not

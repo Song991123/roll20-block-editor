@@ -458,6 +458,16 @@ function testTranslationEscapesQuote(): void {
   expectContains(code, `a\\'b`, 'quote escaped');
 }
 
+function testTranslationLanguage(): void {
+  const def = findBlock(
+    SHEET_WORKER_BLOCKS as Array<{ type: string }>,
+    'r20_get_translation_language',
+  );
+  const out = def.generator!(new FakeBlock({ type: 'r20_get_translation_language' }), makeCtx());
+  const code = Array.isArray(out) ? out[0] : out;
+  expectEq(code, 'getTranslationLanguage()', 'current language emit');
+}
+
 // ---------- 3) r20_css_var_decl -------------------------------------------
 
 function testCssVarDeclWithSlot(): void {
@@ -755,6 +765,7 @@ const tests: Array<[string, () => void]> = [
   ['translation default', testTranslationDefault],
   ['translation with lang', testTranslationWithLang],
   ['translation escapes quote', testTranslationEscapesQuote],
+  ['translation language', testTranslationLanguage],
   ['css var decl with slot', testCssVarDeclWithSlot],
   ['css var decl with text fallback', testCssVarDeclWithTextFallback],
   ['css var decl strips dash prefix', testCssVarDeclStripsDashPrefix],

@@ -694,6 +694,13 @@ function valueBlock(rawExpr: string): ParsedBlock {
       children: {},
     };
   }
+  if (/^getTranslationLanguage\(\s*\)$/.test(e)) {
+    return {
+      blockType: 'r20_get_translation_language',
+      fields: {},
+      children: {},
+    };
+  }
   // getCompendiumPage('PATH') / getCompendiumEntries('PATH','SUB').
   m = /^getCompendiumPage\(\s*(['"])([^'"]*)\1\s*\)$/.exec(e);
   if (m) {

@@ -2157,13 +2157,17 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   }
   function getTranslationByKey(key) {
     var value = translations && translations[key];
-    return value == null ? String(key || '') : String(value);
+    if (value == null) {
+      console.info('[sheet worker] missing translation key:', String(key || ''));
+      return false;
+    }
+    return String(value);
   }
   function getTranslationByLang(_lang, key) {
     return getTranslationByKey(key);
   }
   function getTranslationLanguage() {
-    return (document.documentElement.getAttribute('lang') || 'ko').toLowerCase();
+    return (document.documentElement.getAttribute('lang') || 'en').toLowerCase().split('-')[0] || 'en';
   }
   function applyTranslations() {
     if (!translations || typeof translations !== 'object') return;

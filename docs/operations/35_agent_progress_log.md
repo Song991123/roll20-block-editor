@@ -16,6 +16,21 @@ or source-derived measurement here.
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
 
+## 2026-08-04 - Sheet Worker Translation Language Contract
+
+- Added a plain-language reporter block for `getTranslationLanguage()` and
+  mapped existing Worker source to it without raw fallback. Structured import
+  and generation keep the official call shape.
+- The shared Preview/Edit runtime now returns the primary account-language
+  code and returns `false` for a missing translation key instead of echoing the
+  key. The retained Shadow compatibility path follows the same behavior.
+- Parser and generator tests pass. Anonymous modern and legacy browser smokes
+  both prove a regional document language, its two-letter Worker result, one
+  translated value, a missing-key `false`, and zero console warnings, console
+  errors, or page errors.
+- Claim boundary: this is local simulator and source-mapping evidence. Actual
+  Roll20 execution and broader Worker APIs remain separate verification work.
+
 ## 2026-08-04 - Plain-Language Handoff And Stable Block Selection
 
 - Reworded the high-traffic import, export, compatibility, position, and

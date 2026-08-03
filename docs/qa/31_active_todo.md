@@ -264,6 +264,13 @@ belong in tracked documents.
   byte-stable. The earlier repeating subset has actual legacy execution proof,
   but this new API still needs actual Roll20 execution and broader Worker APIs
   and syntax remain incomplete.
+- `DONE LOCAL / VERIFY ACTUAL`: `getTranslationLanguage()` now maps to a
+  plain-language reporter block and emits the same API call. The shared
+  Preview/Edit runtime returns the primary two-letter language code, preserves
+  present translations, and returns `false` for a missing key. Modern and
+  legacy browser smokes pass the same regional-language fixture with zero
+  console warnings, console errors, or page errors. Actual Roll20 execution
+  and additional Worker APIs remain open.
 
 ## P0 - Edit And Preview Unity
 

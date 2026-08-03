@@ -63,7 +63,7 @@ Sheet worker JavaScript is a first-class source artifact, not text that should a
 Required behavior:
 
 - `<script type="text/worker">` is imported into the worker layer and hidden from visual sheet preview.
-- Recognized Roll20 APIs such as `on(...)`, `getAttrs(...)`, `setAttrs(...)`, `getSectionIDs(...)`, `getTranslationByKey(...)`, and repeating-section helpers should become worker blocks when parseable.
+- Recognized Roll20 APIs such as `on(...)`, `getAttrs(...)`, `setAttrs(...)`, `getSectionIDs(...)`, `getTranslationByKey(...)`, `getTranslationLanguage()`, and repeating-section helpers should become worker blocks when parseable.
 - Unsupported statements remain as raw worker blocks with exact source text and diagnostics.
 - Raw worker blocks must roundtrip without being lost. They are allowed while coverage grows.
 - Preview execution and chat rendering must consume the worker layer, not visible HTML text.

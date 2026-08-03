@@ -82,6 +82,13 @@ function testTranslationByLang(): void {
   expectContains(r.html, '>strength<', 'KEY carried');
 }
 
+function testTranslationLanguage(): void {
+  const html = `<script type="text/worker">getTranslationLanguage();</script>`;
+  const r = importSheet({ html });
+  expectContains(r.html, 'r20_get_translation_language', 'translation language block');
+  expectNotContains(r.html, 'r20_raw_worker', 'translation language does not fall back');
+}
+
 function testTypedPageScriptStaysHtml(): void {
   const html = `<script type="text/javascript" src="sheet-runtime.js">window.sheetReady = true;</script>`;
   const r = importSheet({ html });
@@ -303,6 +310,7 @@ const tests = [
   ['complex worker stays raw', testCompendiumComplexWorkerStaysRaw],
   ['translation by key', testTranslationByKey],
   ['translation by lang', testTranslationByLang],
+  ['translation language', testTranslationLanguage],
   ['typed page script stays HTML', testTypedPageScriptStaysHtml],
   ['untyped page script stays HTML', testUntypedPageScriptStaysHtml],
   ['css var decl basic', testCssVarDecl],

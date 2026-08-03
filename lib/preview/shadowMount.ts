@@ -414,10 +414,17 @@ function installShadowSheetWorkerRuntime(scope: ParentNode, i18n?: string): void
   };
   const getTranslationByKey = (key: string) => {
     const value = translations[key];
-    return value == null ? String(key || '') : String(value);
+    if (value == null) {
+      console.info('[shadow sheet worker] missing translation key:', String(key || ''));
+      return false;
+    }
+    return String(value);
   };
   const getTranslationByLang = (_lang: string, key: string) => getTranslationByKey(key);
-  const getTranslationLanguage = () => 'ko';
+  const getTranslationLanguage = () => {
+    const renderedLanguage = scope.querySelector<HTMLElement>('[lang]')?.getAttribute('lang');
+    return String(renderedLanguage || 'en').toLowerCase().split('-')[0] || 'en';
+  };
 
   scope.querySelectorAll<HTMLScriptElement>('script[type="text/worker"]').forEach((script) => {
     const code = script.textContent || '';

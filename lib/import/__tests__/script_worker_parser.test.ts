@@ -165,6 +165,18 @@ function testSetSectionOrderCallback(): void {
   assert(r.stats.unparsed === 0, 'callback setSectionOrder is fully parsed');
 }
 
+function testTranslationLanguage(): void {
+  const js = `setAttrs({ language: getTranslationLanguage() });`;
+  const r = parseSheetWorkerScript(js);
+  const setter = r.blocks[0];
+  assert(setter.blockType === 'r20_set_attrs', 'translation language setter');
+  assert(
+    setter.valueInputs?.VALUE.blockType === 'r20_get_translation_language',
+    'getTranslationLanguage reporter',
+  );
+  assert(r.stats.unparsed === 0, 'getTranslationLanguage is fully parsed');
+}
+
 function testForEach(): void {
   const js = `myIds.forEach((id) => { setAttrs({ hp: 0 }); });`;
   const r = parseSheetWorkerScript(js);
@@ -437,6 +449,7 @@ const tests = [
   ['getSectionIDs', testGetSectionIDs],
   ['setSectionOrder', testSetSectionOrder],
   ['setSectionOrder callback', testSetSectionOrderCallback],
+  ['getTranslationLanguage', testTranslationLanguage],
   ['forEach', testForEach],
   ['if statement', testIfStatement],
   ['if else statement', testIfElseStatement],

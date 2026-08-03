@@ -111,7 +111,17 @@ const SYNTHETIC_SHEET = {
 <input type="hidden" name="attr_repeat_remove_trigger" value="">
 <input type="hidden" name="attr_repeat_removed_count" value="0">
 <input type="hidden" name="attr_repeat_removed_name" value="">
+<input type="hidden" name="attr_translation_language" value="">
+<input type="hidden" name="attr_translation_value" value="">
+<input type="hidden" name="attr_translation_missing" value="">
 <script type="text/worker">
+  on("sheet:opened", function () {
+    setAttrs({
+      translation_language: getTranslationLanguage(),
+      translation_value: getTranslationByKey("greeting"),
+      translation_missing: getTranslationByKey("missing-key")
+    }, { silent: true });
+  });
   on("clicked:character", function () {
     setAttrs({ sheetTab: "character" });
   });
@@ -247,7 +257,7 @@ const SYNTHETIC_SHEET = {
   display: none;
 }
 `,
-  i18n: '{}',
+  i18n: '{"greeting":"Bonjour"}',
 };
 
 function startServer() {
@@ -378,6 +388,10 @@ async function readState(frame) {
       repeatRemoveTrigger: document.querySelector('[name="attr_repeat_remove_trigger"]')?.value ?? null,
       repeatRemovedCount: document.querySelector('[name="attr_repeat_removed_count"]')?.value ?? null,
       repeatRemovedName: document.querySelector('[name="attr_repeat_removed_name"]')?.value ?? null,
+      translationLanguage: document.querySelector('[name="attr_translation_language"]')?.value ?? null,
+      translationValue: document.querySelector('[name="attr_translation_value"]')?.value ?? null,
+      translationMissing: document.querySelector('[name="attr_translation_missing"]')?.value ?? null,
+      documentLanguage: document.documentElement.getAttribute('lang'),
       workerQueueOverflows: Number(document.body?.getAttribute('data-r20-worker-queue-overflows') ?? 0),
     };
   });
@@ -463,6 +477,8 @@ async function main() {
     await page.evaluate(() => localStorage.setItem('__perfOn', '1'));
     await page.reload({ waitUntil: 'networkidle' });
     await warmPerfHook(page);
+    const languageInput = page.getByTestId('roll20-document-language');
+    await languageInput.fill('fr-CA');
     report.import = await importSynthetic(page);
 
     const iframe = page.locator('[data-testid="preview-iframe"]').first();
@@ -473,7 +489,16 @@ async function main() {
     await frame.locator('.charactersheet.charsheet').waitFor({ state: 'visible', timeout: 30000 });
 
     const initial = await readState(frame);
-    report.steps.push({ name: 'initial-combat', state: initial, pass: passForState(initial, 'combat') });
+    report.steps.push({
+      name: 'initial-combat',
+      state: initial,
+      pass:
+        passForState(initial, 'combat') &&
+        initial.documentLanguage === 'fr-CA' &&
+        initial.translationLanguage === 'fr' &&
+        initial.translationValue === 'Bonjour' &&
+        initial.translationMissing === 'false',
+    });
     report.repeatingSteps.push({
       name: 'runtime-shell',
       state: initial,

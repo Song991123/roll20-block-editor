@@ -19,6 +19,7 @@
  *   - setSectionOrder('S', [...ids], () => {...})
  *   - generateRowID(), removeRepeatingRow('repeating_S_id')
  *   - getTranslationByKey('key')
+ *   - getTranslationLanguage()
  *
  * 시스템 specific 토큰 0. 이벤트 이름 / 필드 이름 / 변수 이름은 모두 사용자
  * 데이터.
@@ -1013,8 +1014,20 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
       return [`getTranslationByKey('${escapeJSString(key)}')`, ORDER.ATOMIC];
     },
   },
+  {
+    type: 'r20_get_translation_language',
+    shape: 'reporter',
+    category: SHEET_WORKER,
+    label: '현재 언어',
+    tooltip: 'Roll20에서 사용 중인 언어 코드를 가져옵니다. 예: ko, en',
+    init: mkInit((b) => {
+      b.appendDummyInput().appendField('현재 언어');
+      b.setOutput(true, T_STR);
+    }),
+    generator: () => ['getTranslationLanguage()', ORDER.ATOMIC],
+  },
 
-  // 26) getCompendiumPage / getCompendiumEntries ----------------------------
+  // 27) getCompendiumPage / getCompendiumEntries ----------------------------
   //
   // Stage 22 §1 — Roll20 compendium 조회 (PF2/DW/Mothership/SW 등 시스템).
   //   - SUBPATH 비면 `getCompendiumPage('PATH')` (page 전체 객체).

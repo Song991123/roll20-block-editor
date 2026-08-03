@@ -1522,6 +1522,7 @@ function extractGridCols(style: string): string {
  *   - `getCompendiumEntries('PATH', 'SUB')` → r20_get_compendium PATH+SUBPATH
  *   - `getTranslationByKey('KEY')` → r20_get_translation KEY
  *   - `getTranslationByLang('LANG', 'KEY')` → r20_get_translation KEY+LANG
+ *   - `getTranslationLanguage()` → r20_get_translation_language
  *
  * 외부 컨텍스트가 있는 (`if`, `=`, `;` 가 본문에 추가로 있는) 복합 worker 는
  * 매칭 안 함 → raw_worker fallback.
@@ -1563,6 +1564,13 @@ function matchSheetWorkerReporter(body: string): MatchedBlock | null {
     return {
       blockType: 'r20_get_translation',
       fields: { KEY: key, LANG: '' },
+      children: {},
+    };
+  }
+  if (/^getTranslationLanguage\(\s*\)$/.test(trimmed)) {
+    return {
+      blockType: 'r20_get_translation_language',
+      fields: {},
       children: {},
     };
   }
