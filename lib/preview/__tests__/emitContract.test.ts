@@ -142,6 +142,30 @@ function testGenericElementEmit(): void {
   workspace.dispose();
 }
 
+function testGenericVoidElementEmit(): void {
+  registerAllBlocks();
+  const atomWorkspace = new Blockly.Workspace();
+  const atom = atomWorkspace.newBlock('r20_element_atom');
+  atom.setFieldValue('source', 'TAG');
+  atom.setFieldValue('audio-source', 'CLASS');
+  atom.setFieldValue('display: none', 'STYLE');
+
+  assert(!atom.getInput('CONTENT'), 'generic void element has no child slot');
+  const atomResult = emitAll({ html: atomWorkspace });
+  assert(atomResult.html.includes('<source'), 'generic void element tag is emitted');
+  assert(atomResult.html.includes('class="sheet-audio-source"'), 'generic void class is emitted');
+  assert(!atomResult.html.includes('</source>'), 'generic void element remains a leaf');
+  atomWorkspace.dispose();
+
+  const containerWorkspace = new Blockly.Workspace();
+  const container = containerWorkspace.newBlock('r20_element_container');
+  container.setFieldValue('source', 'TAG');
+  const containerResult = emitAll({ html: containerWorkspace });
+  assert(containerResult.html.includes('<section'), 'container rejects a void element tag');
+  assert(!containerResult.html.includes('<source'), 'container cannot emit a false void frame');
+  containerWorkspace.dispose();
+}
+
 function testInlineBreakClassEmit(): void {
   registerAllBlocks();
   const workspace = new Blockly.Workspace();
@@ -226,6 +250,32 @@ function testGenericCssTagEmit(): void {
   const result = emitAll({ css: workspace });
   assert(result.css.includes('custom-card {'), 'generic CSS tag is emitted');
   assert(result.css.includes('display: block;'), 'generic CSS declaration is emitted');
+  workspace.dispose();
+}
+
+function testCssDeclarationKeepsNestedSemicolons(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const rule = workspace.newBlock('r20_css_rule');
+  const selector = workspace.newBlock('r20_selector_class');
+  selector.setFieldValue('asset-proof', 'NAME');
+  rule.getInput('SELECTOR')!.connection!.connect(selector.outputConnection!);
+  const background = workspace.newBlock('r20_css_decl');
+  background.setFieldValue('background-image', 'PROPERTY');
+  background.setFieldValue('url("data:image/png;base64,AAAA")', 'VALUE');
+  const content = workspace.newBlock('r20_css_decl');
+  content.setFieldValue('content', 'PROPERTY');
+  content.setFieldValue('"left;right"; color: red', 'VALUE');
+  rule.getInput('DECLS')!.connection!.connect(background.previousConnection!);
+  background.nextConnection!.connect(content.previousConnection!);
+
+  const result = emitAll({ css: workspace });
+  assert(
+    result.css.includes('url("data:image/png;base64,AAAA")'),
+    'semicolon inside a CSS function is preserved',
+  );
+  assert(/content: "left;right"\s+color: red;/.test(result.css), 'quoted semicolon is preserved');
+  assert(!result.css.includes('content: "left;right"; color: red;'), 'top-level declaration delimiter is removed');
   workspace.dispose();
 }
 
@@ -476,11 +526,13 @@ testComposedWorkspaceCacheResultsKeepTheOutputContract();
 testBuilderLayoutCssIsEmittedWithItsBlock();
 testSemanticContainerEmit();
 testGenericElementEmit();
+testGenericVoidElementEmit();
 testInlineBreakClassEmit();
 testTopLevelWhitespaceTextRoundTrip();
 testInlineFlowDoesNotGainWhitespace();
 testRolltemplateDirectMustacheTokensRoundTrip();
 testGenericCssTagEmit();
+testCssDeclarationKeepsNestedSemicolons();
 testI18nAriaLabelTagEmit();
 testI18nTitleAndHtmlTagEmit();
 testTypedPageScriptExportPreserved();

@@ -53,7 +53,7 @@
 
 ## §3. 블록 라벨 매핑
 
-### §3.1 컨테이너 (18)
+### §3.1 컨테이너 (19)
 
 | type | 현 라벨 (dev) | 새 라벨 (자연어) |
 |---|---|---|
@@ -62,6 +62,7 @@
 | `r20_fieldset` | 필드셋 `<fieldset>` | 둘러싸인 그룹 |
 | `r20_semantic_container` | 의미 태그 묶음 | 의미 있는 묶음 |
 | `r20_element_container` | 안전한 HTML 요소 | HTML 요소 묶음 |
+| `r20_element_atom` | 내용 없는 HTML 요소 | HTML 단일 요소 |
 | `r20_row` | 행 row | 가로 줄 |
 | `r20_col` | 열 col | 세로 줄 |
 | `r20_colrow_n` | N칸 행 | 여러 칸 가로 줄 |
@@ -78,7 +79,7 @@
 | `r20_toggle_wrap` | 토글 wrap | 펼치기 / 접기 묶음 |
 | `r20_grid` | 그리드 grid | 격자 배치 |
 
-### §3.2 입력 (9)
+### §3.2 입력 (10)
 
 | type | 현 | 새 |
 |---|---|---|
@@ -91,6 +92,7 @@
 | `r20_radio` | 라디오 버튼 | 라디오 버튼 |
 | `r20_hidden_input` | 숨김 hidden | 숨김 값 |
 | `r20_file_input` | 파일 선택 | 파일 선택 |
+| `r20_generic_input` | 기타 input | 기타 입력칸 |
 
 ### §3.3 표시 (7)
 

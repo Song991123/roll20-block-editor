@@ -24,6 +24,8 @@ assert.equal(classifyLayerRole('r20_colrow_n'), 'flow');
 assert.equal(classifyLayerRole('r20_div'), 'frame');
 assert.equal(classifyLayerRole('r20_element_container'), 'frame');
 assert.equal(getLayerRole('r20_element_container').canReceiveChildren, true);
+assert.equal(classifyLayerRole('r20_element_atom'), 'other');
+assert.equal(getLayerRole('r20_element_atom').canReceiveChildren, false);
 assert.equal(classifyLayerRole('r20_attr_with_txt_helper'), 'frame');
 assert.equal(getLayerRole('r20_attr_with_txt_helper').canReceiveChildren, true);
 assert.equal(classifyLayerRole('r20_repeating_section_wrapper'), 'frame');
@@ -58,6 +60,8 @@ assert.equal(classifyLayerRole('r20_worker_if'), 'runtime');
 assert.equal(classifyLayerRole('r20_get_attrs'), 'runtime');
 
 assert.equal(classifyLayerRole('r20_text_input'), 'control');
+assert.equal(classifyLayerRole('r20_generic_input'), 'control');
+assert.equal(getLayerRole('r20_generic_input').canReceiveChildren, false);
 assert.equal(classifyLayerRole('r20_attr_ref'), 'control');
 assert.equal(classifyLayerRole('r20_attr_ref_max'), 'control');
 assert.equal(classifyLayerRole('r20_attribute_card'), 'flow');

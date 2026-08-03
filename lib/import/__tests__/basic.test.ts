@@ -35,6 +35,36 @@ function testNumberInput(): void {
   assert(r.html.includes('>level<'), 'name preserved');
 }
 
+function testOtherNativeInputStaysAnEditableLeaf(): void {
+  const html = '<input type="range" name="attr_heat" class="sheet-meter" min="0" max="10" step="2" value="6" readonly disabled data-kind="range">';
+  const r = importSheet({ html });
+  assert(r.stats.htmlMatched === 1, 'other native input should match one block');
+  assert(r.stats.htmlRawFallback === 0, 'other native input should not use raw fallback');
+  assert(r.html.includes('r20_generic_input'), 'other native input uses its leaf block');
+  assert(!r.html.includes('r20_element_container'), 'void input is not exposed as a container');
+  assert(r.html.includes('<field name="TYPE">range</field>'), 'input type is editable');
+  assert(r.html.includes('<field name="NAME">heat</field>'), 'Roll20 attribute name is editable');
+  assert(r.html.includes('<field name="MIN">0</field>'), 'minimum is editable');
+  assert(r.html.includes('<field name="MAX">10</field>'), 'maximum is editable');
+  assert(r.html.includes('<field name="STEP">2</field>'), 'step is editable');
+  assert(r.html.includes('<field name="DISABLED">TRUE</field>'), 'disabled state is editable');
+  assert(r.html.includes('<field name="READONLY">TRUE</field>'), 'readonly state is editable');
+  assert(r.html.includes('data-kind'), 'uncommon attributes stay preserved');
+}
+
+function testGenericVoidElementStaysAnEditableLeaf(): void {
+  const html = '<source class="sheet-audio-source" src="local.ogg" type="audio/ogg" data-kind="source">';
+  const r = importSheet({ html });
+  assert(r.stats.htmlMatched === 1, 'generic void element should match one block');
+  assert(r.stats.htmlRawFallback === 0, 'generic void element should not use raw fallback');
+  assert(r.html.includes('r20_element_atom'), 'generic void element uses its leaf block');
+  assert(!r.html.includes('r20_element_container'), 'generic void element is not exposed as a container');
+  assert(r.html.includes('<field name="TAG">source</field>'), 'void tag remains editable');
+  assert(r.html.includes('<field name="CLASS">audio-source</field>'), 'void class is normalized');
+  assert(r.html.includes('src'), 'void element source attribute stays preserved');
+  assert(r.html.includes('data-kind'), 'void element custom attribute stays preserved');
+}
+
 function testNestedDiv(): void {
   const html = `<div class="sheet-header"><h1>Title</h1></div>`;
   const r = importSheet({ html });
@@ -533,6 +563,8 @@ function testDataScriptStaysInHtml(): void {
 const tests = [
   ['text input', testBasicTextInput],
   ['number input', testNumberInput],
+  ['other native input leaf', testOtherNativeInputStaysAnEditableLeaf],
+  ['generic void element leaf', testGenericVoidElementStaysAnEditableLeaf],
   ['nested div', testNestedDiv],
   ['semantic container tags', testSemanticContainerTagsStayStructured],
   ['unknown safe elements', testUnknownSafeElementsStayEditable],

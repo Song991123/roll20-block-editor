@@ -44,8 +44,11 @@ Every source artifact must become blocks, not opaque app-only state.
 | HTML comment | Comment block or explicitly documented ignored artifact. Roll20/i18n comments must not be dropped. |
 | `style=""` attr | Preserved as source style unless it was created by the design editor. Imported inline style is source fidelity, not layout-editor output. |
 | `class=""` attr | Token-preserving class field. Never collapse multi-class strings. |
+| Other native `<input>` types | Range, date, color, email, search, and future browser-native input types map to an editable control leaf with type/name/value/range/state fields. A void input must never advertise an inside drop. |
+| Other HTML void elements | Safe void tags without a dedicated block map to `r20_element_atom`. They preserve tag/class/style and safe unknown attributes but never own children or expose an inside drop target. |
 | `select` / `optgroup` / `option` | Preserve direct and grouped option order as nested editable blocks. Group labels and disabled state, option values and selected state, and safe unknown attributes must survive import and emit. |
 | CSS rule | CSS selector block with declaration child blocks or raw CSS fallback with parser diagnostics. |
+| CSS declaration value | Remove only top-level declaration boundaries. Semicolons inside quoted strings and functions such as `url("data:...;base64,...")` are source data and must survive import and emit. |
 | CSS at-rule | At-rule block or raw CSS fallback. `@media`, `@keyframes`, `@import`, common block at-rules such as `@supports`, `@container`, and `@layer`, and Roll20-unsafe rules must be represented before sanitization. Safe nested block at-rules use the editable `r20_css_at_rule` container; malformed or semicolon-only forms stay lossless raw CSS. |
 | Rolltemplate | Hidden from sheet canvas preview, represented as rolltemplate blocks, rendered in chat simulation when a roll invokes it. Direct text/Mustache tokens between child elements must remain ordered and lossless; they may not be dropped just because they are not elements. |
 | Sheet worker JS | Hidden from sheet canvas preview, represented as worker/event blocks or raw worker blocks, executed in the preview sandbox simulator when supported. |

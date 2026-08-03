@@ -119,29 +119,56 @@ async function listFixtures() {
     const dir = path.join(FIXTURES_DIR, ent.name);
     const html = await readMaybe(path.join(dir, 'source.html'));
     if (!html) continue;
+    const manifest = await readJsonMaybe(path.join(dir, 'manifest.json'));
     out.push({
       id: ent.name,
       html,
       css: await readMaybe(path.join(dir, 'source.css')),
       i18n: await readMaybe(path.join(dir, 'source.i18n')),
-      expected: (await readJsonMaybe(path.join(dir, 'manifest.json')))?.expected ?? null,
+      expected: manifest?.expected ?? null,
+      expectedEmit: manifest?.expectedEmit ?? null,
     });
   }
   return out.sort((a, b) => a.id.localeCompare(b.id));
 }
 
 async function waitForLiveImport(page, fixture) {
-  return page.evaluate(async ({ html, css, i18n }) => {
+  return page.evaluate(async ({ html, css, i18n, expectedEmit }) => {
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     window.__perfHook.clearAll();
     await sleep(700);
     let last = null;
     for (let i = 0; i < 40; i += 1) {
       last = await window.__perfHook.importSheet({ html, css, i18n });
-      if (last.blockCount > 0) return last;
+      if (last.blockCount > 0) break;
       await sleep(500);
     }
-    return last;
+    const emitted = window.__perfHook.getEmitContent();
+    const inspect = (content, includes = [], excludes = []) => ({
+      missing: includes.filter((needle) => !content.includes(needle)),
+      unexpected: excludes.filter((needle) => content.includes(needle)),
+    });
+    const htmlCheck = inspect(
+      String(emitted.html ?? ''),
+      expectedEmit?.htmlIncludes,
+      expectedEmit?.htmlExcludes,
+    );
+    const cssCheck = inspect(
+      String(emitted.css ?? ''),
+      expectedEmit?.cssIncludes,
+      expectedEmit?.cssExcludes,
+    );
+    return {
+      ...last,
+      emitExpectation: {
+        pass: htmlCheck.missing.length === 0
+          && htmlCheck.unexpected.length === 0
+          && cssCheck.missing.length === 0
+          && cssCheck.unexpected.length === 0,
+        html: htmlCheck,
+        css: cssCheck,
+      },
+    };
   }, fixture);
 }
 
@@ -1176,6 +1203,7 @@ async function main() {
       entry.unexpectedConsoleErrors = consoleErrorClassification.unexpected;
       entry.pass =
         entry.import?.blockCount > 0 &&
+        entry.import?.emitExpectation?.pass !== false &&
         entry.previewDom.status === 'ok' &&
         entry.editDom.status === 'ok' &&
         entry.editLayout?.status === 'ok' &&

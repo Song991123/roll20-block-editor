@@ -280,14 +280,20 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
       const tagRaw = String(b.getFieldValue('TAG') ?? 'section').trim().toLowerCase();
-      const tag = isEditableElementTag(tagRaw) ? tagRaw : 'section';
+      const tag = isEditableElementTag(tagRaw) && !isVoidElementTag(tagRaw)
+        ? tagRaw
+        : 'section';
       if (tag !== tagRaw) {
-        ctx.warn(b.id, 'INVALID_ELEMENT_TAG', '태그 이름이 안전하지 않아 section으로 바꿨습니다.', 'warning');
+        ctx.warn(
+          b.id,
+          'INVALID_ELEMENT_TAG',
+          '내용을 담을 수 없는 태그이거나 안전하지 않아 section으로 바꿨습니다.',
+          'warning',
+        );
       }
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const style = String(b.getFieldValue('STYLE') ?? '');
       const attrs = `${sheetUserClassAttr(cls)}${styleAttr(style)}`;
-      if (isVoidElementTag(tag)) return `<${tag}${attrs}>`;
       return wrapTag(ctx, tag, attrs, ctx.statementToCode(block, 'CONTENT'));
     },
     inspectorSchema: [
@@ -297,7 +303,53 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     ],
   },
 
-  // 6) row ------------------------------------------------------------------
+  // 6) generic editable void element ----------------------------------------
+  // HTML void elements are always leaves. Keeping them out of the generic
+  // container prevents impossible child slots and false inside-drop targets.
+  {
+    type: 'r20_element_atom',
+    shape: 'stack',
+    category: CONTAINER,
+    label: 'HTML 단일 요소',
+    tooltip: '줄바꿈처럼 내용을 담지 않는 HTML 요소를 그대로 보존합니다.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('HTML 단일 요소')
+        .appendField('태그')
+        .appendField(new Blockly.FieldTextInput('br'), 'TAG')
+        .appendField('클래스')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
+      setStatementHooks(b);
+    }),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const tagRaw = String(b.getFieldValue('TAG') ?? 'br').trim().toLowerCase();
+      const tag = isEditableElementTag(tagRaw) && isVoidElementTag(tagRaw)
+        ? tagRaw
+        : 'br';
+      if (tag !== tagRaw) {
+        ctx.warn(
+          b.id,
+          'INVALID_VOID_ELEMENT_TAG',
+          '내용을 담는 태그이거나 안전하지 않아 br로 바꿨습니다.',
+          'warning',
+        );
+      }
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const style = String(b.getFieldValue('STYLE') ?? '');
+      return `<${tag}${sheetUserClassAttr(cls)}${styleAttr(style)}>`;
+    },
+    inspectorSchema: [
+      { name: 'TAG', label: '태그', kind: 'text', placeholder: 'br' },
+      { name: 'CLASS', label: '클래스', kind: 'text' },
+      { name: 'STYLE', label: '스타일', kind: 'text' },
+    ],
+  },
+
+  // 7) row ------------------------------------------------------------------
   {
     type: 'r20_row',
     shape: 'c',

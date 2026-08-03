@@ -14,6 +14,8 @@ edit surface, not a promise that every arbitrary HTML pattern is editable.
 | `row`, `col`, `grid`, `flex` | Flow | Yes | Flow | Children follow the container's layout order |
 | `table`, `thead`, `tbody`, `tfoot`, `tr`, `td`, `th` | Table | Yes | Flow | A table structure whose order must be preserved |
 | `input`, `select`, `textarea`, `checkbox`, `attr` | Input | No | Free | A form control that can be positioned as an object |
+| `r20_generic_input` | Input | No | Free | A native range/date/color or other input that remains one leaf object |
+| `r20_element_atom` | Other | No | Free | A safe HTML void element that remains one leaf object |
 | `button`, `roll`, `action` | Button | No | Free | A clickable action or roll control |
 | `text`, `label`, `heading`, `i18n` | Text | No | Free | Visible copy or translated text |
 | `image`, `img`, `media` | Image | No | Free | A visual asset |
@@ -120,6 +122,9 @@ invent separate DOM models.
     snapping. A scaled nested move keeps its logical parent and offset parent,
     emits position through owned CSS, and must not jump when the model update or
     a Preview/Edit switch replaces the optimistic paint.
+19. Every HTML void element remains a leaf in both the layer panel and iframe
+    overlay. In particular, an uncommon native `<input>`, `<source>`, or `<wbr>`
+    cannot expose an `inside` target because emitted HTML has no child slot.
 
 ## Visual Language
 

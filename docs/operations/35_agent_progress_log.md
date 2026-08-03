@@ -16,6 +16,24 @@ or source-derived measurement here.
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
 
+## 2026-08-03 - Native Input, Void Element, And CSS Value Preservation
+
+- Added an editable leaf mapping for browser-native input types outside the
+  dedicated text/number/check catalog. These controls no longer appear as
+  frames that accept children which HTML cannot emit.
+- Split other safe HTML void tags from the generic container path. Imported
+  void tags now remain editable leaf objects, and a manually changed generic
+  container cannot emit a false child-bearing void element.
+- Reproduced and fixed declaration-value corruption caused by removing every
+  semicolon. Semicolons inside strings and functions are now preserved while
+  top-level declaration boundaries remain blocked.
+- Expanded the anonymous visual matrix with native controls, uncommon semantic
+  elements, a local-only data asset, font/animation rules, a custom at-rule,
+  and malformed CSS fallback. Its modern and legacy Preview/Edit captures are
+  pixel-exact, expected emit markers survive, and all six fixtures pass the
+  Sandbox preparation smoke. This does not prove hosted-asset behavior in
+  actual Roll20.
+
 ## 2026-08-03 - Modern And Legacy Result-Card Actual Matrix
 
 - Completed separate owner-only modern and legacy actual-screen runs for four

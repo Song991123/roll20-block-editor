@@ -353,7 +353,7 @@ function expectedBlockType(node) {
     if (t === 'radio') return 'r20_radio';
     if (t === 'hidden') return 'r20_hidden_input';
     if (t === 'file') return 'r20_file_input';
-    return null;
+    return 'r20_generic_input';
   }
   if (tag === 'select') return 'r20_select';
   if (tag === 'optgroup') return 'r20_optgroup';
@@ -431,8 +431,11 @@ function expectedBlockType(node) {
   }
   if (tag === 'span') return 'r20_span';
   if (tag === 'table') return 'r20_table';
+  if (tag === 'colgroup') return 'r20_colgroup';
+  if (tag === 'col') return 'r20_table_col';
   if (['thead','tbody','tr','th','td'].includes(tag)) return `r20_${tag}`;
   if (tag === 'label') return null; // children-having label falls back to raw
+  if (VOID_TAGS.has(tag)) return 'r20_element_atom';
 
   return null; // → raw_html fallback
 }
@@ -490,6 +493,20 @@ const ATTR_FIELD_MAP = {
   r20_radio: { name: 'NAME', class: 'CLASS', value: 'VALUE', type: '@implicit', style: 'STYLE' },
   r20_hidden_input: { name: 'NAME', class: 'CLASS', value: 'DEFAULT', type: '@implicit', style: 'STYLE' },
   r20_file_input: { name: 'NAME', class: 'CLASS', accept: 'ACCEPT', type: '@implicit', style: 'STYLE' },
+  r20_generic_input: {
+    type: 'TYPE',
+    name: 'NAME',
+    class: 'CLASS',
+    value: 'DEFAULT',
+    placeholder: 'PLACEHOLDER',
+    min: 'MIN',
+    max: 'MAX',
+    step: 'STEP',
+    disabled: '@implicit',
+    readonly: '@implicit',
+    style: 'STYLE',
+  },
+  r20_element_atom: { class: 'CLASS', style: 'STYLE' },
   r20_i18n_placeholder: { 'data-i18n-placeholder': 'KEY', name: 'NAME', class: 'CLASS', type: 'TYPE', value: 'DEFAULT', accept: 'ACCEPT', min: 'MIN', max: 'MAX', style: 'STYLE' },
   r20_select: { name: 'NAME', class: 'CLASS', style: 'STYLE' },
   r20_optgroup: { label: 'LABEL', disabled: '@implicit', class: 'CLASS', style: 'STYLE' },

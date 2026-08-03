@@ -290,6 +290,104 @@ const files = {
       },
     },
   }),
+  'fixture-F/source.html': [
+    '<div class="asset-font-proof" style="width:560px;min-height:300px;padding:16px">',
+    '  <label>Heat<input type="range" name="attr_heat" class="sheet-native-range" min="0" max="10" step="2" value="6" data-form-kind="range"></label>',
+    '  <label>Tint<input type="color" name="attr_tint" value="#d96b91" disabled></label>',
+    '  <label>Day<input type="date" name="attr_day" value="2026-08-03" readonly data-form-kind="date"></label>',
+    '  <details open>',
+    '    <summary>Advanced controls</summary>',
+    '    <progress value="65" max="100">65%</progress>',
+    '    <meter min="0" max="10" value="7">7/10</meter>',
+    '    <output>Ready</output>',
+    '  </details>',
+    '  <span>Void<wbr class="sheet-break-probe" data-form-kind="void">break</span>',
+    '  <img class="sheet-owned-pixel" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZQMcAAAAASUVORK5CYII=" width="24" height="24" alt="Synthetic asset">',
+    '  <div class="sheet-malformed-tail">CSS fallback probe</div>',
+    '</div>',
+  ].join('\n'),
+  'fixture-F/source.css': [
+    '@font-face { font-family: "Synthetic Local"; src: local("Arial"); font-style: normal; font-weight: 400; }',
+    '@property --synthetic-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }',
+    '@keyframes synthetic-pulse { from { opacity: 0.82; } to { opacity: 1; } }',
+    '.asset-font-proof { --synthetic-angle: 0deg; background: #fffafc; border: 2px solid #b94c78; box-sizing: border-box; color: #3b2730; font-family: "Synthetic Local", Arial, sans-serif; }',
+    '.asset-font-proof label { display: block; margin-bottom: 10px; }',
+    '.asset-font-proof input { margin-left: 10px; }',
+    '.asset-font-proof details { margin-top: 14px; padding: 10px; border: 1px solid #e7b5c6; }',
+    '.asset-font-proof progress, .asset-font-proof meter, .asset-font-proof output { display: block; margin-top: 8px; }',
+    '.asset-font-proof .sheet-owned-pixel { display: block; margin-top: 12px; background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZQMcAAAAASUVORK5CYII="); image-rendering: pixelated; animation: synthetic-pulse 2s steps(1, end) infinite paused; animation-delay: -1s; }',
+    '/* MALFORMED_CSS_PROBE */ @supports (display: grid) { .asset-font-proof .sheet-malformed-tail { color: #123456; }',
+  ].join('\n'),
+  'fixture-F/source.i18n': '{}',
+  'fixture-F/manifest.json': JSON.stringify({
+    id: 'fixture-F',
+    synthetic: true,
+    legacyMode: 'modern',
+    purpose: 'native input, local asset, font, animation, and raw CSS fallback regression',
+    sandboxPreparationExpectation: 'change',
+    expectedEmit: {
+      htmlIncludes: [
+        'type="range"',
+        'type="color"',
+        'type="date"',
+        '<details',
+        '<progress',
+        '<meter',
+        '<wbr',
+        'data-form-kind="range"',
+        'data-form-kind="void"',
+      ],
+      htmlExcludes: ['</input>'],
+      cssIncludes: [
+        '@font-face',
+        '@property --synthetic-angle',
+        '@keyframes synthetic-pulse',
+        'data:image/png;base64,',
+        '@supports (display: grid)',
+        '#123456',
+      ],
+    },
+    expected: {
+      normal: {
+        controlValues: {
+          attr_heat: '6',
+          attr_tint: '#d96b91',
+          attr_day: '2026-08-03',
+        },
+        disabledControlNames: ['attr_tint'],
+        readOnlyControlNames: ['attr_day'],
+        dataAttributeValues: { 'data-form-kind': ['date', 'range', 'void'] },
+        minimumTagCounts: {
+          input: 3,
+          details: 1,
+          summary: 1,
+          progress: 1,
+          meter: 1,
+          output: 1,
+          wbr: 1,
+          img: 1,
+        },
+        visibleTextFragments: ['Advanced controls', 'Ready'],
+        ordinaryScriptCount: 0,
+        nonControlAttrNameCount: 0,
+      },
+      sandbox: {
+        controlValues: {
+          attr_heat: '6',
+          attr_tint: '#d96b91',
+          attr_day: '2026-08-03',
+        },
+        disabledControlNames: ['attr_tint'],
+        readOnlyControlNames: ['attr_day'],
+        dataAttributeValues: { 'data-form-kind': ['date', 'range'] },
+        minimumTagCounts: { input: 3, img: 1 },
+        maximumTagCounts: { details: 0, summary: 0, progress: 0, meter: 0, output: 0, wbr: 0 },
+        visibleTextFragments: ['Advanced controls', 'Ready'],
+        ordinaryScriptCount: 0,
+        nonControlAttrNameCount: 0,
+      },
+    },
+  }),
 };
 
 async function main() {
@@ -439,6 +537,39 @@ async function main() {
     if (optionGroupExpectationFailures.length > 0) {
       throw new Error(`option group expectation helper rejected valid state: ${optionGroupExpectationFailures.join(', ')}`);
     }
+    if (!files['fixture-F/source.html'].includes('type="range"')) {
+      throw new Error('native input fixture range control missing');
+    }
+    if (!files['fixture-F/source.html'].includes('data:image/png;base64,')) {
+      throw new Error('native input fixture local asset missing');
+    }
+    if (!files['fixture-F/source.css'].includes('@font-face')) {
+      throw new Error('native input fixture font face missing');
+    }
+    if (!files['fixture-F/source.css'].includes('@keyframes synthetic-pulse')) {
+      throw new Error('native input fixture animation missing');
+    }
+    if (!files['fixture-F/source.css'].includes('MALFORMED_CSS_PROBE')) {
+      throw new Error('native input fixture raw CSS fallback probe missing');
+    }
+    const nativeInputManifest = JSON.parse(files['fixture-F/manifest.json']);
+    const nativeInputExpectationFailures = fixtureExpectationFailures({
+      controlValues: {
+        attr_heat: '6',
+        attr_tint: '#d96b91',
+        attr_day: '2026-08-03',
+      },
+      disabledControlNames: ['attr_tint'],
+      readOnlyControlNames: ['attr_day'],
+      dataAttributeValues: { 'data-form-kind': ['date', 'range', 'void'] },
+      tagCounts: { input: 3, details: 1, summary: 1, progress: 1, meter: 1, output: 1, wbr: 1, img: 1 },
+      visibleText: 'Advanced controls Ready',
+      ordinaryScriptCount: 0,
+      nonControlAttrNameCount: 0,
+    }, nativeInputManifest.expected.normal);
+    if (nativeInputExpectationFailures.length > 0) {
+      throw new Error(`native input expectation helper rejected valid state: ${nativeInputExpectationFailures.join(', ')}`);
+    }
     console.log('VISUAL SYNTHETIC FIXTURE SELF-TEST PASS');
     return;
   }
@@ -450,7 +581,7 @@ async function main() {
   }
   await writeFile(
     path.join(outDir, 'synthetic-meta.json'),
-    `${JSON.stringify({ synthetic: true, fixtureIds: ['fixture-A', 'fixture-B', 'fixture-C', 'fixture-D', 'fixture-E'], files: Object.keys(files) }, null, 2)}\n`,
+    `${JSON.stringify({ synthetic: true, fixtureIds: ['fixture-A', 'fixture-B', 'fixture-C', 'fixture-D', 'fixture-E', 'fixture-F'], files: Object.keys(files) }, null, 2)}\n`,
     'utf8',
   );
   console.log(`VISUAL SYNTHETIC FIXTURE GENERATED ${outDir}`);

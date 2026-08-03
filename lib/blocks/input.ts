@@ -1,5 +1,5 @@
 /**
- * Input 카테고리 — 9 블록 (Stage A-3).
+ * Input 카테고리 — 10 블록 (Stage A-3).
  *
  * Anchor:
  *   - docs/spec/02_functional_spec.md §3.1 ID 2 (입력 / Input, hue 230).
@@ -78,7 +78,7 @@ function nameAttr(name: string): string {
   return ` name="attr_${escapeAttr(v)}"`;
 }
 
-// ---------- 9 블록 정의 ----------
+// ---------- 10 블록 정의 ----------
 
 export const INPUT_BLOCKS: BlockDef[] = [
   // 1) text input -----------------------------------------------------------
@@ -500,10 +500,89 @@ export const INPUT_BLOCKS: BlockDef[] = [
       return `<input type="file"${sheetClassAttr(cls)}${nameAttr(name)}${attr('accept', accept)}${styleAttr(style)}>`;
     },
   },
+
+  // 10) other native input types -------------------------------------------
+  // Roll20 sheets also use browser-native controls such as range, date,
+  // color, email, and search. They are void controls, never containers. A
+  // dedicated leaf block keeps them editable without pretending that a child
+  // can be dropped inside an <input> and then silently discarded on emit.
+  {
+    type: 'r20_generic_input',
+    shape: 'stack',
+    category: INPUT,
+    label: '기타 입력칸',
+    tooltip: '범위, 날짜, 색상 등 브라우저 기본 입력칸을 그대로 보존합니다.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('기타 입력칸')
+        .appendField('종류')
+        .appendField(new Blockly.FieldTextInput('range'), 'TYPE');
+      b.appendDummyInput()
+        .appendField('속성')
+        .appendField(new Blockly.FieldTextInput('name'), 'NAME')
+        .appendField('클래스')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('기본값')
+        .appendField(new Blockly.FieldTextInput(''), 'DEFAULT')
+        .appendField('안내문')
+        .appendField(new Blockly.FieldTextInput(''), 'PLACEHOLDER');
+      b.appendDummyInput()
+        .appendField('최소')
+        .appendField(new Blockly.FieldTextInput(''), 'MIN')
+        .appendField('최대')
+        .appendField(new Blockly.FieldTextInput(''), 'MAX')
+        .appendField('간격')
+        .appendField(new Blockly.FieldTextInput(''), 'STEP');
+      b.appendDummyInput()
+        .appendField('사용 안 함')
+        .appendField(new Blockly.FieldCheckbox('FALSE'), 'DISABLED')
+        .appendField('읽기 전용')
+        .appendField(new Blockly.FieldCheckbox('FALSE'), 'READONLY');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
+      setStatementHooks(b);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const type = String(b.getFieldValue('TYPE') ?? 'text').trim().toLowerCase() || 'text';
+      const name = String(b.getFieldValue('NAME') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const def = String(b.getFieldValue('DEFAULT') ?? '');
+      const placeholder = String(b.getFieldValue('PLACEHOLDER') ?? '');
+      const min = String(b.getFieldValue('MIN') ?? '');
+      const max = String(b.getFieldValue('MAX') ?? '');
+      const step = String(b.getFieldValue('STEP') ?? '');
+      const disabled = String(b.getFieldValue('DISABLED') ?? 'FALSE') === 'TRUE';
+      const readOnly = String(b.getFieldValue('READONLY') ?? 'FALSE') === 'TRUE';
+      const style = String(b.getFieldValue('STYLE') ?? '');
+      return (
+        `<input type="${escapeAttr(type)}"${sheetClassAttr(cls)}${nameAttr(name)}` +
+        `${attr('value', def)}${attr('placeholder', placeholder)}` +
+        `${attr('min', min)}${attr('max', max)}${attr('step', step)}` +
+        `${disabled ? ' disabled="disabled"' : ''}${readOnly ? ' readonly="readonly"' : ''}` +
+        `${styleAttr(style)}>`
+      );
+    },
+    inspectorSchema: [
+      { name: 'TYPE', label: '종류', kind: 'text', placeholder: 'range' },
+      { name: 'NAME', label: '속성', kind: 'text' },
+      { name: 'CLASS', label: '클래스', kind: 'text' },
+      { name: 'DEFAULT', label: '기본값', kind: 'text' },
+      { name: 'PLACEHOLDER', label: '안내문', kind: 'text' },
+      { name: 'MIN', label: '최소', kind: 'text' },
+      { name: 'MAX', label: '최대', kind: 'text' },
+      { name: 'STEP', label: '간격', kind: 'text' },
+      { name: 'DISABLED', label: '사용 안 함', kind: 'boolean' },
+      { name: 'READONLY', label: '읽기 전용', kind: 'boolean' },
+      { name: 'STYLE', label: '스타일', kind: 'text' },
+    ],
+  },
 ];
 
 /**
- * Stage A-3 — Input 9 블록 등록.
+ * Stage A-3 — Input 10 블록 등록.
  *
  * 1) BlockDef 메타를 target 배열에 push (UI 카탈로그 표시용).
  * 2) Blockly.Blocks[type] = { init } 등록 (워크스페이스 instantiate 가능).

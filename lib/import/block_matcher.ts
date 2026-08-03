@@ -305,7 +305,28 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
         children: {},
       };
     }
-    return null;
+    // Browser-native input types outside the dedicated catalog (range, date,
+    // color, email, search, and future valid types) are still real Roll20
+    // controls. Keep them as an editable leaf instead of routing the void
+    // <input> through the generic container escape hatch, which would falsely
+    // advertise an inside drop and discard those children on emit.
+    return {
+      blockType: 'r20_generic_input',
+      fields: {
+        TYPE: inputType,
+        NAME: name,
+        CLASS: cls,
+        DEFAULT: a.value || '',
+        PLACEHOLDER: a.placeholder || '',
+        MIN: a.min || '',
+        MAX: a.max || '',
+        STEP: a.step || '',
+        DISABLED: 'disabled' in a ? 'TRUE' : 'FALSE',
+        READONLY: 'readonly' in a ? 'TRUE' : 'FALSE',
+        STYLE: a.style || '',
+      },
+      children: {},
+    };
   }
 
   if (tag === 'select') {
@@ -1177,22 +1198,24 @@ function matchDualRollButton(node: DomNode, cls: string): MatchedBlock | null {
 }
 
 /**
- * Preserve any safe, otherwise-unclassified element as an editable DOM
- * container. Executable/document-level tags are deliberately excluded by the
+ * Preserve any safe, otherwise-unclassified element as an editable DOM block.
+ * Void elements become leaves; elements that can own children become
+ * containers. Executable/document-level tags are deliberately excluded by the
  * shared element policy and continue through the raw HTML boundary.
  */
 function matchGenericElement(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   const tag = node.tag;
   if (!tag || !isEditableElementTag(tag)) return null;
   const a = node.attrs ?? {};
+  const isVoid = isVoidElementTag(tag);
   return {
-    blockType: 'r20_element_container',
+    blockType: isVoid ? 'r20_element_atom' : 'r20_element_container',
     fields: {
       TAG: tag,
       CLASS: stripSheetPrefix(a.class || ''),
       STYLE: a.style || '',
     },
-    children: { CONTENT: matchChildren(node, ctx) },
+    children: isVoid ? {} : { CONTENT: matchChildren(node, ctx) },
   };
 }
 

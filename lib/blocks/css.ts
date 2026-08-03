@@ -177,9 +177,65 @@ function safeCss(value: string): string {
   return String(value ?? '').replace(/[\r\n{}]/g, ' ').trim();
 }
 
-/** 선언 값 — `;` 까지 추가 제거 (선언 분리 깨짐 방지). */
+/**
+ * CSS declaration value with top-level declaration boundaries removed.
+ *
+ * A blanket semicolon removal corrupts valid values such as data URLs and
+ * quoted content. Keep delimiters inside strings and functions while still
+ * preventing a free-text field from opening a second top-level declaration.
+ */
 function safeDeclValue(value: string): string {
-  return String(value ?? '').replace(/[\r\n{};]/g, ' ').trim();
+  const source = String(value ?? '');
+  let out = '';
+  let quote = '';
+  let escaped = false;
+  let parenDepth = 0;
+
+  for (const char of source) {
+    if (quote) {
+      if (char === '\r' || char === '\n') {
+        out += ' ';
+        escaped = false;
+        continue;
+      }
+      out += char;
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === quote) {
+        quote = '';
+      }
+      continue;
+    }
+
+    if (char === '"' || char === "'") {
+      quote = char;
+      out += char;
+      continue;
+    }
+    if (char === '(') {
+      parenDepth += 1;
+      out += char;
+      continue;
+    }
+    if (char === ')') {
+      parenDepth = Math.max(0, parenDepth - 1);
+      out += char;
+      continue;
+    }
+    if (char === '{' || char === '}' || char === '\r' || char === '\n') {
+      out += ' ';
+      continue;
+    }
+    if (char === ';' && parenDepth === 0) {
+      out += ' ';
+      continue;
+    }
+    out += char;
+  }
+
+  return out.trim();
 }
 
 /** `head { content }` 형태 wrap. content 비면 `head {}`. */

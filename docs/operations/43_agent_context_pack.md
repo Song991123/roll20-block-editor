@@ -44,9 +44,14 @@ contain private source evidence or historical test dumps.
   launched the visible upload tools, but its supported HTML chooser failed
   before transmission; do not bypass it.
 - Sequential imports use monotonic store versions plus Blockly hydration
-  generations in the emit-cache identity. The current five-fixture browser
+  generations in the emit-cache identity. The current six-fixture browser
   path also requires each mounted preview CSS hash to match the latest import,
   preventing a previous sheet from repainting the next one.
+- Browser-native inputs outside the dedicated text/number/check catalog map to
+  an editable control leaf, never a drop container. Other HTML void elements
+  use the same leaf-only contract instead of a false generic frame. CSS
+  declaration values preserve semicolons inside strings and functions such as data URLs while
+  still removing top-level declaration boundaries.
 - The edit layer panel has a persisted, pointer- and keyboard-resizable width.
   One responsive track positions both its edge and the persistent iframe, so
   resizing editor chrome does not create a Preview/Edit coordinate split.

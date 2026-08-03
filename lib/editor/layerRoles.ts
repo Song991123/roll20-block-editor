@@ -96,6 +96,7 @@ const ROLE_KIND_OVERRIDES: Record<string, LayerRoleKind> = {
   // tags. It has a CONTENT statement slot, so it must remain a visible frame
   // in the layer editor instead of becoming an opaque "other" leaf.
   r20_element_container: 'frame',
+  r20_element_atom: 'other',
   // This composite emits a <div> wrapper plus user-editable CONTENT. Keep the
   // wrapper visible as a frame even though its generated helper inputs are
   // atomic children in the emitted HTML.
@@ -140,10 +141,10 @@ const ROLE_KIND_OVERRIDES: Record<string, LayerRoleKind> = {
 };
 
 const CAN_RECEIVE_CHILDREN_OVERRIDES: Record<string, boolean> = {
-  // A generic element has a CONTENT statement slot. Void tags are lowered to
-  // dedicated input/media blocks by the importer, so this role stays a safe
-  // container for the generic non-void path.
+  // The generic container owns CONTENT. The generic void-element block is a
+  // leaf and must never advertise an inside drop target.
   r20_element_container: true,
+  r20_element_atom: false,
   r20_attr_with_txt_helper: true,
   // Attribute cards are atomic composite rows; reorder the row, do not insert
   // an unrelated block into its generated <tr> internals.

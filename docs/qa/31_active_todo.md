@@ -105,8 +105,17 @@ belong in tracked documents.
   conditional visibility, repeating sections, nested conditional CSS, custom
   properties, grouped control state, readonly/disabled state, nested
   `select`/`optgroup`/`option` structure, and inert Page JS in one browser path.
-  Continue with remaining uncommon form semantics, fonts, user-owned assets,
-  malformed selectors, and unsupported worker syntax.
+  Continue with broader uncommon form semantics, user-owned hosted assets,
+  malformed selector families, and unsupported worker syntax.
+- `DONE LOCAL`: the anonymous browser matrix now also covers native range,
+  color, and date inputs, details/progress/meter/output structure, a local-only
+  data image, `@font-face`, paused animation, a custom at-rule, and malformed
+  CSS fallback. Native inputs and other safe HTML void tags map to leaf blocks
+  instead of false frames, and CSS data-URL/quoted semicolons survive import
+  and emit. Preview/Edit are
+  pixel-exact in both modern and legacy modes; Sandbox preparation keeps its
+  restricted output separate. Actual user-owned hosted asset loading remains
+  unverified.
 - `TODO`: give future JavaScript work its own inert source workspace and block
   mapping. Ordinary page scripts must remain invisible and non-executable in
   Preview/Edit.
