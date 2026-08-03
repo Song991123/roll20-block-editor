@@ -16,6 +16,30 @@ or source-derived measurement here.
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
 
+## 2026-08-03 - Actual Repeating Runtime And Legacy HTML Sanitizing
+
+- Applied one anonymous repeating-section payload only to fresh owner-only
+  modern and legacy verification destinations after current participant and
+  compatibility checks. Persisted HTML/CSS matched exactly and translation
+  matched semantically.
+- Both destinations initialized Worker rows and synchronized value changes,
+  calculated totals, and deletion across duplicate rendered instances. Modern
+  reorder synchronized row IDs but exposed an actual Roll20 limitation: the
+  second instance could retain stale displayed values. Legacy reorder remains
+  unverified after compatibility flattening.
+- Actual legacy Roll20 removed unsupported semantic wrappers while preserving
+  their supported children. The shared local legacy render contract now reuses
+  the existing HTML allow-list transform, so Preview and Edit reproduce that
+  flattened structure instead of retaining panels Roll20 removes.
+- Export emits a non-blocking plain-language warning for duplicate same-name
+  repeating fieldsets. Focused preview/export tests, legacy preview smoke,
+  production build, and the fourteen-pair modern/legacy Preview/Edit visual
+  smoke pass. Full `ci:verify`, lint, and tracked-document privacy checks also
+  pass.
+- Claim boundary: the legacy structural mismatch is fixed locally, but a
+  normalized full-height local/actual pixel comparison, legacy reorder, and a
+  Roll20-safe duplicate-view architecture remain open.
+
 ## 2026-08-03 - Shared Repeating Rows And Reorder
 
 - Same-name repeating fieldsets now render alternate views of one shared row

@@ -8,6 +8,21 @@ belong in tracked documents.
 
 ## P0 - Roll20 Render Truth
 
+- `PARTIAL ACTUAL SYNTHETIC`: fresh owner-only modern and legacy destinations
+  persisted the anonymous repeating-section payload with exact HTML/CSS,
+  semantically matching translation, and the expected compatibility mode.
+  Worker initialization, value changes, calculated totals, and deletion
+  synchronized across both rendered instances. Modern reorder changed the
+  shared row IDs in both instances, but Roll20 did not rebind the second
+  instance's displayed values to the new order. Legacy reorder remains
+  unverified after its compatibility sanitizer flattened unsupported wrappers.
+- `DONE LOCAL / VERIFY ACTUAL PIXELS`: the shared legacy Preview/Edit contract
+  now applies the observed Roll20 HTML allow-list as well as legacy CSS
+  sanitizing. Unsupported semantic wrappers are removed while supported
+  children and Sheet Worker source survive. The refreshed legacy local capture
+  now follows the actual flattened flow and all fourteen anonymous modern and
+  legacy Preview/Edit pairs remain pixel-exact. A normalized full-height local
+  versus Roll20 pixel comparison is still required.
 - `DONE ACTUAL SYNTHETIC MATRIX`: four anonymous result-card shapes were
   uploaded separately to owner-only modern and legacy verification
   destinations. Every upload preserved HTML/CSS exactly and translation JSON
@@ -156,12 +171,15 @@ belong in tracked documents.
   `removeRepeatingRow`. Browser state proof covers full, section-field,
   section-wide, and plain-field change aliases plus lowercased source state and
   `removedInfo` for both player and Worker deletion.
-- `DONE LOCAL`: duplicate fieldsets with the same repeating section now share
+- `PARTIAL`: duplicate fieldsets with the same repeating section share
   row IDs, values, and order. Repeating handlers resolve row-context shorthand
   for `getAttrs` and `setAttrs`; drag reorder persists
   `_reporder_repeating_*`, dispatches `change:_reporder:*`, and stays synchronized
   across every same-name instance. The browser smoke also guards against the
-  pointer-capture rollback found when a dragged row moved in the DOM.
+  pointer-capture rollback found when a dragged row moved in the DOM. This is
+  local simulator behavior: actual Roll20 can leave a second instance's
+  displayed values stale after reorder. Export now warns about that structure;
+  a Roll20-safe mirror design remains TODO.
 - `TODO`: expand structured Sheet Worker blocks beyond the current parser and
   runtime subset. Raw Worker source remains the lossless fallback meanwhile;
   diagnostics do not make unsupported syntax structurally editable. Arbitrary

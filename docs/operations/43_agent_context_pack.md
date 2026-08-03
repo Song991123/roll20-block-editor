@@ -107,8 +107,14 @@ contain private source evidence or historical test dumps.
   player/Worker deletion, row creation APIs, all documented field/section
   change aliases, and `removedInfo`. Duplicate same-name fieldsets share rows,
   values, and order; row-context shorthand and synchronized drag reorder with
-  `_reporder` events pass local browser proof. Broader Worker syntax and actual
-  Roll20 proof remain open.
+  `_reporder` events pass local browser proof. Fresh owner-only modern and
+  legacy checks confirm Worker initialization, value/total changes, and
+  deletion. Actual Roll20 can leave the second same-name instance's displayed
+  values stale after reorder, so export warns and duplicate-view reorder
+  remains partial. Actual legacy Roll20 also removes unsupported semantic
+  wrappers; local legacy Preview/Edit now applies the same allow-list
+  transform. Legacy reorder, normalized full-height comparison, and broader
+  Worker syntax remain open.
 - ImportDialog waits for every Blockly model workspace before hydration. Keep
   the cold-load early-click browser check; analysis percentages alone do not
   prove blocks were applied.

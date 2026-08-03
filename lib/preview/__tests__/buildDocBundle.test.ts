@@ -64,6 +64,16 @@ assert.match(
   /\.charsheet\s+\.sheet-card\s*\{/,
   'legacy preview CSS uses the observed Roll20 sheet scope',
 );
+assert.doesNotMatch(
+  bundle.livePatch.html,
+  /<section\b/i,
+  'legacy Preview/Edit removes wrappers outside the observed Roll20 HTML allow-list',
+);
+assert.match(
+  bundle.livePatch.html,
+  /<span\b[^>]*data-i18n="name"[^>]*>Name<\/span>/,
+  'legacy HTML allow-list preserves supported children',
+);
 assert.match(bundle.doc, new RegExp(`data-r20-html-key="${bundle.livePatch.htmlKey}"`));
 assert.equal(
   cssOnlyChange.livePatch.htmlKey,

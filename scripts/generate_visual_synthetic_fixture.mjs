@@ -389,6 +389,124 @@ const files = {
       },
     },
   }),
+  'fixture-G/source.html': [
+    '<div class="sheet-repeating-runtime-proof" style="width:700px;min-height:340px;padding:16px">',
+    '  <h3 data-i18n="runtime_title"></h3>',
+    '  <input type="hidden" name="attr_repeat_ready" value="no">',
+    '  <input type="hidden" name="attr_repeat_context_name" value="">',
+    '  <input type="hidden" name="attr_repeat_context_qty" value="">',
+    '  <input type="hidden" name="attr_repeat_order_value" value="">',
+    '  <input type="hidden" name="attr_repeat_order_source" value="">',
+    '  <input type="hidden" name="attr_repeat_remove_source" value="">',
+    '  <div class="sheet-repeating-grid">',
+    '    <section class="sheet-repeating-pane sheet-primary-view">',
+    '      <h4 data-i18n="primary_view"></h4>',
+    '      <fieldset class="repeating_items">',
+    '        <div class="sheet-runtime-row">',
+    '          <label><span data-i18n="item_name"></span><input type="text" name="attr_item_name" value="New item"></label>',
+    '          <label><span data-i18n="item_qty"></span><input type="number" name="attr_item_qty" value="1"></label>',
+    '        </div>',
+    '      </fieldset>',
+    '    </section>',
+    '    <section class="sheet-repeating-pane sheet-summary-view">',
+    '      <h4 data-i18n="summary_view"></h4>',
+    '      <fieldset class="repeating_items">',
+    '        <div class="sheet-runtime-row sheet-summary-row">',
+    '          <label><span data-i18n="item_name"></span><input type="text" name="attr_item_name" value="New item" readonly></label>',
+    '          <label><span data-i18n="item_qty"></span><input type="number" name="attr_item_qty" value="1" readonly></label>',
+    '          <label><span data-i18n="item_total"></span><input type="number" name="attr_item_total" value="2" readonly></label>',
+    '        </div>',
+    '      </fieldset>',
+    '    </section>',
+    '  </div>',
+    '  <script type="text/worker">',
+    '    on("sheet:opened", function () {',
+    '      getSectionIDs("repeating_items", function (ids) {',
+    '        if (ids.length > 0) { setAttrs({ repeat_ready: "yes" }, { silent: true }); return; }',
+    '        var first = generateRowID();',
+    '        var second = generateRowID();',
+    '        var initial = {};',
+    '        initial["repeating_items_" + first + "_item_name"] = "First item";',
+    '        initial["repeating_items_" + first + "_item_qty"] = "1";',
+    '        initial["repeating_items_" + first + "_item_total"] = "2";',
+    '        initial["repeating_items_" + second + "_item_name"] = "Second item";',
+    '        initial["repeating_items_" + second + "_item_qty"] = "2";',
+    '        initial["repeating_items_" + second + "_item_total"] = "4";',
+    '        setAttrs(initial, function () { setAttrs({ repeat_ready: "yes" }, { silent: true }); });',
+    '      });',
+    '    });',
+    '    on("change:repeating_items:item_qty", function () {',
+    '      getAttrs(["repeating_items_item_name", "repeating_items_item_qty"], function (values) {',
+    '        setAttrs({',
+    '          repeat_context_name: values.repeating_items_item_name,',
+    '          repeat_context_qty: values.repeating_items_item_qty,',
+    '          repeating_items_item_total: parseInt(values.repeating_items_item_qty || "0", 10) * 2',
+    '        }, { silent: true });',
+    '      });',
+    '    });',
+    '    on("change:_reporder:items", function (eventInfo) {',
+    '      getAttrs(["_reporder_repeating_items"], function (values) {',
+    '        setAttrs({ repeat_order_value: values._reporder_repeating_items, repeat_order_source: eventInfo.sourceType }, { silent: true });',
+    '      });',
+    '    });',
+    '    on("remove:repeating_items", function (eventInfo) {',
+    '      setAttrs({ repeat_remove_source: eventInfo.sourceType }, { silent: true });',
+    '    });',
+    '  </script>',
+    '</div>',
+  ].join('\n'),
+  'fixture-G/source.css': [
+    '.sheet-repeating-runtime-proof { background: #fffafc; border: 2px solid #b94c78; box-sizing: border-box; color: #3b2730; }',
+    '.sheet-repeating-runtime-proof h3 { margin: 0 0 14px; color: #9f3158; }',
+    '.sheet-repeating-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }',
+    '.sheet-repeating-pane { min-width: 0; padding: 12px; border: 1px solid #e7b5c6; background: #ffffff; }',
+    '.sheet-repeating-pane h4 { margin: 0 0 10px; }',
+    '.sheet-runtime-row { display: grid; grid-template-columns: minmax(0, 1fr) 76px; gap: 8px; align-items: end; margin-bottom: 8px; }',
+    '.sheet-summary-row { grid-template-columns: minmax(0, 1fr) 62px 62px; }',
+    '.sheet-runtime-row label, .sheet-runtime-row span { display: block; min-width: 0; }',
+    '.sheet-runtime-row input { box-sizing: border-box; width: 100%; margin: 4px 0 0; }',
+  ].join('\n'),
+  'fixture-G/source.i18n': JSON.stringify({
+    runtime_title: 'Repeating runtime',
+    primary_view: 'Editable rows',
+    summary_view: 'Shared summary',
+    item_name: 'Name',
+    item_qty: 'Qty',
+    item_total: 'Total',
+  }),
+  'fixture-G/manifest.json': JSON.stringify({
+    id: 'fixture-G',
+    synthetic: true,
+    legacyMode: 'modern',
+    purpose: 'duplicate repeating views, row context, and reorder regression',
+    sandboxPreparationExpectation: 'change',
+    expected: {
+      normal: {
+        controlValues: { attr_repeat_ready: 'yes' },
+        minimumTagCounts: { fieldset: 2, section: 2, input: 16 },
+        visibleI18nKeys: ['runtime_title', 'primary_view', 'summary_view', 'item_name', 'item_qty', 'item_total'],
+        visibleTextFragments: ['Repeating runtime'],
+        ordinaryScriptCount: 0,
+      },
+      sandbox: {
+        controlValues: { attr_repeat_ready: 'yes' },
+        minimumTagCounts: { fieldset: 2, input: 16 },
+        maximumTagCounts: { section: 0 },
+        visibleI18nKeys: ['runtime_title', 'primary_view', 'summary_view', 'item_name', 'item_qty', 'item_total'],
+        visibleTextFragments: ['Repeating runtime'],
+        ordinaryScriptCount: 0,
+      },
+    },
+    actualInteraction: {
+      repeatingGroup: 'repeating_items',
+      duplicateInstances: 2,
+      initialRowsPerInstance: 2,
+      expectedNames: ['First item', 'Second item'],
+      quantityChange: { rowName: 'Second item', value: '3', expectedTotal: '6' },
+      reorderEvent: 'change:_reporder:items',
+      removalEvent: 'remove:repeating_items',
+    },
+  }),
 };
 
 async function main() {
@@ -571,6 +689,20 @@ async function main() {
     if (nativeInputExpectationFailures.length > 0) {
       throw new Error(`native input expectation helper rejected valid state: ${nativeInputExpectationFailures.join(', ')}`);
     }
+    const repeatingHtml = files['fixture-G/source.html'];
+    if ((repeatingHtml.match(/<fieldset class="repeating_items">/g) ?? []).length !== 2) {
+      throw new Error('shared repeating fixture duplicate fieldsets missing');
+    }
+    if (!repeatingHtml.includes('repeating_items_item_total')) {
+      throw new Error('shared repeating fixture row-context write missing');
+    }
+    if (!repeatingHtml.includes('change:_reporder:items')) {
+      throw new Error('shared repeating fixture reorder event missing');
+    }
+    const repeatingManifest = JSON.parse(files['fixture-G/manifest.json']);
+    if (repeatingManifest.actualInteraction?.duplicateInstances !== 2) {
+      throw new Error('shared repeating fixture interaction contract missing');
+    }
     console.log('VISUAL SYNTHETIC FIXTURE SELF-TEST PASS');
     return;
   }
@@ -582,7 +714,7 @@ async function main() {
   }
   await writeFile(
     path.join(outDir, 'synthetic-meta.json'),
-    `${JSON.stringify({ synthetic: true, fixtureIds: ['fixture-A', 'fixture-B', 'fixture-C', 'fixture-D', 'fixture-E', 'fixture-F'], files: Object.keys(files) }, null, 2)}\n`,
+    `${JSON.stringify({ synthetic: true, fixtureIds: ['fixture-A', 'fixture-B', 'fixture-C', 'fixture-D', 'fixture-E', 'fixture-F', 'fixture-G'], files: Object.keys(files) }, null, 2)}\n`,
     'utf8',
   );
   console.log(`VISUAL SYNTHETIC FIXTURE GENERATED ${outDir}`);

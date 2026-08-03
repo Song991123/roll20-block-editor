@@ -59,7 +59,10 @@ export function prepareSheetRenderContract(
 
   const prefixedHtml = sanitize ? autoPrefixHtmlClasses(userHtml) : userHtml;
   const prefixedCss = sanitize ? autoPrefixCssClasses(userCss) : userCss;
-  const sandboxHtml = roll20SandboxSanitize
+  // The legacy-enabled Roll20 room applies the same observed HTML allow-list
+  // before mounting the sheet. Reuse that transform so local legacy Preview
+  // and Edit do not preserve wrappers that Roll20 removes.
+  const sandboxHtml = roll20SandboxSanitize || legacyCssSanitize
     ? restorePreviewWorkerScripts(
         sanitizeRoll20SandboxHtml(userHtml, {
           prefixClasses: legacyCssSanitize,
