@@ -408,6 +408,15 @@ belong in tracked documents.
 
 ## P1 - User Experience
 
+- `DONE LOCAL`: high-traffic import/export controls now describe conversion,
+  Roll20 mode, upload preparation, position, and image/font replacement in
+  plain Korean. Internal warning codes and verification commands stay out of
+  visible UI while browser tests use hidden stable identifiers. The import and
+  export dialog smokes pass with zero console or page errors.
+- `DONE LOCAL`: selecting a Blockly block now survives opening the properties,
+  code, or roll panel. A real workspace-background click or Escape still clears
+  selection. The previously failing raw Worker inspector path passes three
+  consecutive browser runs after the fix.
 - `PARTIAL`: visual controls exist for sections, rows, text, inputs, images,
   tables, Roll buttons, and result cards. They write managed CSS rather than
   presentation inline HTML.

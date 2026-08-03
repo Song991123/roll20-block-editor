@@ -16,6 +16,24 @@ or source-derived measurement here.
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
 
+## 2026-08-04 - Plain-Language Handoff And Stable Block Selection
+
+- Reworded the high-traffic import, export, compatibility, position, and
+  image/font address controls in plain Korean. Internal verification commands
+  and warning codes no longer appear in product copy; browser tests retain
+  stable hidden identifiers instead.
+- Fixed a Blockly selection regression where opening the properties tab sent a
+  blur-style deselection event and emptied the inspector. Selection now stays
+  active when the user moves to an app panel, while a workspace-background
+  click or Escape can still clear it.
+- UI-copy guard, export unit smoke, production build, lint, import-dialog smoke,
+  export-dialog smoke, and the full edit-flow browser smoke pass. The import
+  smoke failed consistently before the selection fix and passed three
+  consecutive runs after it. Browser runs report zero console or page errors.
+- Claim boundary: this batch improves local language and editor interaction.
+  It does not close the supported modern Sandbox file-transfer permission gate
+  or prove broad real-sheet visual parity.
+
 ## 2026-08-04 - Structured Repeating Row Order Worker
 
 - Added a plain-language Sheet Worker block for `setSectionOrder`. Import keeps

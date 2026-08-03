@@ -282,12 +282,12 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       sourceLabel: '내보내기',
     });
     if (!draft) {
-      toast('교체할 외부 자산 주소가 없습니다.', { duration: 2200 });
+      toast('바꿀 이미지나 글꼴 주소가 없습니다.', { duration: 2200 });
       return;
     }
     const next = [assetReplacementText.trim(), draft].filter(Boolean).join('\n\n');
     setAssetReplacementText(next);
-    toast.success('현재 내보내기 기준으로 자산 주소 교체 초안을 만들었습니다.', {
+    toast.success('현재 내보내기 기준으로 이미지·글꼴 주소 교체 초안을 만들었습니다.', {
       duration: 3500,
     });
   }
@@ -308,7 +308,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
         <div className="space-y-4">
           <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="시트 이름" hint="비워두면 Untitled Sheet">
+            <Field label="시트 이름" hint='비워두면 "Untitled Sheet"(이름 없음)'>
               <input
                 type="text"
                 value={meta.name}
@@ -318,7 +318,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 data-testid="export-meta-name"
               />
             </Field>
-            <Field label="작성자" hint="비워두면 Anonymous">
+            <Field label="작성자" hint='비워두면 "Anonymous"(작성자 미표시)'>
               <input
                 type="text"
                 value={meta.author}
@@ -328,7 +328,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 data-testid="export-meta-author"
               />
             </Field>
-            <Field label="버전" hint="semver 권장, 기본값 0.1.0">
+            <Field label="버전" hint="1.0.0처럼 적어요. 기본값은 0.1.0이에요.">
               <input
                 type="text"
                 value={meta.version}
@@ -338,7 +338,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 data-testid="export-meta-version"
               />
             </Field>
-            <Field label="라이선스" hint="기본값 All rights reserved">
+            <Field label="라이선스" hint="기본값은 All rights reserved(모든 권리 보유)예요.">
               <select
                 value={meta.license}
                 onChange={(e) =>
@@ -427,14 +427,12 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                     key={`${w.code}-${i}`}
                     className="flex items-start gap-2 text-sm leading-relaxed"
                     data-severity={w.severity}
+                    data-warning-code={w.code}
                   >
                     <SeverityIcon severity={w.severity} />
                     <span>
                       <span className={severityLabelClass(w.severity)}>
                         [{severityLabel(w.severity)}]
-                      </span>{' '}
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {w.code}
                       </span>{' '}
                       {w.message}
                     </span>
@@ -467,17 +465,17 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             activeProfileId={activeAssetReplacementProfileId}
             onSaveProfile={(name) => {
               const id = saveAssetReplacementProfile(name);
-              if (id) toast.success('자산 URL 교체 묶음을 저장했습니다.');
+              if (id) toast.success('이미지·글꼴 주소 묶음을 저장했습니다.');
               return id;
             }}
             onLoadProfile={(id) => {
               if (loadAssetReplacementProfile(id)) {
-                toast.success('자산 URL 교체 묶음을 불러왔습니다.');
+                toast.success('이미지·글꼴 주소 묶음을 불러왔습니다.');
               }
             }}
             onDeleteProfile={(id) => {
               deleteAssetReplacementProfile(id);
-              toast.success('자산 URL 교체 묶음을 삭제했습니다.');
+              toast.success('이미지·글꼴 주소 묶음을 삭제했습니다.');
             }}
             onCreateDraft={handleCreateAssetReplacementDraft}
           />
@@ -540,8 +538,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               className="mt-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated-2)] px-2.5 py-2 text-xs leading-relaxed text-muted-foreground"
               data-testid="export-roll20-mode-note"
             >
-              시트가 만들어진 Roll20 버전을 아래에서 선택하세요. 이 선택은 미리보기와
-              `sheet.json` 설정에 동시에 반영됩니다.{' '}
+              시트를 올릴 Roll20 방식을 아래에서 고르세요. 미리보기와 내보낼
+              설정에 함께 적용됩니다.{' '}
               {legacyMode
                 ? '구버전 모드는 사용자 정의 시트 샌드박스에서는 확인할 수 없습니다. 구버전 설정을 켠 전용 테스트 방에서 확인하세요.'
                 : '신버전 모드는 Roll20 사용자 정의 시트 샌드박스에서 확인하세요.'}
@@ -627,13 +625,13 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 onChange={(e) => setRoll20CompatibilityMode(e.target.checked ? 'legacy' : 'modern')}
                 className="mt-[2px] h-[18px] w-[18px] accent-[var(--primary)]"
                 data-testid="export-legacy-toggle"
-                aria-label="구버전 Roll20 무해화"
+                aria-label="구버전 Roll20에 맞추기"
               />
               <span className="flex-1">
-                <span className="font-medium">구버전 Roll20 무해화</span>
+                <span className="font-medium">구버전 Roll20에 맞추기</span>
                 <span className="ml-1 text-xs text-muted-foreground">
-                  끄면 신버전 Roll20 모드로 보고 내보냅니다. 켜면 HTML 이름 정리와
-                  CSS 무해화를 미리보기에 적용하고 호환 설정도 구버전용으로 저장합니다.
+                  켜면 미리보기와 내보낼 파일을 구버전 Roll20에 맞게 정리합니다.
+                  끄면 신버전 기준을 사용합니다.
                 </span>
               </span>
             </label>
@@ -700,7 +698,7 @@ function AssetPreflightPanel({
     >
       <div className="mb-2 flex items-center justify-between gap-3">
         <div>
-          <div className="text-sm font-medium">외부 자산 점검</div>
+          <div className="text-sm font-medium">외부 이미지·글꼴 점검</div>
           <p
             className="mt-1 text-xs leading-relaxed text-muted-foreground"
             data-testid="export-asset-verification-destination"
@@ -718,7 +716,7 @@ function AssetPreflightPanel({
           }`}
           data-testid="export-asset-preflight-status"
         >
-          {hasRisk ? '확인 필요' : '외부 자산 없음'}
+          {hasRisk ? '확인 필요' : '외부 파일 없음'}
         </span>
       </div>
       <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
@@ -840,10 +838,10 @@ function AssetReplacementPanel({
     >
       <div className="mb-2 flex items-start justify-between gap-3">
         <div>
-          <div className="text-sm font-medium">자산 주소 교체</div>
+          <div className="text-sm font-medium">이미지·글꼴 주소 바꾸기</div>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            삭제된 이미지나 글꼴을 사용자가 다시 올린 주소로 바꾼 뒤 ZIP을 만들 수 있습니다.
-            실제 파일은 저장하지 않고 HTML/CSS 안의 주소만 교체합니다.
+            보이지 않는 이미지나 글꼴을 내가 다시 올린 주소로 바꾼 뒤 파일을 만들 수 있어요.
+            실제 파일은 담지 않고 시트 속 주소만 바꿔요.
           </p>
         </div>
         <span
@@ -982,7 +980,7 @@ function AssetReplacementPanel({
             className="text-xs leading-relaxed text-muted-foreground"
             data-testid="export-asset-map-cli-hint"
           >
-            저장한 txt는 `plan:roll20-asset-relink --map-file` 검증에 그대로 사용할 수 있습니다.
+            주소 목록을 검토용 텍스트 파일로 저장할 수 있어요.
           </span>
         </div>
         {active ? (

@@ -47,6 +47,7 @@ export default function BlocklyModelHost({ visible, renderSvg }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<Partial<Record<WorkspaceKey, Blockly.Workspace>>>({});
   const serializedRef = useRef<Partial<Record<WorkspaceKey, string>>>({});
+  const allowSelectionClearRef = useRef(false);
   const renderer = useSettingsStore((s) => s.blocklyRenderer);
   const bumpStructure = useWorkspaceStore((s) => s.bumpStructure);
   const setSelectedBlockId = useWorkspaceStore((s) => s.setSelectedBlockId);
@@ -134,8 +135,12 @@ export default function BlocklyModelHost({ visible, renderSvg }: Props) {
         if (ev.type === Blockly.Events.SELECTED) {
           const selection = ev as Blockly.Events.Selected;
           const nextId = selection.newElementId ?? null;
-          if (!nextId || ws.getBlockById(nextId)) {
+          if (nextId && ws.getBlockById(nextId)) {
             setSelectedBlockId(nextId, 'tree');
+            allowSelectionClearRef.current = false;
+          } else if (!nextId && allowSelectionClearRef.current) {
+            setSelectedBlockId(null, 'tree');
+            allowSelectionClearRef.current = false;
           }
           return;
         }
@@ -276,6 +281,14 @@ export default function BlocklyModelHost({ visible, renderSvg }: Props) {
       data-r20-mount-state={mountState}
       data-r20-mount-error={mountError ?? undefined}
       data-r20-render-mode={visible ? (renderSvg ? 'svg' : 'headless-large') : 'headless'}
+      onPointerDownCapture={visible ? () => { allowSelectionClearRef.current = true; } : undefined}
+      onKeyDownCapture={
+        visible
+          ? (event) => {
+              if (event.key === 'Escape') allowSelectionClearRef.current = true;
+            }
+          : undefined
+      }
       onDragOver={
         visible
           ? (e) => {

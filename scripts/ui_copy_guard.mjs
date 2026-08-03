@@ -33,6 +33,7 @@ const PRODUCT_LITERAL_BLOCKLIST = [
   { token: '최종 payload', reason: 'say final files instead of payload' },
   { token: '런타임 제거', reason: 'say executable code cleanup in plain Korean' },
   { token: '인라인 이벤트 핸들러', reason: 'describe automatically executed browser code in plain Korean' },
+  { token: 'plan:roll20-asset-relink', reason: 'do not expose internal verification commands in product copy' },
 ];
 
 verifyLiteralScanner();

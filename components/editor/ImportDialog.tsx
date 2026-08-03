@@ -317,11 +317,11 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
   function handleCreateAssetReplacementDraft() {
     const draft = buildAssetReplacementDraft(assetPreflight, { sourceLabel: '불러오기' });
     if (!draft) {
-      toast('교체할 외부 자산 주소가 없습니다.', { duration: 2200 });
+      toast('바꿀 이미지나 글꼴 주소가 없습니다.', { duration: 2200 });
       return;
     }
     setAssetReplacementMap([assetReplacementMap.trim(), draft].filter(Boolean).join('\n\n'));
-    toast.success('자산 교체 목록 초안을 만들었습니다. 내보내기 창에서 사용자 소유 주소를 입력해 주세요.', {
+    toast.success('이미지·글꼴 주소 목록을 만들었습니다. 내보내기 창에서 내가 올린 주소를 입력해 주세요.', {
       duration: 3500,
     });
   }
@@ -337,7 +337,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         <DialogHeader>
           <DialogTitle>시트 파일 불러오기</DialogTitle>
           <DialogDescription>
-            HTML, CSS, 번역 파일과 선택한 JS를 넣으면 블록으로 자동 변환합니다. 변환하지 못한 부분은 원본을 유지해 안전하게 보존합니다.
+            가지고 있는 시트 파일을 넣으면 편집할 수 있는 조각으로 바꿔요. 나누기 어려운 부분도 지우지 않고 원문으로 남겨 둡니다.
           </DialogDescription>
         </DialogHeader>
 
@@ -512,16 +512,16 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
           >
             <div className="mb-1 font-semibold">변환 결과</div>
             <div>
-              HTML 구조화: <span className="tabular-nums">{report.matched}/{report.total}</span> ({report.coverage}%) · 원본 보존{' '}
+              화면 조각으로 바꾼 부분: <span className="tabular-nums">{report.matched}/{report.total}</span> ({report.coverage}%) · 원문으로 남은 부분{' '}
               <span className="tabular-nums">{report.rawHtml}</span>개
             </div>
             <div>
-              CSS 구조화: <span className="tabular-nums">{report.cssMatched}/{report.cssTotal}</span> ({report.cssCoverage}%) · 원본 보존{' '}
+              꾸미기 조각으로 바꾼 부분: <span className="tabular-nums">{report.cssMatched}/{report.cssTotal}</span> ({report.cssCoverage}%) · 원문으로 남은 부분{' '}
               <span className="tabular-nums">{report.rawCss}</span>개 · 번역 키{' '}
               <span className="tabular-nums">{report.i18nKeys}</span>
             </div>
             <div>
-              HTML + CSS 전체 구조화 일치율: <span className="tabular-nums">{report.structuredCoverage}%</span>
+              전체 조각 변환 비율: <span className="tabular-nums">{report.structuredCoverage}%</span>
             </div>
             {report.rawCss > 0 && (
               <div className="mt-1 text-amber-500" data-testid="import-css-fallback-warning">
@@ -630,7 +630,7 @@ function ImportAssetPreflight({
           }`}
           data-testid="import-asset-preflight-status"
         >
-          {hasRisk ? '확인 필요' : '외부 자산 없음'}
+          {hasRisk ? '확인 필요' : '외부 파일 없음'}
         </span>
       </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -650,7 +650,7 @@ function ImportAssetPreflight({
       <AssetCompatibilityNotice result={result} legacyMode={legacyMode} />
       {hasExternalRisk ? (
         <div className="mt-2 rounded-lg border border-[color-mix(in_srgb,var(--warning)_30%,transparent)] bg-[var(--warning-soft)] px-3 py-2.5 text-xs leading-relaxed text-foreground">
-          실제 Roll20와 같은 화면을 확인하려면 이미지와 글꼴이 제대로 보이는지 먼저 봐야 합니다. 삭제됐거나 막힌 주소는 내보내기의 자산 교체 목록에서 사용자 소유 주소로 바꿔 주세요.
+          실제 Roll20와 같은 화면을 확인하려면 이미지와 글꼴이 제대로 보이는지 먼저 봐야 합니다. 삭제됐거나 막힌 주소는 내보내기의 이미지·글꼴 주소 목록에서 내가 올린 주소로 바꿔 주세요.
           {result.canonicalDirectRefs > 0 ? (
             <span className="mt-1 block" data-testid="import-asset-canonical-candidates">
               교체 초안에 바로 열 수 있는 HTTPS 후보 {result.canonicalDirectRefs}개를 담았습니다. 주소의 사용 권한과 표시 상태를 확인한 뒤 사용하세요.

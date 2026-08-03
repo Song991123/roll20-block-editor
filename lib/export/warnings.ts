@@ -155,7 +155,7 @@ export function analyzeEmit(out: EmitOutput): EmitWarning[] {
       severity: 'warning',
       code: CODE.EMPTY_HTML,
       message:
-        'HTML 워크스페이스가 비어 있어 빈 시트가 생성됩니다. 최소 1개 블록을 배치한 뒤 다시 다운로드하세요.',
+        '시트 화면이 비어 있어 빈 파일이 만들어져요. 조각을 하나 이상 놓은 뒤 다시 내보내세요.',
       blockId: null,
     });
   }
@@ -167,7 +167,7 @@ export function analyzeEmit(out: EmitOutput): EmitWarning[] {
       severity: 'info',
       code: CODE.EMPTY_TRANSLATION,
       message:
-        '번역 (translation.json) 이 비어 있습니다. 한 언어만 지원할 거면 무시해도 됩니다.',
+        '번역 파일이 비어 있어요. 한 언어만 쓰는 시트라면 그대로 내보내도 됩니다.',
       blockId: null,
     });
   } else {

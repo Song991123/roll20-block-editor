@@ -121,8 +121,8 @@ export default function WidgetInspector() {
         {/* 위치 / 크기 */}
         <Section title="위치 / 크기">
           <Grid>
-            <NumberField label="x" value={widget.x} onChange={(v) => setPos({ x: v })} testid="w-inspector-x" />
-            <NumberField label="y" value={widget.y} onChange={(v) => setPos({ y: v })} testid="w-inspector-y" />
+            <NumberField label="왼쪽 위치" value={widget.x} onChange={(v) => setPos({ x: v })} testid="w-inspector-x" />
+            <NumberField label="위쪽 위치" value={widget.y} onChange={(v) => setPos({ y: v })} testid="w-inspector-y" />
             <NumberField label="너비" value={widget.width} onChange={(v) => setPos({ width: Math.max(8, v) })} testid="w-inspector-width" />
             <NumberField label="높이" value={widget.height} onChange={(v) => setPos({ height: Math.max(8, v) })} testid="w-inspector-height" />
           </Grid>
@@ -148,7 +148,7 @@ export default function WidgetInspector() {
             </p>
           ) : (
             <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-              이 칸에 적힌 값이 Roll20에 <code className="font-mono">attr_{nameDraft || 'name'}</code>(으)로 저장돼요.
+              이 이름으로 Roll20에 값을 저장해요. 다른 칸과 겹치지 않게 지어 주세요.
             </p>
           )}
         </Section>

@@ -130,9 +130,9 @@ async function main() {
     const importResult = page.getByTestId('import-result');
     assert(await importResult.count() === 1, 'import result panel is not unique');
     const importResultText = await importResult.innerText();
-    assert(importResultText.includes('HTML 구조화'), 'import result hides the HTML coverage scope');
-    assert(importResultText.includes('CSS 구조화'), 'import result hides the CSS coverage scope');
-    assert(importResultText.includes('HTML + CSS 전체 구조화 일치율'), 'import result hides combined coverage');
+    assert(importResultText.includes('화면 조각으로 바꾼 부분'), 'import result explains the editable screen coverage');
+    assert(importResultText.includes('꾸미기 조각으로 바꾼 부분'), 'import result explains the editable styling coverage');
+    assert(importResultText.includes('전체 조각 변환 비율'), 'import result explains combined coverage');
 
     await page.getByRole('tab', { name: 'CSS' }).click();
     const cssTextarea = page.locator('[data-testid="import-dialog"] [data-state="active"] textarea');
@@ -206,9 +206,12 @@ async function main() {
     await page.click('[data-testid="header-export-button"]');
     await page.waitForSelector('[data-testid="export-warnings"]', { state: 'visible', timeout: 15000 });
     const exportScriptBoundary = await page.evaluate(() => {
-      const warningText = document.querySelector('[data-testid="export-warnings"]')?.textContent ?? '';
+      const warningPanel = document.querySelector('[data-testid="export-warnings"]');
+      const warningText = warningPanel?.textContent ?? '';
       return {
-        hasUnsupportedWarning: warningText.includes('export.script.unsupported_page_js'),
+        hasUnsupportedWarning: Boolean(
+          warningPanel?.querySelector('[data-warning-code="export.script.unsupported_page_js"]'),
+        ),
         hasBackupName: warningText.includes('unsupported-script-source.txt'),
         downloadEnabled: !document.querySelector('[data-testid="export-download-button"]')?.disabled,
       };
@@ -330,8 +333,27 @@ async function main() {
       { timeout: 10000 },
     );
     await page.getByTestId('tab-attrs').click();
+    await page.waitForFunction(
+      () => document.querySelector('[data-testid="tab-attrs"]')?.getAttribute('data-state') === 'active',
+      null,
+      { timeout: 5000 },
+    );
     const rawDiagnostics = page.getByTestId('worker-raw-diagnostics');
-    await rawDiagnostics.waitFor({ state: 'visible', timeout: 15000 });
+    try {
+      await rawDiagnostics.waitFor({ state: 'visible', timeout: 15000 });
+    } catch (error) {
+      const context = await page.evaluate((blockId) => ({
+        selectedBlockId: window.__perfHook.getSelectedBlockId(),
+        fields: window.__perfHook.getBlockFields('worker', blockId),
+        inspectorText: document.querySelector('[data-testid="tab-attrs"]')
+          ?.closest('[role="tablist"]')
+          ?.parentElement
+          ?.parentElement
+          ?.textContent
+          ?.slice(0, 500) ?? '',
+      }), rawWorkerId);
+      throw new Error(`raw Worker diagnostics did not render: ${JSON.stringify(context)}`, { cause: error });
+    }
     const rawDiagnosticsText = await rawDiagnostics.innerText();
     assert(rawDiagnosticsText.includes('여러 갈래 선택 분기'), 'raw Worker inspector hides the unsupported syntax reason');
     assert(rawDiagnosticsText.includes('시트 화면에는 나타나지 않으며'), 'raw Worker inspector hides runtime placement');

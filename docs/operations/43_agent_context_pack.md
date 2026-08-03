@@ -167,6 +167,11 @@ contain private source evidence or historical test dumps.
 - ImportDialog waits for every Blockly model workspace before hydration. Keep
   the cold-load early-click browser check; analysis percentages alone do not
   prove blocks were applied.
+- High-traffic import/export copy uses plain Korean and keeps internal warning
+  codes or verification commands out of visible UI. Blockly selection must
+  survive navigation to the properties, code, and roll panels; only an
+  intentional workspace-background click or Escape should clear it. Keep the
+  import-dialog raw Worker inspector smoke for this regression.
 
 ## Always Read
 

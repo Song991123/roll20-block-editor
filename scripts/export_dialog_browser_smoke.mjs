@@ -341,7 +341,7 @@ async function verifyAssetReplacementRender(page) {
   const exportMapUi = await page.evaluate(() => ({
     hasCopy: Boolean(document.querySelector('[data-testid="export-asset-map-copy"]')),
     hasDownload: Boolean(document.querySelector('[data-testid="export-asset-map-download"]')),
-    hasCliHint: Boolean(document.querySelector('[data-testid="export-asset-map-cli-hint"]')?.textContent?.includes('plan:roll20-asset-relink --map-file')),
+    hasPlainHint: Boolean(document.querySelector('[data-testid="export-asset-map-cli-hint"]')?.textContent?.includes('주소 목록을 검토용 텍스트 파일로 저장')),
     hasRoll20Readiness: Boolean(document.querySelector('[data-testid="export-asset-roll20-readiness"]')),
     localOnlyTargets: document.querySelector('[data-testid="export-asset-roll20-readiness"]')?.getAttribute('data-local-only-targets') ?? '',
     roll20ReadyTargets: document.querySelector('[data-testid="export-asset-roll20-readiness"]')?.getAttribute('data-roll20-ready-targets') ?? '',
@@ -652,10 +652,10 @@ async function main() {
           text: el.textContent?.trim() ?? '',
         })),
         legacyChecked: Boolean(document.querySelector('[data-testid="export-legacy-toggle"]')?.checked),
-        hasLegacyToggle: dialogText.includes('구버전 Roll20 무해화'),
+        hasLegacyToggle: dialogText.includes('구버전 Roll20에 맞추기'),
         hasLocalVsActualCopy: dialogText.includes('사용자 정의 시트 샌드박스에 올린 뒤 스크린샷으로 다시 비교해야 합니다'),
         hasFileAccessClutter: dialogText.includes('Chrome 파일 선택이 막히면'),
-        hasModeSyncCopy: dialogText.includes('sheet.json') && dialogText.includes('동시에 반영됩니다.'),
+        hasModeSyncCopy: dialogText.includes('미리보기와 내보낼') && dialogText.includes('함께 적용됩니다.'),
         hasAssetPreflightCopy: dialogText.includes('ZIP에는 HTML, CSS, 번역 파일만 들어갑니다.'),
         hasAssetRiskCopy: dialogText.includes('외부 이미지·글꼴은 ZIP에 포함되지 않습니다.'),
         hasAssetProxyMetric: dialogText.includes('Roll20 경유 주소'),
@@ -673,7 +673,7 @@ async function main() {
         hasAssetProfileDelete: Boolean(document.querySelector('[data-testid="export-asset-profile-delete"]')),
         hasAssetMapCopy: Boolean(document.querySelector('[data-testid="export-asset-map-copy"]')),
         hasAssetMapDownload: Boolean(document.querySelector('[data-testid="export-asset-map-download"]')),
-        hasAssetMapCliHint: Boolean(document.querySelector('[data-testid="export-asset-map-cli-hint"]')?.textContent?.includes('plan:roll20-asset-relink --map-file')),
+        hasAssetMapPlainHint: Boolean(document.querySelector('[data-testid="export-asset-map-cli-hint"]')?.textContent?.includes('주소 목록을 검토용 텍스트 파일로 저장')),
         assetReplacementStatus: document.querySelector('[data-testid="export-asset-replacement-status"]')?.textContent?.trim() ?? '',
         downloadButtonEnabled: !document.querySelector('[data-testid="export-download-button"]')?.disabled,
         dialogText,
@@ -856,7 +856,7 @@ async function main() {
     if (result.checks.exportDialog.diagnosticTitle !== 'Roll20 Sandbox 고급 진단') failures.push('modern diagnostic title mismatch');
     if (!result.checks.exportDialog.assetDestinationCopy.includes('사용자 정의 시트 샌드박스')) failures.push('modern asset destination copy missing');
     if (!result.checks.exportDialog.hasAssetPreflight) failures.push('export asset preflight panel missing');
-    if (!['외부 자산 없음', '확인 필요'].includes(result.checks.exportDialog.assetPreflightStatus)) {
+    if (!['외부 파일 없음', '확인 필요'].includes(result.checks.exportDialog.assetPreflightStatus)) {
       failures.push('export asset preflight status mismatch');
     }
     if (!result.checks.exportDialog.hasSandboxDiagnostics) failures.push('export sandbox diagnostics panel missing');
@@ -923,7 +923,7 @@ async function main() {
     if (!result.checks.exportDialog.hasAssetProfileDelete) failures.push('asset replacement profile delete button missing');
     if (!result.checks.exportDialog.hasAssetMapCopy) failures.push('asset replacement map copy button missing');
     if (!result.checks.exportDialog.hasAssetMapDownload) failures.push('asset replacement map download button missing');
-    if (!result.checks.exportDialog.hasAssetMapCliHint) failures.push('asset replacement map CLI hint missing');
+    if (!result.checks.exportDialog.hasAssetMapPlainHint) failures.push('asset replacement map plain-language hint missing');
     if (!result.checks.exportDialog.assetReplacementStatus) failures.push('asset replacement status missing');
     if (
       result.checks.exportDialog.assetPreflightStatus === '확인 필요' &&
@@ -935,7 +935,7 @@ async function main() {
     if (!result.checks.importDialog.hasTitle) failures.push('import dialog title missing');
     if (result.checks.importDialog.textareaCount < 1) failures.push('import dialog textarea missing');
     if (!result.checks.importDialog.hasAssetPreflight) failures.push('import asset preflight missing');
-    if (!['외부 자산 없음', '확인 필요'].includes(result.checks.importDialog.assetPreflightStatus)) {
+    if (!['외부 파일 없음', '확인 필요'].includes(result.checks.importDialog.assetPreflightStatus)) {
       failures.push('import asset preflight status mismatch');
     }
     if (!result.checks.importDialog.hasAssetProxyMetric) failures.push('import asset proxy metric missing');
@@ -982,7 +982,7 @@ async function main() {
     if (!result.checks.assetReplacementRender.restored.sandboxSanitizeRestored) failures.push('Roll20 Sandbox sanitize flag did not restore from autosave');
     if (!result.checks.assetReplacementRender.exportMapUi.hasCopy) failures.push('restored asset map copy button missing');
     if (!result.checks.assetReplacementRender.exportMapUi.hasDownload) failures.push('restored asset map download button missing');
-    if (!result.checks.assetReplacementRender.exportMapUi.hasCliHint) failures.push('restored asset map CLI hint missing');
+    if (!result.checks.assetReplacementRender.exportMapUi.hasPlainHint) failures.push('restored asset map plain-language hint missing');
     if (!result.checks.assetReplacementRender.exportMapUi.hasRoll20Readiness) failures.push('asset replacement Roll20 readiness note missing');
     if (result.checks.assetReplacementRender.exportMapUi.localOnlyTargets !== '1') failures.push('asset replacement local-only target count missing');
     if (result.checks.assetReplacementRender.exportMapUi.roll20ReadyTargets !== '0') failures.push('asset replacement Roll20-ready target count should be 0 for data URL smoke');
