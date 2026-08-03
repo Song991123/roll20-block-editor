@@ -48,7 +48,7 @@
     "test:high-priority-mapping": "tsx lib/blocks/__tests__/high_priority.test.ts && tsx lib/import/__tests__/high_priority_import.test.ts && tsx lib/import/__tests__/composite_matcher.test.ts && tsx lib/import/__tests__/composite_matcher_phase2.test.ts && tsx lib/blocks/__tests__/conditional_view.test.ts",
     "test:server-hygiene": "node scripts/server_hygiene_check.mjs --self-test",
     "test:chat-diagnostics": "tsx lib/dice/__tests__/chatDiagnostics.test.ts",
-    "test:rolltemplate-render": "tsx lib/dice/__tests__/rolltemplateRender.test.ts",
+    "test:rolltemplate-render": "tsx lib/dice/__tests__/rolltemplateRender.test.ts && tsx lib/dice/__tests__/customRoll.test.ts",
     "test:rolltemplate-css": "tsx lib/dice/__tests__/rolltemplateCss.test.ts",
     "generate:rolltemplate-synthetic": "node scripts/generate_rolltemplate_synthetic_matrix.mjs",
     "test:rolltemplate-synthetic": "node scripts/generate_rolltemplate_synthetic_matrix.mjs --self-test",

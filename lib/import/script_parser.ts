@@ -617,6 +617,22 @@ function valueBlock(rawExpr: string): ParsedBlock {
       children: {},
     };
   }
+  m = /^([A-Za-z_$][\w$]*)\.rollId$/.exec(e);
+  if (m) {
+    return {
+      blockType: 'r20_custom_roll_id',
+      fields: { VAR: m[1] },
+      children: {},
+    };
+  }
+  m = /^([A-Za-z_$][\w$]*)\.results(?:\.([A-Za-z_$][\w$]*)|\[\s*(['"])([^'"]+)\3\s*\])\.(result|dice|expression)$/.exec(e);
+  if (m) {
+    return {
+      blockType: 'r20_custom_roll_value',
+      fields: { VAR: m[1], ROLL: m[2] || m[4], PROPERTY: m[5] },
+      children: {},
+    };
+  }
   // v.NAME / v.NAME_max — Stage worker-1 reporter.
   const unaryMath = parseWorkerCall(e, /^Math\.(floor|ceil|round|abs)\s*\(/);
   if (unaryMath && unaryMath.args.length === 1 && unaryMath.args[0]) {
@@ -807,6 +823,28 @@ function parseOneStatement(body: string, start: number, stats: ParseStats): OneM
     if (block) {
       stats.matched++;
       return { block, end: gsiMatch.end };
+    }
+    return rawStatementFallback(body, start, stats);
+  }
+
+  // ---- startRoll(roll, callback) ----
+  const startRollMatch = matchCall(body, i, 'startRoll');
+  if (startRollMatch) {
+    const block = tryParseStartRoll(startRollMatch.args, stats);
+    if (block) {
+      stats.matched++;
+      return { block, end: startRollMatch.end };
+    }
+    return rawStatementFallback(body, start, stats);
+  }
+
+  // ---- finishRoll(rollId, optionalComputedResults) ----
+  const finishRollMatch = matchCall(body, i, 'finishRoll');
+  if (finishRollMatch) {
+    const block = tryParseFinishRoll(finishRollMatch.args);
+    if (block) {
+      stats.matched++;
+      return { block, end: finishRollMatch.end };
     }
     return rawStatementFallback(body, start, stats);
   }
@@ -1186,6 +1224,44 @@ function tryParseSetAttrs(args: string, stats: ParseStats): ParsedBlock | null {
     blockType: 'r20_set_attrs_pair',
     fields: { ...fields, ...commonFields },
     children,
+    valueInputs,
+  };
+}
+
+function tryParseStartRoll(args: string, stats: ParseStats): ParsedBlock | null {
+  const parts = splitArgs(args);
+  if (parts.length !== 2 || !parts[0].trim()) return null;
+  const callback = parseCallback(parts[1]);
+  if (!callback) return null;
+  const resultVar = callback.params.trim();
+  if (!/^[A-Za-z_$][\w$]*$/.test(resultVar)) return null;
+  const literalRoll = stripQuotes(parts[0]);
+  return {
+    blockType: 'r20_start_roll',
+    fields: { VAR: resultVar, ROLL: literalRoll ?? '' },
+    children: { CHILDREN: parseStatements(callback.body, stats) },
+    valueInputs: literalRoll === null ? { ROLL_VALUE: valueBlock(parts[0]) } : undefined,
+  };
+}
+
+function tryParseFinishRoll(args: string): ParsedBlock | null {
+  const parts = splitArgs(args);
+  if (parts.length < 1 || parts.length > 2 || !parts[0].trim()) return null;
+  const fields: Record<string, string> = { KEY1: '', KEY2: '', KEY3: '' };
+  const valueInputs: Record<string, ParsedBlock> = { ROLL_ID: valueBlock(parts[0]) };
+  if (parts.length === 2) {
+    const pairs = parseObjectPairs(parts[1]);
+    if (!pairs || pairs.length > 3) return null;
+    pairs.forEach(([key, value], index) => {
+      const slot = String(index + 1);
+      fields[`KEY${slot}`] = key;
+      valueInputs[`VAL${slot}`] = valueBlock(value);
+    });
+  }
+  return {
+    blockType: 'r20_finish_roll',
+    fields,
+    children: {},
     valueInputs,
   };
 }

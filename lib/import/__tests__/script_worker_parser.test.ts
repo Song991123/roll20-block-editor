@@ -177,6 +177,43 @@ function testTranslationLanguage(): void {
   assert(r.stats.unparsed === 0, 'getTranslationLanguage is fully parsed');
 }
 
+function testCustomRollCallback(): void {
+  const js = `startRoll("&{template:test} {{roll1=[[1d20]]}}", function (rollResult) {
+    const total = rollResult.results.roll1.result;
+    finishRoll(rollResult.rollId, { roll1: total * 2 });
+  });`;
+  const r = parseSheetWorkerScript(js);
+  const start = r.blocks[0];
+  assert(start.blockType === 'r20_start_roll', 'startRoll callback stays structured');
+  assert(start.fields.VAR === 'rollResult', 'startRoll callback variable');
+  assert(start.fields.ROLL === '&{template:test} {{roll1=[[1d20]]}}', 'startRoll expression field');
+  const declaration = start.children.CHILDREN?.[0];
+  assert(declaration?.blockType === 'r20_worker_var_let', 'custom roll total declaration');
+  assert(
+    declaration.valueInputs?.VALUE.blockType === 'r20_custom_roll_value',
+    'custom roll named result reporter',
+  );
+  const finish = start.children.CHILDREN?.[1];
+  assert(finish?.blockType === 'r20_finish_roll', 'finishRoll stays structured');
+  assert(finish.valueInputs?.ROLL_ID.blockType === 'r20_custom_roll_id', 'finishRoll roll id reporter');
+  assert(finish.fields.KEY1 === 'roll1', 'finishRoll computed result key');
+  assert(finish.valueInputs?.VAL1.blockType === 'r20_worker_arith', 'finishRoll computed expression');
+  assert(r.stats.unparsed === 0, 'custom roll callback is fully parsed');
+
+  const dynamic = parseSheetWorkerScript(`startRoll(rollText, (result) => {
+    finishRoll(result.rollId);
+  });`);
+  assert(
+    dynamic.blocks[0]?.valueInputs?.ROLL_VALUE.blockType === 'r20_worker_let_ref',
+    'dynamic startRoll expression remains connected',
+  );
+  assert(
+    dynamic.blocks[0]?.children.CHILDREN?.[0]?.blockType === 'r20_finish_roll',
+    'finishRoll without computed results remains structured',
+  );
+  assert(dynamic.stats.unparsed === 0, 'dynamic custom roll is fully parsed');
+}
+
 function testForEach(): void {
   const js = `myIds.forEach((id) => { setAttrs({ hp: 0 }); });`;
   const r = parseSheetWorkerScript(js);
@@ -450,6 +487,7 @@ const tests = [
   ['setSectionOrder', testSetSectionOrder],
   ['setSectionOrder callback', testSetSectionOrderCallback],
   ['getTranslationLanguage', testTranslationLanguage],
+  ['custom roll callback', testCustomRollCallback],
   ['forEach', testForEach],
   ['if statement', testIfStatement],
   ['if else statement', testIfElseStatement],

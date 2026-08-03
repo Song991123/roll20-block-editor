@@ -20,6 +20,7 @@
  *   - generateRowID(), removeRepeatingRow('repeating_S_id')
  *   - getTranslationByKey('key')
  *   - getTranslationLanguage()
+ *   - startRoll(roll, callback), finishRoll(rollId, computedResults)
  *
  * 시스템 specific 토큰 0. 이벤트 이름 / 필드 이름 / 변수 이름은 모두 사용자
  * 데이터.
@@ -81,6 +82,12 @@ const EVENT_INFO_PROPERTIES: Array<[string, string]> = [
   ['새 값', 'newValue'],
   ['누른 동작 이름', 'triggerName'],
   ['지운 줄 정보', 'removedInfo'],
+];
+
+const CUSTOM_ROLL_PROPERTIES: Array<[string, string]> = [
+  ['합계', 'result'],
+  ['주사위 목록', 'dice'],
+  ['원래 식', 'expression'],
 ];
 
 const RESERVED_IDENTIFIERS = new Set([
@@ -533,6 +540,38 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     },
   },
 
+  {
+    type: 'r20_start_roll',
+    shape: 'c',
+    category: SHEET_WORKER,
+    label: '주사위 결과 계산하기',
+    tooltip: 'startRoll(ROLL, callback) - 채팅에 올리기 전에 주사위 결과를 계산합니다.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('주사위 식')
+        .appendField(
+          new Blockly.FieldTextInput('&{template:default} {{roll1=[[1d20]]}}'),
+          'ROLL',
+        );
+      b.appendValueInput('ROLL_VALUE').setCheck(T_STR).appendField('변수로 만든 식 (선택)');
+      b.appendDummyInput()
+        .appendField('결과를')
+        .appendField(new Blockly.FieldTextInput('rollResult'), 'VAR')
+        .appendField('로 받기');
+      b.appendStatementInput('CHILDREN').setCheck(null).appendField('계산한 뒤');
+      setStackHooks(b);
+    }),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const fieldRoll = String(b.getFieldValue('ROLL') ?? '').trim();
+      const roll = ctx.valueToCode(block, 'ROLL_VALUE', ORDER.NONE)
+        || `'${escapeJSString(fieldRoll)}'`;
+      const resultVar = safeIdentifier(b.getFieldValue('VAR'), 'rollResult');
+      const body = ctx.statementToCode(block, 'CHILDREN');
+      return `startRoll(${roll}, ${wrapArrowBody(ctx, body, resultVar)});\n`;
+    },
+  },
+
   // ========================================================================
   // Stack blocks ×9
   // ========================================================================
@@ -603,6 +642,37 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
       const tail = setAttrsTail(block, ctx);
       if (pairs.length === 0) return `setAttrs({}${tail});\n`;
       return `setAttrs({ ${pairs.join(', ')} }${tail});\n`;
+    },
+  },
+
+  {
+    type: 'r20_finish_roll',
+    shape: 'stack',
+    category: SHEET_WORKER,
+    label: '주사위 결과 채팅에 올리기',
+    tooltip: 'finishRoll(rollId, computedResults) - 계산값을 더해 보류 중인 결과를 채팅에 올립니다.',
+    init: mkInit((b) => {
+      b.appendValueInput('ROLL_ID').setCheck(T_STR).appendField('굴림 ID');
+      for (const idx of ['1', '2', '3']) {
+        b.appendDummyInput()
+          .appendField(idx === '1' ? '계산 결과' : '추가 결과')
+          .appendField(new Blockly.FieldTextInput(''), `KEY${idx}`);
+        b.appendValueInput(`VAL${idx}`).setCheck(null).appendField('값');
+      }
+      setStackHooks(b);
+    }),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const rollId = ctx.valueToCode(block, 'ROLL_ID', ORDER.NONE) || "''";
+      const pairs: string[] = [];
+      for (const idx of ['1', '2', '3']) {
+        const key = String(b.getFieldValue(`KEY${idx}`) ?? '').trim();
+        if (!key) continue;
+        const value = ctx.valueToCode(block, `VAL${idx}`, ORDER.NONE) || '0';
+        pairs.push(`'${escapeJSString(key)}': ${value}`);
+      }
+      const computed = pairs.length ? `, { ${pairs.join(', ')} }` : '';
+      return `finishRoll(${rollId}${computed});\n`;
     },
   },
 
@@ -808,6 +878,51 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     },
   },
 
+  {
+    type: 'r20_custom_roll_id',
+    shape: 'reporter',
+    category: SHEET_WORKER,
+    label: '굴림 ID',
+    tooltip: 'startRoll 결과의 rollId를 가져옵니다.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField(new Blockly.FieldTextInput('rollResult'), 'VAR')
+        .appendField('의 굴림 ID');
+      b.setOutput(true, T_STR);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const resultVar = safeIdentifier(b.getFieldValue('VAR'), 'rollResult');
+      return [`${resultVar}.rollId`, ORDER.ATOMIC];
+    },
+  },
+
+  {
+    type: 'r20_custom_roll_value',
+    shape: 'reporter',
+    category: SHEET_WORKER,
+    label: '계산한 주사위 값',
+    tooltip: 'startRoll 결과에서 이름 붙인 주사위의 합계, 주사위 목록, 원래 식을 가져옵니다.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField(new Blockly.FieldTextInput('rollResult'), 'VAR')
+        .appendField('의')
+        .appendField(new Blockly.FieldTextInput('roll1'), 'ROLL')
+        .appendField(new Blockly.FieldDropdown(CUSTOM_ROLL_PROPERTIES), 'PROPERTY');
+      b.setOutput(true, null);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const resultVar = safeIdentifier(b.getFieldValue('VAR'), 'rollResult');
+      const rollName = String(b.getFieldValue('ROLL') ?? '').trim() || 'roll1';
+      const rawProperty = String(b.getFieldValue('PROPERTY') ?? 'result');
+      const property = CUSTOM_ROLL_PROPERTIES.some(([, value]) => value === rawProperty)
+        ? rawProperty
+        : 'result';
+      return [`${resultVar}.results['${escapeJSString(rollName)}'].${property}`, ORDER.ATOMIC];
+    },
+  },
+
   // 21) let variable reference ---------------------------------------------
   {
     type: 'r20_worker_let_ref',
@@ -925,8 +1040,8 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_worker_math_unary',
     shape: 'reporter',
     category: SHEET_WORKER,
-    label: 'Math function',
-    tooltip: 'Math.floor / ceil / round / abs with one worker expression.',
+    label: '숫자 함수',
+    tooltip: '숫자 하나를 내림, 올림, 반올림하거나 절댓값으로 바꿉니다.',
     init: mkInit((b) => {
       b.appendDummyInput().appendField(new Blockly.FieldDropdown(MATH_UNARY_OPS), 'OP');
       b.appendValueInput('VALUE').setCheck(null);
@@ -944,8 +1059,8 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_worker_math_binary',
     shape: 'reporter',
     category: SHEET_WORKER,
-    label: 'Math pair function',
-    tooltip: 'Math.min / max with two worker expressions.',
+    label: '두 값 숫자 함수',
+    tooltip: '두 숫자 중 작은 값이나 큰 값을 고릅니다.',
     init: mkInit((b) => {
       b.appendDummyInput().appendField(new Blockly.FieldDropdown(MATH_BINARY_OPS), 'OP');
       b.appendValueInput('LHS').setCheck(null);
@@ -965,13 +1080,13 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_worker_parse_int',
     shape: 'reporter',
     category: SHEET_WORKER,
-    label: 'parseInt',
-    tooltip: 'Parse a worker value as an integer, with an optional numeric radix.',
+    label: '정수로 바꾸기',
+    tooltip: '값을 지정한 진법의 정수로 바꿉니다.',
     init: mkInit((b) => {
-      b.appendDummyInput().appendField('parseInt');
+      b.appendDummyInput().appendField('값을 정수로');
       b.appendValueInput('VALUE').setCheck(null);
       b.appendDummyInput()
-        .appendField('radix')
+        .appendField('진법')
         .appendField(new Blockly.FieldTextInput('10'), 'RADIX');
       b.setOutput(true, T_NUM);
       b.setInputsInline(true);
@@ -1037,14 +1152,14 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_get_compendium',
     shape: 'reporter',
     category: SHEET_WORKER,
-    label: '컴펜디움 가져오기',
+    label: '자료집에서 가져오기',
     tooltip:
-      "getCompendiumPage('PATH') — compendium 페이지 객체. SUBPATH 채우면 getCompendiumEntries('PATH','SUBPATH').",
+      'Roll20 자료집의 항목이나 하위 값을 가져옵니다.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('컴펜디움')
+        .appendField('자료집 경로')
         .appendField(new Blockly.FieldTextInput('Spells/Fireball'), 'PATH')
-        .appendField('하위')
+        .appendField('하위 값')
         .appendField(new Blockly.FieldTextInput(''), 'SUBPATH');
       b.setOutput(true, null);
     }),

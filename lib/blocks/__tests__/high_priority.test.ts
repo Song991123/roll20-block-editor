@@ -468,6 +468,66 @@ function testTranslationLanguage(): void {
   expectEq(code, 'getTranslationLanguage()', 'current language emit');
 }
 
+function testCustomRollBlocks(): void {
+  const start = findBlock(
+    SHEET_WORKER_BLOCKS as Array<{ type: string }>,
+    'r20_start_roll',
+  );
+  const startCode = start.generator!(
+    new FakeBlock({
+      type: 'r20_start_roll',
+      fields: { VAR: 'rollResult', ROLL: '&{template:test} {{roll1=[[1d20]]}}' },
+    }),
+    makeCtx({}, { CHILDREN: 'console.log(rollResult);\n' }),
+  );
+  expectContains(String(startCode), 'startRoll(', 'custom roll start emit');
+  expectContains(String(startCode), '(rollResult) => {', 'custom roll callback variable');
+
+  const finish = findBlock(
+    SHEET_WORKER_BLOCKS as Array<{ type: string }>,
+    'r20_finish_roll',
+  );
+  const finishCode = finish.generator!(
+    new FakeBlock({
+      type: 'r20_finish_roll',
+      fields: { KEY1: 'roll1', KEY2: '', KEY3: '' },
+    }),
+    makeCtx({ ROLL_ID: 'rollResult.rollId', VAL1: '10' }),
+  );
+  expectEq(
+    String(finishCode),
+    "finishRoll(rollResult.rollId, { 'roll1': 10 });\n",
+    'custom roll finish emit',
+  );
+
+  const rollId = findBlock(
+    SHEET_WORKER_BLOCKS as Array<{ type: string }>,
+    'r20_custom_roll_id',
+  );
+  const rollIdOut = rollId.generator!(
+    new FakeBlock({ type: 'r20_custom_roll_id', fields: { VAR: 'rollResult' } }),
+    makeCtx(),
+  );
+  expectEq(Array.isArray(rollIdOut) ? rollIdOut[0] : rollIdOut, 'rollResult.rollId', 'roll id emit');
+
+  const rollValue = findBlock(
+    SHEET_WORKER_BLOCKS as Array<{ type: string }>,
+    'r20_custom_roll_value',
+  );
+  const rollValueOut = rollValue.generator!(
+    new FakeBlock({
+      type: 'r20_custom_roll_value',
+      fields: { VAR: 'rollResult', ROLL: 'roll1', PROPERTY: 'result' },
+    }),
+    makeCtx(),
+  );
+  expectEq(
+    Array.isArray(rollValueOut) ? rollValueOut[0] : rollValueOut,
+    "rollResult.results['roll1'].result",
+    'custom roll value emit',
+  );
+}
+
 // ---------- 3) r20_css_var_decl -------------------------------------------
 
 function testCssVarDeclWithSlot(): void {
@@ -766,6 +826,7 @@ const tests: Array<[string, () => void]> = [
   ['translation with lang', testTranslationWithLang],
   ['translation escapes quote', testTranslationEscapesQuote],
   ['translation language', testTranslationLanguage],
+  ['custom roll blocks', testCustomRollBlocks],
   ['css var decl with slot', testCssVarDeclWithSlot],
   ['css var decl with text fallback', testCssVarDeclWithTextFallback],
   ['css var decl strips dash prefix', testCssVarDeclStripsDashPrefix],

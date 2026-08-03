@@ -63,7 +63,7 @@ Sheet worker JavaScript is a first-class source artifact, not text that should a
 Required behavior:
 
 - `<script type="text/worker">` is imported into the worker layer and hidden from visual sheet preview.
-- Recognized Roll20 APIs such as `on(...)`, `getAttrs(...)`, `setAttrs(...)`, `getSectionIDs(...)`, `getTranslationByKey(...)`, `getTranslationLanguage()`, and repeating-section helpers should become worker blocks when parseable.
+- Recognized Roll20 APIs such as `on(...)`, `getAttrs(...)`, `setAttrs(...)`, `getSectionIDs(...)`, `getTranslationByKey(...)`, `getTranslationLanguage()`, `startRoll(...)`, `finishRoll(...)`, and repeating-section helpers should become worker blocks when parseable.
 - Unsupported statements remain as raw worker blocks with exact source text and diagnostics.
 - Raw worker blocks must roundtrip without being lost. They are allowed while coverage grows.
 - Preview execution and chat rendering must consume the worker layer, not visible HTML text.
@@ -73,6 +73,16 @@ Required behavior:
 - `setAttrs(values, { silent: true }, callback)` must suppress dependent change
   events without suppressing its completion callback. See the official
   [Roll20 Sheet Worker API](https://help.roll20.net/hc/en-us/articles/360037773513-Sheet-Worker-Scripts).
+- `startRoll(roll, callback?)` must support both callback and Promise runtime
+  forms. Its result stays out of chat until `finishRoll(rollId,
+  computedResults?)` is called, then `computed::<name>` fields use the supplied
+  string or integer while retaining the source roll details for hover. Without
+  `finishRoll`, the result posts automatically after five seconds, matching the
+  documented [custom roll parsing contract](https://help.roll20.net/hc/en-us/articles/4403865972503-Custom-Roll-Parsing-for-Character-Sheets).
+- The statement parser may expose structured `startRoll`/`finishRoll` blocks
+  without partially hydrating a whole Worker program. Until mixed statement and
+  reporter hydration is proven safe, a complex imported Worker remains one
+  exact `r20_raw_worker` source block.
 
 Repeating-section runtime contract:
 

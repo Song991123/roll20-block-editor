@@ -1925,6 +1925,8 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   var sheetWorkerAsyncTasks = [];
   var sheetWorkerAsyncScheduled = false;
   var sheetWorkerRuntimeGeneration = 0;
+  var sheetWorkerRollRequestSequence = 0;
+  var sheetWorkerPendingRolls = {};
   var settingAttrs = false;
   var sheetWorkerAttrValues = {};
   var sheetWorkerRowSequence = 0;
@@ -2168,6 +2170,46 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   }
   function getTranslationLanguage() {
     return (document.documentElement.getAttribute('lang') || 'en').toLowerCase().split('-')[0] || 'en';
+  }
+  function sheetWorkerStartRoll(roll, callback) {
+    sheetWorkerRollRequestSequence += 1;
+    var requestId = 'worker-roll-' + Date.now().toString(36) + '-' + sheetWorkerRollRequestSequence.toString(36);
+    var generation = sheetWorkerRuntimeGeneration;
+    var context = sheetWorkerEventContext;
+    var promise = new Promise(function (resolve) {
+      sheetWorkerPendingRolls[requestId] = {
+        callback: typeof callback === 'function' ? callback : null,
+        context: context,
+        generation: generation,
+        resolve: resolve
+      };
+      try {
+        parent.postMessage({
+          type: 'r20:start-roll',
+          protocol: 1,
+          requestId: requestId,
+          roll: String(roll == null ? '' : roll),
+          attrs: collectAttrs()
+        }, '*');
+      } catch (error) {
+        delete sheetWorkerPendingRolls[requestId];
+        resolve({ rollId: '', results: {} });
+      }
+    });
+    if (typeof callback === 'function') return undefined;
+    return promise;
+  }
+  function sheetWorkerFinishRoll(rollId, computedResults) {
+    try {
+      parent.postMessage({
+        type: 'r20:finish-roll',
+        protocol: 1,
+        rollId: String(rollId == null ? '' : rollId),
+        computedResults: computedResults && typeof computedResults === 'object'
+          ? computedResults
+          : {}
+      }, '*');
+    } catch (error) {}
   }
   function applyTranslations() {
     if (!translations || typeof translations !== 'object') return;
@@ -2685,6 +2727,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   function installSheetWorkers() {
     sheetWorkerRuntimeGeneration += 1;
     sheetWorkerAsyncTasks = [];
+    sheetWorkerPendingRolls = {};
     snapshotSheetAttrs();
     var scripts = document.querySelectorAll('script[type="text/worker"]');
     scripts.forEach(function (script) {
@@ -2693,7 +2736,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       try {
         var fn = new Function(
           'on', 'getAttrs', 'setAttrs', 'getSectionIDs', 'setSectionOrder', 'generateRowID', 'removeRepeatingRow', 'setDefaultToken',
-          'getTranslationByKey', 'getTranslationByLang', 'getTranslationLanguage',
+          'getTranslationByKey', 'getTranslationByLang', 'getTranslationLanguage', 'startRoll', 'finishRoll',
           code
         );
         fn(
@@ -2707,7 +2750,9 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
           function () {},
           getTranslationByKey,
           getTranslationByLang,
-          getTranslationLanguage
+          getTranslationLanguage,
+          sheetWorkerStartRoll,
+          sheetWorkerFinishRoll
         );
       } catch (e) {
         console.error('[sheet worker install]', e);
@@ -3106,6 +3151,24 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   }, true);
   window.addEventListener('message', function (e) {
     if (e.source !== parent || !e.data) return;
+    if (e.data.type === 'r20:start-roll-result' && e.data.protocol === 1) {
+      var requestId = typeof e.data.requestId === 'string' ? e.data.requestId : '';
+      var pendingRoll = requestId ? sheetWorkerPendingRolls[requestId] : null;
+      if (!pendingRoll) return;
+      delete sheetWorkerPendingRolls[requestId];
+      if (pendingRoll.generation !== sheetWorkerRuntimeGeneration) return;
+      var previousContext = sheetWorkerEventContext;
+      sheetWorkerEventContext = pendingRoll.context;
+      scheduleSheetWorkerTask(function () {
+        var response = e.data.roll && typeof e.data.roll === 'object'
+          ? e.data.roll
+          : { rollId: '', results: {} };
+        if (pendingRoll.callback) pendingRoll.callback(response);
+        pendingRoll.resolve(response);
+      });
+      sheetWorkerEventContext = previousContext;
+      return;
+    }
     if (
       e.data.type === 'r20:external-pointer-drag'
       && e.data.protocol === 1

@@ -1,5 +1,5 @@
 const ROLL20_WORKER_API =
-  /\b(?:on|getAttrs|setAttrs|getSectionIDs|setSectionOrder|generateRowID|removeRepeatingRow|setDefaultToken|getTranslationByKey|getTranslationByLang|getTranslationLanguage|getCompendiumPage|getCompendiumEntries)\s*\(/;
+  /\b(?:on|getAttrs|setAttrs|getSectionIDs|setSectionOrder|generateRowID|removeRepeatingRow|setDefaultToken|getTranslationByKey|getTranslationByLang|getTranslationLanguage|getCompendiumPage|getCompendiumEntries|startRoll|finishRoll)\s*\(/;
 
 /**
  * Decide whether an untyped script is plausibly a legacy Roll20 worker.

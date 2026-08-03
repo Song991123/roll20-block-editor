@@ -149,22 +149,27 @@
 | `r20_logic_not` | 부정 | ... 이 아니다 |
 | `r20_paren` | ( 괄호 ) | ( 묶기 ) |
 
-### §3.6 시트 자동화 (26)
+### §3.6 시트 자동화 (39)
 
 | type | 현 | 새 |
 |---|---|---|
 | `r20_on_sheet_opened` | 시트 열림 시 | 시트가 열렸을 때 |
 | `r20_on_attr_change` | 속성 변경 시 | 시트 값이 바뀌었을 때 |
 | `r20_on_repeating_change` | 반복 섹션 속성 변경 시 | 반복 영역 값이 바뀌었을 때 |
+| `r20_on_repeating_reorder` | 반복 섹션 순서 변경 시 | 반복 영역 순서가 바뀌었을 때 |
 | `r20_on_repeating_remove` | 반복 섹션 행 제거 시 | 반복 영역의 한 줄이 지워졌을 때 |
 | `r20_on_button_click` | 버튼 클릭 시 | 버튼을 눌렀을 때 |
+| `r20_on_events` | 여러 이벤트 감지 | 여러 조건을 감지할 때 |
 | `r20_worker_if` | 만약 (worker) | 만약 ... 이라면 |
 | `r20_worker_for_count` | 횟수 반복 (worker) | ... 번 반복하기 |
 | `r20_get_section_ids` | 반복 섹션 ID 가져오기 | 반복 영역 줄 목록 가져오기 |
+| `r20_set_section_order` | 반복 섹션 순서 설정 | 반복 줄 순서 바꾸기 |
 | `r20_for_each_id` | ID 각각에 대해 | 각 줄마다 반복하기 |
 | `r20_get_attrs` | 속성 가져오기 | 시트 값들 가져오기 |
+| `r20_start_roll` | 주사위 결과 계산하기 | 주사위 결과 계산하기 |
 | `r20_set_attrs` | 속성 1개 설정 | 시트 값 바꾸기 |
 | `r20_set_attrs_pair` | 속성 여러 개 설정 | 시트 값 여러 개 바꾸기 |
+| `r20_finish_roll` | 주사위 결과 채팅에 올리기 | 주사위 결과 채팅에 올리기 |
 | `r20_generate_row_id` | 새 행 ID 생성 | 새 줄 만들기 (ID) |
 | `r20_remove_repeating_row` | 반복 섹션 행 삭제 | 반복 영역의 줄 지우기 |
 | `r20_worker_var_set` | 변수 재대입 | 변수 값 바꾸기 |
@@ -173,12 +178,20 @@
 | `r20_worker_return` | 반환 | 값 돌려주기 |
 | `r20_worker_v_ref` | 속성 값 v.NAME | 시트 값 |
 | `r20_worker_v_max_ref` | 속성 최댓값 v.NAME_max | 시트 값의 최댓값 |
+| `r20_worker_event_info` | 이벤트 정보 | 감지된 변경 정보 |
+| `r20_custom_roll_id` | 굴림 ID | 굴림 ID |
+| `r20_custom_roll_value` | 계산한 주사위 값 | 계산한 주사위 값 |
 | `r20_worker_let_ref` | 변수 값 | 변수 값 |
 | `r20_worker_arith` | 사칙연산 (worker) | 계산하기 |
 | `r20_worker_cmp` | 비교 (worker) | 비교하기 |
 | `r20_worker_logic` | 논리 (worker) | 그리고 / 또는 |
+| `r20_worker_not` | 논리 부정 (worker) | 아님 |
+| `r20_worker_math_unary` | Math function | 숫자 함수 |
+| `r20_worker_math_binary` | Math pair function | 두 값 숫자 함수 |
+| `r20_worker_parse_int` | parseInt | 정수로 바꾸기 |
 | `r20_get_translation` | 번역 가져오기 | 번역 가져오기 |
 | `r20_get_translation_language` | 현재 언어 | 현재 언어 |
+| `r20_get_compendium` | 컴펜디움 가져오기 | 자료집에서 가져오기 |
 
 ### §3.7 번역 (11)
 

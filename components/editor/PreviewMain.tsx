@@ -31,6 +31,11 @@ import {
   type QueryResolver,
   type RollResult,
 } from '@/lib/dice/executor';
+import {
+  normalizeComputedRollResults,
+  toSheetWorkerRollResult,
+  withComputedRollResults,
+} from '@/lib/dice/customRoll';
 import { usePreviewStore } from '@/lib/stores/previewStore';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { getBlockDef } from '@/lib/blocks/registry';
@@ -138,6 +143,58 @@ type IframeResizePreview = {
   blockId: string;
   rect: IframeEditRect;
 };
+
+type PendingCustomRoll = {
+  expression: string;
+  result: RollResult;
+  sender: string;
+  timeoutId: number;
+};
+
+const CUSTOM_ROLL_AUTO_FINISH_MS = 5000;
+
+function executePreviewRoll(
+  expression: string,
+  attrsMap: Record<string, string>,
+): RollResult {
+  const resolver: AttrResolver = (name) => (
+    Object.prototype.hasOwnProperty.call(attrsMap, name) ? attrsMap[name] : undefined
+  );
+  const query: QueryResolver = (prompt, fallback) => {
+    if (typeof window === 'undefined') return fallback;
+    const answer = window.prompt(prompt, fallback);
+    return answer === null ? fallback : answer;
+  };
+  try {
+    return executeRoot(parseRoot(expression), { attr: resolver, query });
+  } catch (error) {
+    return {
+      kind: 'error',
+      message: error instanceof Error ? error.message : String(error),
+      raw: expression,
+    };
+  }
+}
+
+function publishPreviewRoll(sender: string, expression: string, result: RollResult): void {
+  useChatStore.getState().pushRoll({ sender, expression, result });
+  if (result.kind === 'error') {
+    playSfx('toast.error');
+  } else if (result.kind === 'expr' && result.isCrit) {
+    playSfx('roll.crit');
+  } else if (result.kind === 'expr' && result.isFumble) {
+    playSfx('roll.fumble');
+  } else if (result.kind === 'rolltemplate' && result.anyCrit) {
+    playSfx('roll.crit');
+  } else if (result.kind === 'rolltemplate' && result.anyFumble) {
+    playSfx('roll.fumble');
+  } else {
+    playSfx('roll.click');
+  }
+  const ui = useUiStore.getState();
+  if (ui.sidebarRightCollapsed) ui.toggleSidebarRight();
+  if (ui.sidebarRightTab !== 'chat') ui.setSidebarRightTab('chat');
+}
 
 const RESIZE_HANDLE_STYLE: Record<DesignResizeHandle, {
   left: string;
@@ -329,11 +386,18 @@ export default function PreviewMain() {
   const [lastApplyAck, setLastApplyAck] = useState(0);
   const [pendingApplyRevision, setPendingApplyRevision] = useState(0);
   const autoWidthSizedRef = useRef(false);
+  const pendingCustomRollsRef = useRef(new Map<string, PendingCustomRoll>());
+  const customRollSequenceRef = useRef(0);
   // Phase E — Inspector 활성화에 쓰일 sidebarRightTab/collapse setter.
   // 'attrs' 가 Inspector 패널 (D49).
   const setSidebarRightTab = useUiStore((s) => s.setSidebarRightTab);
   const sidebarRightCollapsed = useUiStore((s) => s.sidebarRightCollapsed);
   const toggleSidebarRight = useUiStore((s) => s.toggleSidebarRight);
+
+  useEffect(() => () => {
+    pendingCustomRollsRef.current.forEach((pending) => window.clearTimeout(pending.timeoutId));
+    pendingCustomRollsRef.current.clear();
+  }, []);
 
   // Pointer events inside the iframe are already coalesced there. Coalesce the
   // matching parent overlay state too, so a large sheet does not re-render the
@@ -1941,59 +2005,58 @@ export default function PreviewMain() {
         if (w) setSelectedWidgetId(w.id);
         return;
       }
+      if (data?.type === 'r20:start-roll' && data.protocol === 1) {
+        const requestId = typeof data.requestId === 'string' && data.requestId.length <= 256
+          ? data.requestId
+          : '';
+        if (!requestId) return;
+        const expression = String(data.roll ?? '').trim();
+        const attrsMap = data.attrs && typeof data.attrs === 'object' && !Array.isArray(data.attrs)
+          ? data.attrs as Record<string, string>
+          : {};
+        const result = executePreviewRoll(expression, attrsMap);
+        customRollSequenceRef.current += 1;
+        const rollId = `custom-roll-${Date.now()}-${customRollSequenceRef.current}`;
+        const timeoutId = window.setTimeout(() => {
+          const pending = pendingCustomRollsRef.current.get(rollId);
+          if (!pending) return;
+          pendingCustomRollsRef.current.delete(rollId);
+          publishPreviewRoll(pending.sender, pending.expression, pending.result);
+        }, CUSTOM_ROLL_AUTO_FINISH_MS);
+        pendingCustomRollsRef.current.set(rollId, {
+          expression,
+          result,
+          sender: 'Sheet',
+          timeoutId,
+        });
+        iframeRef.current?.contentWindow?.postMessage({
+          type: 'r20:start-roll-result',
+          protocol: 1,
+          requestId,
+          roll: toSheetWorkerRollResult(rollId, result),
+        }, '*');
+        return;
+      }
+      if (data?.type === 'r20:finish-roll' && data.protocol === 1) {
+        const rollId = typeof data.rollId === 'string' ? data.rollId : '';
+        const pending = pendingCustomRollsRef.current.get(rollId);
+        if (!pending) return;
+        window.clearTimeout(pending.timeoutId);
+        pendingCustomRollsRef.current.delete(rollId);
+        const result = withComputedRollResults(
+          pending.result,
+          normalizeComputedRollResults(data.computedResults),
+        );
+        publishPreviewRoll(pending.sender, pending.expression, result);
+        return;
+      }
       if (data?.type === 'r20:roll') {
         const attrsMap: Record<string, string> = (data.attrs ?? {}) as Record<string, string>;
-        const resolver: AttrResolver = (name) => {
-          if (Object.prototype.hasOwnProperty.call(attrsMap, name)) return attrsMap[name];
-          return undefined;
-        };
-        const query: QueryResolver = (prompt, fallback) => {
-          if (typeof window === 'undefined') return fallback;
-          const ans = window.prompt(prompt, fallback);
-          return ans === null ? fallback : ans;
-        };
         const expression = String(data.value ?? '').trim();
         const label = String(data.label ?? '').trim();
         const senderRaw = String(data.name ?? '').trim();
         const sender = label || (senderRaw ? senderRaw.replace(/^roll_/, '') : 'Sheet');
-        let result: RollResult;
-        try {
-          const root = parseRoot(expression);
-          result = executeRoot(root, { attr: resolver, query });
-        } catch (err) {
-          result = {
-            kind: 'error',
-            message: err instanceof Error ? err.message : String(err),
-            raw: expression,
-          };
-        }
-        useChatStore.getState().pushRoll({
-          sender,
-          expression,
-          result,
-        });
-        // SFX — 결과별 분기.
-        //   error  → toast.error 사운드
-        //   crit   → 상승 fanfare
-        //   fumble → 하강 sad horn
-        //   else   → dice tumble + pop
-        if (result.kind === 'error') {
-          playSfx('toast.error');
-        } else if (result.kind === 'expr' && result.isCrit) {
-          playSfx('roll.crit');
-        } else if (result.kind === 'expr' && result.isFumble) {
-          playSfx('roll.fumble');
-        } else if (result.kind === 'rolltemplate' && result.anyCrit) {
-          playSfx('roll.crit');
-        } else if (result.kind === 'rolltemplate' && result.anyFumble) {
-          playSfx('roll.fumble');
-        } else {
-          playSfx('roll.click');
-        }
-        // 굴림 발생 시 [채팅] 탭으로 자동 전환 + 우측 사이드 펼침.
-        const ui = useUiStore.getState();
-        if (ui.sidebarRightCollapsed) ui.toggleSidebarRight();
-        if (ui.sidebarRightTab !== 'chat') ui.setSidebarRightTab('chat');
+        publishPreviewRoll(sender, expression, executePreviewRoll(expression, attrsMap));
       }
     };
     window.addEventListener('message', onMessage);

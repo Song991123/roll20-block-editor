@@ -61,6 +61,9 @@ const SYNTHETIC_SHEET = {
   <button type="action" name="act_worker_remove_row">Worker remove row</button>
   <button type="action" name="act_worker_reorder_rows">Worker reorder rows</button>
   <button type="action" name="act_worker_restore_rows">Worker restore rows</button>
+  <button type="action" name="act_custom_roll">Custom roll</button>
+  <button type="action" name="act_custom_roll_promise">Custom roll promise</button>
+  <button type="action" name="act_custom_roll_timeout">Custom roll timeout</button>
   <div class="character">Character panel</div>
   <div class="combat">Combat panel</div>
 </div>
@@ -114,6 +117,18 @@ const SYNTHETIC_SHEET = {
 <input type="hidden" name="attr_translation_language" value="">
 <input type="hidden" name="attr_translation_value" value="">
 <input type="hidden" name="attr_translation_missing" value="">
+<input type="hidden" name="attr_custom_roll_total" value="">
+<input type="hidden" name="attr_custom_roll_id" value="">
+<input type="hidden" name="attr_custom_roll_expression" value="">
+<input type="hidden" name="attr_custom_promise_total" value="">
+<input type="hidden" name="attr_custom_timeout_id" value="">
+<rolltemplate class="sheet-rolltemplate-worker-custom">
+  <div class="worker-custom-card">
+    <span>{{name}}</span>
+    <span>{{roll1}}</span>
+    <strong>{{computed::roll1}}</strong>
+  </div>
+</rolltemplate>
 <script type="text/worker">
   on("sheet:opened", function () {
     setAttrs({
@@ -237,6 +252,28 @@ const SYNTHETIC_SHEET = {
     getSectionIDs("repeating_items", function (ids) {
       setSectionOrder("items", ids);
     });
+  });
+  on("clicked:custom_roll", function () {
+    startRoll("&{template:worker-custom} {{name=Worker custom}} {{roll1=[[1d1+4]]}}", function (rollResult) {
+      setAttrs({
+        custom_roll_total: rollResult.results.roll1.result,
+        custom_roll_id: rollResult.rollId,
+        custom_roll_expression: rollResult.results.roll1.expression
+      }, { silent: true });
+      finishRoll(rollResult.rollId, {
+        roll1: rollResult.results.roll1.result * 2
+      });
+    });
+  });
+  on("clicked:custom_roll_timeout", function () {
+    startRoll("&{template:worker-custom} {{name=Auto finish}} {{roll1=[[1d1+1]]}}", function (rollResult) {
+      setAttrs({ custom_timeout_id: rollResult.rollId }, { silent: true });
+    });
+  });
+  on("clicked:custom_roll_promise", async function () {
+    const rollResult = await startRoll("&{template:worker-custom} {{name=Promise finish}} {{roll1=[[1d1+2]]}}");
+    setAttrs({ custom_promise_total: rollResult.results.roll1.result }, { silent: true });
+    finishRoll(rollResult.rollId, { roll1: rollResult.results.roll1.result + 1 });
   });
 </script>
 `,
@@ -391,6 +428,11 @@ async function readState(frame) {
       translationLanguage: document.querySelector('[name="attr_translation_language"]')?.value ?? null,
       translationValue: document.querySelector('[name="attr_translation_value"]')?.value ?? null,
       translationMissing: document.querySelector('[name="attr_translation_missing"]')?.value ?? null,
+      customRollTotal: document.querySelector('[name="attr_custom_roll_total"]')?.value ?? null,
+      customRollId: document.querySelector('[name="attr_custom_roll_id"]')?.value ?? null,
+      customRollExpression: document.querySelector('[name="attr_custom_roll_expression"]')?.value ?? null,
+      customPromiseTotal: document.querySelector('[name="attr_custom_promise_total"]')?.value ?? null,
+      customTimeoutId: document.querySelector('[name="attr_custom_timeout_id"]')?.value ?? null,
       documentLanguage: document.documentElement.getAttribute('lang'),
       workerQueueOverflows: Number(document.body?.getAttribute('data-r20-worker-queue-overflows') ?? 0),
     };
@@ -886,6 +928,61 @@ async function main() {
       name: 'setattrs-callbacks-are-async-and-stack-safe',
       state: asyncCallbacks,
       pass: asyncCallbacks.callbackTiming === 'async' && asyncCallbacks.callbackChain === 'done',
+    });
+
+    await frame.locator('button[name="act_custom_roll"]').click({ timeout: 10000 });
+    await frame.waitForFunction(() => (
+      document.querySelector('[name="attr_custom_roll_total"]')?.value === '5' &&
+      document.querySelector('[name="attr_custom_roll_id"]')?.value
+    ), null, { timeout: 10000 });
+    await page.waitForFunction(() => (
+      document.querySelectorAll('[data-testid="chat-list"] [data-r20-chat-card]').length === 1
+    ), null, { timeout: 10000 });
+    const customRoll = await readState(frame);
+    const customRollChat = await page.locator('[data-testid="chat-list"] [data-r20-chat-card]').first().textContent();
+    report.steps.push({
+      name: 'start-roll-finish-roll-computed-chat',
+      state: { ...customRoll, chatText: customRollChat },
+      pass:
+        customRoll.customRollTotal === '5' &&
+        String(customRoll.customRollId || '').startsWith('custom-roll-') &&
+        customRoll.customRollExpression === '1d1+4' &&
+        customRollChat?.includes('10'),
+    });
+
+    await frame.locator('button[name="act_custom_roll_promise"]').click({ timeout: 10000 });
+    await frame.waitForFunction(() => (
+      document.querySelector('[name="attr_custom_promise_total"]')?.value === '3'
+    ), null, { timeout: 10000 });
+    await page.waitForFunction(() => (
+      document.querySelectorAll('[data-testid="chat-list"] [data-r20-chat-card]').length === 2
+    ), null, { timeout: 10000 });
+    const promiseRoll = await readState(frame);
+    const promiseChat = await page.locator('[data-testid="chat-list"] [data-r20-chat-card]').first().textContent();
+    report.steps.push({
+      name: 'start-roll-promise-finish-roll-chat',
+      state: { ...promiseRoll, chatText: promiseChat },
+      pass: promiseRoll.customPromiseTotal === '3' && promiseChat?.includes('4'),
+    });
+
+    await frame.locator('button[name="act_custom_roll_timeout"]').click({ timeout: 10000 });
+    await frame.waitForFunction(() => (
+      document.querySelector('[name="attr_custom_timeout_id"]')?.value
+    ), null, { timeout: 10000 });
+    await page.waitForTimeout(400);
+    const heldCardCount = await page.locator('[data-testid="chat-list"] [data-r20-chat-card]').count();
+    await page.waitForFunction(() => (
+      document.querySelectorAll('[data-testid="chat-list"] [data-r20-chat-card]').length === 3
+    ), null, { timeout: 8000 });
+    const timeoutRoll = await readState(frame);
+    const timeoutChat = await page.locator('[data-testid="chat-list"] [data-r20-chat-card]').first().textContent();
+    report.steps.push({
+      name: 'start-roll-auto-posts-after-timeout',
+      state: { ...timeoutRoll, heldCardCount, chatText: timeoutChat },
+      pass:
+        String(timeoutRoll.customTimeoutId || '').startsWith('custom-roll-') &&
+        heldCardCount === 2 &&
+        timeoutChat?.includes('2'),
     });
 
     report.screenshotPath = path.join(REPORT_DIR, 'sheet-worker-state.png');

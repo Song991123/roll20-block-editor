@@ -16,6 +16,24 @@ or source-derived measurement here.
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
 
+## 2026-08-04 - Sheet Worker Custom Roll Lifecycle
+
+- Added plain-language blocks and parser coverage for `startRoll`, `finishRoll`,
+  the roll ID, and named roll result values. Complex imported Worker programs
+  still remain one exact raw source block until whole-program Blockly hydration
+  is safe; the parser representation and manually authored blocks are tested.
+- The shared Preview/Edit iframe now supports callback and Promise forms,
+  returns Roll20-shaped named roll data, holds the result for `finishRoll`, adds
+  `computed::<name>` values to the result card, and posts unfinished rolls after
+  five seconds.
+- Focused parser, mapping, rolltemplate, document-build, production-build, and
+  anonymous modern/legacy browser smokes pass. Both browser modes cover callback,
+  Promise, computed result display, five-second automatic posting, and zero
+  console or page errors.
+- Claim boundary: this is local shared-runtime evidence. Actual Roll20 execution,
+  action links carrying `originalRollId`, and broader whole-Worker block
+  hydration remain open.
+
 ## 2026-08-04 - Sheet Worker Translation Language Contract
 
 - Added a plain-language reporter block for `getTranslationLanguage()` and

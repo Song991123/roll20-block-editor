@@ -179,7 +179,6 @@ function evalRolltemplateSection(
     const numeric = Number(token);
     if (Number.isFinite(numeric)) return numeric;
     const f = fields.get(token);
-    if (f?.detail) return f.detail.total;
     const textNumber = Number(f?.text ?? '');
     return Number.isFinite(textNumber) ? textNumber : 0;
   };
@@ -225,9 +224,7 @@ function defaultFieldValue(field: RolltemplateFieldResult): string {
     ? `Rolling ${field.detail.expression} = (${rolls})`
     : `Rolling ${field.detail.expression}`;
 
-  return `<span class="${classes}" title="${escapeHtml(tooltip)}">${escapeHtml(
-    String(field.detail.total),
-  )}</span>`;
+  return `<span class="${classes}" title="${escapeHtml(tooltip)}">${escapeHtml(field.text)}</span>`;
 }
 
 /** Roll20 built-in default template fallback. */

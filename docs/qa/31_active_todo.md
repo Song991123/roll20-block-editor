@@ -271,6 +271,15 @@ belong in tracked documents.
   legacy browser smokes pass the same regional-language fixture with zero
   console warnings, console errors, or page errors. Actual Roll20 execution
   and additional Worker APIs remain open.
+- `DONE LOCAL / VERIFY ACTUAL`: custom roll parsing now provides plain-language
+  blocks and parser nodes for `startRoll`, `finishRoll`, roll IDs, and named
+  result values. The shared Preview/Edit runtime supports callback and Promise
+  forms, withholds chat until `finishRoll`, renders `computed::<name>` while
+  retaining source dice details, and automatically posts after five seconds.
+  Anonymous modern and legacy browser smokes pass all three paths with zero
+  console or page errors. Complex whole-Worker imports intentionally stay exact
+  raw source until mixed Blockly hydration is safe. Actual Roll20 execution and
+  action-link `originalRollId` behavior remain open.
 
 ## P0 - Edit And Preview Unity
 

@@ -89,6 +89,19 @@ function testTranslationLanguage(): void {
   expectNotContains(r.html, 'r20_raw_worker', 'translation language does not fall back');
 }
 
+function testCustomRollCallbackStaysLossless(): void {
+  const html = `<script type="text/worker">
+    startRoll("&{template:test} {{roll1=[[1d20]]}}", function (rollResult) {
+      finishRoll(rollResult.rollId, { roll1: rollResult.results.roll1.result * 2 });
+    });
+  </script>`;
+  const r = importSheet({ html });
+  expectContains(r.html, 'r20_raw_worker', 'complex custom roll stays lossless');
+  expectContains(r.html, 'startRoll', 'custom roll start source preserved');
+  expectContains(r.html, 'finishRoll', 'custom roll finish source preserved');
+  expectNotContains(r.html, 'r20_start_roll', 'whole worker is not partially hydrated');
+}
+
 function testTypedPageScriptStaysHtml(): void {
   const html = `<script type="text/javascript" src="sheet-runtime.js">window.sheetReady = true;</script>`;
   const r = importSheet({ html });
@@ -311,6 +324,7 @@ const tests = [
   ['translation by key', testTranslationByKey],
   ['translation by lang', testTranslationByLang],
   ['translation language', testTranslationLanguage],
+  ['custom roll callback stays lossless', testCustomRollCallbackStaysLossless],
   ['typed page script stays HTML', testTypedPageScriptStaysHtml],
   ['untyped page script stays HTML', testUntypedPageScriptStaysHtml],
   ['css var decl basic', testCssVarDecl],
