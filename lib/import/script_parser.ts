@@ -413,11 +413,11 @@ function eventToHatBlock(
     };
   }
   let m: RegExpExecArray | null;
-  m = /^change:repeating_([\w-]+):([\w-]+)$/.exec(t);
+  m = /^change:repeating_([\w-]+)(?::([\w-]+))?$/.exec(t);
   if (m) {
     return {
       blockType: 'r20_on_repeating_change',
-      fields: { SECTION: m[1], ATTR: m[2] },
+      fields: { SECTION: m[1], ATTR: m[2] ?? '' },
       children: { CHILDREN: bodyChildren },
     };
   }

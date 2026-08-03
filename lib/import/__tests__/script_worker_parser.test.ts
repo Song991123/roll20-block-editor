@@ -46,6 +46,14 @@ function testOnRepeatingChange(): void {
   assert(r.blocks[0].fields.ATTR === 'qty', 'ATTR=qty');
 }
 
+function testOnRepeatingSectionChange(): void {
+  const js = `on("change:repeating_inv", function() {});`;
+  const r = parseSheetWorkerScript(js);
+  assert(r.blocks[0].blockType === 'r20_on_repeating_change', 'whole repeating section change');
+  assert(r.blocks[0].fields.SECTION === 'inv', 'SECTION=inv');
+  assert(r.blocks[0].fields.ATTR === '', 'blank ATTR means any field in the section');
+}
+
 function testOnRepeatingRemove(): void {
   const js = `on("remove:repeating_inv", () => {});`;
   const r = parseSheetWorkerScript(js);
@@ -387,6 +395,7 @@ const tests = [
   ['on change:attr', testOnAttrChange],
   ['on sheet:opened', testOnSheetOpened],
   ['on change:repeating', testOnRepeatingChange],
+  ['on whole repeating section change', testOnRepeatingSectionChange],
   ['on remove:repeating', testOnRepeatingRemove],
   ['on clicked', testOnClicked],
   ['setAttrs single', testSetAttrsSingle],

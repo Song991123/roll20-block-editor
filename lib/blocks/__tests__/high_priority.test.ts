@@ -325,6 +325,18 @@ function testWorkerEventInfoEmit(): void {
   expectEq(code, 'eventInfo.sourceAttribute', 'eventInfo reporter emit');
 }
 
+function testWorkerRepeatingSectionChangeEmit(): void {
+  const def = findBlock(SHEET_WORKER_BLOCKS as Array<{ type: string }>, 'r20_on_repeating_change');
+  assert(def.generator, 'r20_on_repeating_change has generator');
+  const b = new FakeBlock({
+    type: 'r20_on_repeating_change',
+    fields: { SECTION: 'items', ATTR: '' },
+  });
+  const out = def.generator!(b, makeCtx());
+  const code = Array.isArray(out) ? out[0] : out;
+  expectEq(code, `on('change:repeating_items', () => {});\n`, 'whole repeating section change emit');
+}
+
 function testWorkerSetAttrsSilentCallbackEmit(): void {
   const def = findBlock(SHEET_WORKER_BLOCKS as Array<{ type: string }>, 'r20_set_attrs');
   assert(def.generator, 'r20_set_attrs has generator');
@@ -704,6 +716,7 @@ const tests: Array<[string, () => void]> = [
   ['worker parseInt emit', testWorkerParseIntEmit],
   ['worker multi-event emit', testWorkerMultiEventEmit],
   ['worker eventInfo emit', testWorkerEventInfoEmit],
+  ['worker whole repeating section change emit', testWorkerRepeatingSectionChangeEmit],
   ['worker setAttrs silent callback emit', testWorkerSetAttrsSilentCallbackEmit],
   ['compendium basic path', testCompendiumBasicPath],
   ['compendium with subpath', testCompendiumWithSubpath],

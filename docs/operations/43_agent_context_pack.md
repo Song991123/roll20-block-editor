@@ -102,8 +102,11 @@ contain private source evidence or historical test dumps.
   emitted code. Canonical multi-event listeners and common `eventInfo` fields
   are structurally editable and pass local source/runtime browser smokes.
   Previous/new values, player/Worker source types, and `setAttrs` silent plus
-  completion behavior are covered. Arbitrary formatting, repeating aliases,
-  row removal data, and broader Worker syntax still use raw preservation.
+  completion behavior are covered. The shared iframe also turns repeating
+  templates into Roll20-shaped rows and locally proves Add, Modify/Done,
+  player/Worker deletion, row creation APIs, all documented field/section
+  change aliases, and `removedInfo`. Reorder/`_reporder`, row-context
+  shorthand, broader Worker syntax, and actual Roll20 proof remain open.
 - ImportDialog waits for every Blockly model workspace before hydration. Keep
   the cold-load early-click browser check; analysis percentages alone do not
   prove blocks were applied.

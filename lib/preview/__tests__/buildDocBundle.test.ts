@@ -41,6 +41,10 @@ const rendererModelBundle = buildSheetRenderBundle({
   roll20RendererModel: rendererModel,
   css: '.card input[type="text"] { min-height: 9px; }',
 }, { includeParts: true });
+const repeatingBundle = buildSheetRenderBundle({
+  ...options,
+  html: '<fieldset class="repeating_items"><input type="text" name="attr_item_name" value="New item"></fieldset>',
+});
 
 assert.equal(bundle.doc, buildSheetDoc(options), 'bundled document matches the standalone builder');
 assert.deepEqual(
@@ -147,6 +151,21 @@ assert.match(
   bundle.doc,
   /lastAppliedRevision[\s\S]*data-r20-stale-apply-drops/,
   'iframe bridge rejects delayed older live-patch revisions',
+);
+assert.match(
+  repeatingBundle.livePatch.html,
+  /<div class="repcontainer" data-groupname="repeating_items"><\/div><div class="repcontrol" data-groupname="repeating_items">/,
+  'repeating templates receive Roll20 data-groupname runtime siblings',
+);
+assert.match(
+  repeatingBundle.doc,
+  /fieldset\.style\.display = 'none'[\s\S]*?className = 'repitem'[\s\S]*?setAttribute\('data-reprowid', rowId\)/,
+  'repeating templates stay hidden while runtime rows use Roll20 repitem identity',
+);
+assert.match(
+  repeatingBundle.doc,
+  /className = 'itemcontrol'[\s\S]*?btn btn-danger pictos repcontrol_del[\s\S]*?btn repcontrol_move/,
+  'repeating rows keep the Roll20 modify controls',
 );
 assert.match(roll20BaseIframeCss, /\.ui-dialog\s+\.charsheet/);
 assert.ok(roll20BaseShadowCss.length > 0, 'Shadow baseline is generated');
@@ -255,8 +274,23 @@ assert.doesNotMatch(
 );
 assert.match(
   bundle.doc,
-  /function readSheetAttr\(name\)[\s\S]*?querySelectorAll\(selector\)[\s\S]*?nodes\[i\]\.type === 'radio' && nodes\[i\]\.checked/,
+  /function readSheetAttr\(name\)[\s\S]*?liveSheetAttrNodes\(selector\)[\s\S]*?nodes\[i\]\.type === 'radio' && nodes\[i\]\.checked/,
   'worker getAttrs reads the checked member of a radio group',
+);
+assert.match(
+  repeatingBundle.doc,
+  /function liveSheetAttrNodes\(selector\)[\s\S]*?!isRepeatingTemplateElement\(el\)/,
+  'hidden repeating templates never masquerade as live top-level attributes',
+);
+assert.match(
+  repeatingBundle.doc,
+  /events\.push\('change:' \+ parsed\.groupName\.toLowerCase\(\) \+ ':' \+ fieldName\)[\s\S]*?events\.push\('change:' \+ parsed\.groupName\.toLowerCase\(\)\)[\s\S]*?events\.push\('change:' \+ baseFieldName\)[\s\S]*?events\.push\('change:' \+ baseFieldName \+ '_max'\)/,
+  'repeating changes dispatch section-field, whole-section, and plain-field aliases',
+);
+assert.match(
+  repeatingBundle.doc,
+  /removedInfo: removedInfo[\s\S]*?sheetWorkerRemoveRepeatingRow[\s\S]*?removeRepeatingRowElement\(rows\[i\], 'sheetworker'\)/,
+  'repeating deletion exposes removed values for both user and Worker paths',
 );
 assert.match(
   bundle.doc,

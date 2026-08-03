@@ -51,6 +51,8 @@ const SYNTHETIC_SHEET = {
   <button type="action" name="act_character">Character</button>
   <button type="action" name="act_combat">Combat</button>
   <button type="action" name="act_silent_update">Silent update</button>
+  <button type="action" name="act_worker_add_row">Worker add row</button>
+  <button type="action" name="act_worker_remove_row">Worker remove row</button>
   <div class="character">Character panel</div>
   <div class="combat">Combat panel</div>
 </div>
@@ -61,6 +63,10 @@ const SYNTHETIC_SHEET = {
     <div class="choice">Choice list that should hide when mirrored lock is checked</div>
   </div>
 </div>
+<fieldset class="repeating_items">
+  <input type="text" name="attr_item_name" value="New item">
+  <input type="number" name="attr_item_qty" value="1">
+</fieldset>
 <input type="text" name="attr_loop_probe" value="idle">
 <input type="text" name="attr_second_probe" value="idle">
 <input type="hidden" name="attr_event_source" value="">
@@ -71,6 +77,17 @@ const SYNTHETIC_SHEET = {
 <input type="hidden" name="attr_silent_fired" value="">
 <input type="hidden" name="attr_callback_done" value="">
 <input type="hidden" name="attr_silent_probe" value="idle">
+<input type="hidden" name="attr_repeat_change_source" value="">
+<input type="hidden" name="attr_repeat_change_attr" value="">
+<input type="hidden" name="attr_repeat_change_previous" value="">
+<input type="hidden" name="attr_repeat_change_new" value="">
+<input type="hidden" name="attr_repeat_section_changed" value="">
+<input type="hidden" name="attr_repeat_plain_changed" value="">
+<input type="hidden" name="attr_repeat_remove_source" value="">
+<input type="hidden" name="attr_repeat_remove_attr" value="">
+<input type="hidden" name="attr_repeat_remove_trigger" value="">
+<input type="hidden" name="attr_repeat_removed_count" value="0">
+<input type="hidden" name="attr_repeat_removed_name" value="">
 <script type="text/worker">
   on("clicked:character", function () {
     setAttrs({ sheetTab: "character" });
@@ -98,6 +115,43 @@ const SYNTHETIC_SHEET = {
   on("clicked:silent_update", function () {
     setAttrs({ silent_probe: "updated" }, { silent: true }, function () {
       setAttrs({ callback_done: "yes" }, { silent: true });
+    });
+  });
+  on("change:repeating_items:item_qty", function (eventInfo) {
+    setAttrs({
+      repeat_change_source: eventInfo.sourceType,
+      repeat_change_attr: eventInfo.sourceAttribute,
+      repeat_change_previous: eventInfo.previousValue,
+      repeat_change_new: eventInfo.newValue
+    }, { silent: true });
+  });
+  on("change:repeating_items", function () {
+    setAttrs({ repeat_section_changed: "yes" }, { silent: true });
+  });
+  on("change:item_qty", function () {
+    setAttrs({ repeat_plain_changed: "yes" }, { silent: true });
+  });
+  on("remove:repeating_items", function (eventInfo) {
+    var removedKeys = Object.keys(eventInfo.removedInfo || {});
+    var nameKey = removedKeys.find(function (key) { return /_item_name$/.test(key); });
+    setAttrs({
+      repeat_remove_source: eventInfo.sourceType,
+      repeat_remove_attr: eventInfo.sourceAttribute,
+      repeat_remove_trigger: eventInfo.triggerName,
+      repeat_removed_count: removedKeys.length,
+      repeat_removed_name: nameKey ? eventInfo.removedInfo[nameKey] : ""
+    }, { silent: true });
+  });
+  on("clicked:worker_add_row", function () {
+    var rowId = generateRowID();
+    var values = {};
+    values["repeating_items_" + rowId + "_item_name"] = "Worker item";
+    values["repeating_items_" + rowId + "_item_qty"] = "2";
+    setAttrs(values);
+  });
+  on("clicked:worker_remove_row", function () {
+    getSectionIDs("repeating_items", function (ids) {
+      if (ids[0]) removeRepeatingRow("repeating_items_" + ids[0]);
     });
   });
 </script>
@@ -205,6 +259,28 @@ async function readState(frame) {
       silentFired: document.querySelector('[name="attr_silent_fired"]')?.value ?? null,
       callbackDone: document.querySelector('[name="attr_callback_done"]')?.value ?? null,
       silentProbe: document.querySelector('[name="attr_silent_probe"]')?.value ?? null,
+      repeatingTemplateDisplay: getComputedStyle(document.querySelector('fieldset.repeating_items')).display,
+      repeatingGroup: document.querySelector('.repcontainer')?.getAttribute('data-groupname') ?? null,
+      repeatingControlGroup: document.querySelector('.repcontrol')?.getAttribute('data-groupname') ?? null,
+      repeatingRowCount: document.querySelectorAll('.repcontainer .repitem').length,
+      repeatingRowId: document.querySelector('.repcontainer .repitem')?.getAttribute('data-reprowid') ?? null,
+      repeatingName: document.querySelector('.repcontainer [name$="_item_name"]')?.value ?? null,
+      repeatingQty: document.querySelector('.repcontainer [name$="_item_qty"]')?.value ?? null,
+      repeatingNameAttr: document.querySelector('.repcontainer [name$="_item_name"]')?.getAttribute('name') ?? null,
+      repeatingEditMode: document.querySelector('.repcontainer')?.classList.contains('editmode') ?? false,
+      repeatingEditText: document.querySelector('.repcontrol_edit')?.textContent?.trim() ?? '',
+      repeatingAddDisplay: document.querySelector('.repcontrol_add') ? getComputedStyle(document.querySelector('.repcontrol_add')).display : null,
+      repeatChangeSource: document.querySelector('[name="attr_repeat_change_source"]')?.value ?? null,
+      repeatChangeAttr: document.querySelector('[name="attr_repeat_change_attr"]')?.value ?? null,
+      repeatChangePrevious: document.querySelector('[name="attr_repeat_change_previous"]')?.value ?? null,
+      repeatChangeNew: document.querySelector('[name="attr_repeat_change_new"]')?.value ?? null,
+      repeatSectionChanged: document.querySelector('[name="attr_repeat_section_changed"]')?.value ?? null,
+      repeatPlainChanged: document.querySelector('[name="attr_repeat_plain_changed"]')?.value ?? null,
+      repeatRemoveSource: document.querySelector('[name="attr_repeat_remove_source"]')?.value ?? null,
+      repeatRemoveAttr: document.querySelector('[name="attr_repeat_remove_attr"]')?.value ?? null,
+      repeatRemoveTrigger: document.querySelector('[name="attr_repeat_remove_trigger"]')?.value ?? null,
+      repeatRemovedCount: document.querySelector('[name="attr_repeat_removed_count"]')?.value ?? null,
+      repeatRemovedName: document.querySelector('[name="attr_repeat_removed_name"]')?.value ?? null,
       workerQueueOverflows: Number(document.body?.getAttribute('data-r20-worker-queue-overflows') ?? 0),
     };
   });
@@ -247,6 +323,16 @@ function renderMarkdown(report) {
     );
   }
   lines.push('');
+  lines.push('## Repeating Section Runtime');
+  lines.push('');
+  lines.push('| Step | Rows | Row value | Event source | Removed values | Status |');
+  lines.push('| --- | --- | --- | --- | --- | --- |');
+  for (const step of report.repeatingSteps ?? []) {
+    lines.push(
+      `| ${step.name} | ${step.state.repeatingRowCount} | ${step.state.repeatingName ?? ''} / ${step.state.repeatingQty ?? ''} | ${step.state.repeatChangeSource || step.state.repeatRemoveSource || ''} | ${step.state.repeatRemovedCount ?? ''} | ${step.pass ? 'PASS' : 'FAIL'} |`,
+    );
+  }
+  lines.push('');
   lines.push(`Console/page errors: ${report.consoleErrors.length + report.pageErrors.length}`);
   lines.push(`Screenshot: \`${report.screenshotPath}\``);
   return `${lines.join('\n')}\n`;
@@ -269,6 +355,7 @@ async function main() {
     baseUrl: `http://127.0.0.1:${PORT}${BASE_PATH}/`,
     steps: [],
     duplicateAttrSteps: [],
+    repeatingSteps: [],
     consoleErrors,
     pageErrors,
   };
@@ -289,6 +376,134 @@ async function main() {
 
     const initial = await readState(frame);
     report.steps.push({ name: 'initial-combat', state: initial, pass: passForState(initial, 'combat') });
+    report.repeatingSteps.push({
+      name: 'runtime-shell',
+      state: initial,
+      pass:
+        initial.repeatingTemplateDisplay === 'none' &&
+        initial.repeatingGroup === 'repeating_items' &&
+        initial.repeatingControlGroup === 'repeating_items' &&
+        initial.repeatingRowCount === 0,
+    });
+
+    await frame.locator('button[name="act_worker_add_row"]').click({ timeout: 10000 });
+    try {
+      await frame.waitForFunction(() => (
+        document.querySelectorAll('.repcontainer .repitem').length === 1 &&
+        document.querySelector('.repcontainer [name$="_item_name"]')?.value === 'Worker item' &&
+        document.querySelector('[name="attr_repeat_change_source"]')?.value === 'sheetworker'
+      ), null, { timeout: 10000 });
+    } catch (error) {
+      const debug = {
+        state: await readState(frame),
+        emit: await page.evaluate(() => window.__perfHook?.getEmitContent?.()),
+        consoleErrors,
+        pageErrors,
+      };
+      throw new Error(`worker repeating row did not settle: ${JSON.stringify(debug)}`, { cause: error });
+    }
+    const workerAddedRow = await readState(frame);
+    report.repeatingSteps.push({
+      name: 'worker-created-row',
+      state: workerAddedRow,
+      pass:
+        workerAddedRow.repeatingRowCount === 1 &&
+        workerAddedRow.repeatingRowId?.startsWith('-') &&
+        !workerAddedRow.repeatingRowId.includes('_') &&
+        workerAddedRow.repeatingName === 'Worker item' &&
+        workerAddedRow.repeatingQty === '2' &&
+        workerAddedRow.repeatingNameAttr?.startsWith(`attr_repeating_items_${workerAddedRow.repeatingRowId}_`) &&
+        workerAddedRow.repeatChangeSource === 'sheetworker' &&
+        workerAddedRow.repeatChangeAttr?.endsWith('_item_qty') &&
+        workerAddedRow.repeatChangePrevious === '1' &&
+        workerAddedRow.repeatChangeNew === '2' &&
+        workerAddedRow.repeatSectionChanged === 'yes' &&
+        workerAddedRow.repeatPlainChanged === 'yes',
+    });
+
+    await frame.locator('button[name="act_worker_remove_row"]').click({ timeout: 10000 });
+    await frame.waitForFunction(() => (
+      document.querySelectorAll('.repcontainer .repitem').length === 0 &&
+      document.querySelector('[name="attr_repeat_remove_source"]')?.value === 'sheetworker'
+    ), null, { timeout: 10000 });
+    const workerRemovedRow = await readState(frame);
+    report.repeatingSteps.push({
+      name: 'worker-removed-row',
+      state: workerRemovedRow,
+      pass:
+        workerRemovedRow.repeatingRowCount === 0 &&
+        workerRemovedRow.repeatRemoveSource === 'sheetworker' &&
+        workerRemovedRow.repeatRemoveAttr?.startsWith('repeating_items_') &&
+        workerRemovedRow.repeatRemoveAttr?.endsWith('_item_name') &&
+        workerRemovedRow.repeatRemoveTrigger === 'remove:repeating_items' &&
+        workerRemovedRow.repeatRemovedCount === '2' &&
+        workerRemovedRow.repeatRemovedName === 'Worker item',
+    });
+
+    await frame.locator('button.repcontrol_add').click({ timeout: 10000 });
+    await frame.waitForFunction(() => document.querySelectorAll('.repcontainer .repitem').length === 1, null, { timeout: 10000 });
+    const userAddedRow = await readState(frame);
+    report.repeatingSteps.push({
+      name: 'user-added-row',
+      state: userAddedRow,
+      pass:
+        userAddedRow.repeatingName === 'New item' &&
+        userAddedRow.repeatingQty === '1' &&
+        userAddedRow.repeatingRowId?.startsWith('-'),
+    });
+
+    const repeatingQty = frame.locator('.repcontainer [name$="_item_qty"]');
+    await repeatingQty.fill('4');
+    await repeatingQty.evaluate((node) => node.dispatchEvent(new Event('change', { bubbles: true })));
+    await frame.waitForFunction(() => (
+      document.querySelector('[name="attr_repeat_change_source"]')?.value === 'player' &&
+      document.querySelector('[name="attr_repeat_change_new"]')?.value === '4'
+    ), null, { timeout: 10000 });
+    const userChangedRow = await readState(frame);
+    report.repeatingSteps.push({
+      name: 'repeating-change-aliases',
+      state: userChangedRow,
+      pass:
+        userChangedRow.repeatChangeSource === 'player' &&
+        userChangedRow.repeatChangeAttr?.endsWith('_item_qty') &&
+        userChangedRow.repeatChangePrevious === '1' &&
+        userChangedRow.repeatChangeNew === '4' &&
+        userChangedRow.repeatSectionChanged === 'yes' &&
+        userChangedRow.repeatPlainChanged === 'yes',
+    });
+
+    await frame.locator('button.repcontrol_edit').click({ timeout: 10000 });
+    await frame.waitForFunction(() => (
+      document.querySelector('.repcontainer')?.classList.contains('editmode') &&
+      document.querySelector('.repcontrol_edit')?.textContent?.trim() === 'Done' &&
+      getComputedStyle(document.querySelector('.repcontrol_add')).display === 'none'
+    ), null, { timeout: 10000 });
+    const userEditMode = await readState(frame);
+    report.repeatingSteps.push({
+      name: 'modify-mode',
+      state: userEditMode,
+      pass:
+        userEditMode.repeatingEditMode === true &&
+        userEditMode.repeatingEditText === 'Done' &&
+        userEditMode.repeatingAddDisplay === 'none',
+    });
+
+    await frame.locator('button.repcontrol_del').click({ timeout: 10000 });
+    await frame.waitForFunction(() => (
+      document.querySelectorAll('.repcontainer .repitem').length === 0 &&
+      document.querySelector('[name="attr_repeat_remove_source"]')?.value === 'player'
+    ), null, { timeout: 10000 });
+    const userRemovedRow = await readState(frame);
+    report.repeatingSteps.push({
+      name: 'user-removed-row',
+      state: userRemovedRow,
+      pass:
+        userRemovedRow.repeatingRowCount === 0 &&
+        userRemovedRow.repeatRemoveSource === 'player' &&
+        userRemovedRow.repeatRemoveTrigger === 'remove:repeating_items' &&
+        userRemovedRow.repeatRemovedCount === '2' &&
+        userRemovedRow.repeatRemovedName === 'New item',
+    });
 
     await frame.locator('button[name="act_character"]').click({ timeout: 10000 });
     await frame.waitForFunction(() => {
@@ -404,6 +619,7 @@ async function main() {
   report.pass =
     report.steps.every((step) => step.pass) &&
     report.duplicateAttrSteps.every((step) => step.pass) &&
+    report.repeatingSteps.every((step) => step.pass) &&
     report.consoleErrors.filter((msg) => msg.type === 'error').length === 0 &&
     report.pageErrors.length === 0;
 

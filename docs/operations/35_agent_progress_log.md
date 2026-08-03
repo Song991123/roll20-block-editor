@@ -16,6 +16,26 @@ or source-derived measurement here.
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
 
+## 2026-08-03 - Repeating Section Runtime And Worker Events
+
+- Replaced visible repeating-fieldset placeholders with a local Roll20-shaped
+  runtime: hidden templates, `repcontainer`/`repcontrol` group metadata,
+  `repitem` row IDs, row name rewriting, Add, Modify/Done, and deletion.
+- `setAttrs` can materialize a missing repeating row. `generateRowID`,
+  `getSectionIDs`, and `removeRepeatingRow` now operate on those rows instead of
+  returning synthetic IDs beside a no-op removal function.
+- Repeating changes dispatch the full attribute, section-field, whole-section,
+  plain-field, and `_max` aliases. Player and Worker deletion dispatch section
+  and row events with lowercased source attributes and `removedInfo`.
+- Bundle/parser/generator checks, production build, Sandbox-shaped six-fixture
+  smoke, exact modern/legacy Preview/Edit comparison, edit-flow smoke, and the
+  expanded Worker-state browser smoke pass. A transient Worker-workspace smoke
+  startup race was reproduced; its import now uses the existing stable retry
+  pattern and passed three consecutive runs.
+- Claim boundary: this is local synthetic runtime proof. Row reorder,
+  `_reporder`, row-context shorthand, broader APIs, and actual Roll20 execution
+  remain open.
+
 ## 2026-08-03 - Worker Event State And Import Readiness
 
 - Added previous/new values to local change events and made source attributes

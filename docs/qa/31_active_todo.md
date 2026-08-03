@@ -148,12 +148,21 @@ belong in tracked documents.
   registered. A cold-load click can no longer report 100% analysis while
   silently leaving the actual workspaces empty; the browser smoke reproduces
   the early click and verifies three emitted HTML blocks.
+- `DONE LOCAL`: repeating fieldsets now act as hidden row templates instead of
+  visible top-level attributes. The shared Preview/Edit iframe creates Roll20-
+  shaped `repcontainer`, `repcontrol`, and `repitem` nodes, rewrites row field,
+  roll, and action names, and supports Add, Modify/Done, user deletion,
+  `generateRowID`, `getSectionIDs`, `setAttrs` row creation, and
+  `removeRepeatingRow`. Browser state proof covers full, section-field,
+  section-wide, and plain-field change aliases plus lowercased source state and
+  `removedInfo` for both player and Worker deletion.
 - `TODO`: expand structured Sheet Worker blocks beyond the current parser and
   runtime subset. Raw Worker source remains the lossless fallback meanwhile;
   diagnostics do not make unsupported syntax structurally editable. Arbitrary
   source formatting can still remain raw when structured re-emission is not
-  byte-stable. Repeating-section event aliases, row removal information, and
-  broader APIs remain incomplete.
+  byte-stable. Repeating-row move/reorder behavior, `_reporder` state and
+  events, row-context shorthand APIs, broader Worker APIs, and actual Roll20
+  execution proof remain incomplete.
 
 ## P0 - Edit And Preview Unity
 

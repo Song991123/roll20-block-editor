@@ -247,13 +247,13 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     shape: 'hat',
     category: SHEET_WORKER,
     label: '반복 영역 값이 바뀌었을 때',
-    tooltip: 'on("change:repeating_S:A", ...) — 반복 섹션의 항목 속성이 바뀔 때.',
+    tooltip: '반복 영역 전체 또는 지정한 칸의 값이 바뀔 때 실행합니다. 칸 이름을 비우면 영역 전체를 감지합니다.',
     init: mkInit((b) => {
       b.appendDummyInput()
         .appendField('반복 섹션')
         .appendField('section')
         .appendField(new Blockly.FieldTextInput('inventory'), 'SECTION')
-        .appendField('attr')
+        .appendField('칸 이름(선택)')
         .appendField(new Blockly.FieldTextInput('qty'), 'ATTR');
       b.appendStatementInput('CHILDREN').setCheck(null);
       setHatHooks(b);
@@ -261,9 +261,9 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
       const section = String(b.getFieldValue('SECTION') ?? '').trim() || 'section';
-      const attr = String(b.getFieldValue('ATTR') ?? '').trim() || 'attr';
+      const attr = String(b.getFieldValue('ATTR') ?? '').trim();
       const body = ctx.statementToCode(block, 'CHILDREN');
-      const evt = `change:repeating_${escapeJSString(section)}:${escapeJSString(attr)}`;
+      const evt = `change:repeating_${escapeJSString(section)}${attr ? `:${escapeJSString(attr)}` : ''}`;
       return `on('${evt}', ${wrapArrowBody(ctx, body)});\n`;
     },
   },

@@ -91,6 +91,7 @@ async function main() {
     );
 
     const result = await page.evaluate(async () => {
+      const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
       const html = `
         <div class="sheet-main">
           <input type="text" name="attr_character_name" value="Worker Smoke">
@@ -105,8 +106,15 @@ async function main() {
         </script>
         <script type="text/javascript" src="page-runtime.js">window.pageRuntime = true;</script>
       `;
-      const imported = await window.__perfHook.importSheet({ html, css: '', i18n: '{}' });
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      window.__perfHook.clearAll();
+      await sleep(700);
+      let imported = null;
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        imported = await window.__perfHook.importSheet({ html, css: '', i18n: '{}' });
+        if (imported.blockCount > 0 && imported.workerBlockCount > 0) break;
+        await sleep(300);
+      }
+      await sleep(200);
       const workspace = window.__perfHook.getWorkspace();
       const htmlGraph = window.__perfHook.getBlockGraph('html');
       const jsGraph = window.__perfHook.getBlockGraph('js');

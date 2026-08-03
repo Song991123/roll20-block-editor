@@ -152,8 +152,8 @@ const files = {
         checkedControlNames: ['attr_show_details'],
         selectedControlValues: { attr_item_rank: 'two' },
         minimumTagCounts: { section: 2, fieldset: 1, ul: 1, li: 2 },
-        visibleI18nKeys: ['show_details', 'summary', 'first', 'second', 'item'],
-        hiddenI18nKeys: ['closed'],
+        visibleI18nKeys: ['show_details', 'summary', 'first', 'second'],
+        hiddenI18nKeys: ['closed', 'item'],
         ordinaryScriptCount: 0,
       },
       sandbox: {
@@ -161,7 +161,8 @@ const files = {
         selectedControlValues: { attr_item_rank: 'two' },
         minimumTagCounts: { fieldset: 1, ul: 1, li: 2 },
         maximumTagCounts: { section: 0 },
-        visibleI18nKeys: ['show_details', 'summary', 'first', 'second', 'item'],
+        visibleI18nKeys: ['show_details', 'summary', 'first', 'second'],
+        hiddenI18nKeys: ['item'],
         absentI18nKeys: ['closed'],
         ordinaryScriptCount: 0,
       },
@@ -477,8 +478,8 @@ async function main() {
       },
       conditionalManifest.expected.normal,
       {
-        visibleKeys: ['show_details', 'summary', 'first', 'second', 'item'],
-        hiddenKeys: ['closed'],
+        visibleKeys: ['show_details', 'summary', 'first', 'second'],
+        hiddenKeys: ['closed', 'item'],
       },
     );
     if (expectationFailures.length > 0) {

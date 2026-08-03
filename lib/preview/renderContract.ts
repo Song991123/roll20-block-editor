@@ -165,14 +165,18 @@ function applyTranslationsToHtml(html: string, i18n: string | undefined): string
 
 function addRoll20RepeatingRuntimeHtml(html: string): string {
   if (!html || !/repeating_/.test(html)) return html;
-  const runtime = '<div class="repcontainer"></div><div class="repcontrol"><button type="button" class="btn repcontrol_edit">Modify</button><button type="button" class="btn repcontrol_add">+Add</button></div>';
   return html.replace(/<fieldset\b[^>]*>[\s\S]*?<\/fieldset>/gi, (fieldset, offset, source) => {
     const startTag = fieldset.match(/^<fieldset\b[^>]*>/i)?.[0] ?? '';
-    if (!/\bclass=(["'])[^"']*\brepeating_[^"']*\1/i.test(startTag)) return fieldset;
+    const classMatch = /\bclass=(["'])([^"']*)\1/i.exec(startTag);
+    const groupName = classMatch?.[2]
+      .split(/\s+/)
+      .find((token) => /^repeating_[\w-]+$/i.test(token));
+    if (!groupName) return fieldset;
     const after = String(source).slice(offset + fieldset.length);
     if (/^\s*<div\b[^>]*\bclass=(["'])[^"']*\brepcontainer\b[^"']*\1>\s*<\/div>\s*<div\b[^>]*\bclass=(["'])[^"']*\brepcontrol\b[^"']*\2>/i.test(after)) {
       return fieldset;
     }
+    const runtime = `<div class="repcontainer" data-groupname="${groupName}"></div><div class="repcontrol" data-groupname="${groupName}"><button type="button" class="btn repcontrol_edit">Modify</button><button type="button" class="btn repcontrol_add">+Add</button></div>`;
     return `${fieldset}${runtime}`;
   });
 }

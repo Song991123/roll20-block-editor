@@ -74,6 +74,27 @@ Required behavior:
   events without suppressing its completion callback. See the official
   [Roll20 Sheet Worker API](https://help.roll20.net/hc/en-us/articles/360037773513-Sheet-Worker-Scripts).
 
+Repeating-section runtime contract:
+
+- A source `fieldset.repeating_*` remains the hidden row template. Runtime rows
+  live in sibling `repcontainer[data-groupname]` and
+  `repcontrol[data-groupname]` nodes; each row is a
+  `repitem[data-reprowid]`. This structure follows Roll20's documented
+  [repeating-section model](https://wiki.roll20.net/Character_Sheet_Development/Repeating_Section).
+- Adding a row clones the template and rewrites `attr_`, `roll_`, and `act_`
+  names with the repeating group and row ID. The source template itself must
+  not be read as a live character attribute.
+- `setAttrs` with a full repeating attribute may create a missing row.
+  `generateRowID`, `getSectionIDs`, and `removeRepeatingRow` operate on the same
+  runtime row set.
+- A repeating field update dispatches its full attribute event, the
+  `change:repeating_group:field` alias, the `change:repeating_group` alias, and
+  the plain field plus `_max` aliases. Removal includes the full lowercased
+  source attribute and `removedInfo`, and may be observed by section or row ID.
+- Reordering must eventually persist `_reporder_repeating_group` and dispatch
+  `change:_reporder:group`. Until that path has browser and actual Roll20 proof,
+  the visible move control is not completion evidence.
+
 Untyped script compatibility:
 
 - `type="text/worker"` is the authoritative worker marker.
