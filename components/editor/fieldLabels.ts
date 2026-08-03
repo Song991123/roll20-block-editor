@@ -31,6 +31,7 @@ export const FIELD_LABELS: Record<string, string> = {
   EVENT_VAR: '이벤트 정보 이름',
   PROPERTY: '정보 종류',
   VAR: '변수 이름',
+  SILENT: '다른 자동 동작 부르지 않기',
   MIN: '최솟값',
   MAX: '최댓값',
   STEP: '증가 단위',

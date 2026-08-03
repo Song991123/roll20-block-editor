@@ -16,6 +16,25 @@ or source-derived measurement here.
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
 
+## 2026-08-03 - Worker Event State And Import Readiness
+
+- Added previous/new values to local change events and made source attributes
+  lowercase like the Roll20 event contract. Player edits and Worker writes use
+  one cached change path instead of overlapping document listeners.
+- `setAttrs` blocks now preserve the official silent option and an optional
+  completion body. The local runtime suppresses dependent events when silent
+  while still running the completion callback.
+- A cold-load browser run exposed an import race: analysis reported full HTML
+  coverage before the dynamically loaded Blockly workspaces existed, leaving
+  zero applied blocks. Import now waits for all model workspaces or reports a
+  plain failure instead of silently succeeding.
+- Parser/generator checks and browser smokes cover both multi-event attributes,
+  previous/new values, player and Worker source types, silent non-propagation,
+  callback completion, cold-load import application, and zero queue overflow.
+- Claim boundary: evidence is local and synthetic. Repeating event aliases,
+  removed row information, broader Worker APIs, and actual Roll20 execution
+  remain open.
+
 ## 2026-08-03 - Multi-Event Worker Blocks And Event Context
 
 - Replaced the canonical multi-event raw fallback with a generic editable

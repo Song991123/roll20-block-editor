@@ -170,6 +170,19 @@ function attrListLiteral(raw: string): string {
   return `[${items.join(', ')}]`;
 }
 
+function setAttrsTail(block: unknown, ctx: GeneratorContext): string {
+  const b = block as Blockly.Block;
+  const silent = String(b.getFieldValue('SILENT') ?? 'FALSE') === 'TRUE';
+  const callbackBody = ctx.statementToCode(block, 'CALLBACK');
+  const hasCallback = Boolean(callbackBody.trim());
+  if (silent && hasCallback) {
+    return `, { silent: true }, ${wrapArrowBody(ctx, callbackBody)}`;
+  }
+  if (silent) return `, { silent: true }`;
+  if (hasCallback) return `, ${wrapArrowBody(ctx, callbackBody)}`;
+  return '';
+}
+
 function safeIdentifier(raw: string, fallback = ''): string {
   const value = String(raw ?? '').trim();
   if (/^[A-Za-z_$][\w$]*$/.test(value) && !RESERVED_IDENTIFIERS.has(value)) {
@@ -478,7 +491,7 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
   // 11) setAttrs single -----------------------------------------------------
   {
     type: 'r20_set_attrs',
-    shape: 'stack',
+    shape: 'c',
     category: SHEET_WORKER,
     label: '시트 값 바꾸기',
     tooltip: 'setAttrs({ NAME: VALUE }) — 단일 속성 갱신.',
@@ -488,20 +501,24 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
         .appendField(new Blockly.FieldTextInput('hp'), 'NAME')
         .appendField('을');
       b.appendValueInput('VALUE').setCheck(null).appendField('로 설정');
+      b.appendDummyInput()
+        .appendField(new Blockly.FieldCheckbox('FALSE'), 'SILENT')
+        .appendField('다른 자동 동작은 부르지 않기');
+      b.appendStatementInput('CALLBACK').setCheck(null).appendField('다 바꾼 뒤');
       setStackHooks(b);
     }),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
       const name = String(b.getFieldValue('NAME') ?? '').trim() || 'attr';
       const value = ctx.valueToCode(block, 'VALUE', ORDER.NONE) || '0';
-      return `setAttrs({ '${escapeJSString(name)}': ${value} });\n`;
+      return `setAttrs({ '${escapeJSString(name)}': ${value} }${setAttrsTail(block, ctx)});\n`;
     },
   },
 
   // 12) setAttrs 3-pair -----------------------------------------------------
   {
     type: 'r20_set_attrs_pair',
-    shape: 'stack',
+    shape: 'c',
     category: SHEET_WORKER,
     label: '시트 값 여러 개 바꾸기',
     tooltip: 'setAttrs({ k1: v1, k2: v2, k3: v3 }) — 최대 3개 동시 설정 (빈 키 생략).',
@@ -519,6 +536,10 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
         .appendField('key3')
         .appendField(new Blockly.FieldTextInput(''), 'KEY3');
       b.appendValueInput('VAL3').setCheck(null).appendField('val3');
+      b.appendDummyInput()
+        .appendField(new Blockly.FieldCheckbox('FALSE'), 'SILENT')
+        .appendField('다른 자동 동작은 부르지 않기');
+      b.appendStatementInput('CALLBACK').setCheck(null).appendField('다 바꾼 뒤');
       setStackHooks(b);
     }),
     generator: (block, ctx) => {
@@ -530,8 +551,9 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
         const val = ctx.valueToCode(block, `VAL${idx}`, ORDER.NONE) || '0';
         pairs.push(`'${escapeJSString(key)}': ${val}`);
       }
-      if (pairs.length === 0) return `setAttrs({});\n`;
-      return `setAttrs({ ${pairs.join(', ')} });\n`;
+      const tail = setAttrsTail(block, ctx);
+      if (pairs.length === 0) return `setAttrs({}${tail});\n`;
+      return `setAttrs({ ${pairs.join(', ')} }${tail});\n`;
     },
   },
 

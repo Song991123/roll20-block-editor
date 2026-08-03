@@ -124,7 +124,9 @@ async function main() {
             setAttrs({ 'hp': 11 });
           });
           on('change:hp change:mp', (eventInfo) => {
-            setAttrs({ 'last_source': eventInfo.sourceType });
+            setAttrs({ 'last_source': eventInfo.sourceType }, { silent: true }, () => {
+              console.log('source updated');
+            });
           });
         </script>
       `;
@@ -177,7 +179,8 @@ async function main() {
       result.parsedEmitWorkerScriptCount === 1 &&
       result.parsedEmitWorker.includes("setAttrs({ 'total': (v.hp + (v.mp * 2)) });") &&
       result.parsedEmitWorker.includes("on('change:hp change:mp', (eventInfo) => {") &&
-      result.parsedEmitWorker.includes("setAttrs({ 'last_source': eventInfo.sourceType });") &&
+      result.parsedEmitWorker.includes("setAttrs({ 'last_source': eventInfo.sourceType }, { silent: true }, () => {") &&
+      result.parsedEmitWorker.includes("console.log('source updated');") &&
       consoleErrors.length === 0;
 
     const report = {

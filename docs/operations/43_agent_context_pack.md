@@ -101,7 +101,12 @@ contain private source evidence or historical test dumps.
   block selection opens the matching inspector, and diagnostics never enter
   emitted code. Canonical multi-event listeners and common `eventInfo` fields
   are structurally editable and pass local source/runtime browser smokes.
-  Arbitrary formatting and broader Worker syntax still use raw preservation.
+  Previous/new values, player/Worker source types, and `setAttrs` silent plus
+  completion behavior are covered. Arbitrary formatting, repeating aliases,
+  row removal data, and broader Worker syntax still use raw preservation.
+- ImportDialog waits for every Blockly model workspace before hydration. Keep
+  the cold-load early-click browser check; analysis percentages alone do not
+  prove blocks were applied.
 
 ## Always Read
 

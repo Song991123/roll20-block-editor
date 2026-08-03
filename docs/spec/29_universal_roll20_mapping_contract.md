@@ -68,6 +68,11 @@ Required behavior:
 - Raw worker blocks must roundtrip without being lost. They are allowed while coverage grows.
 - Preview execution and chat rendering must consume the worker layer, not visible HTML text.
 - User-facing JS block coding grows inside this Worker workspace without changing the HTML/CSS block model.
+- The preview simulator follows Roll20's documented `eventInfo` change fields:
+  lowercase `sourceAttribute`, `sourceType`, `previousValue`, and `newValue`.
+- `setAttrs(values, { silent: true }, callback)` must suppress dependent change
+  events without suppressing its completion callback. See the official
+  [Roll20 Sheet Worker API](https://help.roll20.net/hc/en-us/articles/360037773513-Sheet-Worker-Scripts).
 
 Untyped script compatibility:
 

@@ -140,12 +140,20 @@ belong in tracked documents.
   browser smokes prove structured source roundtrip plus `sourceType=player`
   and `sourceAttribute` delivery for either event. Worker-originated local
   `setAttrs` changes report `sourceType=sheetworker`.
+- `DONE LOCAL`: change events now carry the cached previous value and the final
+  DOM value. `setAttrs` supports editable `silent:true` and a completion body;
+  browser state proof confirms silent updates do not call dependent handlers,
+  the completion body still runs, and Worker changes report `sheetworker`.
+- `DONE BROWSER`: Import waits until all five Blockly model workspaces are
+  registered. A cold-load click can no longer report 100% analysis while
+  silently leaving the actual workspaces empty; the browser smoke reproduces
+  the early click and verifies three emitted HTML blocks.
 - `TODO`: expand structured Sheet Worker blocks beyond the current parser and
   runtime subset. Raw Worker source remains the lossless fallback meanwhile;
   diagnostics do not make unsupported syntax structurally editable. Arbitrary
   source formatting can still remain raw when structured re-emission is not
-  byte-stable, and the local runtime does not yet simulate every Roll20 event
-  field such as previous/new values.
+  byte-stable. Repeating-section event aliases, row removal information, and
+  broader APIs remain incomplete.
 
 ## P0 - Edit And Preview Unity
 

@@ -325,6 +325,23 @@ function testWorkerEventInfoEmit(): void {
   expectEq(code, 'eventInfo.sourceAttribute', 'eventInfo reporter emit');
 }
 
+function testWorkerSetAttrsSilentCallbackEmit(): void {
+  const def = findBlock(SHEET_WORKER_BLOCKS as Array<{ type: string }>, 'r20_set_attrs');
+  assert(def.generator, 'r20_set_attrs has generator');
+  const b = new FakeBlock({
+    type: 'r20_set_attrs',
+    fields: { NAME: 'hp', SILENT: 'TRUE' },
+  });
+  const ctx = makeCtx({ VALUE: '10' }, { CALLBACK: `console.log('done');\n` });
+  const out = def.generator!(b, ctx);
+  const code = Array.isArray(out) ? out[0] : out;
+  expectEq(
+    code,
+    `setAttrs({ 'hp': 10 }, { silent: true }, () => {\n  console.log('done');\n});\n`,
+    'setAttrs silent callback emit',
+  );
+}
+
 // ---------- 1b) r20_get_compendium ----------------------------------------
 
 function testCompendiumBasicPath(): void {
@@ -687,6 +704,7 @@ const tests: Array<[string, () => void]> = [
   ['worker parseInt emit', testWorkerParseIntEmit],
   ['worker multi-event emit', testWorkerMultiEventEmit],
   ['worker eventInfo emit', testWorkerEventInfoEmit],
+  ['worker setAttrs silent callback emit', testWorkerSetAttrsSilentCallbackEmit],
   ['compendium basic path', testCompendiumBasicPath],
   ['compendium with subpath', testCompendiumWithSubpath],
   ['compendium empty path', testCompendiumEmptyPath],

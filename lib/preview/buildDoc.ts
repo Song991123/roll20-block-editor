@@ -1808,6 +1808,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   var sheetWorkerDispatching = false;
   var sheetWorkerQueueOverflowCount = 0;
   var settingAttrs = false;
+  var sheetWorkerAttrValues = {};
   var translations = loadTranslations();
   function sheetWorkerOn(events, fn) {
     if (typeof fn !== 'function') return;
@@ -1832,6 +1833,16 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       return '';
     }
     return el.value == null ? '' : String(el.value);
+  }
+  function snapshotSheetAttrs() {
+    sheetWorkerAttrValues = {};
+    document.querySelectorAll('input[name^="attr_"],select[name^="attr_"],textarea[name^="attr_"]').forEach(function (el) {
+      var rawName = el.getAttribute('name') || '';
+      var key = rawName.substring(5);
+      if (key && !Object.prototype.hasOwnProperty.call(sheetWorkerAttrValues, key)) {
+        sheetWorkerAttrValues[key] = readSheetAttr(key);
+      }
+    });
   }
   function writeSheetAttr(name, value) {
     var nodes = document.querySelectorAll(sheetAttrSelector(name));
@@ -1874,6 +1885,9 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     var rawName = el.getAttribute('name') || '';
     if (rawName.indexOf('attr_') !== 0) return;
     var key = rawName.substring(5);
+    var previousValue = Object.prototype.hasOwnProperty.call(sheetWorkerAttrValues, key)
+      ? sheetWorkerAttrValues[key]
+      : readSheetAttr(key);
     var value;
     if (el.tagName === 'SELECT' && el.multiple) {
       value = Array.prototype.filter.call(el.options, function (option) { return option.selected; })
@@ -1886,7 +1900,16 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     settingAttrs = true;
     var changed = writeSheetAttr(key, value);
     settingAttrs = false;
-    if (changed) triggerSheetWorker('change:' + key, { sourceAttribute: key, sourceType: 'player' });
+    var newValue = readSheetAttr(key);
+    sheetWorkerAttrValues[key] = newValue;
+    if (changed || String(previousValue) !== String(newValue)) {
+      triggerSheetWorker('change:' + key.toLowerCase(), {
+        sourceAttribute: key.toLowerCase(),
+        sourceType: 'player',
+        previousValue: previousValue,
+        newValue: newValue
+      });
+    }
     scheduleResize();
   }
   function sheetWorkerGetAttrs(names, cb) {
@@ -1896,13 +1919,30 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   }
   function sheetWorkerSetAttrs(values, opts, cb) {
     if (typeof opts === 'function') { cb = opts; opts = undefined; }
-    var changedKeys = [];
+    var silent = Boolean(opts && opts.silent === true);
+    var changedAttrs = [];
     settingAttrs = true;
     Object.keys(values || {}).forEach(function (k) {
-      if (writeSheetAttr(k, values[k])) changedKeys.push(k);
+      var previousValue = Object.prototype.hasOwnProperty.call(sheetWorkerAttrValues, k)
+        ? sheetWorkerAttrValues[k]
+        : readSheetAttr(k);
+      if (writeSheetAttr(k, values[k])) {
+        var newValue = readSheetAttr(k);
+        sheetWorkerAttrValues[k] = newValue;
+        changedAttrs.push({ key: k, previousValue: previousValue, newValue: newValue });
+      }
     });
     settingAttrs = false;
-    changedKeys.forEach(function (k) { triggerSheetWorker('change:' + k, { sourceAttribute: k, sourceType: 'sheetworker' }); });
+    if (!silent) {
+      changedAttrs.forEach(function (change) {
+        triggerSheetWorker('change:' + change.key.toLowerCase(), {
+          sourceAttribute: change.key.toLowerCase(),
+          sourceType: 'sheetworker',
+          previousValue: change.previousValue,
+          newValue: change.newValue
+        });
+      });
+    }
     if (typeof cb === 'function') cb();
     scheduleResize();
   }
@@ -2038,6 +2078,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (typeof cb === 'function') cb(Object.keys(ids));
   }
   function installSheetWorkers() {
+    snapshotSheetAttrs();
     var scripts = document.querySelectorAll('script[type="text/worker"]');
     scripts.forEach(function (script) {
       var code = workerSourceOf(script);
@@ -2590,14 +2631,6 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       parent.postMessage({ type: 'r20:widget-hover', widgetName: null }, '*');
     } catch (err) {}
   }, false);
-  document.addEventListener('change', function (e) {
-    if (settingAttrs) return;
-    var name = e.target && e.target.getAttribute && e.target.getAttribute('name');
-    if (!name || name.indexOf('attr_') !== 0) return;
-    var attr = name.substring(5);
-    triggerSheetWorker('change:' + attr, { sourceAttribute: attr, sourceType: 'player' });
-    scheduleResize();
-  }, true);
   window.addEventListener('load', scheduleResize);
   window.addEventListener('resize', scheduleResize);
   document.addEventListener('DOMContentLoaded', scheduleResize);

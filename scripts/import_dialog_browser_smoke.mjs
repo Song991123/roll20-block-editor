@@ -97,17 +97,27 @@ async function main() {
     const clickConvert = () => importButton.click();
     await clickConvert();
 
-    await page.waitForFunction(
-      () => {
-        const workspace = window.__perfHook.getWorkspace();
-        const content = window.__perfHook.getEmitContent();
-        return workspace.blockCount.html >= 3
-          && content.html.includes('sheet-root')
-          && content.html.includes('attr_character_name');
-      },
-      null,
-      { timeout: 20000 },
-    );
+    try {
+      await page.waitForFunction(
+        () => {
+          const workspace = window.__perfHook.getWorkspace();
+          const content = window.__perfHook.getEmitContent();
+          return workspace.blockCount.html >= 3
+            && content.html.includes('sheet-root')
+            && content.html.includes('attr_character_name');
+        },
+        null,
+        { timeout: 20000 },
+      );
+    } catch (error) {
+      const state = await page.evaluate(() => ({
+        workspace: window.__perfHook?.getWorkspace?.(),
+        emit: window.__perfHook?.getEmitContent?.(),
+        importResult: document.querySelector('[data-testid="import-result"]')?.textContent ?? '',
+        dialogVisible: Boolean(document.querySelector('[data-testid="import-dialog"]')),
+      }));
+      throw new Error(`initial import did not settle: ${JSON.stringify({ state, consoleErrors, pageErrors })}`, { cause: error });
+    }
 
     const result = await page.evaluate(() => ({
       workspace: window.__perfHook.getWorkspace(),

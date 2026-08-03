@@ -26,7 +26,11 @@ import {
 } from '@/lib/blockly/workerWorkspace';
 import { usePreviewStore } from '@/lib/stores/previewStore';
 import { useUiStore } from '@/lib/stores/uiStore';
-import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
+import {
+  WORKSPACE_KEYS,
+  useWorkspaceStore,
+  type WorkspaceKey,
+} from '@/lib/stores/workspaceStore';
 import { MAX_SVG_BLOCKS } from '@/lib/blockly/renderPolicy';
 
 export interface ImportDialogProps {
@@ -41,6 +45,18 @@ const inputClassName =
   'text-sm text-foreground file:mr-3 file:rounded-full file:border-0 file:bg-[var(--bg-elevated-2)] file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-foreground hover:file:bg-[var(--bg-hover)]';
 const textareaClassName =
   'h-56 w-full resize-y rounded-xl border-[1.5px] border-border bg-[var(--bg-elevated)] p-3 font-mono text-sm text-foreground caret-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]';
+
+async function waitForBlocklyModel(timeoutMs = 10_000) {
+  const adapter = getBlocklyAdapter();
+  const deadline = performance.now() + timeoutMs;
+  while (!WORKSPACE_KEYS.every((key) => Boolean(adapter.getWorkspace(key)))) {
+    if (performance.now() >= deadline) {
+      throw new Error('편집 준비가 끝나지 않았습니다. 잠시 후 다시 시도해 주세요.');
+    }
+    await new Promise<void>((resolve) => setTimeout(resolve, 20));
+  }
+  return adapter;
+}
 
 function arrangeImportedWorkspace(key: WorkspaceKey) {
   const workspace = getBlocklyAdapter().getWorkspaceSvg(key);
@@ -155,8 +171,8 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         },
         { html: { compactWideRows } },
       );
-      const adapter = getBlocklyAdapter();
       registerAllBlocks();
+      const adapter = await waitForBlocklyModel();
       const workspaceStore = useWorkspaceStore.getState();
       const uiStore = useUiStore.getState();
 

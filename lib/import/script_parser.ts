@@ -777,7 +777,7 @@ function parseOneStatement(body: string, start: number, stats: ParseStats): OneM
   // ---- setAttrs({...}) ----
   const setAttrsMatch = matchCall(body, i, 'setAttrs');
   if (setAttrsMatch) {
-    const block = tryParseSetAttrs(setAttrsMatch.args);
+    const block = tryParseSetAttrs(setAttrsMatch.args, stats);
     if (block) {
       stats.matched++;
       return { block, end: setAttrsMatch.end };
@@ -1100,20 +1100,43 @@ function tryParseGetAttrs(args: string, stats: ParseStats): ParsedBlock | null {
   };
 }
 
-function tryParseSetAttrs(args: string): ParsedBlock | null {
-  // setAttrs 의 두 번째 options 객체는 현재 시각 블록이 표현할 수 없다.
-  // 첫 번째 객체만 블록화하면 silent 등의 동작이 조용히 사라지므로
-  // 지원하지 않는 호출은 전체 statement raw-worker 경계로 보존한다.
+function tryParseSetAttrs(args: string, stats: ParseStats): ParsedBlock | null {
   const parts = splitArgs(args);
-  if (parts.length !== 1) return null;
+  if (parts.length < 1 || parts.length > 3) return null;
   const pairs = parseObjectPairs(parts[0]);
   if (!pairs) return null;
+
+  let silent = false;
+  let callback: { params: string; body: string } | null = null;
+  if (parts.length === 2) {
+    callback = parseCallback(parts[1]);
+    if (!callback) {
+      const options = parseObjectPairs(parts[1]);
+      if (!options || options.length !== 1 || options[0][0] !== 'silent' || options[0][1].trim() !== 'true') {
+        return null;
+      }
+      silent = true;
+    }
+  } else if (parts.length === 3) {
+    const options = parseObjectPairs(parts[1]);
+    if (!options || options.length !== 1 || options[0][0] !== 'silent' || options[0][1].trim() !== 'true') {
+      return null;
+    }
+    silent = true;
+    callback = parseCallback(parts[2]);
+    if (!callback) return null;
+  }
+  if (callback?.params.trim()) return null;
+  const children: Record<string, ParsedBlock[]> = callback
+    ? { CALLBACK: parseStatements(callback.body, stats) }
+    : {};
+  const commonFields = { SILENT: silent ? 'TRUE' : 'FALSE' };
 
   if (pairs.length === 1) {
     return {
       blockType: 'r20_set_attrs',
-      fields: { NAME: pairs[0][0] },
-      children: {},
+      fields: { NAME: pairs[0][0], ...commonFields },
+      children,
       valueInputs: { VALUE: valueBlock(pairs[0][1]) },
     };
   }
@@ -1135,8 +1158,8 @@ function tryParseSetAttrs(args: string): ParsedBlock | null {
   }
   return {
     blockType: 'r20_set_attrs_pair',
-    fields,
-    children: {},
+    fields: { ...fields, ...commonFields },
+    children,
     valueInputs,
   };
 }

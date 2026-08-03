@@ -84,12 +84,32 @@ function testSetAttrsOverflowPreservesRaw(): void {
   assert(r.stats.unparsed === 1, 'overflow is counted as unparsed');
 }
 
-function testSetAttrsOptionsPreservesRaw(): void {
+function testSetAttrsSilentOption(): void {
   const js = `setAttrs({ hp: 10 }, { silent: true });`;
   const r = parseSheetWorkerScript(js);
-  assert(r.blocks[0].blockType === 'r20_raw_worker', 'options use raw worker boundary');
-  assert(r.blocks[0].fields.JS.includes('silent: true'), 'setAttrs options are preserved');
-  assert(r.stats.unparsed === 1, 'options are counted as unparsed');
+  assert(r.blocks[0].blockType === 'r20_set_attrs', 'silent option stays structured');
+  assert(r.blocks[0].fields.SILENT === 'TRUE', 'silent option is preserved');
+  assert(r.stats.unparsed === 0, 'silent option is fully parsed');
+}
+
+function testSetAttrsCallback(): void {
+  const js = `setAttrs({ hp: 10 }, { silent: true }, function() { console.log('done'); });`;
+  const r = parseSheetWorkerScript(js);
+  const setter = r.blocks[0];
+  assert(setter.blockType === 'r20_set_attrs', 'setAttrs callback stays structured');
+  assert(setter.fields.SILENT === 'TRUE', 'callback keeps silent option');
+  assert(setter.children.CALLBACK?.[0]?.blockType === 'r20_worker_console_log', 'callback body is structured');
+  assert(r.stats.unparsed === 0, 'callback body is fully parsed');
+}
+
+function testSetAttrsCallbackWithoutOptions(): void {
+  const js = `setAttrs({ hp: 10 }, function() { console.log('done'); });`;
+  const r = parseSheetWorkerScript(js);
+  const setter = r.blocks[0];
+  assert(setter.blockType === 'r20_set_attrs', 'two-argument callback stays structured');
+  assert(setter.fields.SILENT === 'FALSE', 'callback without options is not silent');
+  assert(setter.children.CALLBACK?.[0]?.blockType === 'r20_worker_console_log', 'two-argument callback body');
+  assert(r.stats.unparsed === 0, 'two-argument callback is fully parsed');
 }
 
 function testGetAttrs(): void {
@@ -372,7 +392,9 @@ const tests = [
   ['setAttrs single', testSetAttrsSingle],
   ['setAttrs multi', testSetAttrsMulti],
   ['setAttrs overflow raw fallback', testSetAttrsOverflowPreservesRaw],
-  ['setAttrs options raw fallback', testSetAttrsOptionsPreservesRaw],
+  ['setAttrs silent option', testSetAttrsSilentOption],
+  ['setAttrs callback', testSetAttrsCallback],
+  ['setAttrs callback without options', testSetAttrsCallbackWithoutOptions],
   ['getAttrs', testGetAttrs],
   ['getSectionIDs', testGetSectionIDs],
   ['forEach', testForEach],

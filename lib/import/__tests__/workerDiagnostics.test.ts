@@ -36,7 +36,7 @@ const cases: Array<{ name: string; source: string; expected: string }> = [
   },
   {
     name: 'advanced worker API shape',
-    source: 'setAttrs({ hp: 10 }, { silent: true });',
+    source: 'setAttrs({ hp: 10 }, { silent: false });',
     expected: 'worker-api-shape',
   },
   {

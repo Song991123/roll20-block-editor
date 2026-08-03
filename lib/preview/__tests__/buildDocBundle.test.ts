@@ -235,8 +235,23 @@ assert.match(
 );
 assert.match(
   bundle.doc,
-  /var changedKeys = \[\][\s\S]*?if \(writeSheetAttr\(k, values\[k\]\)\) changedKeys\.push\(k\)/,
-  'worker setAttrs dispatches change events only for changed values',
+  /var changedAttrs = \[\][\s\S]*?if \(writeSheetAttr\(k, values\[k\]\)\)[\s\S]*?changedAttrs\.push\(\{ key: k, previousValue: previousValue, newValue: newValue \}\)/,
+  'worker setAttrs records only changed values with their previous and new state',
+);
+assert.match(
+  bundle.doc,
+  /var silent = Boolean\(opts && opts\.silent === true\)[\s\S]*?if \(!silent\) \{[\s\S]*?changedAttrs\.forEach/,
+  'worker setAttrs suppresses dependent change events when silent',
+);
+assert.match(
+  bundle.doc,
+  /sourceType: 'sheetworker'[\s\S]*?previousValue: change\.previousValue[\s\S]*?newValue: change\.newValue[\s\S]*?if \(typeof cb === 'function'\) cb\(\)/,
+  'worker setAttrs includes event state and still invokes its completion callback',
+);
+assert.doesNotMatch(
+  bundle.doc,
+  /var attr = name\.substring\(5\)[\s\S]*?triggerSheetWorker\('change:' \+ attr/,
+  'document changes do not use the removed duplicate worker dispatch listener',
 );
 assert.match(
   bundle.doc,

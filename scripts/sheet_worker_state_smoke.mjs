@@ -50,6 +50,7 @@ const SYNTHETIC_SHEET = {
   <input type="hidden" class="tabstoggle" name="attr_sheetTab" value="combat">
   <button type="action" name="act_character">Character</button>
   <button type="action" name="act_combat">Combat</button>
+  <button type="action" name="act_silent_update">Silent update</button>
   <div class="character">Character panel</div>
   <div class="combat">Combat panel</div>
 </div>
@@ -64,6 +65,12 @@ const SYNTHETIC_SHEET = {
 <input type="text" name="attr_second_probe" value="idle">
 <input type="hidden" name="attr_event_source" value="">
 <input type="hidden" name="attr_event_attr" value="">
+<input type="hidden" name="attr_event_previous" value="">
+<input type="hidden" name="attr_event_new" value="">
+<input type="hidden" name="attr_worker_source" value="">
+<input type="hidden" name="attr_silent_fired" value="">
+<input type="hidden" name="attr_callback_done" value="">
+<input type="hidden" name="attr_silent_probe" value="idle">
 <script type="text/worker">
   on("clicked:character", function () {
     setAttrs({ sheetTab: "character" });
@@ -71,13 +78,26 @@ const SYNTHETIC_SHEET = {
   on("clicked:combat", function () {
     setAttrs({ sheetTab: "combat" });
   });
+  on("change:sheettab", function (eventInfo) {
+    setAttrs({ worker_source: eventInfo.sourceType }, { silent: true });
+  });
   on("change:loop_probe", function () {
     setAttrs({ loop_probe: "armed" });
   });
   on("change:loop_probe change:second_probe", function (eventInfo) {
     setAttrs({
       event_source: eventInfo.sourceType,
-      event_attr: eventInfo.sourceAttribute
+      event_attr: eventInfo.sourceAttribute,
+      event_previous: eventInfo.previousValue,
+      event_new: eventInfo.newValue
+    }, { silent: true });
+  });
+  on("change:silent_probe", function () {
+    setAttrs({ silent_fired: "yes" }, { silent: true });
+  });
+  on("clicked:silent_update", function () {
+    setAttrs({ silent_probe: "updated" }, { silent: true }, function () {
+      setAttrs({ callback_done: "yes" }, { silent: true });
     });
   });
 </script>
@@ -179,6 +199,12 @@ async function readState(frame) {
       secondProbe: document.querySelector('[name="attr_second_probe"]')?.value ?? null,
       eventSource: document.querySelector('[name="attr_event_source"]')?.value ?? null,
       eventAttribute: document.querySelector('[name="attr_event_attr"]')?.value ?? null,
+      eventPrevious: document.querySelector('[name="attr_event_previous"]')?.value ?? null,
+      eventNew: document.querySelector('[name="attr_event_new"]')?.value ?? null,
+      workerSource: document.querySelector('[name="attr_worker_source"]')?.value ?? null,
+      silentFired: document.querySelector('[name="attr_silent_fired"]')?.value ?? null,
+      callbackDone: document.querySelector('[name="attr_callback_done"]')?.value ?? null,
+      silentProbe: document.querySelector('[name="attr_silent_probe"]')?.value ?? null,
       workerQueueOverflows: Number(document.body?.getAttribute('data-r20-worker-queue-overflows') ?? 0),
     };
   });
@@ -271,7 +297,11 @@ async function main() {
       return input?.getAttribute('value') === 'character' && getComputedStyle(character).display !== 'none';
     }, null, { timeout: 10000 });
     const character = await readState(frame);
-    report.steps.push({ name: 'after-character-click', state: character, pass: passForState(character, 'character') });
+    report.steps.push({
+      name: 'after-character-click',
+      state: character,
+      pass: passForState(character, 'character') && character.workerSource === 'sheetworker',
+    });
 
     await frame.locator('button[name="act_combat"]').click({ timeout: 10000 });
     await frame.waitForFunction(() => {
@@ -322,6 +352,8 @@ async function main() {
         workerLoop.loopProbe === 'armed' &&
         workerLoop.eventSource === 'player' &&
         workerLoop.eventAttribute === 'loop_probe' &&
+        workerLoop.eventPrevious === 'idle' &&
+        workerLoop.eventNew === 'armed' &&
         workerLoop.workerQueueOverflows === 0,
     });
 
@@ -340,7 +372,25 @@ async function main() {
       pass:
         secondEvent.secondProbe === 'changed' &&
         secondEvent.eventSource === 'player' &&
-        secondEvent.eventAttribute === 'second_probe',
+        secondEvent.eventAttribute === 'second_probe' &&
+        secondEvent.eventPrevious === 'idle' &&
+        secondEvent.eventNew === 'changed',
+    });
+
+    const beforeSilentUpdate = await readState(frame);
+    await frame.locator('button[name="act_silent_update"]').click({ timeout: 10000 });
+    await frame.waitForFunction(() => (
+      document.querySelector('[name="attr_silent_probe"]')?.value === 'updated' &&
+      document.querySelector('[name="attr_callback_done"]')?.value === 'yes'
+    ), null, { timeout: 10000 });
+    const silentUpdate = await readState(frame);
+    report.steps.push({
+      name: 'silent-setattrs-callback-without-change-event',
+      state: silentUpdate,
+      pass:
+        silentUpdate.silentProbe === 'updated' &&
+        silentUpdate.callbackDone === 'yes' &&
+        silentUpdate.silentFired === beforeSilentUpdate.silentFired,
     });
 
     report.screenshotPath = path.join(REPORT_DIR, 'sheet-worker-state.png');
