@@ -31,8 +31,8 @@ or source-derived measurement here.
   diagnostics remain `VERIFY`.
 - The harness self-test, repeated anonymous modern/legacy browser runs, full
   `ci:verify`, `lint`, production `build`, and tracked-doc privacy guard pass.
-  Ephemeral evidence is removed and project/CDP listeners are zero. Commit,
-  push, and exact remote CI check remain pending for this batch.
+  Ephemeral evidence is removed and project/CDP listeners are zero. The
+  implementation is committed and pushed, and its exact GitHub CI run passes.
 
 ## 2026-08-04 - Canvas-First Responsive Layer Panel
 
