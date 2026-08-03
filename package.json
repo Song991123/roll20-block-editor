@@ -203,6 +203,8 @@
     "smoke:imported-edit-sync:strict": "node scripts/imported_edit_sync_smoke.mjs --fail-on-resource-issues true",
     "budget:imported-edit": "node scripts/imported_edit_perf_budget.mjs",
     "test:imported-edit-budget": "node scripts/imported_edit_perf_budget.mjs --self-test",
+    "smoke:isolated-import-roundtrip": "node scripts/isolated_import_roundtrip.mjs",
+    "test:isolated-import-roundtrip": "node scripts/isolated_import_roundtrip.mjs --self-test",
     "smoke:worker-state": "node scripts/sheet_worker_state_smoke.mjs",
     "smoke:visual-state-candidates": "node scripts/visual_state_candidate_smoke.mjs",
     "capture:visual-fixtures": "node scripts/capture_visual_fixture_previews.mjs",

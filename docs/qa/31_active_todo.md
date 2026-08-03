@@ -152,10 +152,13 @@ belong in tracked documents.
   smokes pass action state, repeating operations, callback timing, and a deep
   callback chain. This is simulator fidelity, not broad Sheet Worker support
   or actual Roll20 execution proof.
-- `VERIFY SCALE`: repeated roundtrips of a large protected input in one browser
-  process can still exceed the practical memory/time budget. Keep the single
-  current roundtrip gate and anonymous repeated synthetic gate; add bounded
-  process isolation before claiming broad repeated-import endurance.
+- `DONE LOCAL BOUNDED / VERIFY RUNTIME ASSETS`: repeated import roundtrips now
+  run one browser and local server per bounded child process, with capped
+  repetitions, timeout, and Node memory. Anonymous modern and legacy inputs
+  pass repeated structural and runtime-clean checks. A protected legacy input
+  also passes repeated structural roundtrip checks, while external hosted
+  resources remain a separate warning. This is not broad endurance or visual
+  parity proof.
 - `PARTIAL`: HTML, CSS, translation, Rolltemplate, and a useful Sheet Worker
   subset map to editable blocks. Unsupported content must remain explicit and
   lossless instead of disappearing.
@@ -168,6 +171,10 @@ belong in tracked documents.
   `select`/`optgroup`/`option` structure, and inert Page JS in one browser path.
   Continue with broader uncommon form semantics, user-owned hosted assets,
   malformed selector families, and unsupported worker syntax.
+- `VERIFY ASSET UX`: do not bypass Roll20 legacy asset restrictions merely to
+  make local Preview look cleaner. Keep structure, resource loading, console,
+  and page status as separate evidence; add a plain-language warning for
+  unsupported hosted fonts or assets before calling this user-complete.
 - `DONE LOCAL`: the anonymous browser matrix now also covers native range,
   color, and date inputs, details/progress/meter/output structure, a local-only
   data image, `@font-face`, paused animation, a custom at-rule, and malformed

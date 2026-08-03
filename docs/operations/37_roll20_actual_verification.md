@@ -116,6 +116,22 @@ Classify a difference before changing product CSS:
 
 Do not promote a global renderer rule from one payload-specific symptom.
 
+## Legacy Hosted Assets
+
+- Keep legacy and modern asset behavior separate. Roll20 documents separate
+  sanitization systems and legacy restrictions in its
+  [iFrame and Sanitization Changes](https://help.roll20.net/hc/en-us/articles/360061735034-iFrame-and-Sanitization-Changes)
+  guidance.
+- Roll20's current sheet-development update notes say external fonts are
+  disabled for legacy sanitized sheets except supported Google Fonts. The
+  [development updates](https://wiki.roll20.net/Character_Sheet_Development/Updates)
+  and [CSS font guidance](https://wiki.roll20.net/CSS_Wizardry#Google_Fonts)
+  are the comparison authority.
+- Do not load a restricted legacy font directly in local Preview merely to
+  remove a console warning. Report structural roundtrip, resource loading,
+  console health, and page health independently, then surface a plain-language
+  compatibility warning to the user.
+
 ## Evidence Policy
 
 - Keep screenshots, DOM captures, CSSOM, payloads, room identifiers, console

@@ -16,6 +16,24 @@ or source-derived measurement here.
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
 
+## 2026-08-04 - Bounded Import Process Isolation
+
+- Added a bounded repeated-import harness that gives every iteration its own
+  Node process, browser, page, and local server. Repetition count, timeout, and
+  Node memory are capped, and aggregate reports omit source paths and content.
+- The report now separates structural roundtrip success from hosted-resource,
+  console, and page health. Anonymous modern and legacy runs are clean. A
+  protected legacy input repeatedly preserves structure but retains external
+  resource warnings, so it is not reported as runtime-clean or visually equal.
+- Roll20's published guidance keeps legacy and modern sanitization separate and
+  restricts legacy external fonts. The local renderer therefore does not add a
+  direct-load bypass that would look better than Roll20; user-facing asset
+  diagnostics remain `VERIFY`.
+- The harness self-test, repeated anonymous modern/legacy browser runs, full
+  `ci:verify`, `lint`, production `build`, and tracked-doc privacy guard pass.
+  Ephemeral evidence is removed and project/CDP listeners are zero. Commit,
+  push, and exact remote CI check remain pending for this batch.
+
 ## 2026-08-04 - Canvas-First Responsive Layer Panel
 
 - A synthetic desktop browser audit found that the fixed 760-pixel breakpoint

@@ -50,6 +50,7 @@ const tasks = [
   'test:import-structure',
   'test:high-priority-mapping',
   'test:imported-edit-budget',
+  'test:isolated-import-roundtrip',
   'test:legacy-css-sanitize',
   'audit:legacy-export',
   'test:roll20-sandbox-sanitize',
