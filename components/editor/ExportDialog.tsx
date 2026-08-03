@@ -221,7 +221,6 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
     if (blocked) return;
     setBusy(true);
     try {
-      const cssForZip = roll20Upload.css;
       const collectedWarnings: SanitizeWarning[] = roll20Upload.legacyWarnings;
       const extraFiles: Record<string, string> = { ...(roll20Upload.extraFiles ?? {}) };
       if (assetReplacementText.trim()) {
@@ -251,9 +250,9 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       setLegacyWarnings(collectedWarnings);
       const zip = await buildZip(
         {
-          html: roll20Upload.html,
-          css: cssForZip,
-          translation: roll20Upload.translation,
+          html: exportText.html,
+          css: exportText.css,
+          translation: emitCache.i18n,
           warnings: [],
           extraFiles,
         },

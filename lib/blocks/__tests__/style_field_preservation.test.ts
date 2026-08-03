@@ -167,7 +167,7 @@ function testI18nAriaLabelClassPreserved(): void {
   const r = importSheet({ html });
   assert(r.html.includes('r20_i18n_aria_label'), 'r20_i18n_aria_label matched');
   assert(
-    allFieldValues(r.html, 'CLASS').includes('help-label'),
+    allFieldValues(r.html, 'CLASS').includes('sheet-help-label'),
     'i18n aria-label CLASS is editable and preserved',
   );
   const style = fieldValue(r.html, 'STYLE');
@@ -233,17 +233,17 @@ function testMovableSpecialBlocksKeepClassFields(): void {
   assert(r.html.includes('r20_section_wrap'), 'section remains a structural block');
   assert(r.html.includes('r20_toggle_wrap'), 'toggle remains a structural block');
   assert(r.html.includes('r20_grid'), 'grid remains a structural block');
-  assert(allFieldValues(r.html, 'CLASS').includes('row-highlight'), 'row class is retained');
-  assert(allFieldValues(r.html, 'CLASS').includes('name-label'), 'label class is retained');
-  assert(allFieldValues(r.html, 'CLASS').includes('gap'), 'spacer class is retained');
-  assert(allFieldValues(r.html, 'CLASS').includes('break'), 'line break class is retained');
-  assert(allFieldValues(r.html, 'CLASS').includes('panel'), 'section class is retained');
-  assert(allFieldValues(r.html, 'CLASS').includes('extra'), 'toggle class is retained');
-  assert(allFieldValues(r.html, 'CLASS').includes('grid-card'), 'grid class is retained');
-  assert(allFieldValues(r.html, 'CLASS').includes('rich'), 'i18n HTML class is retained');
-  assert(allFieldValues(r.html, 'CLASS').includes('legend-title'), 'i18n legend class is retained');
-  assert(allFieldValues(r.html, 'CLASS').includes('option'), 'option class is retained');
-  assert(allFieldValues(r.html, 'CLASS').includes('i18n-option'), 'i18n option class is retained');
+  assert(allFieldValues(r.html, 'CLASS').includes('sheet-row-highlight'), 'row class is retained');
+  assert(allFieldValues(r.html, 'CLASS').includes('sheet-name-label'), 'label class is retained');
+  assert(allFieldValues(r.html, 'CLASS').includes('sheet-gap'), 'spacer class is retained');
+  assert(allFieldValues(r.html, 'CLASS').includes('sheet-break'), 'line break class is retained');
+  assert(allFieldValues(r.html, 'CLASS').includes('sheet-panel'), 'section class is retained');
+  assert(allFieldValues(r.html, 'CLASS').includes('sheet-extra'), 'toggle class is retained');
+  assert(allFieldValues(r.html, 'CLASS').includes('sheet-grid-card'), 'grid class is retained');
+  assert(allFieldValues(r.html, 'CLASS').includes('sheet-rich'), 'i18n HTML class is retained');
+  assert(allFieldValues(r.html, 'CLASS').includes('sheet-legend-title'), 'i18n legend class is retained');
+  assert(allFieldValues(r.html, 'CLASS').includes('sheet-option'), 'option class is retained');
+  assert(allFieldValues(r.html, 'CLASS').includes('sheet-i18n-option'), 'i18n option class is retained');
   assert(r.stats.htmlRawFallback === 0, 'special movable blocks have no raw fallback');
 }
 

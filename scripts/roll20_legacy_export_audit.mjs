@@ -4,7 +4,7 @@
  *
  * Scope:
  * - proves the sanitizer performs legacy-only CSS rewriting/removal;
- * - proves ExportDialog routes legacy export through sanitizeForRoll20Legacy;
+ * - proves ZIP export routes the selected mode through the shared upload boundary;
  * - does not prove actual Roll20 legacy visual parity.
  */
 
@@ -116,6 +116,8 @@ function check(assertions, name, pass, details = {}) {
 function auditExportDialogStatic(assertions) {
   const file = join(REPO_ROOT, 'components/editor/ExportDialog.tsx');
   const source = readFileSync(file, 'utf8');
+  const zipBuilderFile = join(REPO_ROOT, 'lib/export/zip_builder.ts');
+  const zipBuilderSource = readFileSync(zipBuilderFile, 'utf8');
   check(
     assertions,
     'ExportDialog routes payload through prepareRoll20UploadFiles',
@@ -136,8 +138,14 @@ function auditExportDialogStatic(assertions) {
   );
   check(
     assertions,
-    'ExportDialog sends sanitized CSS into buildZip',
-    /css:\s*cssForZip/.test(source),
+    'ZIP builder applies the selected upload compatibility mode',
+    /prepareRoll20UploadFiles\(emit,\s*\{\s*legacy:\s*meta\.legacy\s*\}\)/.test(zipBuilderSource),
+    { file: zipBuilderFile },
+  );
+  check(
+    assertions,
+    'ExportDialog sends authored CSS into the mode-aware ZIP boundary',
+    /css:\s*exportText\.css/.test(source),
     { file },
   );
   check(

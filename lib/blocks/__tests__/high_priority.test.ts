@@ -265,7 +265,7 @@ function testFriendlyRollButtonEmit(): void {
   expectContains(code, 'type="roll"', 'friendly Roll button keeps Roll20 button type');
   expectContains(code, 'name="roll_check"', 'friendly Roll button prefixes the Roll20 name');
   expectContains(code, 'value="&amp;{template:default} {{result=[[1d20]]}}"', 'friendly Roll command is attribute-safe');
-  expectContains(code, 'class="sheet-roll-button"', 'friendly Roll button restores the sheet class prefix');
+  expectContains(code, 'class="roll-button"', 'friendly Roll button preserves the authored class');
   expectContains(code, '>Roll</button>', 'friendly Roll label is visible');
 }
 
@@ -479,7 +479,7 @@ function testCssVarDeclStripsDashPrefix(): void {
   expectEq(code, `--accent: red;`, 'auto-strips -- prefix');
 }
 
-function testCssClassSelectorRestoresRoll20SheetPrefix(): void {
+function testCssClassSelectorPreservesAuthoredToken(): void {
   const def = findBlock(CSS_BLOCKS as Array<{ type: string }>, 'r20_selector_class');
   const b = new FakeBlock({
     type: 'r20_selector_class',
@@ -487,7 +487,7 @@ function testCssClassSelectorRestoresRoll20SheetPrefix(): void {
   });
   const out = def.generator!(b, makeCtx());
   const code = Array.isArray(out) ? out[0] : out;
-  expectEq(code, '.sheet-rolltemplate-aw', 'Roll20 export class selector restores sheet- prefix');
+  expectEq(code, '.rolltemplate-aw', 'modern class selector stays authored');
 }
 
 function testCssClassSelectorDoesNotDoublePrefix(): void {
@@ -598,10 +598,10 @@ function testValueSwitchPreservesCustomClasses(): void {
   });
   const out = def.generator!(b, makeCtx());
   const code = (Array.isArray(out) ? out[0] : out) as string;
-  expectContains(code, 'class="sheet-era-switch sheet-switch-shell"', 'wrapper custom class');
+  expectContains(code, 'class="sheet-era-switch switch-shell"', 'wrapper custom class');
   expectContains(
     code,
-    'class="sheet-era-panel sheet-era-panel-pulp sheet-panel-highlight"',
+    'class="sheet-era-panel sheet-era-panel-pulp panel-highlight"',
     'panel custom class',
   );
 }
@@ -655,9 +655,9 @@ function testDualRollPreservesVisualClasses(): void {
   });
   const out = def.generator!(b, makeCtx());
   const code = (Array.isArray(out) ? out[0] : out) as string;
-  expectContains(code, 'class="sheet-row sheet-dual-roll sheet-attack-row"', 'row class');
-  expectContains(code, 'class="sheet-attack-roll"', 'first button class');
-  expectContains(code, 'class="sheet-damage-roll"', 'second button class');
+  expectContains(code, 'class="sheet-row sheet-dual-roll attack-row"', 'row class');
+  expectContains(code, 'class="attack-roll"', 'first button class');
+  expectContains(code, 'class="damage-roll"', 'second button class');
 }
 
 // ---------- 5) r20_attr_ref SCOPE -----------------------------------------
@@ -740,7 +740,7 @@ const tests: Array<[string, () => void]> = [
   ['css var decl with slot', testCssVarDeclWithSlot],
   ['css var decl with text fallback', testCssVarDeclWithTextFallback],
   ['css var decl strips dash prefix', testCssVarDeclStripsDashPrefix],
-  ['css class selector restores Roll20 sheet prefix', testCssClassSelectorRestoresRoll20SheetPrefix],
+  ['css class selector preserves authored token', testCssClassSelectorPreservesAuthoredToken],
   ['css class selector does not double prefix', testCssClassSelectorDoesNotDoublePrefix],
   ['css class selector preserves Roll20 runtime class', testCssClassSelectorPreservesRoll20RuntimeClass],
   ['value switch empty attr', testValueSwitchEmptyAttr],

@@ -5,12 +5,12 @@ import { ZIP_FILES } from '../types.ts';
 
 const source = {
   html: [
-    '<div data-r20-block-id="internal"><input name="attr_name"></div>',
+    '<div data-r20-block-id="internal" id="root" class="panel sheet-kept"><input name="attr_name"></div>',
     '<script>window.ordinaryProbe = true;</script>',
     '<script type="application/json">{"probe":true}</script>',
     '<script type="text/worker">on("sheet:opened", () => setAttrs({ ready: "1" }));</script>',
   ].join('\n'),
-  css: '.sheet { position: fixed; transform: scale(1.1); }',
+  css: '.panel #root, .sheet-kept { position: fixed; transform: scale(1.1); }',
   translation: '{"name": "Name"}',
   warnings: [],
 };
@@ -23,6 +23,9 @@ assert.equal(modern.files[1].content, modern.css);
 assert.equal(modern.files[2].content, modern.translation);
 assert.equal(modern.legacyWarnings.length, 0);
 assert.equal(modern.removedUnsupportedScripts, 2);
+assert.match(modern.html, /id="root" class="panel sheet-kept"/);
+assert.match(modern.css, /\.panel #root, \.sheet-kept/);
+assert.equal(modern.html.includes('sheet-panel'), false);
 assert.equal(modern.html.includes('ordinaryProbe'), false);
 assert.equal(modern.html.includes('{"probe":true}'), false);
 assert.match(modern.html, /<script type="text\/worker">/);
@@ -39,6 +42,8 @@ assert.match(stripped.html, /text\/worker/);
 
 const legacy = prepareRoll20UploadFiles(source, { legacy: true });
 assert.ok(legacy.legacyWarnings.length > 0, 'legacy mode reports rewritten CSS');
+assert.match(legacy.html, /id="sheet-root" class="sheet-panel sheet-kept"/);
+assert.match(legacy.css, /\.sheet-panel #sheet-root/);
 assert.equal(legacy.files[1].content, legacy.css);
 assert.equal(legacy.files[2].content, '{\n  "name": "Name"\n}');
 assert.equal(legacy.removedUnsupportedScripts, 2);

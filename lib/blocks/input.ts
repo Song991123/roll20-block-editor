@@ -15,6 +15,7 @@ import * as Blockly from 'blockly';
 import { type BlockDef, type GeneratorContext } from './types';
 import { PRESERVED_ATTRIBUTE_TARGET } from './preservedAttributes';
 import { styleAttr } from './style_field';
+import { normalizeAuthoredClassTokens } from '@/lib/utils/classTokens';
 
 // ---------- 카테고리 / 상수 ----------
 
@@ -54,21 +55,11 @@ function attr(name: string, value: string): string {
   return ` ${name}="${escapeAttr(v)}"`;
 }
 
-/** ` class="sheet-foo sheet-bar"` — CLASS 비면 생략. 토큰별로 sheet- prefix 부착.
- *
- * multi-class fix: 이전엔 전체 문자열에 한 번만 sheet- 부착 → `class="sheet-row header"`
- * 같은 잘못된 출력. 매처가 import 시 토큰별로 sheet- 를 떼므로 emit 도 토큰별로
- * 다시 부착해야 round-trip byte-identical 성립.
- */
-function sheetClassAttr(cls: string): string {
-  const v = String(cls ?? '').trim();
+/** Preserve authored class tokens; omit the attribute when CLASS is empty. */
+function authoredClassAttr(cls: string): string {
+  const v = normalizeAuthoredClassTokens(cls);
   if (!v) return '';
-  const out = v
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((t) => (t.startsWith('sheet-') ? t : `sheet-${t}`))
-    .join(' ');
-  return ` class="${escapeAttr(out)}"`;
+  return ` class="${escapeAttr(v)}"`;
 }
 
 /** Roll20 attribute name 규약 — ` name="attr_${NAME}"`. */
@@ -129,7 +120,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const i18n = String(b.getFieldValue('I18N') ?? '');
       const disabled = String(b.getFieldValue('DISABLED') ?? 'FALSE') === 'TRUE';
       return (
-        `<input type="text"${sheetClassAttr(cls)}${nameAttr(name)}${attr('value', def)}` +
+        `<input type="text"${authoredClassAttr(cls)}${nameAttr(name)}${attr('value', def)}` +
         `${attr('placeholder', ph)}${attr('data-i18n', i18n)}` +
         `${disabled ? ' disabled="true"' : ''}${styleAttr(style)}>`
       );
@@ -187,7 +178,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const ph = String(b.getFieldValue('PLACEHOLDER') ?? '');
       const disabled = String(b.getFieldValue('DISABLED') ?? 'FALSE') === 'TRUE';
       return (
-        `<input type="number"${sheetClassAttr(cls)}${nameAttr(name)}` +
+        `<input type="number"${authoredClassAttr(cls)}${nameAttr(name)}` +
         `${attr('min', min)}${attr('max', max)}${attr('value', def)}` +
         `${attr('placeholder', ph)}${disabled ? ' disabled="true"' : ''}${styleAttr(style)}>`
       );
@@ -228,7 +219,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const val = String(b.getFieldValue('VALUE') ?? '');
       const checked = String(b.getFieldValue('CHECKED') ?? 'FALSE') === 'TRUE';
       const checkedAttr = checked ? ' checked="checked"' : '';
-      return `<input type="checkbox"${sheetClassAttr(cls)}${nameAttr(name)}${attr('value', val)}${checkedAttr}${styleAttr(style)}>`;
+      return `<input type="checkbox"${authoredClassAttr(cls)}${nameAttr(name)}${attr('value', val)}${checkedAttr}${styleAttr(style)}>`;
     },
   },
 
@@ -258,7 +249,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const name = String(b.getFieldValue('NAME') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const options = ctx.statementToCode(block, 'OPTIONS');
-      const head = `<select${sheetClassAttr(cls)}${nameAttr(name)}${styleAttr(style)}>`;
+      const head = `<select${authoredClassAttr(cls)}${nameAttr(name)}${styleAttr(style)}>`;
       if (!options || !options.trim()) return `${head}</select>`;
       return `${head}\n${ctx.indent(options)}\n</select>`;
     },
@@ -296,7 +287,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const options = ctx.statementToCode(block, 'OPTIONS');
       const head = `<optgroup${attr('label', label)}${disabled ? ' disabled="disabled"' : ''}` +
-        `${sheetClassAttr(cls)}${styleAttr(style)}>`;
+        `${authoredClassAttr(cls)}${styleAttr(style)}>`;
       if (!options || !options.trim()) return `${head}</optgroup>`;
       return `${head}\n${ctx.indent(options)}\n</optgroup>`;
     },
@@ -336,7 +327,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const selected = String(b.getFieldValue('SELECTED') ?? 'FALSE') === 'TRUE';
       return (
-        `<option${attr('value', value)}${sheetClassAttr(cls)}${selected ? ' selected="selected"' : ''}` +
+        `<option${attr('value', value)}${authoredClassAttr(cls)}${selected ? ' selected="selected"' : ''}` +
         `${styleAttr(style)}>${escapeAttr(label)}</option>`
       );
     },
@@ -384,7 +375,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const ph = String(b.getFieldValue('PLACEHOLDER') ?? '');
       const i18nPh = String(b.getFieldValue('I18N_PLACEHOLDER') ?? '');
       return (
-        `<textarea${sheetClassAttr(cls)}${nameAttr(name)}` +
+        `<textarea${authoredClassAttr(cls)}${nameAttr(name)}` +
         ` rows="${rows}"${attr('placeholder', ph)}${attr('data-i18n-placeholder', i18nPh)}` +
         `${styleAttr(style)}>${escapeAttr(def)}</textarea>`
       );
@@ -428,7 +419,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const label = String(b.getFieldValue('LABEL') ?? '');
       const checked = String(b.getFieldValue('CHECKED') ?? 'FALSE') === 'TRUE';
       return (
-        `<label><input ${PRESERVED_ATTRIBUTE_TARGET} type="radio"${sheetClassAttr(cls)}${nameAttr(name)}` +
+        `<label><input ${PRESERVED_ATTRIBUTE_TARGET} type="radio"${authoredClassAttr(cls)}${nameAttr(name)}` +
         `${attr('value', value)}${checked ? ' checked="checked"' : ''}${styleAttr(style)}>` +
         `${escapeAttr(label)}</label>`
       );
@@ -464,7 +455,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const name = String(b.getFieldValue('NAME') ?? '');
       const def = String(b.getFieldValue('DEFAULT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
-      return `<input type="hidden"${sheetClassAttr(cls)}${nameAttr(name)}${attr('value', def)}${styleAttr(style)}>`;
+      return `<input type="hidden"${authoredClassAttr(cls)}${nameAttr(name)}${attr('value', def)}${styleAttr(style)}>`;
     },
   },
 
@@ -497,7 +488,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const name = String(b.getFieldValue('NAME') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const accept = String(b.getFieldValue('ACCEPT') ?? '');
-      return `<input type="file"${sheetClassAttr(cls)}${nameAttr(name)}${attr('accept', accept)}${styleAttr(style)}>`;
+      return `<input type="file"${authoredClassAttr(cls)}${nameAttr(name)}${attr('accept', accept)}${styleAttr(style)}>`;
     },
   },
 
@@ -558,7 +549,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const readOnly = String(b.getFieldValue('READONLY') ?? 'FALSE') === 'TRUE';
       const style = String(b.getFieldValue('STYLE') ?? '');
       return (
-        `<input type="${escapeAttr(type)}"${sheetClassAttr(cls)}${nameAttr(name)}` +
+        `<input type="${escapeAttr(type)}"${authoredClassAttr(cls)}${nameAttr(name)}` +
         `${attr('value', def)}${attr('placeholder', placeholder)}` +
         `${attr('min', min)}${attr('max', max)}${attr('step', step)}` +
         `${disabled ? ' disabled="disabled"' : ''}${readOnly ? ' readonly="readonly"' : ''}` +

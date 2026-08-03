@@ -903,3 +903,24 @@ parity.
 - Layout unit tests, the full edit-flow browser smoke, the empty-sheet desktop
   drag, and 390x844/768x900 drawer checks pass. This is local editor UX proof;
   it adds no actual Roll20 parity evidence.
+
+## 2026-08-03 - Authored Class Contract Repair
+
+- Removed unconditional class/ID prefixing from canonical import and block
+  emission. Modern Preview/Edit/export now preserve authored tokens, including
+  mixed unprefixed and existing `sheet-*` names.
+- Moved the compatibility transform to the legacy destination boundary so HTML
+  and CSS are prefixed together exactly once before legacy CSS sanitizing.
+  ZIP and individual upload files now share that same mode-aware preparation.
+- Added import-to-block-to-emit, shared renderer, upload-file, and ZIP
+  regressions for modern preservation and legacy alignment. Focused mapping,
+  sanitize, mode, export, lint, and production-build checks pass.
+- Refreshed the anonymous browser suite: all fourteen modern/legacy
+  Preview/Edit pairs are pixel-exact with zero console/page errors. Export UI
+  smoke also passes after its empty-state assertions were aligned with the
+  current compact canvas UI.
+- Claim boundary: this is local source/render/export correctness. Chrome actual
+  upload remains unavailable in this run, so the valid-repeating modern and
+  legacy evidence stays 0/8 and `VERIFY`.
+- Final full `ci:verify`, lint, production build, tracked-document privacy, and
+  server-hygiene gates pass. No project or CDP listener remains running.

@@ -162,8 +162,8 @@ function testValueSwitchPanelPreservesCustomClasses(): void {
     </div>
   `;
   const r = importSheet({ html });
-  expectContains(r.html, '>switch-shell<', 'switch wrapper class preserved');
-  expectContains(r.html, '>panel-highlight<', 'panel class preserved');
+  expectContains(r.html, '>sheet-switch-shell<', 'switch wrapper class preserved');
+  expectContains(r.html, '>sheet-panel-highlight<', 'panel class preserved');
 }
 
 function testValueSwitchPanelNoMatch(): void {
@@ -198,9 +198,9 @@ function testDualRollCompositeImportPreservesFields(): void {
   `;
   const r = importSheet({ html });
   expectContains(r.html, 'r20_dual_roll_button', 'dual roll composite matched');
-  expectContains(r.html, '>attack-row<', 'row class carried');
-  expectContains(r.html, '>attack-roll<', 'button A class carried');
-  expectContains(r.html, '>damage-roll<', 'button B class carried');
+  expectContains(r.html, '>sheet-attack-row<', 'row class carried');
+  expectContains(r.html, '>sheet-attack-roll<', 'button A class carried');
+  expectContains(r.html, '>sheet-damage-roll<', 'button B class carried');
   expectContains(r.html, '>/r 1d20+@{atk}<', 'roll A carried');
   expectContains(r.html, '>/r 1d8+@{dmg}<', 'roll B carried');
   assert(r.stats.htmlRawFallback === 0, 'dual roll marker has no raw fallback');

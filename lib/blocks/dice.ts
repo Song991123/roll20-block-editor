@@ -21,6 +21,7 @@ import * as Blockly from 'blockly';
 import { type BlockDef, type GeneratorContext, ORDER } from './types';
 import { styleAttr } from './style_field';
 import { isInlineMarkup, startsInlineMarkup } from './inlineMarkup';
+import { normalizeAuthoredClassTokens } from '@/lib/utils/classTokens';
 
 // ---------- 카테고리 / 상수 ----------
 
@@ -83,18 +84,11 @@ function attr(name: string, value: string): string {
   return ` ${name}="${escapeAttr(v)}"`;
 }
 
-/** ` class="sheet-foo sheet-bar"` — 토큰별 sheet- prefix. CLASS 비면 생략.
- * multi-class fix: 매처는 토큰별 prefix 를 떼므로 emit 도 토큰별로 부착해야
- * round-trip byte-identical 성립. */
-function sheetClassAttr(cls: string): string {
-  const v = String(cls ?? '').trim();
+/** Preserve authored class tokens; omit the attribute when CLASS is empty. */
+function authoredClassAttr(cls: string): string {
+  const v = normalizeAuthoredClassTokens(cls);
   if (!v) return '';
-  const out = v
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((t) => (t.startsWith('sheet-') ? t : `sheet-${t}`))
-    .join(' ');
-  return ` class="${escapeAttr(out)}"`;
+  return ` class="${escapeAttr(v)}"`;
 }
 
 /** `<tag attrs>\n  content\n</tag>` 형태 wrap. content 비면 self-collapse. */
@@ -162,7 +156,7 @@ export const DICE_BLOCKS: BlockDef[] = [
       const expr = ctx.valueToCode(block, 'EXPR', ORDER.NONE) || '';
       return (
         `<button type="roll"${attr('name', name ? `roll_${name}` : '')}` +
-        `${attr('value', expr)}${sheetClassAttr(cls)}${styleAttr(style)}>${escapeText(label)}</button>`
+        `${attr('value', expr)}${authoredClassAttr(cls)}${styleAttr(style)}>${escapeText(label)}</button>`
       );
     },
   },
@@ -206,7 +200,7 @@ export const DICE_BLOCKS: BlockDef[] = [
       const cls = String(b.getFieldValue('CLASS') ?? '');
       return (
         `<button type="roll"${attr('name', name ? `roll_${name}` : '')}`
-        + `${attr('value', formula)}${sheetClassAttr(cls)}${styleAttr(style)}>${escapeText(label)}</button>`
+        + `${attr('value', formula)}${authoredClassAttr(cls)}${styleAttr(style)}>${escapeText(label)}</button>`
       );
     },
   },
@@ -244,7 +238,7 @@ export const DICE_BLOCKS: BlockDef[] = [
       const cls = String(b.getFieldValue('CLASS') ?? '');
       return (
         `<button type="action"${attr('name', name ? `act_${name}` : '')}` +
-        `${sheetClassAttr(cls)}${styleAttr(style)}>${escapeText(label)}</button>`
+        `${authoredClassAttr(cls)}${styleAttr(style)}>${escapeText(label)}</button>`
       );
     },
   },
@@ -287,7 +281,7 @@ export const DICE_BLOCKS: BlockDef[] = [
       const cls = String(b.getFieldValue('CLASS') ?? '');
       return (
         `<button type="roll"${attr('name', name ? `roll_${name}` : '')}` +
-        `${attr('value', message)}${sheetClassAttr(cls)}${styleAttr(style)}>${escapeText(label)}</button>`
+        `${attr('value', message)}${authoredClassAttr(cls)}${styleAttr(style)}>${escapeText(label)}</button>`
       );
     },
   },

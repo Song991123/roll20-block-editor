@@ -5,6 +5,7 @@ import {
   type SanitizeWarning,
 } from '../emit/sanitize';
 import { isRoll20WorkerScript, readScriptType } from '../import/worker_source';
+import { autoPrefixCssClasses, autoPrefixHtmlClasses } from '../preview/prefix';
 
 export interface PreparedPayload extends EmitOutput {
   removedInternalBlockIds: number;
@@ -56,11 +57,14 @@ export function prepareRoll20UploadFiles(
   options: { legacy?: boolean } = {},
 ): PreparedRoll20Upload {
   const payload = prepareRoll20Payload(emit);
-  const legacyResult = options.legacy && payload.css
-    ? sanitizeForRoll20Legacy(payload.css)
-    : { sanitized: payload.css, warnings: [] as SanitizeWarning[] };
+  const compatibilityHtml = options.legacy ? autoPrefixHtmlClasses(payload.html) : payload.html;
+  const compatibilityCss = options.legacy ? autoPrefixCssClasses(payload.css) : payload.css;
+  const legacyResult = options.legacy && compatibilityCss
+    ? sanitizeForRoll20Legacy(compatibilityCss)
+    : { sanitized: compatibilityCss, warnings: [] as SanitizeWarning[] };
   const prepared = {
     ...payload,
+    html: compatibilityHtml,
     css: legacyResult.sanitized,
     translation: payload.translation.trim() || '{}',
     legacyWarnings: legacyResult.warnings,

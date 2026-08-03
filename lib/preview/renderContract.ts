@@ -48,35 +48,33 @@ export function prepareSheetRenderContract(
   input: SheetRenderContractInput,
 ): PreparedSheetRenderContract {
   const compatibilityMode = input.compatibilityMode
-    ?? (input.legacyCssSanitize === true ? 'legacy' : 'modern');
+    ?? (input.legacyCssSanitize === true || input.sanitize === true ? 'legacy' : 'modern');
   const legacyCssSanitize = compatibilityMode === 'legacy';
-  const sanitize = input.compatibilityMode
-    ? legacyCssSanitize
-    : input.sanitize !== false;
+  const sanitize = legacyCssSanitize;
   const roll20SandboxSanitize = input.roll20SandboxSanitize === true;
   const userHtml = (input.html ?? '').trim();
   const userCss = (input.css ?? '').trim();
 
-  const prefixedHtml = sanitize ? autoPrefixHtmlClasses(userHtml) : userHtml;
-  const prefixedCss = sanitize ? autoPrefixCssClasses(userCss) : userCss;
+  const compatibilityHtml = legacyCssSanitize ? autoPrefixHtmlClasses(userHtml) : userHtml;
+  const compatibilityCss = legacyCssSanitize ? autoPrefixCssClasses(userCss) : userCss;
   // The legacy-enabled Roll20 room applies the same observed HTML allow-list
   // before mounting the sheet. Reuse that transform so local legacy Preview
   // and Edit do not preserve wrappers that Roll20 removes.
   const sandboxHtml = roll20SandboxSanitize || legacyCssSanitize
     ? restorePreviewWorkerScripts(
-        sanitizeRoll20SandboxHtml(userHtml, {
-          prefixClasses: legacyCssSanitize,
+        sanitizeRoll20SandboxHtml(compatibilityHtml, {
+          prefixClasses: false,
           rewriteUrls: false,
         }).html,
         userHtml,
       )
-    : prefixedHtml;
+    : compatibilityHtml;
   const sandboxCss = roll20SandboxSanitize
-    ? sanitizeRoll20SandboxCss(userCss, {
+    ? sanitizeRoll20SandboxCss(compatibilityCss, {
         prefixSelectors: false,
         rewriteUrls: false,
       }).css
-    : prefixedCss;
+    : compatibilityCss;
   const runtimeHtml = applyRoll20RuntimeHtmlAssetPolicy(sandboxHtml, compatibilityMode);
   const runtimeCss = applyRoll20RuntimeCssAssetPolicy(sandboxCss, compatibilityMode);
   const previewCss = legacyCssSanitize

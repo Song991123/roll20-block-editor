@@ -14,7 +14,6 @@ import { buildManifest, DEFAULT_METADATA } from '../manifest';
 import { buildReadme } from '../readme';
 import JSZip from 'jszip';
 import { hasBlockingError } from '@/lib/stores/workspaceStore';
-import { sanitizeForRoll20Legacy } from '@/lib/emit/sanitize';
 
 function assert(cond: unknown, msg: string): void {
   if (!cond) throw new Error(`Assertion failed: ${msg}`);
@@ -114,21 +113,20 @@ async function testPbtaSmoke(): Promise<void> {
 
 // ── (3) <iframe> 박힌 emit → ERROR 차단 ──────────────────────────────────
 async function testModeSpecificZipBoundary(): Promise<void> {
-  const html = '<div class="sheet-card">Card</div>';
+  const html = '<div id="card-root" class="card sheet-kept">Card</div>';
   const sourceCss = `
 @font-face {
   font-family: "SyntheticExportFont";
   src: url("https://fonts.example.test/synthetic-export.woff2") format("woff2");
 }
-.sheet-card { transform: scale(0.9); }
+.card #card-root, .sheet-kept { transform: scale(0.9); }
 `.trim();
   const modernZip = await buildZip(
     { html, css: sourceCss, translation: '{}', warnings: [] },
     { ...DEFAULT_METADATA, name: 'Modern Mode Boundary', legacy: false },
   );
-  const legacyCss = sanitizeForRoll20Legacy(sourceCss).sanitized;
   const legacyZip = await buildZip(
-    { html, css: legacyCss, translation: '{}', warnings: [] },
+    { html, css: sourceCss, translation: '{}', warnings: [] },
     { ...DEFAULT_METADATA, name: 'Legacy Mode Boundary', legacy: true },
   );
   const modernFiles = await JSZip.loadAsync(await modernZip.blob.arrayBuffer());
@@ -137,10 +135,15 @@ async function testModeSpecificZipBoundary(): Promise<void> {
   const legacyManifest = JSON.parse(await legacyFiles.file('sheet.json')!.async('string'));
   const modernCss = await modernFiles.file('sheet.css')!.async('string');
   const exportedLegacyCss = await legacyFiles.file('sheet.css')!.async('string');
+  const modernHtml = await modernFiles.file('sheet.html')!.async('string');
+  const legacyHtml = await legacyFiles.file('sheet.html')!.async('string');
 
   assert(modernManifest.legacy === false, 'modern ZIP manifest stays modern');
   assert(legacyManifest.legacy === true, 'legacy ZIP manifest stays legacy');
   assert(modernCss.includes('transform: scale(0.9)'), 'modern ZIP preserves authored transform');
+  assert(modernHtml.includes('id="card-root" class="card sheet-kept"'), 'modern ZIP preserves authored class and id');
+  assert(legacyHtml.includes('id="sheet-card-root" class="sheet-card sheet-kept"'), 'legacy ZIP prefixes authored class and id once');
+  assert(exportedLegacyCss.includes('.sheet-card #sheet-card-root'), 'legacy ZIP selectors match transformed HTML');
   assert(!/transform\s*:/i.test(exportedLegacyCss), 'legacy ZIP removes unsupported transform');
   assert(/zoom\s*:\s*0\.9/i.test(exportedLegacyCss), 'legacy ZIP converts scale to zoom');
   for (const [mode, css] of [['modern', modernCss], ['legacy', exportedLegacyCss]] as const) {

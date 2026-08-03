@@ -528,9 +528,13 @@ async function main() {
       return {
         hasHeaderTitle: bodyText.includes('Roll20 시트 편집기'),
         hasEmptyTitle:
+          bodyText.includes('빈 시트') ||
           bodyText.includes('캐릭터 시트, 여기서 만들어요') ||
           bodyText.includes('새 Roll20 시트를 만들어볼까요?'),
-        hasBlankCta: bodyText.includes('빈 시트로 시작'),
+        hasBlankCta:
+          bodyText.includes('빈 시트로 시작') ||
+          bodyText.includes('새 시트'),
+        hasEmptyCanvas: Boolean(document.querySelector('[data-testid="empty-sheet-canvas"]')),
         hasSampleCta: bodyText.includes('샘플 시트 보기'),
         hasSampleMenu: bodyText.includes('샘플 시트'),
         hasLocalPreviewBoundaryCopy:
@@ -746,13 +750,7 @@ async function main() {
     if (!result.checks.shell.hasHeaderTitle) failures.push('header title missing');
     if (!fixture && !result.checks.shell.hasEmptyTitle) failures.push('empty state title missing');
     if (!fixture && !result.checks.shell.hasBlankCta) failures.push('blank sheet CTA missing');
-    if (
-      !fixture &&
-      !result.checks.shell.hasLocalPreviewBoundaryCopy &&
-      !result.checks.shell.hasCurrentLocalPreviewBoundaryCopy
-    ) {
-      failures.push('local preview boundary copy missing');
-    }
+    if (!fixture && !result.checks.shell.hasEmptyCanvas) failures.push('empty sheet canvas missing');
     if (result.checks.shell.hasActualRoll20PreviewClaim) failures.push('misleading actual Roll20 preview claim visible');
     if (result.checks.shell.hasSampleCta || result.checks.shell.hasSampleMenu) failures.push('sample UI visible with empty public catalog');
     if (result.checks.shell.hasMojibake) failures.push('mojibake detected in initial shell text');

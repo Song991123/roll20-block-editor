@@ -15,6 +15,7 @@
 
 import * as Blockly from 'blockly';
 import { type BlockDef, type GeneratorContext } from './types';
+import { mergeAuthoredClassTokens } from '@/lib/utils/classTokens';
 
 // ---------- 카테고리 / 상수 ----------
 
@@ -52,17 +53,9 @@ function joinClass(...parts: Array<string | undefined | null>): string {
     .join(' ');
 }
 
-/**
- * Composite HTML follows the same Roll20 class convention as primitive
- * containers: user class tokens are sheet-prefixed once, while built-in
- * tokens that already start with `sheet-` stay unchanged.
- */
-function sheetClassList(...parts: Array<string | undefined | null>): string {
-  return joinClass(...parts)
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((token) => (token.startsWith('sheet-') ? token : `sheet-${token}`))
-    .join(' ');
+/** Merge explicit built-in classes with authored tokens without rewriting either. */
+function mergeClassList(...parts: Array<string | undefined | null>): string {
+  return mergeAuthoredClassTokens(...parts);
 }
 
 /** OPTIONS 멀티라인 파싱 — "value|label" 또는 "value" 줄 단위. */
@@ -272,14 +265,14 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
       const labelB = escapeAttr(String(b.getFieldValue('LABEL_B') ?? '').trim() || '굴림 2');
       const rollA = escapeAttr(String(b.getFieldValue('ROLL_A') ?? '').trim() || '/r 1d20');
       const rollB = escapeAttr(String(b.getFieldValue('ROLL_B') ?? '').trim() || '/r 1d20');
-      const rowClass = sheetClassList(
+      const rowClass = mergeClassList(
         'sheet-row',
         'sheet-dual-roll',
         String(b.getFieldValue('ROW_CLASS') ?? '').trim(),
       );
       const buttonClassAttr = (name: string): string => {
         const custom = String(b.getFieldValue(name) ?? '').trim();
-        return custom ? ` class="${escapeAttr(sheetClassList(custom))}"` : '';
+        return custom ? ` class="${escapeAttr(mergeClassList(custom))}"` : '';
       };
       if (!String(b.getFieldValue('ROLL_A') ?? '').trim() ||
           !String(b.getFieldValue('ROLL_B') ?? '').trim()) {
@@ -369,7 +362,7 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
         .join('\n');
       const body = [legendHtml, radios, inner].filter((s) => s && s.trim()).join('\n');
       const indented = body ? ctx.indent(body) : '';
-      const fieldsetClass = sheetClassList('sheet-radio-group', extraClass);
+      const fieldsetClass = mergeClassList('sheet-radio-group', extraClass);
       return `<fieldset class="${escapeAttr(fieldsetClass)}">\n${indented}\n</fieldset>`;
     },
     inspectorSchema: [
@@ -492,7 +485,7 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
         ? sanitizedDefaultValue
         : '';
       const cls = (suffix: string): string => `sheet-${attr}-${suffix}`;
-      const switchClass = sheetClassList(
+      const switchClass = mergeClassList(
         cls('switch'),
         String(b.getFieldValue('CLASS') ?? '').trim(),
       );
@@ -513,7 +506,7 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
       const panelLines = uniq
         .map((c) => {
           const inner = c.panel && c.panel.trim() ? `\n${ctx.indent(c.panel)}\n` : '';
-          const panelClass = sheetClassList(
+          const panelClass = mergeClassList(
             cls('panel'),
             cls('panel-' + c.value),
             c.className,
@@ -584,7 +577,7 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
       }
       if (!v) return '';
       const inner = panel && panel.trim() ? `\n${ctx.indent(panel)}\n` : '';
-      const panelClass = sheetClassList(
+      const panelClass = mergeClassList(
         'sheet-value-case',
         `sheet-value-case-${v}`,
         String(b.getFieldValue('CLASS') ?? '').trim(),

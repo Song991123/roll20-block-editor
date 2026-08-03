@@ -60,7 +60,7 @@ function testGenericVoidElementStaysAnEditableLeaf(): void {
   assert(r.html.includes('r20_element_atom'), 'generic void element uses its leaf block');
   assert(!r.html.includes('r20_element_container'), 'generic void element is not exposed as a container');
   assert(r.html.includes('<field name="TAG">source</field>'), 'void tag remains editable');
-  assert(r.html.includes('<field name="CLASS">audio-source</field>'), 'void class is normalized');
+  assert(r.html.includes('<field name="CLASS">sheet-audio-source</field>'), 'void class is preserved');
   assert(r.html.includes('src'), 'void element source attribute stays preserved');
   assert(r.html.includes('data-kind'), 'void element custom attribute stays preserved');
 }
@@ -70,7 +70,7 @@ function testNestedDiv(): void {
   const r = importSheet({ html });
   assert(r.html.includes('r20_div'), 'div block');
   assert(r.html.includes('r20_heading'), 'heading inside');
-  assert(r.html.includes('>header<'), 'sheet- prefix stripped');
+  assert(r.html.includes('>sheet-header<'), 'authored class is preserved');
 }
 
 function testSemanticContainerTagsStayStructured(): void {
@@ -88,7 +88,7 @@ function testSemanticContainerTagsStayStructured(): void {
   assert(r.html.includes('<field name="TAG">main</field>'), 'main tag preserved');
   assert(r.html.includes('<field name="TAG">article</field>'), 'article tag preserved');
   assert(r.html.includes('data-layout'), 'semantic container attributes are preserved');
-  assert(r.html.includes('>shell<'), 'semantic container class is normalized');
+  assert(r.html.includes('>sheet-shell<'), 'semantic container class is preserved');
   assert(r.stats.htmlRawFallback === 0, 'semantic container tree has no raw fallback');
 }
 

@@ -20,6 +20,7 @@ import { styleAttr, mergeStyle } from './style_field';
 import { SEMANTIC_CONTAINER_TAGS } from './semanticTags';
 import { isEditableElementTag, isVoidElementTag } from './elementTags';
 import { isInlineMarkup, startsInlineMarkup } from './inlineMarkup';
+import { mergeAuthoredClassTokens, normalizeAuthoredClassTokens } from '@/lib/utils/classTokens';
 
 // ---------- 카테고리 / 상수 ----------
 
@@ -69,37 +70,16 @@ function wrapTag(
 }
 
 /** ` class="..."` 또는 빈 문자열 — class 없을 때 attr 자체 생략. */
-/** `class="BASE sheet-foo"` for structural blocks with a built-in class. */
-function sheetClassAttrWithBase(base: string, value: string): string {
-  const v = String(value ?? '').trim();
-  if (!v) return ` class="${escapeAttr(base)}"`;
-  const user = v
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((token) => (token.startsWith('sheet-') ? token : `sheet-${token}`))
-    .join(' ');
-  return ` class="${escapeAttr(base)} ${escapeAttr(user)}"`;
+/** Merge structural built-in classes with authored tokens without rewriting either. */
+function classAttrWithBase(base: string, value: string): string {
+  return ` class="${escapeAttr(mergeAuthoredClassTokens(base, value))}"`;
 }
 
-/**
- * 사용자 입력 class 토큰에 sheet- prefix 재부착 → emit.
- * 매처가 import 시 sheet- 접두를 떼서 CLASS 필드를 정규화한다 (input.ts 의
- * sheetClassAttr 와 동일 규약). 컨테이너 generator 도 이 규약을 따른다 — 안 그러면
- * `.sheet-foo[value="1"]:checked ~ .sheet-bar` 같은 CSS sibling-trick 셀렉터가
- * 라운드트립 후 매칭 실패 (era / pulp 영역 hidden).
- *
- * 빈 토큰은 결과에서 제거. 이미 sheet- 로 시작하는 토큰은 중복 방지로 그대로 둠
- * (특수 케이스: 일부 r20_row / r20_col 등이 리터럴로 'sheet-row' 를 넘긴다).
- */
-function sheetUserClassAttr(value: string): string {
-  const v = String(value ?? '').trim();
+/** Preserve authored class tokens; omit the attribute when CLASS is empty. */
+function authoredClassAttr(value: string): string {
+  const v = normalizeAuthoredClassTokens(value);
   if (!v) return '';
-  const out = v
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((t) => (t.startsWith('sheet-') ? t : `sheet-${t}`))
-    .join(' ');
-  return ` class="${escapeAttr(out)}"`;
+  return ` class="${escapeAttr(v)}"`;
 }
 
 function generatedPositionClass(blockId: string): string {
@@ -160,7 +140,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'div', `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
+      return wrapTag(ctx, 'div', `${authoredClassAttr(cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -184,7 +164,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'span', `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
+      return wrapTag(ctx, 'span', `${authoredClassAttr(cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -208,7 +188,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'fieldset', `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
+      return wrapTag(ctx, 'fieldset', `${authoredClassAttr(cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -244,7 +224,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const style = String(b.getFieldValue('STYLE') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, tag, `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
+      return wrapTag(ctx, tag, `${authoredClassAttr(cls)}${styleAttr(style)}`, content);
     },
     inspectorSchema: [
       {
@@ -293,7 +273,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       }
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const style = String(b.getFieldValue('STYLE') ?? '');
-      const attrs = `${sheetUserClassAttr(cls)}${styleAttr(style)}`;
+      const attrs = `${authoredClassAttr(cls)}${styleAttr(style)}`;
       return wrapTag(ctx, tag, attrs, ctx.statementToCode(block, 'CONTENT'));
     },
     inspectorSchema: [
@@ -340,7 +320,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       }
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const style = String(b.getFieldValue('STYLE') ?? '');
-      return `<${tag}${sheetUserClassAttr(cls)}${styleAttr(style)}>`;
+      return `<${tag}${authoredClassAttr(cls)}${styleAttr(style)}>`;
     },
     inspectorSchema: [
       { name: 'TAG', label: '태그', kind: 'text', placeholder: 'br' },
@@ -369,7 +349,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const style = String(_b.getFieldValue('STYLE') ?? '');
       const cls = String(_b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'div', `${sheetClassAttrWithBase('sheet-row', cls)}${styleAttr(style)}`, content);
+      return wrapTag(ctx, 'div', `${classAttrWithBase('sheet-row', cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -393,7 +373,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const style = String(_b.getFieldValue('STYLE') ?? '');
       const cls = String(_b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'div', `${sheetClassAttrWithBase('sheet-col', cls)}${styleAttr(style)}`, content);
+      return wrapTag(ctx, 'div', `${classAttrWithBase('sheet-col', cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -425,7 +405,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
           `:where(.sheet-colrow-${safe}) { display: grid; gap: 0.5rem; margin-bottom: 0.5rem; grid-template-columns: repeat(${safe}, 1fr); }`,
         );
       }
-      return wrapTag(ctx, 'div', `${sheetClassAttrWithBase(`sheet-colrow sheet-colrow-${safe}`, cls)}${styleAttr(style)}`, content);
+      return wrapTag(ctx, 'div', `${classAttrWithBase(`sheet-colrow sheet-colrow-${safe}`, cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -449,7 +429,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'table', `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
+      return wrapTag(ctx, 'table', `${authoredClassAttr(cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -477,7 +457,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const spanAttr = Number.isFinite(span) && span > 0 ? ` span="${Math.floor(span)}"` : '';
       const style = String(b.getFieldValue('STYLE') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'colgroup', `${sheetUserClassAttr(cls)}${spanAttr}${styleAttr(style)}`, content);
+      return wrapTag(ctx, 'colgroup', `${authoredClassAttr(cls)}${spanAttr}${styleAttr(style)}`, content);
     },
   },
 
@@ -511,7 +491,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const width = String(b.getFieldValue('WIDTH') ?? '').trim();
       const widthAttr = width ? ` width="${escapeAttr(width)}"` : '';
       const style = String(b.getFieldValue('STYLE') ?? '');
-      return `<col${sheetUserClassAttr(cls)}${spanAttr}${widthAttr}${styleAttr(style)}>`;
+      return `<col${authoredClassAttr(cls)}${spanAttr}${widthAttr}${styleAttr(style)}>`;
     },
   },
 
@@ -535,7 +515,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'thead', `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
+      return wrapTag(ctx, 'thead', `${authoredClassAttr(cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -559,7 +539,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'tbody', `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
+      return wrapTag(ctx, 'tbody', `${authoredClassAttr(cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -583,7 +563,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'tr', `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
+      return wrapTag(ctx, 'tr', `${authoredClassAttr(cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -607,7 +587,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'th', `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
+      return wrapTag(ctx, 'th', `${authoredClassAttr(cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -631,7 +611,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'td', `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
+      return wrapTag(ctx, 'td', `${authoredClassAttr(cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -661,7 +641,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const name = String(b.getFieldValue('NAME') ?? '').trim() || 'items';
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'fieldset', `${sheetClassAttrWithBase(`repeating_${name}`, cls)}${styleAttr(style)}`, content);
+      return wrapTag(ctx, 'fieldset', `${classAttrWithBase(`repeating_${name}`, cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -687,7 +667,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const style = String(_b.getFieldValue('STYLE') ?? '');
       const cls = String(_b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'div', `${sheetClassAttrWithBase('sheet-repeating-row', cls)}${styleAttr(style)}`, content);
+      return wrapTag(ctx, 'div', `${classAttrWithBase('sheet-repeating-row', cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -718,7 +698,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const text = String(b.getFieldValue('TEXT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const safe = escapeAttr(text);
-      return `<label${sheetUserClassAttr(cls)}${styleAttr(style)}>${safe}</label>`;
+      return `<label${authoredClassAttr(cls)}${styleAttr(style)}>${safe}</label>`;
     },
   },
 
@@ -748,7 +728,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       return wrapTag(
         ctx,
         'label',
-        `${nameAttr('for', forValue)}${sheetUserClassAttr(cls)}${styleAttr(style)}`,
+        `${nameAttr('for', forValue)}${authoredClassAttr(cls)}${styleAttr(style)}`,
         content,
       );
     },
@@ -779,7 +759,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const style = String(b.getFieldValue('STYLE') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, tag, `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
+      return wrapTag(ctx, tag, `${authoredClassAttr(cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -804,7 +784,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const style = String(b.getFieldValue('STYLE') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'li', `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
+      return wrapTag(ctx, 'li', `${authoredClassAttr(cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -835,7 +815,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       return wrapTag(
         ctx,
         'div',
-        `${sheetClassAttrWithBase(`sheet-section sheet-section-${name}`, cls)}${styleAttr(style)}`,
+        `${classAttrWithBase(`sheet-section sheet-section-${name}`, cls)}${styleAttr(style)}`,
         content,
       );
     },
@@ -868,7 +848,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       return wrapTag(
         ctx,
         'div',
-        `${sheetClassAttrWithBase(`sheet-toggle sheet-toggle-${name}`, cls)}${nameAttr('data-toggle', name)}${styleAttr(style)}`,
+        `${classAttrWithBase(`sheet-toggle sheet-toggle-${name}`, cls)}${nameAttr('data-toggle', name)}${styleAttr(style)}`,
         content,
       );
     },
@@ -901,7 +881,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const content = ctx.statementToCode(block, 'CONTENT');
       const builtinStyle = `grid-template-columns: repeat(${safe}, 1fr)`;
       const mergedStyle = mergeStyle(userStyle, builtinStyle);
-      return wrapTag(ctx, 'div', `${sheetClassAttrWithBase('sheet-grid', cls)}${mergedStyle}`, content);
+      return wrapTag(ctx, 'div', `${classAttrWithBase('sheet-grid', cls)}${mergedStyle}`, content);
     },
   },
 
@@ -947,13 +927,13 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const generatedRule = `.${positionClass} { position: absolute; left: ${left}px; top: ${top}px; width: ${w}px; height: ${h}px;${userStyle ? ` ${userStyle}` : ''} }`;
       if (ctx.addGeneratedCss) {
         ctx.addGeneratedCss(generatedRule);
-        return wrapTag(ctx, 'div', sheetUserClassAttr(`${cls} ${positionClass}`), content);
+        return wrapTag(ctx, 'div', authoredClassAttr(`${cls} ${positionClass}`), content);
       }
       // Keep direct generator consumers backwards-compatible. The production
       // emitter always provides addGeneratedCss, so normal output stays clean.
       const builtinStyle = `position:absolute;left:${left}px;top:${top}px;width:${w}px;height:${h}px;`;
       const mergedStyle = mergeStyle(userStyle, builtinStyle);
-      return wrapTag(ctx, 'div', `${sheetUserClassAttr(cls)}${mergedStyle}`, content);
+      return wrapTag(ctx, 'div', `${authoredClassAttr(cls)}${mergedStyle}`, content);
     },
   },
 ];

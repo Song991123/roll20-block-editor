@@ -25,6 +25,7 @@ import { isSemanticContainerTag } from '../blocks/semanticTags';
 import { isEditableElementTag, isVoidElementTag } from '../blocks/elementTags';
 import { I18N_DISPLAY_TAG_SET } from '../blocks/i18nTagPolicy';
 import { parsePageJsSlotComment } from './pageJsWorkspace';
+import { normalizeAuthoredClassTokens } from '../utils/classTokens';
 
 export interface MatchedBlock {
   /** 카탈로그 블록 중 하나의 type, 또는 'r20_raw_html' fallback. */
@@ -211,7 +212,7 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   if (tag === 'input') {
     const inputType = (a.type || 'text').toLowerCase();
     const name = stripAttrPrefix(a.name || '');
-    const cls = stripSheetPrefix(a.class || '');
+    const cls = normalizeAuthoredClassTokens(a.class || '');
 
     // i18n placeholder — data-i18n-placeholder 있으면 i18n 블록 우선.
     // NAME / CLASS / TYPE 등 input attribute 보존 (Roll20 sheet attr 식별자
@@ -331,7 +332,7 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
 
   if (tag === 'select') {
     const name = stripAttrPrefix(a.name || '');
-    const cls = stripSheetPrefix(a.class || '');
+    const cls = normalizeAuthoredClassTokens(a.class || '');
     const options: MatchedBlock[] = [];
     for (const c of node.children) {
       if (c.type === 'element' && (c.tag === 'option' || c.tag === 'optgroup')) {
@@ -356,7 +357,7 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
 
   if (tag === 'textarea') {
     const name = stripAttrPrefix(a.name || '');
-    const cls = stripSheetPrefix(a.class || '');
+    const cls = normalizeAuthoredClassTokens(a.class || '');
     const rows = a.rows || '3';
     const text = firstTextContent(node);
     return {
@@ -385,7 +386,7 @@ function matchOption(node: DomNode, _ctx: MatchContext): MatchedBlock {
         DEFAULT: label,
         VALUE: a.value || '',
         SELECTED: 'selected' in a || a.selected != null ? 'TRUE' : 'FALSE',
-        CLASS: stripSheetPrefix(a.class || ''),
+        CLASS: normalizeAuthoredClassTokens(a.class || ''),
         STYLE: a.style || '',
       },
       children: {},
@@ -397,7 +398,7 @@ function matchOption(node: DomNode, _ctx: MatchContext): MatchedBlock {
       VALUE: a.value || '',
       LABEL: label,
       SELECTED: 'selected' in a || a.selected != null ? 'TRUE' : 'FALSE',
-      CLASS: stripSheetPrefix(a.class || ''),
+      CLASS: normalizeAuthoredClassTokens(a.class || ''),
       STYLE: a.style || '',
     },
     children: {},
@@ -417,7 +418,7 @@ function matchOptgroup(node: DomNode, ctx: MatchContext): MatchedBlock {
     fields: {
       LABEL: a.label || '',
       DISABLED: 'disabled' in a || a.disabled != null ? 'TRUE' : 'FALSE',
-      CLASS: stripSheetPrefix(a.class || ''),
+      CLASS: normalizeAuthoredClassTokens(a.class || ''),
       STYLE: a.style || '',
     },
     children: { OPTIONS: options },
@@ -433,7 +434,7 @@ function matchDice(node: DomNode, _ctx: MatchContext): MatchedBlock | null {
     const btype = (a.type || 'button').toLowerCase();
     const label = firstTextContent(node);
     const rawName = a.name || '';
-    const cls = stripSheetPrefix(a.class || '');
+    const cls = normalizeAuthoredClassTokens(a.class || '');
 
     if (btype === 'roll') {
       const name = rawName.startsWith('roll_') ? rawName.slice(5) : rawName;
@@ -505,7 +506,7 @@ function matchI18n(node: DomNode, _ctx: MatchContext): MatchedBlock | null {
       fields: {
         KEY: a['data-i18n'],
         DEFAULT: text,
-        CLASS: stripSheetPrefix(a.class || ''),
+        CLASS: normalizeAuthoredClassTokens(a.class || ''),
         TAG: tag,
         STYLE: a.style || '',
       },
@@ -520,7 +521,7 @@ function matchI18n(node: DomNode, _ctx: MatchContext): MatchedBlock | null {
         KEY: a['data-i18n-html'],
         DEFAULT: inner,
         TAG: tag,
-        CLASS: stripSheetPrefix(a.class || ''),
+        CLASS: normalizeAuthoredClassTokens(a.class || ''),
         STYLE: a.style || '',
       },
       children: {},
@@ -533,7 +534,7 @@ function matchI18n(node: DomNode, _ctx: MatchContext): MatchedBlock | null {
         KEY: a['data-i18n-title'],
         DEFAULT: a.title || '',
         TAG: tag,
-        CLASS: stripSheetPrefix(a.class || ''),
+        CLASS: normalizeAuthoredClassTokens(a.class || ''),
         STYLE: a.style || '',
       },
       children: {},
@@ -549,7 +550,7 @@ function matchI18n(node: DomNode, _ctx: MatchContext): MatchedBlock | null {
         KEY: a['data-i18n-aria-label'],
         DEFAULT: a['aria-label'] || '',
         TAG: tag,
-        CLASS: stripSheetPrefix(a.class || ''),
+        CLASS: normalizeAuthoredClassTokens(a.class || ''),
         STYLE: a.style || '',
       },
       children: {},
@@ -561,7 +562,7 @@ function matchI18n(node: DomNode, _ctx: MatchContext): MatchedBlock | null {
       fields: {
         KEY: a['data-i18n'],
         DEFAULT: firstTextContent(node),
-        CLASS: stripSheetPrefix(a.class || ''),
+        CLASS: normalizeAuthoredClassTokens(a.class || ''),
         STYLE: a.style || '',
       },
       children: {},
@@ -576,7 +577,7 @@ function matchI18n(node: DomNode, _ctx: MatchContext): MatchedBlock | null {
         DEFAULT: label,
         TYPE: (a.type || 'button').toLowerCase(),
         NAME: a.name || '',
-        CLASS: stripSheetPrefix(a.class || ''),
+        CLASS: normalizeAuthoredClassTokens(a.class || ''),
         STYLE: a.style || '',
       },
       children: {},
@@ -701,7 +702,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
         LEVEL: tag.slice(1),
         TEXT: allTextContent(node),
         I18N: a['data-i18n'] || '',
-        CLASS: stripSheetPrefix(a.class || ''),
+        CLASS: normalizeAuthoredClassTokens(a.class || ''),
         STYLE: a.style || '',
       },
       children: {},
@@ -710,7 +711,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   if (tag === 'hr') {
     return {
       blockType: 'r20_hr',
-      fields: { CLASS: stripSheetPrefix(a.class || ''), STYLE: a.style || '' },
+      fields: { CLASS: normalizeAuthoredClassTokens(a.class || ''), STYLE: a.style || '' },
       children: {},
     };
   }
@@ -720,7 +721,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       fields: {
         SRC: a.src || '',
         ALT: a.alt || '',
-        CLASS: stripSheetPrefix(a.class || ''),
+        CLASS: normalizeAuthoredClassTokens(a.class || ''),
         WIDTH: a.width || '',
         HEIGHT: a.height || '',
         STYLE: a.style || '',
@@ -761,7 +762,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       blockType: 'r20_disabled_text',
       fields: {
         TEXT: allTextContent(node),
-        CLASS: stripSheetPrefix(a.class || '').replace(/sheet-disabled-text\s*/, '').trim(),
+        CLASS: normalizeAuthoredClassTokens(a.class || '').replace(/sheet-disabled-text\s*/, '').trim(),
         STYLE: a.style || '',
       },
       children: {},
@@ -775,7 +776,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       blockType: 'r20_inline_bold',
       fields: {
         TEXT: allTextContent(node),
-        CLASS: stripSheetPrefix(a.class || ''),
+        CLASS: normalizeAuthoredClassTokens(a.class || ''),
         STYLE: a.style || '',
       },
       children: {},
@@ -789,7 +790,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       blockType: 'r20_inline_italic',
       fields: {
         TEXT: allTextContent(node),
-        CLASS: stripSheetPrefix(a.class || ''),
+        CLASS: normalizeAuthoredClassTokens(a.class || ''),
         STYLE: a.style || '',
       },
       children: {},
@@ -801,7 +802,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       blockType: 'r20_inline_container',
       fields: {
         TAG: tag,
-        CLASS: stripSheetPrefix(a.class || ''),
+        CLASS: normalizeAuthoredClassTokens(a.class || ''),
         STYLE: a.style || '',
       },
       children: { CONTENT: matchChildren(node, ctx) },
@@ -813,7 +814,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       blockType: 'r20_static_text',
       fields: {
         TEXT: allTextContent(node),
-        CLASS: (stripSheetPrefix(a.class || '') + ' ' + tag).trim(),
+        CLASS: (normalizeAuthoredClassTokens(a.class || '') + ' ' + tag).trim(),
         STYLE: a.style || '',
       },
       children: {},
@@ -823,7 +824,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   if (tag === 'br') {
     return {
       blockType: 'r20_inline_break',
-      fields: { CLASS: stripSheetPrefix(a.class || ''), STYLE: a.style || '' },
+      fields: { CLASS: normalizeAuthoredClassTokens(a.class || ''), STYLE: a.style || '' },
       children: {},
     };
   }
@@ -834,7 +835,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       fields: {
         TEXT: allTextContent(node),
         I18N: a['data-i18n'] || '',
-        CLASS: stripSheetPrefix(a.class || ''),
+        CLASS: normalizeAuthoredClassTokens(a.class || ''),
         STYLE: a.style || '',
       },
       children: {},
@@ -846,7 +847,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       blockType: 'r20_static_text',
       fields: {
         TEXT: allTextContent(node),
-        CLASS: stripSheetPrefix(a.class || ''),
+        CLASS: normalizeAuthoredClassTokens(a.class || ''),
         STYLE: a.style || '',
       },
       children: {},
@@ -857,7 +858,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       blockType: 'r20_label',
       fields: {
         TEXT: allTextContent(node),
-        CLASS: stripSheetPrefix(a.class || ''),
+        CLASS: normalizeAuthoredClassTokens(a.class || ''),
         STYLE: a.style || '',
       },
       children: {},
@@ -876,7 +877,7 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       blockType: 'r20_semantic_container',
       fields: {
         TAG: tag,
-        CLASS: stripSheetPrefix(a.class || ''),
+        CLASS: normalizeAuthoredClassTokens(a.class || ''),
         STYLE: a.style || '',
       },
       children: { CONTENT: matchChildren(node, ctx) },
@@ -899,7 +900,7 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     }
     return {
       blockType: 'r20_fieldset',
-      fields: { CLASS: stripSheetPrefix(cls), STYLE: a.style || '' },
+      fields: { CLASS: normalizeAuthoredClassTokens(cls), STYLE: a.style || '' },
       children: { CONTENT: matchChildren(node, ctx) },
     };
   }
@@ -1020,7 +1021,7 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     }
     return {
       blockType: 'r20_div',
-      fields: { CLASS: stripSheetPrefix(cls), STYLE: a.style || '' },
+      fields: { CLASS: normalizeAuthoredClassTokens(cls), STYLE: a.style || '' },
       children: { CONTENT: matchChildren(node, ctx) },
     };
   }
@@ -1073,7 +1074,7 @@ function matchDualRollButton(node: DomNode, cls: string): MatchedBlock | null {
     return {
       label,
       value,
-      className: stripSheetPrefix(attrs.class || ''),
+      className: normalizeAuthoredClassTokens(attrs.class || ''),
     };
   });
   if (!rollButtons[0] || !rollButtons[1]) return null;
@@ -1097,7 +1098,7 @@ function matchDualRollButton(node: DomNode, cls: string): MatchedBlock | null {
   if (tag === 'span') {
     return {
       blockType: 'r20_span',
-      fields: { CLASS: stripSheetPrefix(a.class || ''), STYLE: a.style || '' },
+      fields: { CLASS: normalizeAuthoredClassTokens(a.class || ''), STYLE: a.style || '' },
       children: { CONTENT: matchChildren(node, ctx) },
     };
   }
@@ -1105,7 +1106,7 @@ function matchDualRollButton(node: DomNode, cls: string): MatchedBlock | null {
   if (tag === 'table') {
     return {
       blockType: 'r20_table',
-      fields: { CLASS: stripSheetPrefix(a.class || ''), STYLE: a.style || '' },
+      fields: { CLASS: normalizeAuthoredClassTokens(a.class || ''), STYLE: a.style || '' },
       children: { CONTENT: matchChildren(node, ctx) },
     };
   }
@@ -1113,7 +1114,7 @@ function matchDualRollButton(node: DomNode, cls: string): MatchedBlock | null {
     return {
       blockType: 'r20_colgroup',
       fields: {
-        CLASS: stripSheetPrefix(a.class || ''),
+        CLASS: normalizeAuthoredClassTokens(a.class || ''),
         SPAN: a.span || '0',
         STYLE: a.style || '',
       },
@@ -1124,7 +1125,7 @@ function matchDualRollButton(node: DomNode, cls: string): MatchedBlock | null {
     return {
       blockType: 'r20_table_col',
       fields: {
-        CLASS: stripSheetPrefix(a.class || ''),
+        CLASS: normalizeAuthoredClassTokens(a.class || ''),
         SPAN: a.span || '0',
         WIDTH: a.width || '',
         STYLE: a.style || '',
@@ -1135,7 +1136,7 @@ function matchDualRollButton(node: DomNode, cls: string): MatchedBlock | null {
   if (tag === 'thead' || tag === 'tbody' || tag === 'tr' || tag === 'th' || tag === 'td') {
     return {
       blockType: `r20_${tag}`,
-      fields: { CLASS: stripSheetPrefix(a.class || ''), STYLE: a.style || '' },
+      fields: { CLASS: normalizeAuthoredClassTokens(a.class || ''), STYLE: a.style || '' },
       children: { CONTENT: matchChildren(node, ctx) },
     };
   }
@@ -1167,7 +1168,7 @@ function matchDualRollButton(node: DomNode, cls: string): MatchedBlock | null {
       blockType: 'r20_label_container',
       fields: {
         FOR: a.for || '',
-        CLASS: stripSheetPrefix(a.class || ''),
+        CLASS: normalizeAuthoredClassTokens(a.class || ''),
         STYLE: a.style || '',
       },
       children: { CONTENT: matchChildren(node, ctx) },
@@ -1178,7 +1179,7 @@ function matchDualRollButton(node: DomNode, cls: string): MatchedBlock | null {
       blockType: 'r20_list',
       fields: {
         TAG: tag,
-        CLASS: stripSheetPrefix(a.class || ''),
+        CLASS: normalizeAuthoredClassTokens(a.class || ''),
         STYLE: a.style || '',
       },
       children: { CONTENT: matchChildren(node, ctx) },
@@ -1188,7 +1189,7 @@ function matchDualRollButton(node: DomNode, cls: string): MatchedBlock | null {
     return {
       blockType: 'r20_list_item',
       fields: {
-        CLASS: stripSheetPrefix(a.class || ''),
+        CLASS: normalizeAuthoredClassTokens(a.class || ''),
         STYLE: a.style || '',
       },
       children: { CONTENT: matchChildren(node, ctx) },
@@ -1212,7 +1213,7 @@ function matchGenericElement(node: DomNode, ctx: MatchContext): MatchedBlock | n
     blockType: isVoid ? 'r20_element_atom' : 'r20_element_container',
     fields: {
       TAG: tag,
-      CLASS: stripSheetPrefix(a.class || ''),
+      CLASS: normalizeAuthoredClassTokens(a.class || ''),
       STYLE: a.style || '',
     },
     children: isVoid ? {} : { CONTENT: matchChildren(node, ctx) },
@@ -1457,22 +1458,11 @@ function stripAttrPrefix(name: string): string {
   return name.replace(/^attr_/, '');
 }
 
-/** `sheet-foo sheet-bar` → `foo bar`. */
-function stripSheetPrefix(cls: string): string {
-  return cls
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((t) => t.replace(/^sheet-/, ''))
-    .join(' ');
-}
-
 function stripKnownClasses(cls: string, known: string[]): string {
   const ignored = new Set(known);
-  return cls
-    .split(/\s+/)
-    .filter(Boolean)
+  return normalizeAuthoredClassTokens(cls)
+    .split(' ')
     .filter((token) => !ignored.has(token))
-    .map((token) => token.replace(/^sheet-/, ''))
     .join(' ');
 }
 
@@ -1569,7 +1559,7 @@ function innerHtmlSerialize(node: DomNode): string {
 
 /**
  * fallback 용 raw HTML 직렬화 — 어떤 element 든 안전하게 원본 markup 으로
- * 되돌림 (autoPrefix 가 sheet- 부착하므로 stripSheetPrefix 는 안 함).
+ * 되돌림. Authored class and id tokens stay unchanged in the canonical source.
  */
 export function serializeRawHtml(node: DomNode): string {
   if (node.type === 'text') return escapeText(node.text || '');

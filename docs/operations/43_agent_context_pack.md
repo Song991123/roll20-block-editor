@@ -11,6 +11,11 @@ contain private source evidence or historical test dumps.
 - Active integration branch: `claude/design-reset`.
 - Preview and Edit share one persistent Roll20 iframe.
 - Modern and legacy compatibility paths are separate.
+- Canonical import/block emit now preserves authored class and ID tokens.
+  Modern Preview/Edit/export keeps them exact; the legacy destination prefixes
+  matching HTML and CSS once at its render/export boundary. Anonymous
+  import/emit, ZIP, mode, and fourteen-pair Preview/Edit browser gates pass.
+  Fresh actual valid-repeating captures remain a separate open gate.
 - Structural layer and friendly-widget selection channels are isolated.
 - Public product assets contain no bundled real sheet sample.
 - Dedicated owner-only modern and legacy test rooms now cover current anonymous

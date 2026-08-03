@@ -18,7 +18,7 @@ import {
   type SheetMetadata,
   ZIP_FILES,
 } from './types';
-import { prepareRoll20Payload } from './payload';
+import { prepareRoll20UploadFiles } from './payload';
 
 export interface ZipResult {
   blob: Blob;
@@ -37,7 +37,7 @@ export async function buildZip(
   emit: EmitOutput,
   meta: SheetMetadata,
 ): Promise<ZipResult> {
-  const payload = prepareRoll20Payload(emit);
+  const payload = prepareRoll20UploadFiles(emit, { legacy: meta.legacy });
   const zip = new JSZip();
   zip.file(ZIP_FILES.HTML, payload.html);
   zip.file(ZIP_FILES.CSS, payload.css);

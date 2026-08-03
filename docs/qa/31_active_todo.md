@@ -8,6 +8,15 @@ belong in tracked documents.
 
 ## P0 - Roll20 Render Truth
 
+- `DONE LOCAL / VERIFY ACTUAL`: canonical import and block emission preserve
+  authored class and ID tokens instead of forcing modern sheets into the
+  legacy `sheet-` namespace. Modern Preview/Edit and exported files keep the
+  authored tokens exact. Legacy Preview/Edit and export transform matching
+  HTML and CSS once at the selected destination boundary. Focused import,
+  emit, mode, upload-file, ZIP, lint, and build gates pass; all fourteen
+  anonymous modern/legacy Preview/Edit browser pairs are pixel-exact with no
+  console or page errors. This does not add fresh actual Roll20 screenshots;
+  valid-repeating actual evidence remains 0/8 per mode below.
 - `DONE DIAGNOSTIC / VERIFY VALID ACTUAL`: the earlier owner-only modern and
   legacy repeating experiment used duplicate same-name fieldsets. Roll20's
   documented contract requires every repeating name to be unique and forbids

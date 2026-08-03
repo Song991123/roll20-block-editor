@@ -53,7 +53,7 @@ function testMultiClassOnInputPreserved(): void {
   const cls = fieldValue(r.html, 'CLASS');
   // 매처가 sheet- prefix 토큰별로 strip 한 결과는 'attr_name required'.
   assert(
-    cls === 'attr_name required',
+    cls === 'sheet-attr_name sheet-required',
     `CLASS field should preserve both tokens, got "${cls}"`,
   );
 }
@@ -69,7 +69,7 @@ function testMultiClassOnRowKeepsStructure(): void {
   );
   const cls = fieldValue(r.html, 'CLASS');
   assert(
-    cls === 'header',
+    cls === 'sheet-header',
     `CLASS 가 'row header' 여야 함 (sheet- strip 후), got "${cls}"`,
   );
 }
@@ -88,7 +88,7 @@ function testMultiClassOnColKeepsStructure(): void {
   const html = `<div class="sheet-col sheet-narrow"><span>x</span></div>`;
   const r = importSheet({ html });
   assert(r.html.includes('r20_col'), `multi-class col should stay structural, xml=${r.html}`);
-  assert(fieldValue(r.html, 'CLASS') === 'narrow', 'col user class is retained');
+  assert(fieldValue(r.html, 'CLASS') === 'sheet-narrow', 'col user class is retained');
 }
 
 function testMultiClassOnColrowKeepsStructure(): void {
@@ -99,7 +99,7 @@ function testMultiClassOnColrowKeepsStructure(): void {
     r.html.includes('r20_colrow_n'),
     `multi-class colrow 도 r20_div, xml=${r.html}`,
   );
-  assert(fieldValue(r.html, 'CLASS') === 'extra', 'colrow user class is retained');
+  assert(fieldValue(r.html, 'CLASS') === 'sheet-extra', 'colrow user class is retained');
 }
 
 // --- table 구조 보존 -------------------------------------------------------

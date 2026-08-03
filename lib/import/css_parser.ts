@@ -594,14 +594,14 @@ function buildSelectorBlock(sel: string, ctx: CssMatchContext): MatchedBlock {
     }
     return {
       blockType: 'r20_selector_class',
-      fields: { NAME: className.replace(/^sheet-/, '') },
+      fields: { NAME: className },
       children: {},
     };
   }
   if (/^#[\w-]+$/.test(trimmed)) {
     return {
       blockType: 'r20_selector_id',
-      fields: { NAME: trimmed.slice(1).replace(/^sheet-/, '') },
+      fields: { NAME: trimmed.slice(1) },
       children: {},
     };
   }

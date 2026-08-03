@@ -31,7 +31,6 @@ import type {
 } from '@/lib/stores/workspaceStore';
 import { ORDER } from '@/lib/blocks/types';
 import { injectPreservedAttributes, PRESERVED_ATTRS_FIELD } from '@/lib/blocks/preservedAttributes';
-import { autoPrefixCssClasses, autoPrefixHtmlClasses } from './prefix';
 import { isRoll20WorkerScript } from '@/lib/import/worker_source';
 import { mergePageJsSlots } from '@/lib/import/pageJsWorkspace';
 import { isInlineMarkup } from '@/lib/blocks/inlineMarkup';
@@ -325,19 +324,18 @@ export function emitAll(
 /**
  * Keep the emitted HTML/CSS class contract coherent at the final boundary.
  *
- * Imported HTML blocks normalize user classes before generation and therefore
- * already emit `sheet-*`. Raw HTML/CSS fallbacks do not pass through those
- * block generators, so normalizing only one side can make a valid imported
- * sheet render as unstyled HTML. The prefix helpers are idempotent for
- * Roll20-reserved tokens, which makes this safe for both paths.
+ * Canonical workspace output preserves authored class and id tokens, so this
+ * function intentionally returns the pair unchanged. Legacy prefixing belongs
+ * to the destination render/export boundary, where HTML and CSS can be
+ * transformed together without mutating modern source.
  */
 export function normalizeEmittedRoll20Pair(
   html: string,
   css: string,
 ): { html: string; css: string } {
   return {
-    html: autoPrefixHtmlClasses(html),
-    css: autoPrefixCssClasses(css),
+    html,
+    css,
   };
 }
 

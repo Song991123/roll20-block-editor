@@ -14,9 +14,39 @@ function testRawFallbackPair(): void {
     '.charsheet .maindiv .name { color: red; }',
   );
 
-  assert(result.html.includes('class="sheet-maindiv"'), 'raw HTML class is prefixed');
-  assert(result.html.includes('sheet-name'), 'nested raw HTML class is prefixed');
-  assert(result.css.includes('.charsheet .sheet-maindiv .sheet-name'), 'raw CSS matches HTML');
+  assert(result.html.includes('class="maindiv"'), 'raw HTML class stays authored');
+  assert(result.html.includes('class="name"'), 'nested raw HTML class stays authored');
+  assert(result.css.includes('.charsheet .maindiv .name'), 'raw CSS matches authored HTML');
+}
+
+function testAuthoredClassAndIdRoundTrip(): void {
+  registerAllBlocks();
+  const imported = importSheet({
+    html: '<div id="root" class="panel sheet-kept"><input type="text" name="attr_name" class="field sheet-field"></div>',
+    css: '.panel { color: red; } .sheet-kept { display: block; } #root { padding: 4px; }',
+  });
+  const htmlWorkspace = new Blockly.Workspace();
+  const cssWorkspace = new Blockly.Workspace();
+  Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(imported.html), htmlWorkspace);
+  Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(imported.css), cssWorkspace);
+
+  const result = emitAll({ html: htmlWorkspace, css: cssWorkspace });
+  assert(result.html.includes('id="root"'), 'authored id survives import and emit');
+  assert(
+    result.html.includes('class="panel sheet-kept"'),
+    'mixed modern and sheet-prefixed classes survive import and emit',
+  );
+  assert(
+    result.html.includes('class="field sheet-field"'),
+    'nested class tokens survive import and emit',
+  );
+  assert(!result.html.includes('sheet-panel'), 'modern emit does not invent a sheet prefix');
+  assert(result.css.includes('.panel {'), 'modern class selector survives import and emit');
+  assert(result.css.includes('.sheet-kept {'), 'authored sheet-prefixed selector survives');
+  assert(result.css.includes('#root {'), 'authored id selector survives');
+
+  htmlWorkspace.dispose();
+  cssWorkspace.dispose();
 }
 
 function testAlreadyCanonicalPair(): void {
@@ -41,9 +71,9 @@ function testInlineStylePair(): void {
     '.panel .title { color: blue; }',
   );
 
-  assert(result.html.includes('.sheet-panel .sheet-title'), 'inline style selectors are prefixed');
-  assert(result.html.includes('class="sheet-panel"'), 'inline style HTML is prefixed');
-  assert(result.css.includes('.sheet-panel .sheet-title'), 'external CSS is prefixed');
+  assert(result.html.includes('.panel .title'), 'inline style selectors stay authored');
+  assert(result.html.includes('class="panel"'), 'inline style HTML stays authored');
+  assert(result.css.includes('.panel .title'), 'external CSS stays authored');
 }
 
 function testGeneratedPositionCss(): void {
@@ -77,7 +107,7 @@ function testComposedWorkspaceCacheResultsKeepTheOutputContract(): void {
     js: { code: 'window.pageReady = true;', warnings: [], generatedCss: '' },
     worker: { code: 'on("sheet:opened", function () {});', warnings: [], generatedCss: '' },
   });
-  assert(result.html.includes('class="sheet-panel"'), 'cached HTML result is normalized');
+  assert(result.html.includes('class="panel"'), 'cached HTML result preserves authored classes');
   assert(result.css.includes('position: absolute'), 'cached generated CSS is composed');
   assert(result.css.includes('color: red'), 'cached authored CSS is composed');
   assert(result.i18n.includes('panel'), 'cached i18n result is preserved');
@@ -119,7 +149,7 @@ function testSemanticContainerEmit(): void {
 
   const result = emitAll({ html: workspace });
   assert(result.html.includes('<article'), 'semantic container tag is emitted');
-  assert(result.html.includes('class="sheet-shell"'), 'semantic container class is emitted');
+  assert(result.html.includes('class="shell"'), 'semantic container class is emitted exactly');
   assert(result.html.includes('>Title</h2>'), 'semantic container child is emitted');
   assert(result.html.includes('data-r20-block-id='), 'semantic container remains selectable');
   workspace.dispose();
@@ -137,7 +167,7 @@ function testGenericElementEmit(): void {
 
   const result = emitAll({ html: workspace });
   assert(result.html.includes('<custom-card'), 'generic element tag is emitted');
-  assert(result.html.includes('class="sheet-panel"'), 'generic element class is emitted');
+  assert(result.html.includes('class="panel"'), 'generic element class is emitted exactly');
   assert(result.html.includes('>Open</span>'), 'generic element child is emitted');
   workspace.dispose();
 }
@@ -153,7 +183,7 @@ function testGenericVoidElementEmit(): void {
   assert(!atom.getInput('CONTENT'), 'generic void element has no child slot');
   const atomResult = emitAll({ html: atomWorkspace });
   assert(atomResult.html.includes('<source'), 'generic void element tag is emitted');
-  assert(atomResult.html.includes('class="sheet-audio-source"'), 'generic void class is emitted');
+  assert(atomResult.html.includes('class="audio-source"'), 'generic void class is emitted exactly');
   assert(!atomResult.html.includes('</source>'), 'generic void element remains a leaf');
   atomWorkspace.dispose();
 
@@ -175,7 +205,7 @@ function testInlineBreakClassEmit(): void {
 
   const result = emitAll({ html: workspace });
   assert(result.html.includes('<br'), 'inline break element is emitted');
-  assert(result.html.includes('class="sheet-line-break"'), 'inline break class is preserved');
+  assert(result.html.includes('class="line-break"'), 'inline break class is preserved');
   assert(result.html.includes('style="display: block"'), 'inline break style is preserved');
   workspace.dispose();
 }
@@ -435,9 +465,9 @@ function testPageScriptOrderAndWorkerUniqueness(): void {
   );
 
   const result = emitAll({ html: workspace, worker: workerWorkspace });
-  const before = result.html.indexOf('id="sheet-before-script"');
+  const before = result.html.indexOf('id="before-script"');
   const pageScript = result.html.indexOf('data-role="page"');
-  const after = result.html.indexOf('id="sheet-after-script"');
+  const after = result.html.indexOf('id="after-script"');
   const worker = result.html.indexOf('type="text/worker"');
   const workerCount = (result.html.match(/<script\b[^>]*type="text\/worker"/g) ?? []).length;
 
@@ -519,6 +549,7 @@ function testMalformedRawTagDoesNotReceivePartialBlockId(): void {
 }
 
 testRawFallbackPair();
+testAuthoredClassAndIdRoundTrip();
 testAlreadyCanonicalPair();
 testInlineStylePair();
 testGeneratedPositionCss();

@@ -15,6 +15,7 @@ import * as Blockly from 'blockly';
 import { type BlockDef, type GeneratorContext } from './types';
 import { styleAttr } from './style_field';
 import { isInlineMarkup, startsInlineMarkup } from './inlineMarkup';
+import { mergeAuthoredClassTokens, normalizeAuthoredClassTokens } from '@/lib/utils/classTokens';
 
 // ---------- 카테고리 / 상수 ----------
 
@@ -101,31 +102,16 @@ function attr(name: string, value: string): string {
   return ` ${name}="${escapeAttr(v)}"`;
 }
 
-/** ` class="sheet-foo sheet-bar"` — 토큰별 sheet- prefix. CLASS 비면 생략.
- * multi-class fix: 매처는 토큰별 prefix 를 떼므로 emit 도 토큰별로 부착해야
- * round-trip byte-identical 성립. */
-function sheetClassAttr(cls: string): string {
-  const v = String(cls ?? '').trim();
+/** Preserve authored class tokens; omit the attribute when CLASS is empty. */
+function authoredClassAttr(cls: string): string {
+  const v = normalizeAuthoredClassTokens(cls);
   if (!v) return '';
-  const out = v
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((t) => (t.startsWith('sheet-') ? t : `sheet-${t}`))
-    .join(' ');
-  return ` class="${escapeAttr(out)}"`;
+  return ` class="${escapeAttr(v)}"`;
 }
 
-/** ` class="${BASE} sheet-foo sheet-bar"` — BASE 는 무조건 포함, 사용자 CLASS
- * 토큰은 각각 sheet- prefix 부착 (multi-class fix). */
-function sheetClassAttrWithBase(base: string, cls: string): string {
-  const v = String(cls ?? '').trim();
-  if (!v) return ` class="${escapeAttr(base)}"`;
-  const out = v
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((t) => (t.startsWith('sheet-') ? t : `sheet-${t}`))
-    .join(' ');
-  return ` class="${escapeAttr(base)} ${escapeAttr(out)}"`;
+/** Merge explicit built-in classes with authored tokens without rewriting either. */
+function classAttrWithBase(base: string, cls: string): string {
+  return ` class="${escapeAttr(mergeAuthoredClassTokens(base, cls))}"`;
 }
 
 /** 숫자 크기 → 양의 정수 문자열 또는 ''. */
@@ -213,7 +199,7 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       const text = String(b.getFieldValue('TEXT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const i18n = String(b.getFieldValue('I18N') ?? '');
-      return `<h${level}${sheetClassAttr(cls)}${attr('data-i18n', i18n)}${styleAttr(style)}>${escapeAttr(text)}</h${level}>`;
+      return `<h${level}${authoredClassAttr(cls)}${attr('data-i18n', i18n)}${styleAttr(style)}>${escapeAttr(text)}</h${level}>`;
     },
   },
 
@@ -238,7 +224,7 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       const b = block as Blockly.Block;
       const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
-      return `<hr${sheetClassAttr(cls)}${styleAttr(style)}>`;
+      return `<hr${authoredClassAttr(cls)}${styleAttr(style)}>`;
     },
   },
 
@@ -266,7 +252,7 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const text = String(b.getFieldValue('TEXT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
-      return `<span${sheetClassAttr(cls)}${styleAttr(style)}>${escapeAttr(text)}</span>`;
+      return `<span${authoredClassAttr(cls)}${styleAttr(style)}>${escapeAttr(text)}</span>`;
     },
   },
 
@@ -307,7 +293,7 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       const width = sanitizeSize(String(b.getFieldValue('WIDTH') ?? ''));
       const height = sanitizeSize(String(b.getFieldValue('HEIGHT') ?? ''));
       return (
-        `<img${attr('src', src)}${attr('alt', alt)}${sheetClassAttr(cls)}` +
+        `<img${attr('src', src)}${attr('alt', alt)}${authoredClassAttr(cls)}` +
         `${attr('width', width)}${attr('height', height)}${styleAttr(style)}>`
       );
     },
@@ -341,7 +327,7 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       const name = allowed.has(nameRaw) ? nameRaw : 'star';
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const base = `sheet-icon sheet-icon-${name}`;
-      return `<i${sheetClassAttrWithBase(base, cls)}${styleAttr(style)}></i>`;
+      return `<i${classAttrWithBase(base, cls)}${styleAttr(style)}></i>`;
     },
   },
 
@@ -375,7 +361,7 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
         const heights: Record<string, string> = { small: '0.25rem', medium: '0.5rem', large: '1rem' };
         ctx.addGeneratedCss(`:where(.sheet-spacer-${size}) { height: ${heights[size]}; }`);
       }
-      return `<div${sheetClassAttrWithBase(`sheet-spacer sheet-spacer-${size}`, cls)}${styleAttr(style)}></div>`;
+      return `<div${classAttrWithBase(`sheet-spacer sheet-spacer-${size}`, cls)}${styleAttr(style)}></div>`;
     },
   },
 
@@ -404,7 +390,7 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       const text = String(b.getFieldValue('TEXT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const base = 'sheet-disabled-text';
-      return `<span${sheetClassAttrWithBase(base, cls)} aria-disabled="true"${styleAttr(style)}>${escapeAttr(text)}</span>`;
+      return `<span${classAttrWithBase(base, cls)} aria-disabled="true"${styleAttr(style)}>${escapeAttr(text)}</span>`;
     },
   },
 
@@ -432,7 +418,7 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const text = String(b.getFieldValue('TEXT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
-      return `<b${sheetClassAttr(cls)}${styleAttr(style)}>${escapeAttr(text)}</b>`;
+      return `<b${authoredClassAttr(cls)}${styleAttr(style)}>${escapeAttr(text)}</b>`;
     },
   },
 
@@ -460,7 +446,7 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const text = String(b.getFieldValue('TEXT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
-      return `<em${sheetClassAttr(cls)}${styleAttr(style)}>${escapeAttr(text)}</em>`;
+      return `<em${authoredClassAttr(cls)}${styleAttr(style)}>${escapeAttr(text)}</em>`;
     },
   },
 
@@ -497,7 +483,7 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const style = String(b.getFieldValue('STYLE') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, tag, `${sheetClassAttr(cls)}${styleAttr(style)}`, content);
+      return wrapTag(ctx, tag, `${authoredClassAttr(cls)}${styleAttr(style)}`, content);
     },
     inspectorSchema: [
       {
@@ -544,7 +530,7 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       const text = String(b.getFieldValue('TEXT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const i18n = String(b.getFieldValue('I18N') ?? '');
-      return `<caption${sheetClassAttr(cls)}${attr('data-i18n', i18n)}${styleAttr(style)}>${escapeAttr(text)}</caption>`;
+      return `<caption${authoredClassAttr(cls)}${attr('data-i18n', i18n)}${styleAttr(style)}>${escapeAttr(text)}</caption>`;
     },
   },
 
@@ -569,7 +555,7 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       const b = block as Blockly.Block;
       const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
-      return `<br${sheetClassAttr(cls)}${styleAttr(style)}>`;
+      return `<br${authoredClassAttr(cls)}${styleAttr(style)}>`;
     },
   },
 ];

@@ -14,6 +14,7 @@ import * as Blockly from 'blockly';
 import { type BlockDef, type GeneratorContext, ORDER } from './types';
 import { styleAttr } from './style_field';
 import { pickI18nDisplayTag } from './i18nTagPolicy';
+import { normalizeAuthoredClassTokens } from '@/lib/utils/classTokens';
 
 // ---------- 카테고리 / 상수 ----------
 
@@ -62,21 +63,11 @@ function attr(name: string, value: string): string {
   return ` ${name}="${escapeAttr(v)}"`;
 }
 
-/** ` class="sheet-foo sheet-bar"` — CLASS 비면 생략. 토큰별로 sheet- prefix 부착.
- *
- * multi-class fix: 이전엔 전체 문자열에 한 번만 sheet- 부착 → `class="sheet-row header"`
- * 같은 잘못된 출력. 매처가 import 시 토큰별로 sheet- 를 떼므로 emit 도 토큰별로
- * 다시 부착해야 round-trip byte-identical 성립.
- */
-function sheetClassAttr(cls: string): string {
-  const v = String(cls ?? '').trim();
+/** Preserve authored class tokens; omit the attribute when CLASS is empty. */
+function authoredClassAttr(cls: string): string {
+  const v = normalizeAuthoredClassTokens(cls);
   if (!v) return '';
-  const out = v
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((t) => (t.startsWith('sheet-') ? t : `sheet-${t}`))
-    .join(' ');
-  return ` class="${escapeAttr(out)}"`;
+  return ` class="${escapeAttr(v)}"`;
 }
 
 /** dropdown 값 화이트리스트 검증 — 미허용 시 fallback. */
@@ -163,7 +154,7 @@ export const I18N_BLOCKS: BlockDef[] = [
       const def = String(b.getFieldValue('DEFAULT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const tag = pickI18nTextTag(String(b.getFieldValue('TAG') ?? 'span'));
-      return `<${tag}${sheetClassAttr(cls)}${attr('data-i18n', key)}${styleAttr(style)}>${escapeAttr(def)}</${tag}>`;
+      return `<${tag}${authoredClassAttr(cls)}${attr('data-i18n', key)}${styleAttr(style)}>${escapeAttr(def)}</${tag}>`;
     },
   },
 
@@ -222,7 +213,7 @@ export const I18N_BLOCKS: BlockDef[] = [
       const cls = String(b.getFieldValue('CLASS') ?? '');
       return (
         `<${tag}${attr('title', def)}${attr('data-i18n-title', key)}` +
-        `${sheetClassAttr(cls)}${styleAttr(style)}></${tag}>`
+        `${authoredClassAttr(cls)}${styleAttr(style)}></${tag}>`
       );
     },
   },
@@ -339,7 +330,7 @@ export const I18N_BLOCKS: BlockDef[] = [
       const cls = String(b.getFieldValue('CLASS') ?? '');
       return (
         `<${tag}${attr('data-i18n-aria-label', key)}${attr('aria-label', def)}` +
-        `${sheetClassAttr(cls)}${styleAttr(style)}></${tag}>`
+        `${authoredClassAttr(cls)}${styleAttr(style)}></${tag}>`
       );
     },
   },
@@ -433,7 +424,7 @@ export const I18N_BLOCKS: BlockDef[] = [
       const tag = pickI18nDisplayTag(String(b.getFieldValue('TAG') ?? 'span'));
       const cls = String(b.getFieldValue('CLASS') ?? '');
       // DEFAULT 는 HTML 그대로 — escape 하지 않음 (data-i18n-html 의 의도).
-      return `<${tag}${sheetClassAttr(cls)}${attr('data-i18n-html', key)}${styleAttr(style)}>${def}</${tag}>`;
+      return `<${tag}${authoredClassAttr(cls)}${attr('data-i18n-html', key)}${styleAttr(style)}>${def}</${tag}>`;
     },
   },
 
@@ -475,7 +466,7 @@ export const I18N_BLOCKS: BlockDef[] = [
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const selected = String(b.getFieldValue('SELECTED') ?? 'FALSE') === 'TRUE';
       return (
-        `<option${attr('value', value)}${sheetClassAttr(cls)}${attr('data-i18n', key)}` +
+        `<option${attr('value', value)}${authoredClassAttr(cls)}${attr('data-i18n', key)}` +
         `${selected ? ' selected="selected"' : ''}${styleAttr(style)}>` +
         `${escapeAttr(def)}</option>`
       );
@@ -520,7 +511,7 @@ export const I18N_BLOCKS: BlockDef[] = [
       const cls = String(b.getFieldValue('CLASS') ?? '');
       return (
         `<button${attr('type', type)}${attr('name', name)}` +
-        `${sheetClassAttr(cls)}${attr('data-i18n', key)}${styleAttr(style)}>${escapeAttr(def)}</button>`
+        `${authoredClassAttr(cls)}${attr('data-i18n', key)}${styleAttr(style)}>${escapeAttr(def)}</button>`
       );
     },
   },
@@ -553,7 +544,7 @@ export const I18N_BLOCKS: BlockDef[] = [
       const key = sanitizeKey(String(b.getFieldValue('KEY') ?? ''));
       const def = String(b.getFieldValue('DEFAULT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
-      return `<legend${sheetClassAttr(cls)}${attr('data-i18n', key)}${styleAttr(style)}>${escapeAttr(def)}</legend>`;
+      return `<legend${authoredClassAttr(cls)}${attr('data-i18n', key)}${styleAttr(style)}>${escapeAttr(def)}</legend>`;
     },
   },
 ];

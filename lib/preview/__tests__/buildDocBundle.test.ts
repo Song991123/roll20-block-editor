@@ -45,6 +45,16 @@ const repeatingBundle = buildSheetRenderBundle({
   ...options,
   html: '<fieldset class="repeating_items"><input type="text" name="attr_item_name" value="New item"></fieldset><fieldset class="repeating_items sheet-summary"><input type="text" name="attr_item_name" readonly></fieldset>',
 });
+const modernClassBundle = buildSheetRenderBundle({
+  html: '<div id="root" class="panel sheet-kept">Modern</div>',
+  css: '.panel #root, .sheet-kept { color: red; }',
+  compatibilityMode: 'modern',
+});
+const legacyClassBundle = buildSheetRenderBundle({
+  html: '<div id="root" class="panel sheet-kept">Legacy</div>',
+  css: '.panel #root, .sheet-kept { color: red; }',
+  compatibilityMode: 'legacy',
+});
 
 assert.equal(bundle.doc, buildSheetDoc(options), 'bundled document matches the standalone builder');
 assert.deepEqual(
@@ -63,6 +73,26 @@ assert.match(
   bundle.livePatch.styles['r20-user'],
   /\.charsheet\s+\.sheet-card\s*\{/,
   'legacy preview CSS uses the observed Roll20 sheet scope',
+);
+assert.match(
+  modernClassBundle.livePatch.html,
+  /id="root" class="panel sheet-kept"/,
+  'modern Preview/Edit preserves authored class and id tokens',
+);
+assert.match(
+  modernClassBundle.livePatch.styles['r20-user'],
+  /\.panel #root, \.sheet-kept/,
+  'modern Preview/Edit preserves matching authored selectors',
+);
+assert.match(
+  legacyClassBundle.livePatch.html,
+  /id="sheet-root" class="sheet-panel sheet-kept"/,
+  'legacy Preview/Edit prefixes authored class and id tokens once',
+);
+assert.match(
+  legacyClassBundle.livePatch.styles['r20-user'],
+  /\.sheet-panel #sheet-root/,
+  'legacy Preview/Edit keeps transformed selectors aligned with HTML',
 );
 assert.doesNotMatch(
   bundle.livePatch.html,

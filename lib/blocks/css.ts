@@ -7,7 +7,8 @@
  *   - docs/spec/12_roll20_output_spec.md §3 (CSS 워크스페이스 emit).
  *
  * Roll20 시트 sheet.css 작성 — 셀렉터 / 선언 / 색 / 변수 / @media / @keyframes.
- * autoPrefix (D4 ①) 가 selector_class 의 `.${NAME}` → `.sheet-${NAME}` 으로 부착.
+ * selector_class preserves authored tokens. Legacy prefixing happens only at
+ * the selected render/export destination boundary.
  * 시스템 specific 토큰 0.
  */
 
@@ -130,32 +131,10 @@ function sanitizeIdent(raw: string): string {
   return s.replace(/[^A-Za-z0-9_-]/g, '');
 }
 
-const ROLL20_RESERVED_CLASS_PATTERNS: RegExp[] = [
-  /^sheet-/,
-  /^charsheet$/,
-  /^repeating_/,
-];
-
-// Roll20 adds these classes to resolved inline rolls in the chat renderer.
-// They are runtime classes, not author sheet classes, so they must not gain
-// the sheet- namespace during CSS block generation.
-const ROLL20_RUNTIME_CLASS_TOKENS = new Set([
-  'inlinerollresult',
-  'fullcrit',
-  'fullfail',
-  'importantroll',
-]);
-
 function emitRoll20ClassSelector(name: string): string {
   const clean = sanitizeIdent(name);
   if (!clean) return '';
-  if (
-    ROLL20_RESERVED_CLASS_PATTERNS.some((re) => re.test(clean)) ||
-    ROLL20_RUNTIME_CLASS_TOKENS.has(clean)
-  ) {
-    return `.${clean}`;
-  }
-  return `.sheet-${clean}`;
+  return `.${clean}`;
 }
 
 /** dropdown 값 화이트리스트 검증 — 미허용 시 fallback. */
@@ -317,7 +296,7 @@ export const CSS_BLOCKS: BlockDef[] = [
     shape: 'reporter',
     category: CSS,
     label: '클래스 고르기 (.이름)',
-    tooltip: '.NAME — autoPrefix (D4 ①) 가 `.sheet-` 자동 부착.',
+    tooltip: '.이름 - 작성한 클래스 이름을 그대로 사용합니다.',
     init: mkInit((b) => {
       b.appendDummyInput()
         .appendField('.')
