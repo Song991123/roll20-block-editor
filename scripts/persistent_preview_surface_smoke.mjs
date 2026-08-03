@@ -383,7 +383,7 @@ async function runMode(browser, mode) {
     result.layerSelection.layerRowClicked = await page.evaluate((blockId) => {
       const row = Array.from(document.querySelectorAll('[data-testid="edit-layer-row"]'))
         .find((node) => node.getAttribute('data-r20-block-id') === blockId);
-      if (!(row instanceof HTMLElement) || row.getAttribute('role') !== 'button') return false;
+      if (!(row instanceof HTMLElement) || row.getAttribute('role') !== 'treeitem') return false;
       row.click();
       return true;
     }, result.layerSelection.targetBlockId);

@@ -33,7 +33,10 @@ import {
   type PreparedSheetRenderContract,
   type Roll20CompatibilityMode,
 } from './renderContract';
-import { SHEET_CANVAS_MAX_WIDTH } from './canvasDimensions';
+import {
+  SHEET_CANVAS_MAX_WIDTH,
+  SHEET_RENDER_MIN_HEIGHT,
+} from './canvasDimensions';
 
 export interface BuildDocOptions {
   html: string;
@@ -1323,7 +1326,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     // previous unconditional +24px made every sheet surface taller than the
     // Roll20 root and accumulated as visible blank space below short sheets.
     var rootHeight = Number(sheet.getBoundingClientRect().height) || 0;
-    return Math.max(120, Math.ceil(Math.max(rootHeight, box.height)));
+    return Math.max(${SHEET_RENDER_MIN_HEIGHT}, Math.ceil(Math.max(rootHeight, box.height)));
   }
   function measureWidth() {
     var sheet = document.querySelector('form.sheetform > .charactersheet.charsheet') || document.getElementById('dialog-window');

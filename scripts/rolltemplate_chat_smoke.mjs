@@ -46,7 +46,8 @@ const VIEWPORT = { width: 2200, height: 1200 };
 const LOCAL_HTML_PATH = process.env.R20_ROLL_CHAT_HTML_PATH || '';
 const LOCAL_CSS_PATH = process.env.R20_ROLL_CHAT_CSS_PATH || '';
 const LOCAL_I18N_PATH = process.env.R20_ROLL_CHAT_I18N_PATH || '';
-const REQUIRE_UNCLIPPED = process.env.R20_ROLL_CHAT_REQUIRE_UNCLIPPED === '1';
+const REQUIRE_UNCLIPPED = args.includes('--require-unclipped')
+  || process.env.R20_ROLL_CHAT_REQUIRE_UNCLIPPED === '1';
 
 if (!Number.isFinite(DEVICE_SCALE_FACTOR) || DEVICE_SCALE_FACTOR <= 0) {
   throw new Error('--device-scale-factor must be a positive number');
@@ -93,6 +94,16 @@ async function readMaybe(file) {
   }
 }
 
+async function readJsonMaybe(file) {
+  const raw = await readMaybe(file);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw.replace(/^\uFEFF/, ''));
+  } catch {
+    return null;
+  }
+}
+
 function rel(file) {
   return path.relative(process.cwd(), file);
 }
@@ -120,11 +131,13 @@ async function listFixtures() {
     const dir = path.join(FIXTURES_DIR, ent.name);
     const html = await readMaybe(path.join(dir, 'source.html'));
     if (!html) continue;
+    const manifest = await readJsonMaybe(path.join(dir, 'manifest.json'));
     out.push({
       id: ent.name,
       html,
       css: await readMaybe(path.join(dir, 'source.css')),
       i18n: await readMaybe(path.join(dir, 'source.i18n')),
+      chatExpectations: manifest?.chatExpectations ?? null,
     });
   }
   return out.sort((a, b) => a.id.localeCompare(b.id));
@@ -766,6 +779,50 @@ async function clickRollAndReadChat(page, fixtureId) {
   };
 }
 
+function evaluateChatExpectations(cardInfo, expectations) {
+  if (!expectations) return [];
+  const failures = [];
+  const template = cardInfo?.templateComputed;
+  const text = String(cardInfo?.latestMessage?.text ?? cardInfo?.text ?? '');
+
+  if (
+    expectations.templateClassName
+    && !String(template?.className ?? '').split(/\s+/).includes(expectations.templateClassName)
+  ) {
+    failures.push(`template class expected ${expectations.templateClassName}, got ${template?.className ?? 'missing'}`);
+  }
+  for (const token of expectations.textIncludes ?? []) {
+    if (!text.includes(String(token))) failures.push(`chat text missing ${JSON.stringify(token)}`);
+  }
+  if (
+    typeof expectations.templatePaintClipped === 'boolean'
+    && cardInfo?.templatePaintClipped !== expectations.templatePaintClipped
+  ) {
+    failures.push(`paint clipped expected ${expectations.templatePaintClipped}, got ${cardInfo?.templatePaintClipped}`);
+  }
+
+  const children = Array.isArray(template?.computedChildren)
+    ? template.computedChildren
+    : Object.values(template?.computedChildren ?? {});
+  for (const expectedChild of expectations.childStyles ?? []) {
+    const child = children.find((candidate) =>
+      String(candidate?.className ?? '').split(/\s+/).includes(expectedChild.className),
+    );
+    if (!child) {
+      failures.push(`missing child class ${expectedChild.className}`);
+      continue;
+    }
+    for (const [property, expectedValue] of Object.entries(expectedChild.styles ?? {})) {
+      const actualValue = child.computedStyle?.[property];
+      if (actualValue !== expectedValue) {
+        failures.push(`${expectedChild.className}.${property} expected ${expectedValue}, got ${actualValue ?? 'missing'}`);
+      }
+    }
+  }
+
+  return failures;
+}
+
 async function waitForRolltemplateAssets(page) {
   await page.evaluate(async () => {
     const urls = new Set();
@@ -823,8 +880,11 @@ function renderMarkdown(report) {
       (item.consoleErrors?.filter((msg) => !isResourceConsoleIssue(msg)).length ?? 0) +
       (item.pageErrors?.length ?? 0);
     const resourceIssues = item.consoleErrors?.filter(isResourceConsoleIssue).length ?? 0;
+    const reason = item.skipReason
+      ?? item.expectationFailures?.join('<br>')
+      ?? '';
     lines.push(
-      `| \`${item.id}\` | ${status} | ${item.skipReason ?? ''} | ${item.clickMode ?? ''} | ${visibleCount} | ${actionableCount} | ${escapePipe(chosen)} | ${item.cardInfo?.kind ?? ''} | ${item.cardInfo?.cardCount ?? ''} | ${item.cardInfo?.width ?? ''} | ${item.cardInfo?.templateWidth ?? ''} | ${item.cardInfo?.templatePaintClipped ? 'yes' : 'no'} | ${roll20ShellStatus(item.cardInfo)} | ${item.cardInfo?.hasTemplateClass ? 'yes' : 'no'} | ${item.cardInfo?.hasDebugTemplateLabel ? 'yes' : 'no'} | ${item.cardInfo?.hasTotal ? 'yes' : 'no'} | ${functionalErrors} | ${resourceIssues} |`,
+      `| \`${item.id}\` | ${status} | ${escapePipe(reason)} | ${item.clickMode ?? ''} | ${visibleCount} | ${actionableCount} | ${escapePipe(chosen)} | ${item.cardInfo?.kind ?? ''} | ${item.cardInfo?.cardCount ?? ''} | ${item.cardInfo?.width ?? ''} | ${item.cardInfo?.templateWidth ?? ''} | ${item.cardInfo?.templatePaintClipped ? 'yes' : 'no'} | ${roll20ShellStatus(item.cardInfo)} | ${item.cardInfo?.hasTemplateClass ? 'yes' : 'no'} | ${item.cardInfo?.hasDebugTemplateLabel ? 'yes' : 'no'} | ${item.cardInfo?.hasTotal ? 'yes' : 'no'} | ${functionalErrors} | ${resourceIssues} |`,
     );
   }
   const policyRows = report.fixtures
@@ -1022,6 +1082,10 @@ async function main() {
         entry.import = await importFixture(page, fixture);
         const clicked = await clickRollAndReadChat(page, fixture.id);
         Object.assign(entry, clicked);
+        entry.expectationFailures = evaluateChatExpectations(
+          entry.cardInfo,
+          fixture.chatExpectations,
+        );
         const functionalConsoleErrors = consoleErrors.filter((msg) => !isResourceConsoleIssue(msg));
         const resourceConsoleIssues = consoleErrors.filter(isResourceConsoleIssue);
         entry.resourceConsoleIssues = resourceConsoleIssues;
@@ -1039,6 +1103,7 @@ async function main() {
           entry.cardInfo?.hasSenderLine === true &&
           entry.cardInfo?.hasTimestamp === true &&
           (!REQUIRE_UNCLIPPED || entry.cardInfo?.templatePaintClipped === false) &&
+          entry.expectationFailures.length === 0 &&
           functionalConsoleErrors.filter((msg) => msg.type === 'error').length === 0 &&
           pageErrors.length === 0;
       } catch (err) {

@@ -46,6 +46,21 @@ belong in tracked documents.
   configured high-mismatch threshold, and policy keeps the default renderer.
   Payloads without Roll content are excluded instead of reported as missing.
   Broader result-card families remain unverified.
+- `DONE LOCAL CURRENT SYNTHETIC`: an anonymous result-card matrix now covers
+  block, table, conditional-helper, and default card shapes. Rolltemplate CSS
+  keeps nested conditional at-rules, referenced animations, and authored box
+  sizing while dropping selector branches outside the chat surface. Every card
+  is unclipped in chat, and Preview/Edit are pixel-exact in both modern and
+  legacy modes with no template-marker false warning.
+- `DONE ACTUAL SYNTHETIC STRUCTURE`: one additional anonymous conditional card
+  persisted in an owner-only modern verification destination with exact
+  HTML/CSS, semantically matching translation, expected nested-at-rule layout,
+  helper output, and matching chat DOM/text. Existing user rooms were not
+  modified.
+- `VERIFY`: the additional card does not yet have an authoritative lossless
+  element capture from the active browser surface. Lossy viewport output and a
+  manually aligned crop remain diagnostic only. The remaining matrix cards and
+  equivalent dedicated legacy-room checks are still open.
 - `DONE LOCAL CURRENT SYNTHETIC`: five anonymous fixtures now cover ordinary
   controls, Roll/runtime content, tables, lists, repeating structure, checked
   and selected defaults, grouped radios, multi-select state, readonly and

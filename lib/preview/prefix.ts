@@ -232,12 +232,12 @@ function matchBrace(css: string, openIdx: number): number {
 }
 
 function prefixSelectorList(selectorBlob: string): string {
-  const parts = splitTopLevel(selectorBlob, ',');
+  const parts = splitCssSelectorList(selectorBlob);
   return parts.map(prefixSingleSelector).join(',');
 }
 
 function prefixLegacySelectorList(selectorBlob: string): string {
-  return splitTopLevel(selectorBlob, ',')
+  return splitCssSelectorList(selectorBlob)
     .map((selector) => {
       const trimmed = selector.trim();
       if (
@@ -252,6 +252,11 @@ function prefixLegacySelectorList(selectorBlob: string): string {
       return `.charsheet ${trimmed}`;
     })
     .join(',');
+}
+
+/** Split a CSS selector list without breaking commas inside attributes or pseudo functions. */
+export function splitCssSelectorList(selectorBlob: string): string[] {
+  return splitTopLevel(selectorBlob, ',');
 }
 
 function prefixSingleSelector(selector: string): string {

@@ -20,6 +20,8 @@ const tasks = [
   'guard:docs-privacy',
   'test:chat-diagnostics',
   'test:rolltemplate-render',
+  'test:rolltemplate-css',
+  'test:rolltemplate-synthetic',
   'test:asset-refs',
   'test:asset-replacements',
   'test:translation-payload',

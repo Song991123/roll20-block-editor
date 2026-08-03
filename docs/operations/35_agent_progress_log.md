@@ -12,8 +12,39 @@ or source-derived measurement here.
 - Branch: `claude/design-reset`
 - Read the current branch tip from Git; do not rely on a cached commit hash in
   this handoff file.
-- Remote CI: passed safety/unit verification, lint, and production build.
-- Worktree and project server state were clean after the run.
+- Read the current remote checks from GitHub; do not rely on a cached CI result
+  in this handoff file.
+- Confirm worktree and project server state at the end of every run.
+
+## 2026-08-03 - Result-Card CSS And Short-Sheet Geometry
+
+- Replaced flat Rolltemplate CSS matching with a dependency-free structural
+  extractor that retains nested conditional at-rules, referenced namespaced
+  keyframes, and font policy while excluding ordinary sheet rules.
+- Reused the existing selector-list splitter so mixed selector groups keep
+  only Rolltemplate branches. The retained branches are constrained to the
+  chat pane with zero added specificity, preventing authored card CSS from
+  styling application chrome.
+- Added four anonymous deterministic result-card fixtures covering block,
+  table, conditional-helper, and default paths. Their manifest expectations
+  check template class, translated text, selected computed styles, and
+  unclipped paint.
+- Removed the fixed short-sheet height floor. The iframe host now follows the
+  authored root down to a minimal empty-document floor, so Preview and Edit do
+  not add a blank tail to short sheets.
+- Roll20 helper sections inside complete Rolltemplate definitions no longer
+  trigger the build-template warning. Build-template markers outside those
+  definitions still do.
+- Local result-card chat, modern/legacy Preview/Edit, fresh-sheet, persistent
+  iframe, import-dialog, and edit-flow browser checks pass. The persistent
+  iframe smoke was also updated to the layer tree's current `treeitem` role.
+- In an owner-only modern verification destination, one additional anonymous
+  conditional card passed persisted-payload, nested-at-rule, translation,
+  helper, and chat structure/text checks. Its browser image was lossy, so
+  authoritative pixel parity and the rest of the modern/legacy matrix remain
+  open.
+- Claim boundary: current anonymous synthetic result-card paths only. This is
+  not broad-sheet or all-result-card Roll20 visual parity.
 
 ## 2026-08-03 - Modern Actual Render And Chat Evidence
 

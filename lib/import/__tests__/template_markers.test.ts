@@ -22,4 +22,21 @@ assert.deepEqual(handlebars.kinds, ['handlebars-structure']);
 const ordinaryRoll20Text = detectTemplateMarkers('<button type="roll" value="{{name}}">Roll</button>');
 assert.equal(ordinaryRoll20Text.count, 0, 'ordinary double-brace text is not treated as a template');
 
+const rolltemplateHelpers = detectTemplateMarkers(`
+  <rolltemplate class="sheet-rolltemplate-proof">
+    {{#rollGreater() result 1}}<span>{{result}}</span>{{/rollGreater() result 1}}
+    {{#name}}<b>{{name}}</b>{{/name}}
+  </rolltemplate>
+`);
+assert.equal(rolltemplateHelpers.count, 0, 'Roll20 Rolltemplate sections are valid imported source');
+
+const mixedRolltemplateAndBuildTemplate = detectTemplateMarkers(`
+  <rolltemplate class="sheet-rolltemplate-proof">
+    {{#rollGreater() result 1}}<span>{{result}}</span>{{/rollGreater() result 1}}
+  </rolltemplate>
+  {{#if show_unexpanded}}<div>Build-only source</div>{{/if}}
+`);
+assert.equal(mixedRolltemplateAndBuildTemplate.count, 2, 'build-template markers outside Rolltemplates still warn');
+assert.deepEqual(mixedRolltemplateAndBuildTemplate.kinds, ['handlebars-structure']);
+
 console.log('template marker detection tests: PASS');

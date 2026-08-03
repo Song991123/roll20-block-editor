@@ -7,7 +7,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { normalizeTranslationForRoll20 } from '@/lib/export/payload';
 import { useChatStore, type ChatRoll } from '@/lib/stores/chatStore';
 import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
-import { autoPrefixCssClasses } from '@/lib/preview/prefix';
 import {
   canEnableChatDiagnostics,
   CHAT_DIAGNOSTICS_STORAGE_KEY,
@@ -23,6 +22,10 @@ import {
   extractRolltemplateBody,
   renderTemplateBody,
 } from '@/lib/dice/rolltemplateRender';
+import {
+  extractRolltemplateCss,
+  type RolltemplateFontPolicy,
+} from '@/lib/dice/rolltemplateCss';
 import { ROLL20_CHAT_SHELL_WIDTH } from '@/lib/dice/roll20ChatGeometry';
 
 function formatTime(ts: number): string {
@@ -38,10 +41,7 @@ function safeRolltemplateClass(name: string): string {
   return `sheet-rolltemplate-${safe || 'default'}`;
 }
 
-type ChatFontPolicy =
-  | 'default'
-  | 'roll20-chat-fallback'
-  | 'roll20-sandbox-font-proxy';
+type ChatFontPolicy = RolltemplateFontPolicy;
 type ChatTextPolicy = 'default' | 'roll20-auto-aa';
 type ChatShadowPolicy = 'default' | 'no-template-shadow';
 type ChatGeometryPolicy =
@@ -137,36 +137,6 @@ function currentChatPaintPolicy(): ChatPaintPolicy {
     value === 'roll20-edge-shadow'
   ) return value;
   return 'default';
-}
-
-export function extractRolltemplateCss(css: string, fontPolicy: ChatFontPolicy = 'default'): string {
-  const prefixedCss = autoPrefixCssClasses(css);
-  const rawFontFaces = prefixedCss.match(/@font-face\s*\{[^{}]*\}/gi) ?? [];
-  const fontFaces = fontPolicy === 'roll20-chat-fallback' ? [] : rawFontFaces;
-  const matches = prefixedCss.match(/[^{}]*(?:sheet-rolltemplate|sheet-r20-node-)[^{}]*\{[^{}]*\}/g);
-  const rolltemplateCss = rewriteRoll20AssetUrls([...fontFaces, ...(matches ?? [])].join('\n'), {
-    proxyFontUrls: fontPolicy === 'roll20-sandbox-font-proxy',
-  });
-  return rolltemplateCss.trim() ? rolltemplateCss : '';
-}
-
-function rewriteRoll20AssetUrls(css: string, opts: { proxyFontUrls?: boolean } = {}): string {
-  return css.replace(/url\s*\(([^)]+)\)/gi, (_full, rawUrl: string) => {
-    const normalized = String(rawUrl).trim().replace(/^["']|["']$/g, '');
-    if (!/^https?:\/\//i.test(normalized)) return '';
-    if (!opts.proxyFontUrls && /\.(?:woff2?|ttf|otf|eot)(?:[?#].*)?$/i.test(normalized)) {
-      return `url("${normalized}")`;
-    }
-    if (
-      normalized.startsWith('https://imgsrv.roll20.net/') ||
-      normalized.startsWith('https://s3.amazonaws.com/files.d20.io') ||
-      normalized.startsWith('https://files.d20.io') ||
-      normalized.startsWith('https://app.roll20.net/images/')
-    ) {
-      return `url("${normalized}")`;
-    }
-    return `url("https://imgsrv.roll20.net/?src=${encodeURIComponent(normalized)}")`;
-  });
 }
 
 export function parseRolltemplateTranslations(raw: string): Record<string, string> {
@@ -398,14 +368,14 @@ const roll20ChatShellCss = `
   width: ${ROLL20_CHAT_SHELL_WIDTH}px;
   min-width: 0;
 }
-.r20-chat-pane .r20-chat-card-group [class*="sheet-rolltemplate-"] {
+:where(.r20-chat-pane .r20-chat-card-group) [class*="sheet-rolltemplate-"] {
   box-sizing: content-box;
   line-height: 17.0625px;
 }
-.r20-chat-pane .r20-chat-card-group [class*="sheet-rolltemplate-"] * {
+:where(.r20-chat-pane .r20-chat-card-group [class*="sheet-rolltemplate-"], .r20-chat-pane .r20-chat-card-group [class*="sheet-rolltemplate-"] *) {
   box-sizing: content-box;
 }
-.r20-chat-pane .textchatcontainer .inlinerollresult {
+:where(.r20-chat-pane .textchatcontainer) .inlinerollresult {
   background-color: #fef68e;
   border: 2px solid #fef68e;
   padding: 0 3px;
@@ -413,18 +383,18 @@ const roll20ChatShellCss = `
   cursor: help;
   font-size: 1.1em;
 }
-.r20-chat-pane .textchatcontainer .inlinerollresult.fullcrit {
+:where(.r20-chat-pane .textchatcontainer) .inlinerollresult.fullcrit {
   border-color: #3fb315;
 }
-.r20-chat-pane .textchatcontainer .inlinerollresult.fullfail {
+:where(.r20-chat-pane .textchatcontainer) .inlinerollresult.fullfail {
   border-color: #b31515;
 }
-.r20-chat-pane .sheet-rolltemplate-default table {
+:where(.r20-chat-pane) .sheet-rolltemplate-default table {
   width: 100%;
   background-color: #fff;
   border: 1px solid rgba(112, 32, 130, 1);
 }
-.r20-chat-pane .sheet-rolltemplate-default caption {
+:where(.r20-chat-pane) .sheet-rolltemplate-default caption {
   background-color: rgba(112, 32, 130, 1);
   color: #fff;
   font-family: "Helvetica Neue", Helvetica, sans-serif;
@@ -433,18 +403,18 @@ const roll20ChatShellCss = `
   padding: 5px;
   text-align: left;
 }
-.r20-chat-pane .sheet-rolltemplate-default td {
+:where(.r20-chat-pane) .sheet-rolltemplate-default td {
   padding: 5px;
   line-height: 1.4em;
   vertical-align: top;
 }
-.r20-chat-pane .sheet-rolltemplate-default td:first-child {
+:where(.r20-chat-pane) .sheet-rolltemplate-default td:first-child {
   font-weight: 700;
   text-align: right;
   min-width: 50px;
   padding-right: 10px;
 }
-.r20-chat-pane .sheet-rolltemplate-default tr:nth-child(even) {
+:where(.r20-chat-pane) .sheet-rolltemplate-default tr:nth-child(even) {
   background-color: #eee;
 }
 `;

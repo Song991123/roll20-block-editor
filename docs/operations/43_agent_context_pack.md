@@ -20,6 +20,16 @@ contain private source evidence or historical test dumps.
   matches and the aligned difference stays below the configured high-mismatch
   threshold, so the default chat renderer remains selected. Broad-sheet and
   broader result-card parity remain open.
+- A four-shape anonymous result-card matrix is locally exact between Preview
+  and Edit in both compatibility modes and passes unclipped chat expectations.
+  One additional conditional card has current owner-only modern payload,
+  translation, nested-at-rule, helper, and chat structure/text evidence. Its
+  active browser image was lossy, so that matrix case remains unproven at the
+  authoritative pixel level and has no equivalent current legacy-room result.
+- Rolltemplate CSS extraction keeps relevant nested at-rules and namespaced
+  referenced animations, constrains retained selector branches to the chat
+  pane, and lets authored card box sizing override the low-specificity shell
+  baseline.
 - Full-root diagnostics compare the exact authored top-level element rather
   than the surrounding Roll20 wrapper. The current anonymous modern suite and
   legacy contracts have actual geometry/computed-style evidence. The existing

@@ -90,7 +90,11 @@ import {
   appendFriendlyWidgetPreset,
   decodeFriendlyWidgetDrag,
 } from '@/lib/widgets/presets';
-import { clampCanvasWidth } from '@/lib/preview/canvasDimensions';
+import {
+  clampCanvasWidth,
+  clampSheetRenderHeight,
+  SHEET_RENDER_MIN_HEIGHT,
+} from '@/lib/preview/canvasDimensions';
 
 type OptimisticFlowCommit = {
   subjectBlockId: string;
@@ -272,7 +276,7 @@ export default function PreviewMain() {
     x: number;
     y: number;
   } | null>(null);
-  const [iframeHeight, setIframeHeight] = useState(900);
+  const [iframeHeight, setIframeHeight] = useState(SHEET_RENDER_MIN_HEIGHT);
   const [viewportWidth, setViewportWidth] = useState(0);
   const [iframeEditBridgeId, setIframeEditBridgeId] = useState<string | null>(null);
   const [iframeReadySourceKey, setIframeReadySourceKey] = useState<string | null>(null);
@@ -896,7 +900,7 @@ export default function PreviewMain() {
   useEffect(() => {
     autoWidthSizedRef.current = false;
     iframeEditBridgeIdRef.current = null;
-    queueMicrotask(() => setIframeHeight(120));
+    queueMicrotask(() => setIframeHeight(SHEET_RENDER_MIN_HEIGHT));
   }, [iframeDocumentSrcdoc]);
 
   const previewAreaRef = useRef<HTMLDivElement>(null);
@@ -1845,7 +1849,7 @@ export default function PreviewMain() {
         return;
       }
       if (data?.type === 'r20:resize' && typeof data.height === 'number') {
-        const nextHeight = Math.max(120, Math.min(60000, Math.ceil(data.height)));
+        const nextHeight = clampSheetRenderHeight(data.height);
         // Keep the iframe host at least as tall as the sheet. A wide threshold
         // hides small but real content growth and can clip the final rows.
         setIframeHeight((prev) => (Math.abs(prev - nextHeight) >= 1 ? nextHeight : prev));
