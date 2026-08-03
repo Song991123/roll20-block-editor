@@ -104,10 +104,13 @@ function warningCounts(warnings) {
 async function auditFixture(fixture, sanitizer) {
   const htmlFile = join(fixture.payloadDir, 'sheet.html');
   const cssFile = join(fixture.payloadDir, 'sheet.css');
+  const manifestFile = join(fixture.payloadDir, 'sheet.json');
   const html = existsSync(htmlFile) ? readFileSync(htmlFile, 'utf8') : '';
   const css = existsSync(cssFile) ? readFileSync(cssFile, 'utf8') : '';
+  const manifest = readJsonIfExists(manifestFile);
+  const legacy = manifest?.legacy === true;
   const cssResult = sanitizer.sanitizeRoll20SandboxCss(css, { prefixSelectors: false });
-  const htmlResult = sanitizer.sanitizeRoll20SandboxHtml(html);
+  const htmlResult = sanitizer.sanitizeRoll20SandboxHtml(html, { prefixClasses: legacy });
 
   const issues = [];
   if (!html.trim()) issues.push({ severity: 'error', code: 'payload.empty_html' });
@@ -117,6 +120,14 @@ async function auditFixture(fixture, sanitizer) {
   if (cssResult.warnings.some((warning) => warning.code === 'css-rejected')) {
     issues.push({ severity: 'error', code: 'sandbox.css_rejected' });
   }
+  const unprefixedLegacyClasses = legacy ? findUnprefixedLegacyClassTokens(html) : [];
+  if (unprefixedLegacyClasses.length > 0) {
+    issues.push({
+      severity: 'error',
+      code: 'legacy.html_unprefixed_class',
+      samples: unprefixedLegacyClasses.slice(0, 12),
+    });
+  }
 
   const htmlChanged = htmlResult.html !== html;
   const cssChanged = cssResult.css !== css;
@@ -125,6 +136,7 @@ async function auditFixture(fixture, sanitizer) {
   return {
     id: fixture.id,
     pass: issues.every((issue) => issue.severity !== 'error'),
+    compatibilityMode: legacy ? 'legacy' : 'modern',
     issues,
     html: {
       beforeBytes: Buffer.byteLength(html),
@@ -143,7 +155,43 @@ async function auditFixture(fixture, sanitizer) {
       changed: cssChanged,
       warningCounts: warningCounts(cssResult.warnings),
     },
+    legacyPrefixContract: {
+      unprefixedClassCount: unprefixedLegacyClasses.length,
+      samples: unprefixedLegacyClasses.slice(0, 12),
+    },
   };
+}
+
+function readJsonIfExists(file) {
+  if (!existsSync(file)) return null;
+  try {
+    return JSON.parse(readFileSync(file, 'utf8').replace(/^\uFEFF/, ''));
+  } catch {
+    return null;
+  }
+}
+
+function findUnprefixedLegacyClassTokens(html) {
+  const allowedRuntime = new Set([
+    'charsheet',
+    'inlinerollresult',
+    'fullcrit',
+    'fullfail',
+    'importantroll',
+  ]);
+  const tokens = new Set();
+  const classAttr = /\sclass\s*=\s*(["'])(.*?)\1/gi;
+  let match;
+  while ((match = classAttr.exec(String(html ?? '')))) {
+    for (const token of match[2].split(/\s+/).filter(Boolean)) {
+      if (
+        allowedRuntime.has(token)
+        || /^(?:sheet-|attr_|repeating_|roll_|act_)/.test(token)
+      ) continue;
+      tokens.add(token);
+    }
+  }
+  return [...tokens].sort();
 }
 
 function renderMarkdown(report) {
@@ -156,12 +204,12 @@ function renderMarkdown(report) {
     '',
     `Run: \`${path.relative(process.cwd(), report.runDir)}\``,
     '',
-    '| Fixture | Status | HTML bytes | HTML changed | CSS bytes | CSS changed | Runtime stripped | Issues |',
-    '| --- | --- | ---: | --- | ---: | --- | ---: | --- |',
+    '| Fixture | Mode | Status | HTML bytes | HTML changed | CSS bytes | CSS changed | Runtime stripped | Unprefixed legacy classes | Issues |',
+    '| --- | --- | --- | ---: | --- | ---: | --- | ---: | ---: | --- |',
   ];
 
   for (const item of report.fixtures) {
-    lines.push(`| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.html.beforeBytes} -> ${item.html.afterBytes} | ${item.html.changed ? `${item.html.beforeHash} -> ${item.html.afterHash}` : 'no'} | ${item.css.beforeBytes} -> ${item.css.afterBytes} | ${item.css.changed ? `${item.css.beforeHash} -> ${item.css.afterHash}` : 'no'} | ${item.html.runtimeStripCount} | ${formatIssues(item.issues)} |`);
+    lines.push(`| \`${item.id}\` | ${item.compatibilityMode} | ${item.pass ? 'PASS' : 'FAIL'} | ${item.html.beforeBytes} -> ${item.html.afterBytes} | ${item.html.changed ? `${item.html.beforeHash} -> ${item.html.afterHash}` : 'no'} | ${item.css.beforeBytes} -> ${item.css.afterBytes} | ${item.css.changed ? `${item.css.beforeHash} -> ${item.css.afterHash}` : 'no'} | ${item.html.runtimeStripCount} | ${item.legacyPrefixContract.unprefixedClassCount} | ${formatIssues(item.issues)} |`);
   }
 
   lines.push('');
@@ -223,7 +271,7 @@ async function main() {
   for (const fixture of await listFixtures()) {
     const entry = await auditFixture(fixture, sanitizer);
     report.fixtures.push(entry);
-    console.log(`${entry.pass ? 'PASS' : 'FAIL'} ${entry.id} htmlChanged=${entry.html.changed} cssChanged=${entry.css.changed}`);
+    console.log(`${entry.pass ? 'PASS' : 'FAIL'} ${entry.id} mode=${entry.compatibilityMode} htmlChanged=${entry.html.changed} cssChanged=${entry.css.changed}`);
   }
 
   report.finishedAt = new Date().toISOString();

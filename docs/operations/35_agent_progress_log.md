@@ -924,3 +924,33 @@ parity.
   legacy evidence stays 0/8 and `VERIFY`.
 - Final full `ci:verify`, lint, production build, tracked-document privacy, and
   server-hygiene gates pass. No project or CDP listener remains running.
+
+## 2026-08-03 - Exact Export Boundary And Valid Legacy Actual Matrix
+
+- Invalidated the first corrected-fixture upload attempt after proving that its
+  baseline generator used raw canonical emit text instead of the exact
+  manual-upload/ZIP preparation boundary. No parity claim uses that run.
+- Routed the performance hook and local actual-baseline generator through the
+  same mode-aware upload preparation used by export, including legacy HTML/CSS
+  alignment, script filtering, translation normalization, asset replacement,
+  warnings, and extra files. The sanitize audit now reads each manifest mode and
+  rejects unprefixed authored classes in legacy payloads.
+- Regenerated the anonymous seven-fixture legacy suite. Pre-upload checks pass
+  with zero unprefixed legacy classes, and exact persisted HTML/CSS plus
+  semantically equal translation were verified before each actual capture.
+- The dedicated one-participant legacy destination produced seven authored-root
+  captures plus one result-card capture. All 8/8 are authoritative and diffed;
+  authored-root mismatch is 2.55%-5.04%.
+- A transient missing-style capture was reproduced and rejected as an iframe
+  readiness race. Waiting for the authored selector in the processed Roll20
+  style element made the exact unchanged payload render at its expected
+  geometry, so no speculative legacy CSS rule was added.
+- Actual repeating runtime proof covers `sheet:opened` row initialization,
+  field-change calculation, Add/Delete, and drag reorder with player source.
+  Actual Roll execution produced a deterministic result matching the local
+  baseline; result-card structure matches and maximum aligned mismatch is 8.81%,
+  below the high-mismatch threshold.
+- Claim boundary: this proves the current anonymous legacy suite only. The
+  modern Custom Sheet Sandbox chooser boundary and broad full-root candidate
+  matrix remain open, so the renderer-action gate correctly holds a production
+  renderer patch.

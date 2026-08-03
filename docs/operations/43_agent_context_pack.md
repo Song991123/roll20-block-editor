@@ -15,7 +15,8 @@ contain private source evidence or historical test dumps.
   Modern Preview/Edit/export keeps them exact; the legacy destination prefixes
   matching HTML and CSS once at its render/export boundary. Anonymous
   import/emit, ZIP, mode, and fourteen-pair Preview/Edit browser gates pass.
-  Fresh actual valid-repeating captures remain a separate open gate.
+  The corrected legacy suite now also has exact-upload actual evidence; modern
+  Sandbox transfer remains a separate open gate.
 - Structural layer and friendly-widget selection channels are isolated.
 - Public product assets contain no bundled real sheet sample.
 - Dedicated owner-only modern and legacy test rooms now cover current anonymous
@@ -56,12 +57,15 @@ contain private source evidence or historical test dumps.
   an editable control leaf, never a drop container. Other HTML void elements
   use the same leaf-only contract instead of a false generic frame. CSS
   declaration values preserve semicolons inside strings and functions such as data URLs while
-  still removing top-level declaration boundaries.
+  still removing top-level declaration boundaries. The actual-baseline generator
+  must call the same exact upload preparation as ExportDialog; raw canonical emit
+  is not valid upload evidence.
 - Modern Sandbox CSS preparation drops blocked inline data URLs before the
   unsafe-token audit. Quoted CSS grammar remains intact, but script URLs and
   unquoted markup still reject the stylesheet. The current anonymous
-  seven-fixture pre-upload gate passes in both compatibility modes; this is not
-  actual-screen evidence.
+  seven-fixture pre-upload gate passes in both compatibility modes. The legacy
+  destination now also has 8/8 authoritative generated captures and diff output;
+  this still does not pass the blocked modern Sandbox transfer.
 - The empty Edit surface is an explicit gallery drop target. Before the first
   iframe exists, it maps the pointer to the centered configured sheet canvas;
   friendly cards keep their preset and managed CSS instead of falling through
@@ -122,8 +126,9 @@ contain private source evidence or historical test dumps.
   upload payload. An earlier owner-only duplicate-section experiment is only
   invalid-input diagnostic evidence, not parity proof. Actual legacy Roll20
   also removes unsupported semantic wrappers; local legacy Preview/Edit now
-  applies the same allow-list transform. A fresh valid actual repeating run,
-  normalized full-height comparison, and broader Worker syntax remain open.
+  applies the same allow-list transform. The corrected exact-upload legacy run
+  passes open-time row creation, field changes, Add/Delete, and drag reorder.
+  Broader Worker syntax and broad full-root candidate coverage remain open.
 - ImportDialog waits for every Blockly model workspace before hydration. Keep
   the cold-load early-click browser check; analysis percentages alone do not
   prove blocks were applied.

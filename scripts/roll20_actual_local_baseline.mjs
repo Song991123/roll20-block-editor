@@ -28,7 +28,6 @@ import path from 'node:path';
 import JSZip from 'jszip';
 import { chromium } from 'playwright-core';
 import {
-  applyAssetReplacements,
   parseAssetReplacementMap,
   summarizeAssetReplacementReadiness,
 } from './lib/assetReplacements.mjs';
@@ -274,7 +273,7 @@ async function importFixture(page, fixture) {
     }
     return {
       result: last,
-      emit: window.__perfHook.getEmitContent(),
+      upload: window.__perfHook.getRoll20UploadContent(compatibilityMode === 'legacy'),
       workspace: window.__perfHook.getWorkspace(),
     };
   }, {
@@ -653,37 +652,6 @@ function summarizeSheetElement(sheetEl) {
   };
 }
 
-function normalizeTranslation(i18n) {
-  const text = (i18n ?? '').trim();
-  if (!text) return '{}';
-  try {
-    JSON.parse(text);
-    return text;
-  } catch {
-    // Fall through to internal comment format from r20_locale_value.
-  }
-  const entries = {};
-  const re = /<!--\s*i18n(?:\[[^\]]+\])?\s+("(?:\\.|[^"\\])*")\s*:\s*("(?:\\.|[^"\\])*")\s*-->/g;
-  let match;
-  while ((match = re.exec(text))) {
-    try {
-      entries[JSON.parse(match[1])] = JSON.parse(match[2]);
-    } catch {
-      // Ignore malformed comment entries and keep valid ones.
-    }
-  }
-  return Object.keys(entries).length > 0 ? `${JSON.stringify(entries, null, 2)}\n` : text;
-}
-
-function stripInternalBlockIds(html) {
-  let removed = 0;
-  const cleaned = String(html ?? '').replace(/\sdata-r20-block-id=(?:"[^"]*"|'[^']*')/g, () => {
-    removed += 1;
-    return '';
-  });
-  return { html: cleaned, removed };
-}
-
 function buildManifest(fixtureId, legacyMode) {
   return JSON.stringify({
     html: 'sheet.html',
@@ -866,15 +834,13 @@ async function main() {
           assetReplacementMap: assetReplacementMap.text,
         });
         entry.import = imported.result;
-        const htmlPayload = stripInternalBlockIds(imported.emit.html ?? '');
-        const relinked = applyAssetReplacements(
-          { html: htmlPayload.html, css: imported.emit.css ?? '' },
-          assetReplacementMap.text,
-        );
+        if (!imported.upload?.html || typeof imported.upload.css !== 'string') {
+          throw new Error('exact Roll20 upload boundary was unavailable');
+        }
         const emit = {
-          html: relinked.html,
-          css: relinked.css,
-          translation: normalizeTranslation(imported.emit.i18n ?? ''),
+          html: imported.upload.html,
+          css: imported.upload.css,
+          translation: imported.upload.translation,
         };
         const manifest = buildManifest(fixture.id, fixture.legacyMode);
         const readme = [
@@ -891,13 +857,19 @@ async function main() {
         await fs.writeFile(path.join(payloadDir, 'translation.json'), emit.translation, 'utf8');
         await fs.writeFile(path.join(payloadDir, 'sheet.json'), manifest, 'utf8');
         await fs.writeFile(path.join(payloadDir, 'README.txt'), readme, 'utf8');
-        const zipBytes = await writeZip(path.join(fixtureDir, 'upload.zip'), {
+        const zipFiles = {
           'sheet.html': emit.html,
           'sheet.css': emit.css,
           'translation.json': emit.translation,
           'sheet.json': manifest,
           'README.txt': readme,
-        });
+        };
+        for (const [name, content] of Object.entries(imported.upload.extraFiles ?? {})) {
+          if (path.basename(name) !== name) throw new Error(`unsafe upload extra file name: ${name}`);
+          await fs.writeFile(path.join(payloadDir, name), content, 'utf8');
+          zipFiles[name] = content;
+        }
+        const zipBytes = await writeZip(path.join(fixtureDir, 'upload.zip'), zipFiles);
 
         entry.emitBytes = {
           html: Buffer.byteLength(emit.html),
@@ -906,13 +878,16 @@ async function main() {
           zip: zipBytes,
         };
         entry.legacyMode = fixture.legacyMode;
-        entry.removedInternalBlockIds = htmlPayload.removed;
+        entry.removedInternalBlockIds = imported.upload.removedInternalBlockIds;
+        entry.removedUnsupportedScripts = imported.upload.removedUnsupportedScripts;
+        entry.legacyWarningCount = imported.upload.legacyWarnings?.length ?? 0;
         entry.assetReplacement = {
           mapFile: assetReplacementMap.path,
           mapEntries: assetReplacementMap.parsed.entries.length,
           mapWarnings: assetReplacementMap.parsed.warnings,
           readiness: assetReplacementMap.readiness,
-          replacements: relinked.replacements,
+          replacements: imported.upload.assetReplacement?.replacements ?? 0,
+          applicationWarnings: imported.upload.assetReplacement?.warnings ?? [],
         };
         entry.emitSha256 = {
           html: sha256(emit.html),

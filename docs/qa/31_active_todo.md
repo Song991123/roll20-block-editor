@@ -8,6 +8,18 @@ belong in tracked documents.
 
 ## P0 - Roll20 Render Truth
 
+- `DONE ACTUAL LEGACY / VERIFY MODERN SANDBOX`: the corrected seven-fixture
+  anonymous legacy suite now uses the exact manual-upload/ZIP preparation
+  boundary instead of raw canonical emit text. Fresh pre-upload checks pass,
+  all seven authored roots plus the applicable result card are captured and
+  diffed as authoritative actual Roll20 evidence, and root mismatch is
+  2.55%-5.04%. The deterministic result-card structure matches and its maximum
+  aligned mismatch is 8.81%, below the high-mismatch threshold. Valid repeating
+  runtime proof covers open-time row creation, field-change calculation,
+  Add/Delete, and drag reorder. The current gate still holds any global renderer
+  patch because broad full-root candidate coverage is missing. Modern Custom
+  Sheet Sandbox file transfer remains separately blocked at the supported
+  chooser boundary. Evidence stays in the ignored local run folder.
 - `DONE LOCAL / VERIFY ACTUAL`: canonical import and block emission preserve
   authored class and ID tokens instead of forcing modern sheets into the
   legacy `sheet-` namespace. Modern Preview/Edit and exported files keep the
@@ -15,8 +27,8 @@ belong in tracked documents.
   HTML and CSS once at the selected destination boundary. Focused import,
   emit, mode, upload-file, ZIP, lint, and build gates pass; all fourteen
   anonymous modern/legacy Preview/Edit browser pairs are pixel-exact with no
-  console or page errors. This does not add fresh actual Roll20 screenshots;
-  valid-repeating actual evidence remains 0/8 per mode below.
+  console or page errors. Fresh valid legacy evidence is recorded above;
+  supported modern Sandbox transfer remains a separate external gate.
 - `DONE DIAGNOSTIC / VERIFY VALID ACTUAL`: the earlier owner-only modern and
   legacy repeating experiment used duplicate same-name fieldsets. Roll20's
   documented contract requires every repeating name to be unique and forbids
@@ -24,18 +36,17 @@ belong in tracked documents.
   invalid-input diagnostic and is not parity evidence. Import now preserves
   either invalid structure with a visible error, while export blocks the
   payload. The corrected seven-fixture anonymous suite passes modern and legacy
-  local pre-upload gates; fresh valid Roll20 upload and screenshot proof remain
-  `VERIFY` because Chrome extension communication timed out before participant
-  preflight and no room was opened or changed. The current actual-status gate
-  confirms 0/8 generated Roll20 captures in both corrected modern and legacy
-  runs; local readiness is not being reported as actual parity.
+  local pre-upload gates. Legacy now has 8/8 authoritative generated captures;
+  modern Custom Sheet Sandbox still needs a supported visible file transfer.
+  Local readiness is not being reported as proof for that missing destination.
 - `DONE LOCAL / VERIFY ACTUAL PIXELS`: the shared legacy Preview/Edit contract
   now applies the observed Roll20 HTML allow-list as well as legacy CSS
   sanitizing. Unsupported semantic wrappers are removed while supported
   children and Sheet Worker source survive. The refreshed legacy local capture
   now follows the actual flattened flow and all fourteen anonymous modern and
-  legacy Preview/Edit pairs remain pixel-exact. A normalized full-height local
-  versus Roll20 pixel comparison is still required.
+  legacy Preview/Edit pairs remain pixel-exact. Current authored-root actual
+  comparisons are complete; broader full-root candidate comparisons remain
+  required before any global renderer change.
 - `DONE ACTUAL SYNTHETIC MATRIX`: four anonymous result-card shapes were
   uploaded separately to owner-only modern and legacy verification
   destinations. Every upload preserved HTML/CSS exactly and translation JSON
@@ -184,20 +195,21 @@ belong in tracked documents.
   `removeRepeatingRow`. Browser state proof covers full, section-field,
   section-wide, and plain-field change aliases plus lowercased source state and
   `removedInfo` for both player and Worker deletion.
-- `DONE LOCAL / VERIFY ACTUAL`: valid repeating sections use one unique
+- `DONE ACTUAL SYNTHETIC`: valid repeating sections use one unique
   `repeating_*` fieldset, and handlers resolve row-context shorthand for
   `getAttrs` and `setAttrs`. Drag reorder persists `_reporder_repeating_*`,
   dispatches `change:_reporder:*`, and guards against the pointer-capture
   rollback found when a dragged row moves in the DOM. Duplicate same-name
   fieldsets and names containing an extra underscore remain losslessly
   editable for repair, but import marks them as errors and export blocks them.
-  Fresh actual proof for the corrected valid payload remains open.
+  The corrected exact-upload legacy payload now passes actual open-time row
+  creation, field-change calculation, Add/Delete, and drag reorder proof.
 - `TODO`: expand structured Sheet Worker blocks beyond the current parser and
   runtime subset. Raw Worker source remains the lossless fallback meanwhile;
   diagnostics do not make unsupported syntax structurally editable. Arbitrary
   source formatting can still remain raw when structured re-emission is not
-  byte-stable. Broader Worker APIs and actual Roll20 execution proof remain
-  incomplete.
+  byte-stable. The current repeating subset has actual legacy execution proof;
+  broader Worker APIs and syntax remain incomplete.
 
 ## P0 - Edit And Preview Unity
 

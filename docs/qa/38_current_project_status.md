@@ -37,6 +37,9 @@ inert source but cannot be presented as Roll20 behavior.
   tags in a ZIP text backup.
 - Dedicated owner-only modern and legacy destinations verify the current
   anonymous synthetic payload suite. This is not broad-sheet parity.
+- The corrected legacy matrix now follows the exact export preparation boundary,
+  has 8/8 authoritative actual captures and diffs, and verifies valid repeating
+  Worker interactions plus deterministic result-card structure.
 - Public product assets contain no bundled real sheet sample.
 
 These are scoped local and actual-synthetic results. They do not prove
@@ -72,5 +75,6 @@ arbitrary-sheet or broad Roll20 parity.
 2. Obtain supported modern Sandbox file-selection evidence when the visible
    permission boundary allows it.
 3. Expand Worker block coverage and uncommon HTML/CSS mapping.
-4. Classify actual differences before changing global renderer CSS.
+4. Build broad full-root candidate comparisons before changing global renderer
+   CSS; the current gate intentionally holds that patch.
 5. Continue direct-manipulation UX using synthetic regression coverage.

@@ -24,6 +24,14 @@ import {
   replaceWorkerWorkspaceFromSourceHtml,
 } from '@/lib/blockly/workerWorkspace';
 import { importSheet as importPipeline } from '@/lib/import';
+import {
+  prepareRoll20UploadFiles,
+  type PreparedRoll20Upload,
+} from '@/lib/export/payload';
+import {
+  applyAssetReplacements,
+  type AssetReplacementWarning,
+} from '@/lib/export/asset_replacements';
 import { MAX_SVG_BLOCKS } from '@/lib/blockly/renderPolicy';
 import { emitAll } from '@/lib/preview/emit';
 import {
@@ -91,6 +99,13 @@ export interface PerfImportResult {
   heapAfterMb: number | null;
 }
 
+export interface PerfRoll20UploadContent extends PreparedRoll20Upload {
+  assetReplacement: {
+    replacements: number;
+    warnings: AssetReplacementWarning[];
+  };
+}
+
 export interface PerfEditFlowDropResult {
   containerId: string | null;
   widgetId: string | null;
@@ -120,6 +135,8 @@ export interface PerfHook {
    * 측정 phase 에서만 활성.
    */
   getEmitContent: () => { html: string; css: string; i18n: string; js: string; worker: string };
+  /** Exact manual-upload/ZIP text boundary used by ExportDialog. */
+  getRoll20UploadContent: (legacy: boolean) => PerfRoll20UploadContent;
   /** sync / async 작업 timing + heap delta. */
   measure: <T>(label: string, fn: () => T | Promise<T>) => Promise<PerfMeasure & { value: T }>;
   /** legacy-sheet-corpus / 다른 시트 raw HTML/CSS/i18n 을 generic pipeline 으로 import 후 hydrate. */
@@ -351,6 +368,30 @@ function buildHook(): PerfHook {
         i18n: cache.i18n,
         js: cache.js,
         worker: cache.worker,
+      };
+    },
+
+    getRoll20UploadContent: (legacy) => {
+      const cache = useWorkspaceStore.getState().emitCache;
+      const assetReplacement = applyAssetReplacements(
+        { html: cache.html, css: cache.css },
+        usePreviewStore.getState().assetReplacementMap,
+      );
+      const prepared = prepareRoll20UploadFiles(
+        {
+          html: assetReplacement.html,
+          css: assetReplacement.css,
+          translation: cache.i18n,
+          warnings: [],
+        },
+        { legacy },
+      );
+      return {
+        ...prepared,
+        assetReplacement: {
+          replacements: assetReplacement.replacements,
+          warnings: assetReplacement.warnings,
+        },
       };
     },
 
