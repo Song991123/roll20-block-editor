@@ -2,7 +2,9 @@ import { strict as assert } from 'node:assert';
 import type { BlockSnapshot } from '@/lib/blockly/adapter';
 import {
   commitIframeFlowDrop,
+  commitIframeFlowSelection,
   filterDropTargetForPlacement,
+  getIframeFlowSelectionIds,
   resolveIframeEditDropTarget,
   resolveIframeContainerPoint,
   resolveIframeFreePlacement,
@@ -122,6 +124,64 @@ assert.equal(resolveIframeEditDropTarget(
 
 assert.equal(resolveIframeEditDropTarget(message([geometry('sibling', 100, 40)], 120, 'pointercancel'), lookup), null);
 assert.equal(resolveIframeEditDropTarget(message([], 0), lookup), null);
+
+const multiFlowBlocks = new Map<string, BlockSnapshot>([
+  ['source-frame', {
+    id: 'source-frame', type: 'r20_div', depth: 0, childCount: 2,
+    layerParentId: null, layerPreviousId: null, layerRelation: 'root',
+    label: 'Source frame', preview: '', category: 'container',
+  }],
+  ['multi-a', {
+    id: 'multi-a', type: 'r20_text', depth: 1, childCount: 0,
+    layerParentId: 'source-frame', layerPreviousId: null, layerRelation: 'child',
+    label: 'A', preview: '', category: 'text',
+  }],
+  ['multi-b', {
+    id: 'multi-b', type: 'r20_text', depth: 1, childCount: 0,
+    layerParentId: 'source-frame', layerPreviousId: 'multi-a', layerRelation: 'sibling',
+    label: 'B', preview: '', category: 'text',
+  }],
+  ['target-frame', {
+    id: 'target-frame', type: 'r20_div', depth: 0, childCount: 1,
+    layerParentId: null, layerPreviousId: 'source-frame', layerRelation: 'root',
+    label: 'Target frame', preview: '', category: 'container',
+  }],
+  ['multi-c', {
+    id: 'multi-c', type: 'r20_text', depth: 1, childCount: 0,
+    layerParentId: 'target-frame', layerPreviousId: null, layerRelation: 'child',
+    label: 'C', preview: '', category: 'text',
+  }],
+]);
+const multiFlowLookup = {
+  getBlock: (id: string) => multiFlowBlocks.get(id) ?? null,
+  canNestInContainer: (id: string) => id === 'source-frame' || id === 'target-frame',
+  canNestBlockInContainer: (movingId: string, targetId: string) => (
+    targetId === 'target-frame' && movingId !== 'multi-b-invalid'
+  ),
+};
+const multiA = geometry('multi-a', 20, 24);
+const multiB = geometry('multi-b', 48, 24);
+const multiFlowMessage: IframeEditHitMessage = {
+  ...message([geometry('multi-c', 120, 24), geometry('target-frame', 100, 120)], 122, 'pointermove', multiA),
+  selection: [
+    { geometry: multiA, hitPath: [multiA, geometry('source-frame', 0, 90)] },
+    { geometry: multiB, hitPath: [multiB, geometry('source-frame', 0, 90)] },
+  ],
+};
+assert.deepEqual(getIframeFlowSelectionIds(multiFlowMessage), ['multi-a', 'multi-b']);
+assert.equal(resolveIframeEditDropTarget(multiFlowMessage, multiFlowLookup)?.blockId, 'multi-c');
+assert.equal(resolveIframeEditDropTarget({
+  ...multiFlowMessage,
+  hitPath: [multiB, geometry('source-frame', 0, 90)],
+  pointer: { x: 20, y: 50 },
+}, multiFlowLookup)?.blockId, 'source-frame', 'selected members cannot become drop targets');
+assert.equal(resolveIframeEditDropTarget({
+  ...multiFlowMessage,
+  hitPath: [geometry('multi-c', 120, 24)],
+}, {
+  ...multiFlowLookup,
+  canNestBlockInContainer: (movingId: string) => movingId !== 'multi-b',
+}), null, 'every selected layer must be valid for the destination');
 
 const siblingTarget = {
   blockId: 'sibling', label: 'Sibling', mode: 'after' as const,
@@ -338,6 +398,19 @@ assert.equal(commitIframeFlowDrop('subject', {
 }, commitAdapter), true);
 assert.deepEqual(calls, ['inside:subject:frame', 'before:subject:sibling']);
 assert.equal(commitIframeFlowDrop('subject', null, commitAdapter), false);
+
+calls.length = 0;
+assert.equal(commitIframeFlowSelection(['multi-a', 'multi-b'], {
+  blockId: 'multi-c', label: 'C', mode: 'before',
+  containerBlockId: null, siblingBlockId: 'multi-c', geometry: geometry('multi-c', 120, 24),
+}, commitAdapter), true);
+assert.deepEqual(calls, ['before:multi-a:multi-c', 'before:multi-b:multi-c']);
+calls.length = 0;
+assert.equal(commitIframeFlowSelection(['multi-a', 'multi-b'], {
+  blockId: 'multi-c', label: 'C', mode: 'after',
+  containerBlockId: null, siblingBlockId: 'multi-c', geometry: geometry('multi-c', 120, 24),
+}, commitAdapter), true);
+assert.deepEqual(calls, ['after:multi-a:multi-c', 'after:multi-b:multi-a']);
 
 const freeSubject = geometry('subject', 60, 40, {
   rect: { left: 40, top: 60, width: 100, height: 40 },

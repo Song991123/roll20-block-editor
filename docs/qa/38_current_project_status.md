@@ -34,6 +34,10 @@ inert source but cannot be presented as Roll20 behavior.
 - Layer/widget selection channels are isolated and repeated browser runs pass.
 - Horizontal flow drag uses left/right insertion geometry and commits the same
   order to emitted HTML; vertical flow keeps its existing top/bottom contract.
+- Multi-selection Flow drag validates and commits the complete top-level
+  selection in rendered order. Local browser proof covers cross-container
+  insertion, temporary-style cleanup, retained selection, one-step undo/redo,
+  emitted order, and identical Preview/Edit DOM with zero runtime errors.
 - Internal editor IDs are removed at the export boundary.
 - Ordinary page JavaScript stays inert and invisible in the sheet surface.
 - Final Roll20 HTML excludes non-Worker scripts while preserving exact source

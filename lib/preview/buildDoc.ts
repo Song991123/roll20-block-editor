@@ -839,17 +839,45 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     document.body.removeAttribute('data-r20-flow-target-subject');
     document.body.removeAttribute('data-r20-flow-target-ready-at');
   }
+  function normalizedFlowSubjectIds(data) {
+    if (!data || typeof data !== 'object') return [];
+    var source = Array.isArray(data.subjectBlockIds)
+      ? data.subjectBlockIds
+      : [data.subjectBlockId];
+    var seen = Object.create(null);
+    var ids = [];
+    for (var index = 0; index < source.length && ids.length < 128; index += 1) {
+      var blockId = source[index];
+      if (typeof blockId !== 'string' || blockId.length < 1 || blockId.length > 256) return [];
+      if (seen[blockId]) continue;
+      seen[blockId] = true;
+      ids.push(blockId);
+    }
+    return ids;
+  }
+  function sameFlowSubjectIds(leftData, rightData) {
+    var left = normalizedFlowSubjectIds(leftData);
+    var right = normalizedFlowSubjectIds(rightData);
+    if (!left.length || left.length !== right.length) return false;
+    for (var index = 0; index < left.length; index += 1) {
+      if (left[index] !== right[index]) return false;
+    }
+    return true;
+  }
   function rememberValidatedFlowTarget(data) {
     clearValidatedFlowTarget();
     if (!data || !Number.isInteger(data.pointerId)) return false;
     if (typeof data.subjectBlockId !== 'string') return false;
     if (data.subjectBlockId.length < 1 || data.subjectBlockId.length > 256) return false;
+    var subjectBlockIds = normalizedFlowSubjectIds(data);
+    if (!subjectBlockIds.length || subjectBlockIds.indexOf(data.subjectBlockId) < 0) return false;
     if (data.placement !== 'inside' && data.placement !== 'before' && data.placement !== 'after') {
       return false;
     }
     validatedFlowTarget = {
       pointerId: data.pointerId,
       subjectBlockId: data.subjectBlockId,
+      subjectBlockIds: subjectBlockIds,
       placement: data.placement,
       containerBlockId: typeof data.containerBlockId === 'string' ? data.containerBlockId : null,
       siblingBlockId: typeof data.siblingBlockId === 'string' ? data.siblingBlockId : null
@@ -863,15 +891,22 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     return true;
   }
   function rollbackOptimisticFlowMove() {
-    var snapshot = optimisticFlowSnapshot;
+    var snapshots = optimisticFlowSnapshot;
     optimisticFlowSnapshot = null;
-    if (!snapshot || !snapshot.subject || !snapshot.parent) return false;
-    if (!snapshot.subject.isConnected || !snapshot.parent.isConnected) return false;
+    if (!Array.isArray(snapshots) || !snapshots.length) return false;
+    var restored = false;
     try {
-      var anchor = snapshot.nextSibling && snapshot.nextSibling.parentNode === snapshot.parent
-        ? snapshot.nextSibling
-        : null;
-      snapshot.parent.insertBefore(snapshot.subject, anchor);
+      for (var index = snapshots.length - 1; index >= 0; index -= 1) {
+        var snapshot = snapshots[index];
+        if (!snapshot || !snapshot.subject || !snapshot.parent) continue;
+        if (!snapshot.subject.isConnected || !snapshot.parent.isConnected) continue;
+        var anchor = snapshot.nextSibling && snapshot.nextSibling.parentNode === snapshot.parent
+          ? snapshot.nextSibling
+          : null;
+        snapshot.parent.insertBefore(snapshot.subject, anchor);
+        restored = true;
+      }
+      if (!restored) return false;
       optimisticFlowRollbackCount += 1;
       document.body.setAttribute(
         'data-r20-optimistic-flow-rollbacks',
@@ -1128,6 +1163,8 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   function validOptimisticFlowCommit(data) {
     if (!data || typeof data !== 'object') return false;
     if (typeof data.subjectBlockId !== 'string' || data.subjectBlockId.length < 1 || data.subjectBlockId.length > 256) return false;
+    var subjectBlockIds = normalizedFlowSubjectIds(data);
+    if (!subjectBlockIds.length || subjectBlockIds.indexOf(data.subjectBlockId) < 0) return false;
     if (data.placement !== 'inside' && data.placement !== 'before' && data.placement !== 'after') return false;
     if (data.placement === 'inside') {
       return typeof data.containerBlockId === 'string'
@@ -1149,6 +1186,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     }
     if (
       data.subjectBlockId !== optimisticFlowCommit.subjectBlockId
+      || !sameFlowSubjectIds(data, optimisticFlowCommit)
       || data.placement !== optimisticFlowCommit.placement
       || (data.containerBlockId || null) !== (optimisticFlowCommit.containerBlockId || null)
       || (data.siblingBlockId || null) !== (optimisticFlowCommit.siblingBlockId || null)
@@ -1156,35 +1194,53 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       optimisticFlowCheck = 'commit-mismatch';
       return false;
     }
-    var subject = document.querySelector('[data-r20-block-id="' + cssEscape(data.subjectBlockId) + '"]');
-    if (!subject) {
+    var subjectBlockIds = normalizedFlowSubjectIds(data);
+    var subjects = subjectBlockIds.map(function (blockId) {
+      return document.querySelector('[data-r20-block-id="' + cssEscape(blockId) + '"]');
+    });
+    if (subjects.some(function (subject) { return !subject; })) {
       optimisticFlowCheck = 'subject-missing';
       return false;
     }
     if (data.placement === 'inside') {
       var container = document.querySelector('[data-r20-block-id="' + cssEscape(data.containerBlockId) + '"]');
-      var nested = Boolean(container && subject.parentElement === container);
+      var nested = Boolean(container && subjects.every(function (subject) {
+        return subject.parentElement === container;
+      }));
+      for (var insideIndex = 1; nested && insideIndex < subjects.length; insideIndex += 1) {
+        nested = subjects[insideIndex - 1].nextElementSibling === subjects[insideIndex];
+      }
+      nested = nested && subjects[subjects.length - 1].nextElementSibling === null;
       optimisticFlowCheck = nested ? 'accepted' : 'inside-mismatch';
       return nested;
     }
     var sibling = document.querySelector('[data-r20-block-id="' + cssEscape(data.siblingBlockId) + '"]');
-    if (!sibling || subject.parentElement !== sibling.parentElement) {
+    if (!sibling || subjects.some(function (subject) {
+      return subject.parentElement !== sibling.parentElement;
+    })) {
       optimisticFlowCheck = 'sibling-mismatch';
       return false;
     }
+    var contiguous = true;
+    for (var siblingIndex = 1; siblingIndex < subjects.length; siblingIndex += 1) {
+      if (subjects[siblingIndex - 1].nextElementSibling !== subjects[siblingIndex]) {
+        contiguous = false;
+        break;
+      }
+    }
     var ordered = data.placement === 'before'
-      ? subject.nextElementSibling === sibling
-      : sibling.nextElementSibling === subject;
+      ? contiguous && subjects[subjects.length - 1].nextElementSibling === sibling
+      : contiguous && sibling.nextElementSibling === subjects[0];
     optimisticFlowCheck = ordered ? 'accepted' : 'order-mismatch';
     return ordered;
   }
   function optimisticFlowMove(data, captureSnapshot) {
-    if (!data || typeof data.subjectBlockId !== 'string') return false;
-    if (data.subjectBlockId.length < 1 || data.subjectBlockId.length > 256) return false;
-    var subject = document.querySelector(
-      '[data-r20-block-id="' + cssEscape(data.subjectBlockId) + '"]'
-    );
-    if (!subject) return false;
+    if (!validOptimisticFlowCommit(data)) return false;
+    var subjectBlockIds = normalizedFlowSubjectIds(data);
+    var subjects = subjectBlockIds.map(function (blockId) {
+      return document.querySelector('[data-r20-block-id="' + cssEscape(blockId) + '"]');
+    });
+    if (subjects.some(function (subject) { return !subject; })) return false;
     var destinationParent = null;
     var beforeNode = null;
     var alreadyPlaced = false;
@@ -1193,9 +1249,15 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
         var container = document.querySelector(
           '[data-r20-block-id="' + cssEscape(data.containerBlockId) + '"]'
         );
-        if (!container || container === subject || subject.contains(container)) return false;
+        if (!container || subjects.some(function (subject) {
+          return container === subject || subject.contains(container);
+        })) return false;
         destinationParent = container;
-        alreadyPlaced = subject.parentNode === container && subject.nextSibling === null;
+        alreadyPlaced = subjects.every(function (subject) { return subject.parentNode === container; });
+        for (var insideIndex = 1; alreadyPlaced && insideIndex < subjects.length; insideIndex += 1) {
+          alreadyPlaced = subjects[insideIndex - 1].nextElementSibling === subjects[insideIndex];
+        }
+        alreadyPlaced = alreadyPlaced && subjects[subjects.length - 1].nextElementSibling === null;
       } else if (
         (data.placement === 'before' || data.placement === 'after')
         && typeof data.siblingBlockId === 'string'
@@ -1203,24 +1265,36 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
         var sibling = document.querySelector(
           '[data-r20-block-id="' + cssEscape(data.siblingBlockId) + '"]'
         );
-        if (!sibling || !sibling.parentNode || sibling === subject || subject.contains(sibling)) return false;
+        if (!sibling || !sibling.parentNode || subjects.some(function (subject) {
+          return sibling === subject || subject.contains(sibling);
+        })) return false;
         destinationParent = sibling.parentNode;
         beforeNode = data.placement === 'before' ? sibling : sibling.nextSibling;
-        alreadyPlaced = data.placement === 'before'
-          ? subject.parentNode === destinationParent && subject.nextSibling === sibling
-          : subject.parentNode === destinationParent && sibling.nextSibling === subject;
+        alreadyPlaced = subjects.every(function (subject) {
+          return subject.parentNode === destinationParent;
+        });
+        for (var siblingIndex = 1; alreadyPlaced && siblingIndex < subjects.length; siblingIndex += 1) {
+          alreadyPlaced = subjects[siblingIndex - 1].nextElementSibling === subjects[siblingIndex];
+        }
+        alreadyPlaced = alreadyPlaced && (data.placement === 'before'
+          ? subjects[subjects.length - 1].nextElementSibling === sibling
+          : sibling.nextElementSibling === subjects[0]);
       } else {
         return false;
       }
       if (alreadyPlaced) return true;
       if (captureSnapshot === true && !optimisticFlowSnapshot) {
-        optimisticFlowSnapshot = {
-          subject: subject,
-          parent: subject.parentNode,
-          nextSibling: subject.nextSibling
-        };
+        optimisticFlowSnapshot = subjects.map(function (subject) {
+          return {
+            subject: subject,
+            parent: subject.parentNode,
+            nextSibling: subject.nextSibling
+          };
+        });
       }
-      destinationParent.insertBefore(subject, beforeNode);
+      for (var subjectIndex = 0; subjectIndex < subjects.length; subjectIndex += 1) {
+        destinationParent.insertBefore(subjects[subjectIndex], beforeNode);
+      }
     } catch (error) {
       return false;
     }
@@ -2803,6 +2877,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       flowTarget
       && flowTarget.pointerId === e.pointerId
       && flowTarget.subjectBlockId === subjectNode.dataset.r20BlockId
+      && normalizedFlowSubjectIds(flowTarget).indexOf(subjectNode.dataset.r20BlockId) >= 0
     ) {
       // Capture the authored pointer-up geometry first. The visual move runs
       // immediately afterward, before the queued parent message is handled.

@@ -977,3 +977,24 @@ parity.
 - Claim boundary: the editor result is local synthetic interaction proof. The
   modern Sandbox upload remains externally unverified until the supported
   chooser can transmit the generated files.
+
+## 2026-08-04 - Ordered Multi-Selection Flow Drop
+
+- Replaced the single-subject Flow commit with one ordered top-level selection
+  contract shared by drop validation, Blockly mutation, optimistic iframe DOM,
+  and live-patch acceptance. Every selected layer must be legal for the target,
+  and selected layers or their descendants cannot become destinations.
+- The iframe now snapshots and restores all selected subjects in reverse order
+  for rollback, inserts them in rendered order, and validates contiguity before
+  taking the fast structural patch path.
+- Focused target-resolution and bridge bundle tests pass. The full synthetic
+  edit-flow browser run moves two selected layers into another Flow container,
+  preserves A/B/C model and emitted order, keeps selection, clears temporary
+  styles, performs one-step undo and redo, and matches Preview/Edit with zero
+  console or page errors.
+- The browser test reuses and restores existing anonymous fixtures so the
+  virtualized layer suite keeps a stable item count. Table guard checks now use
+  exact-ID search before dispatching synthetic layer drops.
+- Claim boundary: local anonymous editor interaction only. No real sheet input
+  or actual Roll20 destination was used, and modern Sandbox transfer remains
+  externally unverified.

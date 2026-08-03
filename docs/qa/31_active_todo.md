@@ -226,6 +226,13 @@ belong in tracked documents.
   through the shared iframe bridge. Browser drag proof checks left/right
   before/after insertion, a vertical insertion marker, same-parent emitted HTML
   order, layer reorder, Rolltemplate editing, and zero console errors.
+- `DONE LOCAL`: a Flow drag now treats the iframe's top-level multi-selection
+  as one ordered operation. Every selected layer must be legal for the target;
+  selected members and their descendants cannot become targets. Browser proof
+  moves two selected layers into a different Flow container in rendered order,
+  keeps both selected, removes temporary transforms, persists the same order
+  to emitted HTML, and proves one-step undo/redo plus Preview/Edit equality with
+  zero console or page errors.
 - `DONE LOCAL`: dragging a friendly gallery piece onto a completely empty
   sheet now uses the piece preset instead of falling through to a raw block.
   The first object maps the pointer to the visible centered 850px sheet,

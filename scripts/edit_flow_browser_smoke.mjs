@@ -1822,6 +1822,277 @@ async function main() {
       `horizontal flow order did not persist: ${JSON.stringify(horizontalOrder)}`,
     );
 
+    const multiFlowIds = {
+      aId: ids.rowBId,
+      bId: ids.rowAId,
+      cId: ids.layoutProofCId,
+      sourceId: ids.frameId,
+      targetId: ids.layoutProofId,
+    };
+    await layerSearch.fill(multiFlowIds.aId);
+    const multiFlowARow = page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${multiFlowIds.aId}"]`,
+    );
+    await multiFlowARow.click();
+    await layerSearch.fill(multiFlowIds.bId);
+    const multiFlowBRow = page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${multiFlowIds.bId}"]`,
+    );
+    await multiFlowBRow.click({ modifiers: ['Control'] });
+    await layerSearch.fill('');
+    await frame.waitForFunction(({ aId, bId }) => [aId, bId].every((blockId) => (
+      document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`)
+        ?.getAttribute('data-r20-selected') === '1'
+    )), multiFlowIds);
+    await page.evaluate(() => {
+      window.__r20MultiFlowHits = [];
+      window.addEventListener('message', (event) => {
+        if (event.data?.type !== 'r20:edit-hit') return;
+        window.__r20MultiFlowHits.push({
+          phase: event.data.phase,
+          subjectBlockId: event.data.subject?.blockId ?? null,
+          selection: Array.isArray(event.data.selection)
+            ? event.data.selection.map((item) => item.geometry?.blockId ?? null)
+            : [],
+        });
+      });
+    });
+    await frame.evaluate(() => {
+      window.__r20MultiFlowTargets = [];
+      window.addEventListener('message', (event) => {
+        if (event.data?.type !== 'r20:edit-flow-target') return;
+        window.__r20MultiFlowTargets.push({
+          subjectBlockId: event.data.subjectBlockId ?? null,
+          subjectBlockIds: Array.isArray(event.data.subjectBlockIds) ? event.data.subjectBlockIds : [],
+          placement: event.data.placement ?? null,
+        });
+      });
+    });
+
+    const readMultiFlowFrame = () => frame.evaluate((flowIds) => {
+      const byId = (blockId) => document.querySelector(
+        `[data-r20-block-id="${CSS.escape(blockId)}"]`,
+      );
+      const a = byId(flowIds.aId);
+      const b = byId(flowIds.bId);
+      const c = byId(flowIds.cId);
+      const source = byId(flowIds.sourceId);
+      const target = byId(flowIds.targetId);
+      const relevantIds = [flowIds.aId, flowIds.bId, flowIds.cId];
+      const nodeState = (node) => {
+        const rect = node?.getBoundingClientRect();
+        return {
+          parentId: node?.parentElement?.getAttribute('data-r20-block-id') ?? null,
+          previousId: node?.previousElementSibling?.getAttribute('data-r20-block-id') ?? null,
+          left: rect?.left ?? null,
+          top: rect?.top ?? null,
+          transform: node instanceof HTMLElement ? node.style.transform : null,
+          transition: node instanceof HTMLElement ? node.style.transition : null,
+          willChange: node instanceof HTMLElement ? node.style.willChange : null,
+          selected: node?.getAttribute('data-r20-selected') === '1',
+        };
+      };
+      return {
+        a: nodeState(a),
+        b: nodeState(b),
+        c: nodeState(c),
+        sourceChildren: source
+          ? Array.from(source.children)
+              .map((node) => node.getAttribute('data-r20-block-id'))
+              .filter((blockId) => relevantIds.includes(blockId))
+          : [],
+        targetChildren: target
+          ? Array.from(target.children)
+              .map((node) => node.getAttribute('data-r20-block-id'))
+              .filter((blockId) => relevantIds.includes(blockId))
+          : [],
+        applyMode: document.body.getAttribute('data-r20-last-apply-mode'),
+        flowCheck: document.body.getAttribute('data-r20-optimistic-flow-check'),
+        fastPatchCount: Number(document.body.getAttribute('data-r20-optimistic-flow-fast-patches') || 0),
+      };
+    }, multiFlowIds);
+    const readMultiFlowModel = () => page.evaluate((flowIds) => {
+      const graph = window.__perfHook.getLayerSnapshot('html');
+      const find = (blockId) => graph.find((node) => node.id === blockId);
+      const emitted = window.__perfHook.getEmitContent().html;
+      const aIndex = emitted.indexOf(`data-r20-block-id="${flowIds.aId}"`);
+      const bIndex = emitted.indexOf(`data-r20-block-id="${flowIds.bId}"`);
+      const cIndex = emitted.indexOf(`data-r20-block-id="${flowIds.cId}"`);
+      return {
+        aParent: find(flowIds.aId)?.layerParentId ?? null,
+        bParent: find(flowIds.bId)?.layerParentId ?? null,
+        cParent: find(flowIds.cId)?.layerParentId ?? null,
+        aPrevious: find(flowIds.aId)?.layerPreviousId ?? null,
+        bPrevious: find(flowIds.bId)?.layerPreviousId ?? null,
+        cPrevious: find(flowIds.cId)?.layerPreviousId ?? null,
+        emittedOrder: [aIndex, bIndex, cIndex],
+      };
+    }, multiFlowIds);
+    const multiFlowBefore = await readMultiFlowFrame();
+    const multiFlowABox = await frame.locator('.sheet-row-b').boundingBox();
+    const multiFlowCBox = await frame.locator('.sheet-layout-proof-c').boundingBox();
+    assert(multiFlowABox && multiFlowCBox, 'multi-selection Flow fixtures are missing');
+    await page.mouse.move(
+      multiFlowABox.x + multiFlowABox.width / 2,
+      multiFlowABox.y + multiFlowABox.height / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.move(
+      multiFlowCBox.x + multiFlowCBox.width * 0.08,
+      multiFlowCBox.y + multiFlowCBox.height * 0.08,
+      { steps: 8 },
+    );
+    await page.waitForTimeout(50);
+    const multiFlowDuring = await readMultiFlowFrame();
+    const multiFlowIndicator = await page.evaluate(() => {
+      const overlay = document.querySelector('[data-testid="iframe-edit-drop-overlay"]');
+      return overlay?.getAttribute('data-r20-drop-mode') ?? null;
+    });
+    assert(
+      Math.abs(
+        (multiFlowDuring.a.left - multiFlowBefore.a.left)
+        - (multiFlowDuring.b.left - multiFlowBefore.b.left),
+      ) <= 1
+        && Math.abs(
+          (multiFlowDuring.a.top - multiFlowBefore.a.top)
+          - (multiFlowDuring.b.top - multiFlowBefore.b.top),
+        ) <= 1,
+      `selected Flow layers did not move together during drag: ${JSON.stringify({ multiFlowBefore, multiFlowDuring })}`,
+    );
+    assert(multiFlowIndicator === 'before', `multi-selection Flow target was not before C: ${multiFlowIndicator}`);
+    await page.mouse.up();
+    try {
+      await page.waitForFunction(({ aId, bId, cId, targetId }) => {
+        const graph = window.__perfHook.getLayerSnapshot('html');
+        const find = (blockId) => graph.find((node) => node.id === blockId);
+        return find(aId)?.layerParentId === targetId
+          && find(bId)?.layerParentId === targetId
+          && find(cId)?.layerParentId === targetId
+          && find(bId)?.layerPreviousId === aId
+          && find(cId)?.layerPreviousId === bId;
+      }, multiFlowIds, { timeout: 10000 });
+    } catch (error) {
+      const failedModel = await readMultiFlowModel();
+      const failedFrame = await readMultiFlowFrame();
+      const failedMessages = await page.evaluate(() => window.__r20MultiFlowHits ?? []);
+      const failedTargets = await frame.evaluate(() => window.__r20MultiFlowTargets ?? []);
+      throw new Error(`multi-selection Flow commit timed out: ${JSON.stringify({ failedModel, failedFrame, failedMessages, failedTargets })}`, {
+        cause: error,
+      });
+    }
+    await frame.waitForFunction(({ aId, bId, cId, targetId }) => {
+      const target = document.querySelector(`[data-r20-block-id="${CSS.escape(targetId)}"]`);
+      return Array.from(target?.children ?? []).map((node) => (
+        node.getAttribute('data-r20-block-id')
+      )).filter((blockId) => [aId, bId, cId].includes(blockId)).join('|') === [aId, bId, cId].join('|');
+    }, multiFlowIds, { timeout: 10000 });
+    const multiFlowAfter = await readMultiFlowFrame();
+    const multiFlowModelAfter = await readMultiFlowModel();
+    assert(
+      multiFlowModelAfter.aParent === multiFlowIds.targetId
+        && multiFlowModelAfter.bParent === multiFlowIds.targetId
+        && multiFlowModelAfter.cParent === multiFlowIds.targetId
+        && multiFlowModelAfter.bPrevious === multiFlowIds.aId
+        && multiFlowModelAfter.cPrevious === multiFlowIds.bId
+        && multiFlowModelAfter.emittedOrder[0] >= 0
+        && multiFlowModelAfter.emittedOrder[0] < multiFlowModelAfter.emittedOrder[1]
+        && multiFlowModelAfter.emittedOrder[1] < multiFlowModelAfter.emittedOrder[2],
+      `multi-selection Flow model or emitted order diverged: ${JSON.stringify(multiFlowModelAfter)}`,
+    );
+    assert(
+      multiFlowAfter.a.selected
+        && multiFlowAfter.b.selected
+        && multiFlowAfter.a.transform === ''
+        && multiFlowAfter.b.transform === ''
+        && multiFlowAfter.a.transition === ''
+        && multiFlowAfter.b.transition === ''
+        && multiFlowAfter.a.willChange === ''
+        && multiFlowAfter.b.willChange === '',
+      `multi-selection Flow commit left selection or temporary styles behind: ${JSON.stringify(multiFlowAfter)}`,
+    );
+
+    assert(await historyUndoButton.isEnabled(), 'multi-selection Flow move did not create an undo step');
+    await historyUndoButton.click();
+    await page.waitForFunction(({ aId, bId, sourceId }) => {
+      const graph = window.__perfHook.getLayerSnapshot('html');
+      const find = (blockId) => graph.find((node) => node.id === blockId);
+      return find(aId)?.layerParentId === sourceId
+        && find(bId)?.layerParentId === sourceId
+        && find(bId)?.layerPreviousId === aId;
+    }, multiFlowIds, { timeout: 10000 });
+    const multiFlowUndo = await readMultiFlowModel();
+    assert(
+      multiFlowUndo.aParent === multiFlowIds.sourceId
+        && multiFlowUndo.bParent === multiFlowIds.sourceId
+        && multiFlowUndo.bPrevious === multiFlowIds.aId
+        && multiFlowUndo.cParent === multiFlowIds.targetId,
+      `one undo did not restore the complete Flow selection: ${JSON.stringify(multiFlowUndo)}`,
+    );
+    assert(await historyRedoButton.isEnabled(), 'multi-selection Flow move did not create a redo step');
+    await historyRedoButton.click();
+    await page.waitForFunction(({ aId, bId, cId, targetId }) => {
+      const graph = window.__perfHook.getLayerSnapshot('html');
+      const find = (blockId) => graph.find((node) => node.id === blockId);
+      return find(aId)?.layerParentId === targetId
+        && find(bId)?.layerParentId === targetId
+        && find(bId)?.layerPreviousId === aId
+        && find(cId)?.layerPreviousId === bId;
+    }, multiFlowIds, { timeout: 10000 });
+    const multiFlowRedo = await readMultiFlowFrame();
+    await page.click('[data-testid="main-mode-preview"]');
+    await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '0');
+    const multiFlowPreview = await readMultiFlowFrame();
+    await page.click('[data-testid="preview-exit-edit"]');
+    await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '1');
+    const multiFlowEditAgain = await readMultiFlowFrame();
+    assert(
+      multiFlowRedo.targetChildren.join('|') === [multiFlowIds.aId, multiFlowIds.bId, multiFlowIds.cId].join('|')
+        && multiFlowPreview.targetChildren.join('|') === multiFlowRedo.targetChildren.join('|')
+        && multiFlowEditAgain.targetChildren.join('|') === multiFlowRedo.targetChildren.join('|'),
+      `multi-selection Flow order diverged across Preview/Edit: ${JSON.stringify({ multiFlowRedo, multiFlowPreview, multiFlowEditAgain })}`,
+    );
+    result.tests.iframeMultiFlow = {
+      before: multiFlowBefore,
+      during: multiFlowDuring,
+      after: multiFlowAfter,
+      modelAfter: multiFlowModelAfter,
+      undo: multiFlowUndo,
+      redo: multiFlowRedo,
+      preview: multiFlowPreview,
+      editAgain: multiFlowEditAgain,
+    };
+
+    await historyUndoButton.click();
+    await page.waitForFunction(({ aId, bId, sourceId }) => {
+      const graph = window.__perfHook.getLayerSnapshot('html');
+      const find = (blockId) => graph.find((node) => node.id === blockId);
+      return find(aId)?.layerParentId === sourceId
+        && find(bId)?.layerParentId === sourceId
+        && find(bId)?.layerPreviousId === aId;
+    }, multiFlowIds, { timeout: 10000 });
+    result.tests.iframeMultiFlow.restoredForLaterTests = await readMultiFlowFrame();
+
+    await layerSearch.fill(ids.outsideId);
+    await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.outsideId}"]`,
+    ).click();
+    await frame.waitForFunction((outsideId) => {
+      const selected = Array.from(document.querySelectorAll('[data-r20-selected="1"]'));
+      return selected.length === 1
+        && selected[0].getAttribute('data-r20-block-id') === outsideId;
+    }, ids.outsideId);
+    await layerSearch.fill(ids.rowBId);
+    const rowBLayerAfterMultiFlow = page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.rowBId}"]`,
+    );
+    await rowBLayerAfterMultiFlow.click();
+    await layerSearch.fill('');
+    await frame.waitForFunction((rowBId) => {
+      const selected = Array.from(document.querySelectorAll('[data-r20-selected="1"]'));
+      return selected.length === 1
+        && selected[0].getAttribute('data-r20-block-id') === rowBId;
+    }, ids.rowBId);
+
     const outsideBox = await frame.locator('.sheet-outside').boundingBox();
     const rowBBoxAfterFlow = await frame.locator('.sheet-row-b').boundingBox();
     assert(outsideBox && rowBBoxAfterFlow, 'synthetic extraction targets are missing');
@@ -2639,6 +2910,13 @@ async function main() {
     assert(Number.isFinite(result.tests.layerCanvasFreeDrop.result.top), 'free layer canvas drop did not persist top');
     assert(result.tests.layerCanvasFreeDrop.result.emittedManagedAbsolute, 'free layer canvas drop did not emit managed CSS');
 
+    await layerSearch.fill(ids.tableRowId);
+    await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.tableRowId}"]`,
+    ).waitFor({ state: 'attached' });
+    await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.tableId}"]`,
+    ).waitFor({ state: 'attached' });
     result.tests.tableDropGuard = await page.evaluate(async ({ movingId, validMovingId, invalidTargetId, validTargetId }) => {
       const dispatchDragover = async (targetId, draggedId) => {
         const target = document.querySelector(
@@ -2672,6 +2950,7 @@ async function main() {
       invalidTargetId: ids.tableRowId,
       validTargetId: ids.tableId,
     });
+    await layerSearch.fill('');
     assert(
       result.tests.tableDropGuard.invalid?.mode === null
         && result.tests.tableDropGuard.invalid.dropEffect === 'none'
@@ -2684,6 +2963,13 @@ async function main() {
       `valid table parent was not shown as droppable: ${JSON.stringify(result.tests.tableDropGuard)}`,
     );
 
+    await layerSearch.fill(ids.tableCellAId);
+    await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.tableCellAId}"]`,
+    ).waitFor({ state: 'attached' });
+    await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.tableRowId}"]`,
+    ).waitFor({ state: 'attached' });
     result.tests.tableDropMutation = await page.evaluate(async ({ validMovingId, validTargetId, invalidMovingId, invalidTargetId }) => {
       const dispatchDrop = async (targetId, draggedId) => {
         const target = document.querySelector(
@@ -2729,6 +3015,7 @@ async function main() {
       invalidMovingId: ids.frameId,
       invalidTargetId: ids.tableRowId,
     });
+    await layerSearch.fill('');
     assert(
       result.tests.tableDropMutation.valid.found
         && result.tests.tableDropMutation.valid.mode === 'inside'

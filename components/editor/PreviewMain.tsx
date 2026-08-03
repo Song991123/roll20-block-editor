@@ -57,7 +57,9 @@ import {
 } from '@/lib/preview/iframeEditBridge';
 import {
   commitIframeFlowDrop,
+  commitIframeFlowSelection,
   filterDropTargetForPlacement,
+  getIframeFlowSelectionIds,
   resolveIframeEditDropTarget,
   resolveIframeContainerPoint,
   resolveIframeFreePlacement,
@@ -102,6 +104,7 @@ import { buildTargetedHtmlPatchPlan } from '@/lib/preview/targetedHtmlPatch';
 
 type OptimisticFlowCommit = {
   subjectBlockId: string;
+  subjectBlockIds: string[];
   placement: 'inside' | 'before' | 'after';
   containerBlockId: string | null;
   siblingBlockId: string | null;
@@ -1382,6 +1385,7 @@ export default function PreviewMain() {
             bridgeId: editMessage.bridgeId,
             pointerId: editMessage.pointerId,
             subjectBlockId: editMessage.subject.blockId,
+            subjectBlockIds: getIframeFlowSelectionIds(editMessage),
             placement: flowTarget?.mode ?? null,
             containerBlockId: flowTarget?.containerBlockId ?? null,
             siblingBlockId: flowTarget?.siblingBlockId ?? null,
@@ -1431,12 +1435,13 @@ export default function PreviewMain() {
           markEditorTiming('pointerup-parent');
           const ui = useUiStore.getState();
           const committedDropTarget = nextDropTarget ?? iframeEditDropTargetRef.current;
+          const flowSelectionIds = getIframeFlowSelectionIds(editMessage);
           let moved = false;
           let targetedHtmlBlockIds: string[] | null = null;
           adapter.runInEventGroup(() => {
             if (ui.editPlacementMode === 'flow') {
               markEditorTiming('commit-start');
-              moved = commitIframeFlowDrop(editMessage.subject.blockId, committedDropTarget, adapter);
+              moved = commitIframeFlowSelection(flowSelectionIds, committedDropTarget, adapter);
             } else {
               markEditorTiming('commit-start');
               const dragOrigin = iframeEditDragOriginRef.current;
@@ -1547,6 +1552,7 @@ export default function PreviewMain() {
             moved && ui.editPlacementMode === 'flow' && committedDropTarget
               ? {
                   subjectBlockId: editMessage.subject.blockId,
+                  subjectBlockIds: flowSelectionIds,
                   placement: committedDropTarget.mode,
                   containerBlockId: committedDropTarget.containerBlockId,
                   siblingBlockId: committedDropTarget.siblingBlockId,
@@ -1564,6 +1570,7 @@ export default function PreviewMain() {
                 protocol: R20_IFRAME_EDIT_PROTOCOL,
                 bridgeId: editMessage.bridgeId,
                 subjectBlockId: editMessage.subject.blockId,
+                subjectBlockIds: flowSelectionIds,
                 placement: committedDropTarget.mode,
                 containerBlockId: committedDropTarget.containerBlockId,
                 siblingBlockId: committedDropTarget.siblingBlockId,
@@ -1827,6 +1834,7 @@ export default function PreviewMain() {
         if (placement === 'flow' && visibleDropTarget) {
           pendingOptimisticFlowCommitRef.current = {
             subjectBlockId: editMessage.blockId,
+            subjectBlockIds: [editMessage.blockId],
             placement: visibleDropTarget.mode,
             containerBlockId: visibleDropTarget.containerBlockId,
             siblingBlockId: visibleDropTarget.siblingBlockId,
@@ -1837,6 +1845,7 @@ export default function PreviewMain() {
             protocol: R20_IFRAME_EDIT_PROTOCOL,
             bridgeId: editMessage.bridgeId,
             subjectBlockId: editMessage.blockId,
+            subjectBlockIds: [editMessage.blockId],
             placement: visibleDropTarget.mode,
             containerBlockId: visibleDropTarget.containerBlockId,
             siblingBlockId: visibleDropTarget.siblingBlockId,
@@ -1848,6 +1857,7 @@ export default function PreviewMain() {
             bridgeId: editMessage.bridgeId,
             committed: true,
             subjectBlockId: editMessage.blockId,
+            subjectBlockIds: [editMessage.blockId],
             placement: visibleDropTarget.mode,
             containerBlockId: visibleDropTarget.containerBlockId,
             siblingBlockId: visibleDropTarget.siblingBlockId,

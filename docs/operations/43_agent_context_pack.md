@@ -90,6 +90,11 @@ contain private source evidence or historical test dumps.
 - Its virtualized tree uses one roving tab stop. Tab navigation keeps the
   active layer visible without recentering rows already inside the viewport or
   mutating emitted source.
+- Flow canvas drag commits every top-level selected layer as one ordered event
+  group. Destination validation covers the whole selection, optimistic iframe
+  movement and authoritative HTML use the same ordered IDs, and one undo/redo
+  roundtrip preserves Preview/Edit DOM order. This is local synthetic editor
+  proof, not actual Roll20 parity.
 - Transformed containing frames report an accumulated 2D local-to-viewport
   matrix for common `transform`, individual `translate`/`rotate`/`scale`, and
   CSS zoom chains. Free placement and its optimistic paint invert the relevant

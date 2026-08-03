@@ -202,20 +202,46 @@ function isLayerAncestor(
   return false;
 }
 
+/**
+ * Resolve the top-level layers participating in a Flow drag. The iframe sends
+ * selection geometry in rendered DOM order, which is also the order users
+ * expect to preserve when the group is inserted into a new container.
+ */
+export function getIframeFlowSelectionIds(message: IframeEditHitMessage): string[] {
+  const subjectBlockId = message.subject.blockId;
+  const orderedIds: string[] = [];
+  const seen = new Set<string>();
+  for (const selected of message.selection ?? []) {
+    const blockId = selected.geometry.blockId;
+    if (!blockId || seen.has(blockId)) continue;
+    seen.add(blockId);
+    orderedIds.push(blockId);
+  }
+  if (orderedIds.length > 1 && orderedIds.includes(subjectBlockId)) return orderedIds;
+  return subjectBlockId ? [subjectBlockId] : [];
+}
+
 export function resolveIframeEditDropTarget(
   message: IframeEditHitMessage,
   lookup: IframeDropTargetLookup,
 ): IframeEditDropTarget | null {
   if (message.phase !== 'pointermove' && message.phase !== 'pointerup') return null;
 
+  const movingBlockIds = getIframeFlowSelectionIds(message);
+  if (!movingBlockIds.length || movingBlockIds.some((blockId) => !lookup.getBlock(blockId))) return null;
+  const movingBlockIdSet = new Set(movingBlockIds);
+
   for (const geometry of message.hitPath) {
     const block = lookup.getBlock(geometry.blockId);
-    if (!block || block.id === message.subject.blockId) continue;
-    if (isSubjectDescendant(block, message.subject.blockId, lookup)) continue;
+    if (!block || movingBlockIdSet.has(block.id)) continue;
+    if (movingBlockIds.some((blockId) => isSubjectDescendant(block, blockId, lookup))) continue;
 
-    const canDropInside = canPlaceInside(message.subject.blockId, block.id, lookup);
+    const canDropInside = movingBlockIds.every((blockId) => canPlaceInside(blockId, block.id, lookup));
     const mode = pickDropMode(geometry, message.pointer, canDropInside);
-    if (mode !== 'inside' && !canPlaceAdjacent(message.subject.blockId, block.id, lookup)) continue;
+    if (
+      mode !== 'inside'
+      && !movingBlockIds.every((blockId) => canPlaceAdjacent(blockId, block.id, lookup))
+    ) continue;
     return {
       blockId: block.id,
       label: block.label || block.type,
@@ -319,15 +345,34 @@ export function commitIframeFlowDrop(
   target: IframeEditDropTarget | null,
   adapter: IframeDropCommitAdapter,
 ): boolean {
-  if (!target || !subjectBlockId || subjectBlockId === target.blockId) return false;
+  return commitIframeFlowSelection([subjectBlockId], target, adapter);
+}
+
+/** Commit a Flow selection as one order-preserving model operation. */
+export function commitIframeFlowSelection(
+  subjectBlockIds: readonly string[],
+  target: IframeEditDropTarget | null,
+  adapter: IframeDropCommitAdapter,
+): boolean {
+  const orderedIds = Array.from(new Set(subjectBlockIds.filter(Boolean)));
+  if (!target || !orderedIds.length || orderedIds.includes(target.blockId)) return false;
   if (target.mode === 'inside' && target.containerBlockId) {
-    return adapter.nestBlockInContainer('html', subjectBlockId, target.containerBlockId);
+    return orderedIds.every((blockId) => (
+      adapter.nestBlockInContainer('html', blockId, target.containerBlockId!)
+    ));
   }
   if (target.mode === 'after' && target.siblingBlockId) {
-    return adapter.moveBlockAfter('html', subjectBlockId, target.siblingBlockId);
+    let anchorId = target.siblingBlockId;
+    for (const blockId of orderedIds) {
+      if (!adapter.moveBlockAfter('html', blockId, anchorId)) return false;
+      anchorId = blockId;
+    }
+    return true;
   }
   if (target.mode === 'before' && target.siblingBlockId) {
-    return adapter.moveBlockBefore('html', subjectBlockId, target.siblingBlockId);
+    return orderedIds.every((blockId) => (
+      adapter.moveBlockBefore('html', blockId, target.siblingBlockId!)
+    ));
   }
   return false;
 }
