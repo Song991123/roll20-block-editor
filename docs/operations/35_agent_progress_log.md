@@ -583,6 +583,26 @@ or source-derived measurement here.
 - Claim boundary: local anonymous 2D proof only. Animated/dynamic transform
   changes, 3D/perspective, dense imports, and actual Roll20 screens remain open.
 
+## 2026-08-03 - Narrow Viewport Edit Surface
+
+- Reproduced a mobile shell defect where the default split mode reduced the
+  Roll20 render surface to 185px at a 390px viewport and 374px at 768px.
+- At 920px and below, split mode now resolves to Direct Edit and is removed
+  from the visible mode choices. The persistent iframe receives the full
+  370px and 748px editor widths without a second render path.
+- Reused the existing layer tree as a 320px maximum overlay with a scrim;
+  desktop persisted width and resize behavior remain unchanged. App sidebars
+  use their existing mobile drawers.
+- The fresh-sheet browser smoke now checks phone and tablet shell overflow,
+  full-width rendering, hidden split mode, layer overlay containment, both app
+  drawers, screenshots, and zero console/page errors.
+- Full `ci:verify` and the focused mobile browser smoke pass. The edit-flow
+  harness no longer guesses at a container's exposed four-pixel canvas corner;
+  it filters and selects the explicit layer row before testing section styles.
+  Two consecutive full edit-flow runs pass after that correction.
+- Claim boundary: local 390x844 and 768x900 synthetic UI coverage. Landscape,
+  touch dragging, dense imports, and actual Roll20 parity are unchanged.
+
 ## Current Product State
 
 - Preview and Edit share one persistent Roll20 iframe.

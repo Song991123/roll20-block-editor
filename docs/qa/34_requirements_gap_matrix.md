@@ -18,7 +18,7 @@ Date: 2026-08-03
 | DONE ACTUAL SYNTHETIC | P0 | Legacy actual-screen proof. | A dedicated owner-only legacy-enabled test room rendered the current anonymous generated payloads with legacy sanitization selected. | Expand to broader anonymous structures; never use modern Sandbox evidence for legacy. |
 | DONE CURRENT TREE | P0 | Copyright and private evidence safety. | Generated evidence roots are ignored, tracked real samples are forbidden, and deterministic CI/pre-commit document privacy guards pass. | Decide clean-history publication separately; current-tree proof does not purge Git history. |
 | DONE LOCAL | P1 | CI/CD quality gate. | Unit/safety verification, lint, and production build run on pushed branches. | Keep checking the exact pushed commit and Pages only after production merges. |
-| PARTIAL | P1 | Plain Korean and pastel product UI. | Major editor controls use visual choices and the redesign branch is active. | Remove remaining broken/technical copy and perform screenshot-based UX review. |
+| PARTIAL | P1 | Plain Korean and pastel product UI. | Major editor controls use visual choices; compact desktop plus 390x844 and 768x900 browser checks cover full-width edit rendering, contained side drawers, and an overlay layer tree. | Remove remaining broken/technical copy; review landscape, touch drag, and dense imports. |
 
 ## Claim Boundary
 

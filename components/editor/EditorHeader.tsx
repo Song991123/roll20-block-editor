@@ -111,7 +111,7 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
 
   return (
     <TooltipProvider delayDuration={250}>
-      <header className="r20-shell-card mx-2.5 mt-2.5 flex h-[var(--header-h)] shrink-0 items-center gap-2 px-3">
+      <header className="r20-shell-card mx-2.5 mt-2.5 flex h-[var(--header-h)] shrink-0 items-center gap-0.5 px-1.5 sm:gap-2 sm:px-3">
         {mainMode !== 'preview' && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -130,7 +130,7 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
           </Tooltip>
         )}
 
-        <div className="flex min-w-0 items-center gap-2.5 pl-1">
+        <div className="flex min-w-0 items-center gap-1 sm:gap-2.5 sm:pl-1">
           <LogoMark className="h-9 w-9 shrink-0 -rotate-3 drop-shadow-[0_2px_4px_rgba(178,84,122,0.3)] transition-transform duration-200 hover:rotate-0" />
           <div className="r20-header-title leading-tight">
             <div className="whitespace-nowrap text-base font-bold tracking-tight">Roll20 시트 편집기</div>
@@ -140,7 +140,7 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
           </div>
         </div>
 
-        <div className="ml-3 flex items-center gap-1">
+        <div className="flex items-center gap-0 sm:ml-3 sm:gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -179,7 +179,7 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
 
         <div className="flex-1" />
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-0 sm:gap-1.5">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -227,7 +227,7 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
             <TooltipContent>Roll20에 올릴 수 있는 파일 묶음(ZIP)을 만들어요</TooltipContent>
           </Tooltip>
 
-          <div className="mx-1 h-6 w-px bg-border" aria-hidden="true" />
+          <div className="h-6 w-px bg-border sm:mx-1" aria-hidden="true" />
 
           {mainMode !== 'preview' && (
             <Tooltip>
@@ -238,6 +238,7 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
                   size="icon"
                   onClick={toggleRight}
                   aria-label="속성 패널 열기/닫기"
+                  data-testid="sidebar-right-toggle"
                 >
                   <PanelRight aria-hidden="true" />
                 </Button>

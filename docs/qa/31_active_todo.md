@@ -211,9 +211,12 @@ belong in tracked documents.
   handler terms. The UI copy guard parses source literals and JSX text so
   internal comments do not hide or falsely trigger this rule. Continue the
   review for less-used panels and add visual examples where text alone is hard.
-- `PARTIAL`: the pastel shell and central editing controls have compact desktop
-  browser coverage. Mobile drawers and broader viewport combinations remain to
-  be reviewed without changing the Roll20 sheet render surface.
+- `DONE LOCAL`: compact desktop plus 390x844 and 768x900 browser coverage keeps
+  the pastel shell inside the viewport. Narrow screens replace the unusable
+  split view with direct edit, give the persistent Roll20 iframe the full
+  editor width, and open app sidebars and the layer tree as contained overlays.
+- `PARTIAL`: landscape phones, touch drag behavior, and dense imported sheets
+  still need broader viewport review without changing the Roll20 render surface.
 - `DONE LOCAL`: alignment actions are shown only for same-parent absolute
   selections whose logical and rendered coordinate parents agree. Flow, table,
   list, mixed-parent, and mixed-coordinate selections remain structure-driven.

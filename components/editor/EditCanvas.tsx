@@ -53,6 +53,7 @@ import {
   SHEET_CANVAS_MAX_WIDTH,
   SHEET_CANVAS_MIN_WIDTH,
 } from '@/lib/preview/canvasDimensions';
+import { useIsMobile } from './useIsMobile';
 
 function formatDropModeLabel(mode: LayerDropMode): string {
   if (mode === 'inside') return '안에 넣기';
@@ -131,6 +132,7 @@ const EDIT_HISTORY_WORKSPACES = [
 ] as const satisfies readonly WorkspaceKey[];
 
 export default function EditCanvas() {
+  const isMobile = useIsMobile();
   const editSubmode = useUiStore((s) => s.editSubmode);
   const editLayerPanelWidth = useUiStore((s) => s.editLayerPanelWidth);
   const setEditLayerPanelWidth = useUiStore((s) => s.setEditLayerPanelWidth);
@@ -147,8 +149,9 @@ export default function EditCanvas() {
   const selectedBlockId = useWorkspaceStore((s) => s.selectedBlockId);
   const setSelectedBlockId = useWorkspaceStore((s) => s.setSelectedBlockId);
   const [layerSearch, setLayerSearch] = useState('');
+  const [mobileLayerPanelOpen, setMobileLayerPanelOpen] = useState(false);
   const layerPanelRef = useRef<HTMLElement | null>(null);
-  const editLayerPanelTrack = getEditLayerPanelTrack(editLayerPanelWidth);
+  const editLayerPanelTrack = isMobile ? '0px' : getEditLayerPanelTrack(editLayerPanelWidth);
   const canvasWidth = editSubmode === 'rolltemplate' ? rolltemplateCanvasWidth : sheetCanvasWidth;
   const setCanvasWidth = editSubmode === 'rolltemplate'
     ? setRolltemplateCanvasWidth
@@ -233,6 +236,10 @@ export default function EditCanvas() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && mobileLayerPanelOpen) {
+        setMobileLayerPanelOpen(false);
+        return;
+      }
       if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
       const target = event.target as HTMLElement | null;
       if (target?.isContentEditable || target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.tagName === 'SELECT') return;
@@ -249,7 +256,7 @@ export default function EditCanvas() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [runHistoryAction]);
+  }, [mobileLayerPanelOpen, runHistoryAction]);
 
   return (
     <div
@@ -266,6 +273,25 @@ export default function EditCanvas() {
         <span className="shrink-0 font-semibold text-foreground">
           {editSubmode === 'rolltemplate' ? '주사위 결과 카드 편집' : '시트 편집'}
         </span>
+        {isMobile && (
+          <button
+            type="button"
+            onClick={() => setMobileLayerPanelOpen((open) => !open)}
+            className={cn(
+              'grid h-7 w-7 shrink-0 place-items-center rounded-full border transition-colors active:scale-95',
+              mobileLayerPanelOpen
+                ? 'border-[var(--primary-strong)] bg-[var(--primary-strong)] text-white'
+                : 'border-border bg-[var(--bg-elevated-2)] text-muted-foreground hover:bg-[var(--bg-hover)]',
+            )}
+            title="레이어 열기/닫기"
+            aria-label="레이어 열기/닫기"
+            aria-expanded={mobileLayerPanelOpen}
+            aria-controls="edit-layer-panel"
+            data-testid="edit-layer-panel-toggle"
+          >
+            <Layers className="h-4 w-4" aria-hidden="true" />
+          </button>
+        )}
         {editSubmode === 'rolltemplate' && rolltemplateRoots.length > 0 && (
           <label className="flex min-w-0 shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
             <span>결과 카드</span>
@@ -445,17 +471,33 @@ export default function EditCanvas() {
         className="relative grid flex-1 min-h-0"
         style={{ gridTemplateColumns: `${editLayerPanelTrack} minmax(0, 1fr)` }}
       >
-        <EditLayerPanel
-          search={layerSearch}
-          onSearchChange={setLayerSearch}
-          panelRef={layerPanelRef}
-        />
-        <EditLayerPanelResizeHandle
-          width={editLayerPanelWidth}
-          track={editLayerPanelTrack}
-          panelRef={layerPanelRef}
-          onResize={setEditLayerPanelWidth}
-        />
+        {isMobile && mobileLayerPanelOpen && (
+          <button
+            type="button"
+            className="absolute inset-0 z-30 bg-black/20"
+            aria-label="레이어 패널 닫기"
+            data-testid="edit-layer-panel-scrim"
+            onClick={() => setMobileLayerPanelOpen(false)}
+          />
+        )}
+        {(!isMobile || mobileLayerPanelOpen) && (
+          <EditLayerPanel
+            search={layerSearch}
+            onSearchChange={setLayerSearch}
+            panelRef={layerPanelRef}
+            className={isMobile
+              ? 'absolute inset-y-0 left-0 z-40 w-[min(82vw,320px)] shadow-xl'
+              : undefined}
+          />
+        )}
+        {!isMobile && (
+          <EditLayerPanelResizeHandle
+            width={editLayerPanelWidth}
+            track={editLayerPanelTrack}
+            panelRef={layerPanelRef}
+            onResize={setEditLayerPanelWidth}
+          />
+        )}
         <div
           className="min-h-0 bg-[var(--bg-canvas)]"
           data-testid="edit-canvas-iframe-slot"
@@ -607,10 +649,12 @@ function EditLayerPanel({
   search,
   onSearchChange,
   panelRef,
+  className,
 }: {
   search: string;
   onSearchChange: (value: string) => void;
   panelRef: RefObject<HTMLElement | null>;
+  className?: string;
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const autoScrollFrameRef = useRef<number | null>(null);
@@ -852,8 +896,12 @@ function EditLayerPanel({
 
   return (
     <aside
+      id="edit-layer-panel"
       ref={panelRef}
-      className="flex min-h-0 flex-col border-r border-border bg-[var(--bg-elevated)]"
+      className={cn(
+        'flex min-h-0 flex-col border-r border-border bg-[var(--bg-elevated)]',
+        className,
+      )}
       data-testid="edit-layer-panel"
     >
       <div className="flex h-11 shrink-0 items-center gap-2 border-b border-border px-3 text-sm font-semibold text-foreground">

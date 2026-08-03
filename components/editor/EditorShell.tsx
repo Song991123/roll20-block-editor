@@ -157,9 +157,10 @@ export default function EditorShell() {
   useEffect(() => {
     if (!isMobile) return;
     const st = useUiStore.getState();
+    if (mainMode === 'split') setMainMode('edit');
     if (!st.sidebarLeftCollapsed) st.toggleSidebarLeft();
     if (!st.sidebarRightCollapsed) st.toggleSidebarRight();
-  }, [isMobile]);
+  }, [isMobile, mainMode, setMainMode]);
 
   const splitContainerRef = useRef<HTMLDivElement>(null);
 
@@ -239,7 +240,7 @@ export default function EditorShell() {
   // edit 모드는 캔버스 자체가 full pane.
   const editVisible = mainMode === 'edit';
   const rolltemplateEditVisible = editVisible && editSubmode === 'rolltemplate';
-  const editLayerPanelTrack = getEditLayerPanelTrack(editLayerPanelWidth);
+  const editLayerPanelTrack = isMobile ? '0px' : getEditLayerPanelTrack(editLayerPanelWidth);
   const hiddenPaneStyle: CSSProperties = {
     width: 0,
     flexShrink: 0,

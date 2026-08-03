@@ -925,16 +925,17 @@ async function main() {
       c: ids.layoutProofCId,
     });
 
-    const layoutProofCanvas = frame.locator(
-      `[data-r20-block-id="${ids.layoutProofId}"]`,
-    );
-    await layoutProofCanvas.scrollIntoViewIfNeeded();
-    await layoutProofCanvas.click({ position: { x: 4, y: 4 }, force: true });
+    const layerSearch = page.locator('[data-testid="edit-layer-search"]');
+    await layerSearch.fill(ids.layoutProofId);
+    await page.locator(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${ids.layoutProofId}"]`,
+    ).click();
     await page.waitForFunction(
       (rootId) => window.__perfHook.getSelectedBlockId?.() === rootId,
       ids.layoutProofId,
       { timeout: 5000 },
     );
+    await layerSearch.fill('');
     const sectionMintSidebarComposition = page.locator(
       '[data-testid="design-section-composition-mint-sidebar"]',
     );

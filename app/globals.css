@@ -892,6 +892,14 @@ pattern[id^='blocklyGridPattern'] line {
   /* 3열 그리드를 1열로 — 인라인 스타일보다 우선해야 하므로 !important. */
   .app-shell main.editor-main {
     grid-template-columns: 0 minmax(0, 1fr) 0 !important;
+    column-gap: 0;
+  }
+  .app-shell main.editor-main > section {
+    grid-column: 2;
+  }
+
+  .app-shell [data-testid='main-mode-split'] {
+    display: none;
   }
 
   /* 사이드바 = 화면 위로 뜨는 서랍. 열림/닫힘은 기존 상태(자식 mount)와 동일.

@@ -59,6 +59,29 @@ function assert(value, message) {
   if (!value) throw new Error(message);
 }
 
+function readDrawer(page, selector) {
+  return page.evaluate((drawerSelector) => {
+    const node = document.querySelector(drawerSelector);
+    if (!(node instanceof HTMLElement)) return { scrim: false, insideViewport: false };
+    const rect = node.getBoundingClientRect();
+    return {
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+      },
+      scrim: Boolean(document.querySelector('.r20-mobile-scrim')),
+      insideViewport: rect.left >= 0
+        && rect.top >= 0
+        && rect.right <= window.innerWidth
+        && rect.bottom <= window.innerHeight,
+    };
+  }, selector);
+}
+
 async function main() {
   await fs.mkdir(REPORT_DIR, { recursive: true });
   const server = await startServer();
@@ -209,6 +232,144 @@ async function main() {
     assert(galleryAfter.addedInHtml, 'gallery-created widget was not emitted into HTML');
     assert(galleryIframePreserved && galleryAfter.iframeCount === 1, 'gallery click remounted the render surface');
 
+    const mobileShell = [];
+    for (const viewport of [
+      { name: 'phone', width: 390, height: 844 },
+      { name: 'tablet', width: 768, height: 900 },
+    ]) {
+      const mobileContext = await browser.newContext({
+        viewport: { width: viewport.width, height: viewport.height },
+      });
+      const mobilePage = await mobileContext.newPage();
+      const mobileConsoleErrors = [];
+      const mobilePageErrors = [];
+      mobilePage.on('console', (message) => {
+        if (message.type() === 'error') mobileConsoleErrors.push(message.text());
+      });
+      mobilePage.on('pageerror', (error) => mobilePageErrors.push(String(error)));
+      await mobilePage.goto(url, { waitUntil: 'load' });
+      await mobilePage.waitForSelector('[data-testid="main-area-toolbar"]', { timeout: 30000 });
+      await mobilePage.waitForFunction(() => (
+        document.querySelector('[data-testid="sidebar-left"]')?.getAttribute('data-open') === 'false'
+        && document.querySelector('[data-testid="sidebar-right"]')?.getAttribute('data-open') === 'false'
+        && document.querySelector('[data-testid="main-split-container"]')?.getAttribute('data-main-mode') === 'edit'
+      ));
+      await mobilePage.waitForTimeout(240);
+
+      const initial = await mobilePage.evaluate(() => {
+        const box = (selector) => {
+          const node = document.querySelector(selector);
+          if (!(node instanceof HTMLElement)) return null;
+          const rect = node.getBoundingClientRect();
+          return {
+            left: rect.left,
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+            width: rect.width,
+            height: rect.height,
+          };
+        };
+        const header = document.querySelector('header');
+        const toolbar = document.querySelector('[data-testid="main-area-toolbar"]');
+        return {
+          rootClientWidth: document.documentElement.clientWidth,
+          rootScrollWidth: document.documentElement.scrollWidth,
+          header: box('header'),
+          editor: box('main.editor-main > section'),
+          toolbar: box('[data-testid="main-area-toolbar"]'),
+          preview: box('[data-testid="preview-pane"]'),
+          mediaMobile: window.matchMedia('(max-width: 920px)').matches,
+          previewInlineLeft: document.querySelector('[data-testid="preview-pane"]')?.style.left ?? null,
+          editGridColumns: document.querySelector('[data-testid="edit-canvas-iframe-slot"]')?.parentElement?.style.gridTemplateColumns ?? null,
+          layerToggleCount: document.querySelectorAll('[data-testid="edit-layer-panel-toggle"]').length,
+          layerPanelCount: document.querySelectorAll('[data-testid="edit-layer-panel"]').length,
+          splitModeVisible: Boolean(
+            document.querySelector('[data-testid="main-mode-split"]')?.getClientRects().length,
+          ),
+          mainMode: document.querySelector('[data-testid="main-split-container"]')?.getAttribute('data-main-mode') ?? null,
+          headerOverflow: header ? header.scrollWidth - header.clientWidth : Number.NaN,
+          toolbarOverflow: toolbar ? toolbar.scrollWidth - toolbar.clientWidth : Number.NaN,
+        };
+      });
+      assert(initial.rootScrollWidth <= initial.rootClientWidth, `${viewport.name} shell overflows horizontally`);
+      assert(initial.headerOverflow <= 1, `${viewport.name} header overflows by ${initial.headerOverflow}px`);
+      assert(
+        initial.editor?.width >= viewport.width - 24,
+        `${viewport.name} editor collapsed: ${JSON.stringify(initial.editor)}`,
+      );
+      assert(
+        initial.toolbar?.width >= viewport.width - 24 && initial.toolbarOverflow <= 1,
+        `${viewport.name} toolbar is clipped: ${JSON.stringify(initial.toolbar)}`,
+      );
+      assert(
+        initial.preview?.width >= initial.editor.width - 4 && initial.preview?.height > 0,
+        `${viewport.name} preview surface is cramped: ${JSON.stringify(initial)}`,
+      );
+      await mobilePage.screenshot({ path: path.join(REPORT_DIR, `${viewport.name}-shell.png`) });
+
+      assert(
+        await mobilePage.locator('[data-testid="edit-layer-panel"]').count() === 0,
+        `${viewport.name} layer panel consumes canvas before opening`,
+      );
+      assert(!initial.splitModeVisible, `${viewport.name} exposes an unusable split mode`);
+      await mobilePage.click('[data-testid="edit-layer-panel-toggle"]');
+      await mobilePage.waitForSelector('[data-testid="edit-layer-panel"]');
+      const layerOverlay = await mobilePage.evaluate(() => {
+        const panel = document.querySelector('[data-testid="edit-layer-panel"]');
+        const editor = document.querySelector('main.editor-main > section');
+        if (!(panel instanceof HTMLElement) || !(editor instanceof HTMLElement)) return null;
+        const panelRect = panel.getBoundingClientRect();
+        const editorRect = editor.getBoundingClientRect();
+        return {
+          panel: {
+            left: panelRect.left,
+            top: panelRect.top,
+            right: panelRect.right,
+            bottom: panelRect.bottom,
+            width: panelRect.width,
+            height: panelRect.height,
+          },
+          hasScrim: Boolean(document.querySelector('[data-testid="edit-layer-panel-scrim"]')),
+          insideEditor: panelRect.left >= editorRect.left
+            && panelRect.top >= editorRect.top
+            && panelRect.right <= editorRect.right
+            && panelRect.bottom <= editorRect.bottom,
+        };
+      });
+      assert(layerOverlay?.hasScrim && layerOverlay.insideEditor, `${viewport.name} layer overlay escaped editor`);
+      await mobilePage.screenshot({ path: path.join(REPORT_DIR, `${viewport.name}-layer-panel.png`) });
+      await mobilePage.click('[data-testid="edit-layer-panel-scrim"]', {
+        position: { x: initial.editor.width - 5, y: 10 },
+      });
+      await mobilePage.waitForSelector('[data-testid="edit-layer-panel"]', { state: 'detached' });
+
+      await mobilePage.click('[data-testid="sidebar-left-toggle"]');
+      await mobilePage.waitForFunction(() => (
+        document.querySelector('[data-testid="sidebar-left"]')?.getAttribute('data-open') === 'true'
+      ));
+      await mobilePage.waitForTimeout(240);
+      const leftDrawer = await readDrawer(mobilePage, '[data-testid="sidebar-left"]');
+      assert(leftDrawer.scrim && leftDrawer.insideViewport, `${viewport.name} left drawer escaped viewport`);
+      await mobilePage.screenshot({ path: path.join(REPORT_DIR, `${viewport.name}-left-drawer.png`) });
+      await mobilePage.click('.r20-mobile-scrim', { position: { x: 1, y: 1 } });
+
+      await mobilePage.click('[data-testid="sidebar-right-toggle"]');
+      await mobilePage.waitForFunction(() => (
+        document.querySelector('[data-testid="sidebar-right"]')?.getAttribute('data-open') === 'true'
+      ));
+      await mobilePage.waitForTimeout(240);
+      const rightDrawer = await readDrawer(mobilePage, '[data-testid="sidebar-right"]');
+      assert(rightDrawer.scrim && rightDrawer.insideViewport, `${viewport.name} right drawer escaped viewport`);
+      await mobilePage.screenshot({ path: path.join(REPORT_DIR, `${viewport.name}-right-drawer.png`) });
+      assert(
+        mobileConsoleErrors.length === 0 && mobilePageErrors.length === 0,
+        `${viewport.name} browser errors: ${JSON.stringify({ mobileConsoleErrors, mobilePageErrors })}`,
+      );
+      mobileShell.push({ viewport, initial, layerOverlay, leftDrawer, rightDrawer });
+      await mobileContext.close();
+    }
+
     const result = {
       status: consoleErrors.length === 0 && pageErrors.length === 0 ? 'PASS' : 'FAIL',
       url,
@@ -217,6 +378,7 @@ async function main() {
       firstWidget,
       edit,
       gallery: { before: galleryBefore, after: galleryAfter, iframePreserved: galleryIframePreserved },
+      mobileShell,
       consoleErrors,
       pageErrors,
       finishedAt: new Date().toISOString(),

@@ -54,6 +54,10 @@ contain private source evidence or historical test dumps.
 - The edit layer panel has a persisted, pointer- and keyboard-resizable width.
   One responsive track positions both its edge and the persistent iframe, so
   resizing editor chrome does not create a Preview/Edit coordinate split.
+- At 920px and below, split view is unavailable because two fixed-width work
+  surfaces become unusable side by side. Direct Edit receives the full center
+  width, while the same layer tree opens as a contained overlay and desktop
+  panel sizing remains unchanged.
 - Its virtualized tree uses one roving tab stop. Tab navigation keeps the
   active layer visible without recentering rows already inside the viewport or
   mutating emitted source.
