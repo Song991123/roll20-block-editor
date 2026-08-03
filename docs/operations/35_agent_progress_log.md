@@ -35,8 +35,9 @@ or source-derived measurement here.
   micro-fixes; no production renderer CSS was changed.
 - Focused capture, structure, renderer-policy, and font/glyph tests plus the
   full ignored chat diagnostic refresh passed. Tracked-doc privacy, lint,
-  production build, and the full local CI verification suite also passed;
-  commit, push, and remote CI follow in this batch.
+  production build, and the full local CI verification suite also passed. The
+  implementation batch was committed and pushed, and its remote GitHub CI
+  safety/unit, lint, and production-build job passed.
 - Claim boundary: current anonymous modern suite and existing anonymous legacy
   contracts only. Broad all-sheet parity remains open.
 
