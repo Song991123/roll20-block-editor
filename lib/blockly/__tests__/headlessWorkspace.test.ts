@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import * as Blockly from 'blockly';
 import { registerAllBlocks } from '@/lib/blocks/registry';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
+import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
 
 registerAllBlocks();
 
@@ -31,6 +32,25 @@ try {
   );
   assert.equal(workspace.getBlockById('headless-test')?.rendered, false);
   assert.match(adapter.serializeXml('html'), /r20_raw_html/);
+
+  const cachedSnapshots = adapter.listAllBlocks('html');
+  assert.strictEqual(
+    adapter.listAllBlocks('html'),
+    cachedSnapshots,
+    'unchanged layer reads should share one snapshot',
+  );
+  assert.equal(
+    adapter.setBlockField('html', 'headless-test', 'HTML', '<div>updated</div>'),
+    true,
+  );
+  useWorkspaceStore.getState().bumpStructure('html', adapter.countBlocks('html'));
+  const refreshedSnapshots = adapter.listAllBlocks('html');
+  assert.notStrictEqual(
+    refreshedSnapshots,
+    cachedSnapshots,
+    'declared workspace mutations must invalidate the shared snapshot',
+  );
+  assert.match(refreshedSnapshots[0]?.preview ?? '', /updated/);
   console.log('headless workspace adapter test PASS');
 } finally {
   adapter.unregisterWorkspace('html');

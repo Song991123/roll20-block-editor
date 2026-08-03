@@ -8,16 +8,26 @@
 
 type TimingWindow = Window & {
   __r20PerfTimings?: Record<string, number>;
+  __perfHook?: unknown;
 };
 
-export function markEditorTiming(name: string): void {
-  if (typeof window === 'undefined') return;
+function activeTimings(): Record<string, number> | null {
+  if (typeof window === 'undefined') return null;
   try {
-    if (window.localStorage.getItem('__perfOn') !== '1') return;
     const target = window as TimingWindow;
-    const timings = target.__r20PerfTimings ?? (target.__r20PerfTimings = {});
-    timings[name] = performance.now();
+    if (!target.__perfHook) return null;
+    return target.__r20PerfTimings ?? (target.__r20PerfTimings = {});
   } catch {
-    // Diagnostic markers must never affect editing or rendering.
+    return null;
   }
+}
+
+export function markEditorTiming(name: string): void {
+  const timings = activeTimings();
+  if (timings) timings[name] = performance.now();
+}
+
+export function markEditorTimingOnce(name: string): void {
+  const timings = activeTimings();
+  if (timings && typeof timings[name] !== 'number') timings[name] = performance.now();
 }

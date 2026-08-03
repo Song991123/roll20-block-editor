@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type {
   DragEvent as ReactDragEvent,
   PointerEvent as ReactPointerEvent,
@@ -46,6 +46,7 @@ import { useUiStore } from '@/lib/stores/uiStore';
 import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { cn } from '@/lib/utils/cn';
 import { flushEmitPipeline } from '@/lib/preview/useEmitPipeline';
+import { markEditorTimingOnce } from '@/lib/perf/editorTiming';
 import {
   clampCanvasWidth,
   ROLLTEMPLATE_CANVAS_MAX_WIDTH,
@@ -132,6 +133,7 @@ const EDIT_HISTORY_WORKSPACES = [
 ] as const satisfies readonly WorkspaceKey[];
 
 export default function EditCanvas() {
+  markEditorTimingOnce('edit-canvas-render-start');
   const isMobile = useIsMobile();
   const editSubmode = useUiStore((s) => s.editSubmode);
   const editLayerPanelWidth = useUiStore((s) => s.editLayerPanelWidth);
@@ -194,6 +196,7 @@ export default function EditCanvas() {
     void structureVersion;
     return adapter.listAllBlocks('html');
   }, [adapter, structureVersion]);
+  markEditorTimingOnce('edit-canvas-nodes-ready');
   const rolltemplateRoots = useMemo(() => listRolltemplateRoots(htmlNodes), [htmlNodes]);
   const activeRolltemplateId = useMemo(
     () => resolveActiveRolltemplateId(htmlNodes, selectedBlockId),
@@ -258,6 +261,10 @@ export default function EditCanvas() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [mobileLayerPanelOpen, runHistoryAction]);
 
+  useLayoutEffect(() => {
+    markEditorTimingOnce('edit-canvas-layout-effect');
+  });
+  markEditorTimingOnce('edit-canvas-render-end');
   return (
     <div
       className="relative flex flex-1 min-h-0 flex-col bg-[var(--bg-canvas)]"
@@ -656,6 +663,7 @@ function EditLayerPanel({
   panelRef: RefObject<HTMLElement | null>;
   className?: string;
 }) {
+  markEditorTimingOnce('edit-layer-render-start');
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const autoScrollFrameRef = useRef<number | null>(null);
   const autoScrollDeltaRef = useRef(0);
@@ -721,6 +729,7 @@ function EditLayerPanel({
     void structureVersion;
     return getBlocklyAdapter().listAllBlocks(tab);
   }, [tab, structureVersion]);
+  markEditorTimingOnce('edit-layer-nodes-ready');
   const nodes = useMemo(() => {
     if (editSubmode === 'rolltemplate') {
       const rootId = resolveActiveRolltemplateId(allNodes, selectedId);
@@ -894,6 +903,10 @@ function EditLayerPanel({
     ? selectedId
     : visibleNodes[0]?.node.id ?? null;
 
+  useLayoutEffect(() => {
+    markEditorTimingOnce('edit-layer-layout-effect');
+  });
+  markEditorTimingOnce('edit-layer-render-end');
   return (
     <aside
       id="edit-layer-panel"

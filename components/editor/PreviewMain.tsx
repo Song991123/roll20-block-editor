@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -42,7 +43,7 @@ import { flushEmitPipeline } from '@/lib/preview/useEmitPipeline';
 import { applyAssetReplacements } from '@/lib/export/asset_replacements';
 import { mountSheetShadow } from '@/lib/preview/shadowMount';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
-import { markEditorTiming } from '@/lib/perf/editorTiming';
+import { markEditorTiming, markEditorTimingOnce } from '@/lib/perf/editorTiming';
 import ShadowContextMenu, { type ShadowContextMenuAction } from './ShadowContextMenu';
 import { playSfx } from '@/lib/sfx';
 import PreviewEmptyState from './PreviewEmptyState';
@@ -234,6 +235,7 @@ function inferMultiDragOrigin(
  * Phase 5+ 에서 emit-worker 로 이동 (현재는 main thread).
  */
 export default function PreviewMain() {
+  markEditorTimingOnce('preview-render-start');
   const iframeRef = useRef<HTMLIFrameElement>(null);
   // emit 결과는 useEmitPipeline (EditorShell 에서 항상 mount) 가 store 에 박는다.
   // PreviewMain 은 본 결과를 읽어 buildSheetDoc → srcdoc 만 생성.
@@ -2255,6 +2257,11 @@ export default function PreviewMain() {
       default: return;
     }
   };
+
+  useLayoutEffect(() => {
+    markEditorTimingOnce('preview-layout-effect');
+  });
+  markEditorTimingOnce('preview-render-end');
 
   return (
     <div

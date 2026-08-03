@@ -73,9 +73,11 @@ contain private source evidence or historical test dumps.
   ephemeral.
 - Same-parent first free placement has a guarded class/style-only iframe patch.
   It preserves runtime class/style state and falls back on every unrelated HTML
-  difference. Anonymous modern/legacy and large-workspace checks pass; larger
-  ignored input still warns on parent apply scheduling and final ACK, while the
-  iframe apply itself passes its budget.
+  difference. Shared Blockly layer snapshots now invalidate on declared and
+  structural mutations instead of being rebuilt by every selection subscriber.
+  Anonymous 5,200- and 9,000-item checks pass optimistic paint, parent
+  scheduling, final ACK, iframe apply, and zero-drift budgets in both persistent
+  modern and legacy render contracts.
 - Ordinary JavaScript has a separate inert source workspace. Authored emission
   preserves it, Preview/Edit never execute or display it, and final Roll20
   `sheet.html` excludes every non-Worker script while the ZIP keeps an explicit

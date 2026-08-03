@@ -624,6 +624,28 @@ or source-derived measurement here.
   imported editing remains partial and no all-sheet or Roll20-parity claim is
   made.
 
+## 2026-08-03 - Dense Edit Snapshot Reuse
+
+- Traced the first-selection delay with opt-in browser timing markers. The
+  canvas and virtualized layer tree were not the long task; the inspector was
+  rebuilding the full Blockly layer graph repeatedly for one selected object.
+- Added one workspace-generation-aware layer snapshot and ID index. Canvas,
+  layers, preview, design helpers, and inspector now share it until the store
+  declares a mutation. Structural adapter actions and history replay also
+  invalidate it directly so parent and sibling metadata cannot remain stale.
+- The anonymous 5,200-item check reduced optimistic paint from 217.6ms to
+  4.8ms, inspector render from 182.3ms to 7.6ms, and parent apply scheduling
+  from 217.3ms to 15.7ms. Its final ACK is now 248.2ms and drift is zero.
+- The anonymous 9,000-item check also passes every current performance budget:
+  9.1ms optimistic paint, 19.6ms parent scheduling, 384ms final ACK, 2ms iframe
+  apply, zero drift, and zero console/page errors.
+- Headless cache invalidation and structural layer-operation tests pass. The
+  six-fixture edit suite, fresh-sheet smoke, edit-flow smoke, and persistent
+  modern/legacy 9,000-item iframe runs pass without replacing the iframe.
+- Claim boundary: local anonymous edit performance and modern/legacy render
+  regression only. This batch adds no new actual Roll20 screen evidence and
+  does not prove broad-sheet parity.
+
 ## Current Product State
 
 - Preview and Edit share one persistent Roll20 iframe.

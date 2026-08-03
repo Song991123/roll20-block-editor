@@ -222,7 +222,8 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
 
   setActiveWorkspace: (w) => set({ activeWorkspace: w }),
 
-  bumpStructure: (w, blockCount) =>
+  bumpStructure: (w, blockCount) => {
+    getBlocklyAdapter().invalidateBlockSnapshots(w);
     set((s) => ({
       workspaces: {
         ...s.workspaces,
@@ -233,7 +234,8 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
           dirty: true,
         },
       },
-    })),
+    }));
+  },
 
   markDirty: (w) =>
     set((s) => ({
@@ -251,7 +253,8 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
       },
     })),
 
-  resetWorkspace: (w) =>
+  resetWorkspace: (w) => {
+    getBlocklyAdapter().invalidateBlockSnapshots(w);
     set((s) => ({
       workspaces: {
         ...s.workspaces,
@@ -260,7 +263,8 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
           structureVersion: s.workspaces[w].structureVersion + 1,
         },
       },
-    })),
+    }));
+  },
 
   clearAll: () => {
     const adapter = getBlocklyAdapter();

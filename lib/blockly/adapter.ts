@@ -93,6 +93,8 @@ export interface BlocklyAdapter {
   getWorkspaceSvg(key: WorkspaceKey): Blockly.WorkspaceSvg | null;
   listAllBlocks(key: WorkspaceKey): BlockSnapshot[];
   getBlock(key: WorkspaceKey, id: string): BlockSnapshot | null;
+  /** Invalidate the shared layer snapshot after a declared workspace mutation. */
+  invalidateBlockSnapshots(key: WorkspaceKey): void;
   getBlockFields(key: WorkspaceKey, blockId: string): BlockFieldInfo[];
   /** 새 블록 인스턴스를 활성 워크스페이스 top-level 에 추가. 반환 = 새 block id (또는 null). */
   appendBlockToWorkspace(key: WorkspaceKey, blockType: string): string | null;
@@ -238,6 +240,13 @@ type HistoryCandidate = {
   sequence: number;
 };
 
+type BlockSnapshotCache = {
+  workspace: Blockly.Workspace;
+  generation: number;
+  blocks: BlockSnapshot[];
+  byId: Map<string, BlockSnapshot>;
+};
+
 class DefaultAdapter implements BlocklyAdapter {
   private workspaces: Partial<Record<WorkspaceKey, Blockly.Workspace>> = {};
   private workspaceGenerations: Record<WorkspaceKey, number> = {
@@ -254,11 +263,13 @@ class DefaultAdapter implements BlocklyAdapter {
   private eventSequences = new WeakMap<Blockly.Events.Abstract, number>();
   private groupSequences = new Map<string, number>();
   private redoTransactions: UnifiedHistoryTransaction[] = [];
+  private blockSnapshotCaches: Partial<Record<WorkspaceKey, BlockSnapshotCache>> = {};
 
   registerWorkspace(key: WorkspaceKey, ws: Blockly.Workspace): void {
     this.unregisterWorkspace(key);
     this.workspaces[key] = ws;
     this.workspaceGenerations[key] += 1;
+    this.invalidateBlockSnapshots(key);
     const listener = (event: Blockly.Events.Abstract) => {
       if (event.recordUndo === false || event.isUiEvent) return;
       this.sequenceForEvent(event);
@@ -275,6 +286,7 @@ class DefaultAdapter implements BlocklyAdapter {
     if (ws && listener) ws.removeChangeListener(listener);
     delete this.historyListeners[key];
     delete this.workspaces[key];
+    this.invalidateBlockSnapshots(key);
     if (ws) this.workspaceGenerations[key] += 1;
     this.redoTransactions = [];
   }
@@ -295,12 +307,30 @@ class DefaultAdapter implements BlocklyAdapter {
   listAllBlocks(key: WorkspaceKey): BlockSnapshot[] {
     const ws = this.workspaces[key];
     if (!ws) return [];
+    const cached = this.blockSnapshotCaches[key];
+    if (
+      cached
+      && cached.workspace === ws
+      && cached.generation === this.workspaceGenerations[key]
+    ) {
+      return cached.blocks;
+    }
     const out: BlockSnapshot[] = [];
     const seen = new Set<string>();
     for (const block of ws.getTopBlocks(true)) {
       this.walk(block, 0, out, seen, null, null, 'root');
     }
+    this.blockSnapshotCaches[key] = {
+      workspace: ws,
+      generation: this.workspaceGenerations[key],
+      blocks: out,
+      byId: new Map(out.map((block) => [block.id, block])),
+    };
     return out;
+  }
+
+  invalidateBlockSnapshots(key: WorkspaceKey): void {
+    delete this.blockSnapshotCaches[key];
   }
 
   private walk(
@@ -365,7 +395,8 @@ class DefaultAdapter implements BlocklyAdapter {
     // Keep the layer metadata returned by listAllBlocks. Returning every
     // block as a root made iframe drop resolution lose the real container
     // relationship after a block was nested.
-    return this.listAllBlocks(key).find((block) => block.id === id) ?? null;
+    this.listAllBlocks(key);
+    return this.blockSnapshotCaches[key]?.byId.get(id) ?? null;
   }
 
   getBlockFields(key: WorkspaceKey, blockId: string): BlockFieldInfo[] {
@@ -435,6 +466,7 @@ class DefaultAdapter implements BlocklyAdapter {
       } finally {
         if (needsReenable) Blockly.Events.disable();
       }
+      this.invalidateBlockSnapshots(key);
       return block.id;
     } catch {
       return null;
@@ -537,6 +569,7 @@ class DefaultAdapter implements BlocklyAdapter {
       callOriginalSetResizesEnabled(false);
     }
     try {
+      this.invalidateBlockSnapshots(key);
       ws.clear();
       const dom = Blockly.utils.xml.textToDom(xml);
       Blockly.Xml.domToWorkspace(dom, ws);
@@ -547,6 +580,7 @@ class DefaultAdapter implements BlocklyAdapter {
       }
       Blockly.Events.enable();
       this.workspaceGenerations[key] += 1;
+      this.invalidateBlockSnapshots(key);
     }
   }
 
@@ -589,6 +623,7 @@ class DefaultAdapter implements BlocklyAdapter {
       callOriginalSetResizesEnabled(false);
     }
     try {
+      this.invalidateBlockSnapshots(key);
       ws.clear();
       if (total === 0) {
         onProgress?.(0, 0);
@@ -624,6 +659,7 @@ class DefaultAdapter implements BlocklyAdapter {
       }
       Blockly.Events.enable();
       this.workspaceGenerations[key] += 1;
+      this.invalidateBlockSnapshots(key);
     }
   }
 
@@ -661,6 +697,7 @@ class DefaultAdapter implements BlocklyAdapter {
           parentStatementConnection.connect(next.previousConnection!);
         }
       }
+      this.invalidateBlockSnapshots(key);
       return true;
     } catch {
       return false;
@@ -685,6 +722,7 @@ class DefaultAdapter implements BlocklyAdapter {
       // 새 블록은 (0,0) 에 박힘 → 원본 + 오프셋 위치로 이동.
       const cur = newBlock.getRelativeToSurfaceXY();
       newBlock.moveBy((xy.x - cur.x) + 20, (xy.y - cur.y) + 20);
+      this.invalidateBlockSnapshots(key);
       return newBlock.id;
     } catch {
       return null;
@@ -706,6 +744,7 @@ class DefaultAdapter implements BlocklyAdapter {
     const xyP = prev.getRelativeToSurfaceXY();
     b.moveBy(xyP.x - xyB.x, xyP.y - xyB.y);
     prev.moveBy(xyB.x - xyP.x, xyB.y - xyP.y);
+    this.invalidateBlockSnapshots(key);
     return true;
   }
 
@@ -723,6 +762,7 @@ class DefaultAdapter implements BlocklyAdapter {
     const xyN = next.getRelativeToSurfaceXY();
     b.moveBy(xyN.x - xyB.x, xyN.y - xyB.y);
     next.moveBy(xyB.x - xyN.x, xyB.y - xyN.y);
+    this.invalidateBlockSnapshots(key);
     return true;
   }
 
@@ -731,12 +771,16 @@ class DefaultAdapter implements BlocklyAdapter {
     const moving = ws?.getBlockById(blockId);
     const target = ws?.getBlockById(targetId);
     if (!ws || !moving || !target || moving === target) return false;
-    if (this.moveNestedBlockBefore(moving, target)) return true;
+    if (this.moveNestedBlockBefore(moving, target)) {
+      this.invalidateBlockSnapshots(key);
+      return true;
+    }
     if ((moving as { getParent?: () => unknown }).getParent?.()) return false;
     if ((target as { getParent?: () => unknown }).getParent?.()) return false;
     const targetXY = target.getRelativeToSurfaceXY();
     const movingXY = moving.getRelativeToSurfaceXY();
     moving.moveBy(targetXY.x - movingXY.x, targetXY.y - movingXY.y - 24);
+    this.invalidateBlockSnapshots(key);
     return true;
   }
 
@@ -745,12 +789,16 @@ class DefaultAdapter implements BlocklyAdapter {
     const moving = ws?.getBlockById(blockId);
     const target = ws?.getBlockById(targetId);
     if (!ws || !moving || !target || moving === target) return false;
-    if (this.moveNestedBlockAfter(moving, target)) return true;
+    if (this.moveNestedBlockAfter(moving, target)) {
+      this.invalidateBlockSnapshots(key);
+      return true;
+    }
     if ((moving as { getParent?: () => unknown }).getParent?.()) return false;
     if ((target as { getParent?: () => unknown }).getParent?.()) return false;
     const targetXY = target.getRelativeToSurfaceXY();
     const movingXY = moving.getRelativeToSurfaceXY();
     moving.moveBy(targetXY.x - movingXY.x, targetXY.y - movingXY.y + 24);
+    this.invalidateBlockSnapshots(key);
     return true;
   }
 
@@ -763,7 +811,9 @@ class DefaultAdapter implements BlocklyAdapter {
     if (!block.getParent?.()) return true;
     try {
       block.unplug?.(true);
-      return !block.getParent?.();
+      const moved = !block.getParent?.();
+      if (moved) this.invalidateBlockSnapshots(key);
+      return moved;
     } catch {
       return false;
     }
@@ -810,6 +860,7 @@ class DefaultAdapter implements BlocklyAdapter {
       if (followingOuter && next) next.connect(followingOuter);
 
       renderBlocksSoon([block, parent]);
+      this.invalidateBlockSnapshots(key);
       return true;
     } catch {
       return false;
@@ -996,6 +1047,7 @@ class DefaultAdapter implements BlocklyAdapter {
       if (connection.isConnected()) return false;
       connection.connect(moving.previousConnection);
       renderBlocksSoon([moving]);
+      this.invalidateBlockSnapshots(key);
       return true;
     } catch {
       return false;
@@ -1033,6 +1085,7 @@ class DefaultAdapter implements BlocklyAdapter {
     }
 
     const group = ws.newBlock('r20_element_container');
+    this.invalidateBlockSnapshots(key);
     try {
       group.setFieldValue('div', 'TAG');
       group.setFieldValue('', 'CLASS');
@@ -1082,6 +1135,7 @@ class DefaultAdapter implements BlocklyAdapter {
     const ws = this.workspaces[key];
     if (!ws || !this.canUndo(key)) return false;
     ws.undo(false);
+    this.invalidateBlockSnapshots(key);
     return true;
   }
 
@@ -1089,6 +1143,7 @@ class DefaultAdapter implements BlocklyAdapter {
     const ws = this.workspaces[key];
     if (!ws || !this.canRedo(key)) return false;
     ws.undo(true);
+    this.invalidateBlockSnapshots(key);
     return true;
   }
 
@@ -1117,7 +1172,10 @@ class DefaultAdapter implements BlocklyAdapter {
       : [candidate.key];
     if (affected.length === 0) return [];
 
-    for (const key of affected) this.workspaces[key]?.undo(false);
+    for (const key of affected) {
+      this.workspaces[key]?.undo(false);
+      this.invalidateBlockSnapshots(key);
+    }
     this.redoTransactions.push({
       sequence: candidate.sequence,
       group,
@@ -1130,7 +1188,10 @@ class DefaultAdapter implements BlocklyAdapter {
     const transaction = this.redoTransactions.at(-1);
     if (!transaction || !this.canReplayTransaction(transaction, keys)) return [];
     this.redoTransactions.pop();
-    for (const key of transaction.keys) this.workspaces[key]?.undo(true);
+    for (const key of transaction.keys) {
+      this.workspaces[key]?.undo(true);
+      this.invalidateBlockSnapshots(key);
+    }
     return [...transaction.keys];
   }
 

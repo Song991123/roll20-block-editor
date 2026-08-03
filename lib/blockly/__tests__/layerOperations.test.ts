@@ -29,8 +29,14 @@ first.nextConnection!.connect(following.previousConnection!);
 const adapter = getBlocklyAdapter();
 adapter.registerWorkspace('html', workspace as unknown as Blockly.WorkspaceSvg);
 try {
+  const beforeMoveLayers = adapter.listAllBlocks('html');
   assert.equal(adapter.moveBlockOutOfContainer('html', first.id), true);
   const layers = adapter.listAllBlocks('html');
+  assert.notStrictEqual(
+    layers,
+    beforeMoveLayers,
+    'structural adapter mutations must invalidate the shared layer snapshot',
+  );
   assert.deepEqual(
     layers.map((layer) => [layer.id, layer.layerParentId, layer.layerRelation]),
     [

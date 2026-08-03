@@ -50,6 +50,7 @@ const VIEWPORT = { width: 2200, height: 1200 };
 const DRAG_DELTA = { x: Number(argOf('--dx', '80')), y: Number(argOf('--dy', '48')) };
 const FAIL_ON_RESOURCE_ISSUES = argOf('--fail-on-resource-issues', 'false') === 'true';
 const COMPACT_WIDE_ROWS = argOf('--compact-wide-rows', 'false') === 'true';
+const DENSE_ITEMS = Math.max(0, Number(argOf('--dense-items', '0')) || 0);
 
 if (!CANONICAL_IFRAME) {
   throw new Error(
@@ -185,6 +186,25 @@ const BUILTIN_FIXTURES = [
   },
 ];
 
+function denseFreePlacementFixture(itemCount) {
+  const items = Array.from(
+    { length: itemCount },
+    (_, index) => `<input type="text" name="attr_dense_${index}" value="Dense ${index}">`,
+  ).join('');
+  return {
+    id: 'synthetic-dense-free',
+    html: [
+      '<div class="sheet-dense-frame" style="position:relative;width:760px;min-height:180px;padding:12px">',
+      '  <input class="sheet-dense-target" type="text" name="attr_dense_target" value="Target" style="width:80px;height:24px">',
+      '</div>',
+      items,
+    ].join(''),
+    css: '.sheet-dense-frame { background: #fff; }',
+    i18n: '{}',
+    synthetic: true,
+  };
+}
+
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript',
@@ -259,6 +279,9 @@ async function listFixtures() {
   const localInput = await loadLocalInputFixture();
   if (localInput && (!ONLY || ONLY === localInput.id)) out.push(localInput);
   if (ONLY === 'local-input') return out;
+  if (DENSE_ITEMS > 0 && (!ONLY || ONLY === 'synthetic-dense-free')) {
+    out.push(denseFreePlacementFixture(DENSE_ITEMS));
+  }
   out.push(...BUILTIN_FIXTURES.filter((fixture) => !ONLY || fixture.id === ONLY).map((fixture) => ({ ...fixture })));
   let entries = [];
   try {

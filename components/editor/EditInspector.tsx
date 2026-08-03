@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useLayoutEffect, useMemo } from 'react';
 import { Copy, MousePointerSquareDashed, Trash2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -52,6 +52,7 @@ import {
 } from '@/lib/editor/sectionCompositions';
 import { hasDirectRollButtonIcon, isRollButtonType } from '@/lib/editor/stylePresets';
 import { flushEmitPipeline } from '@/lib/preview/useEmitPipeline';
+import { markEditorTimingOnce } from '@/lib/perf/editorTiming';
 import { useWorkspaceStore, WORKSPACE_KEYS, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { fieldDisplayLabel } from './fieldLabels';
 import VisualStyleInspector from './VisualStyleInspector';
@@ -80,6 +81,7 @@ function resolveSelectedBlock(blockId: string | null): {
 }
 
 export default function EditInspector() {
+  markEditorTimingOnce('edit-inspector-render-start');
   const selectedId = useWorkspaceStore((s) => s.selectedBlockId);
   const structureVersion = useWorkspaceStore((s) =>
     s.workspaces.html.structureVersion
@@ -467,6 +469,11 @@ export default function EditInspector() {
     useWorkspaceStore.getState().bumpStructure(workspace, adapter.countBlocks(workspace));
     setSelected(duplicateId, 'inspector');
   }, [selectedId, workspace, setSelected]);
+
+  useLayoutEffect(() => {
+    markEditorTimingOnce('edit-inspector-layout-effect');
+  });
+  markEditorTimingOnce('edit-inspector-render-end');
 
   if (!snapshot || !workspace) {
     return (

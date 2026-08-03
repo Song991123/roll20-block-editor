@@ -204,11 +204,13 @@ belong in tracked documents.
   browser smoke preserves runtime input, class, and style state with no iframe
   reload. The six-fixture anonymous edit suite and anonymous 5,200/9,000-item
   large-workspace paths pass with zero console/page errors.
-- `PARTIAL PERFORMANCE`: the iframe apply, target-plan, message-transfer, and
-  optimistic-paint budgets pass on the ignored larger-input check. Parent
-  apply scheduling and final ACK remain warnings there. Optimize the React
-  commit/store invalidation path next without moving source emission behind an
-  unverified visual-only shortcut.
+- `DONE LOCAL PERFORMANCE`: shared Blockly layer snapshots are reused across
+  the canvas, layer panel, preview, and inspector until a declared or
+  structural workspace mutation invalidates them. Anonymous 5,200- and
+  9,000-item browser checks now pass edit-ready, optimistic-paint, parent
+  scheduling, target-plan, message-transfer, final-ACK, iframe-apply, drift,
+  resource, and page-error budgets. Source emission remains the authority;
+  this optimization does not replace it with a visual-only state.
 - `PARTIAL`: continue usability review for dense imported structures, longer
   or dynamically changing/animated transform stacks, and 3D/perspective
   transforms. Add longer mixed history runs for imported structures while
