@@ -2793,6 +2793,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       return;
     }
     if (e.button !== 0) return;
+    if (e.isPrimary === false) return;
     var subjectNode = blockNodeOf(e.target);
     if (!subjectNode) return;
     if (activeEditPointer) {
@@ -3471,6 +3472,11 @@ function normalizeDocumentLanguage(value: string | undefined): string {
 export function layerFilterCss(scope: string = 'body'): string {
   return `
 /* spec 17 §9 — 9 layer filter */
+body[data-r20-edit-mode="1"] [data-r20-block-id] {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
 ${scope}[data-layer="structure"] :not(fieldset):not(section):not(div):not(legend):not(.charsheet) {
   opacity: 0.3;
   pointer-events: none;

@@ -242,6 +242,16 @@ assert.match(
 );
 assert.match(
   bundle.doc,
+  /body\[data-r20-edit-mode="1"\] \[data-r20-block-id\][\s\S]*?touch-action: none;/,
+  'direct edit owns touch gestures only on editable sheet layers',
+);
+assert.match(
+  bundle.doc,
+  /if \(e\.isPrimary === false\) return;/,
+  'a secondary touch cannot replace the active direct-edit pointer',
+);
+assert.match(
+  bundle.doc,
   /#dialog-window\.r20-preview-dialog > \.dialog > \.tab-content > \.sheetform[\s\S]*?width: 100% !important/,
   'Roll20 form keeps the iframe/dialog width',
 );

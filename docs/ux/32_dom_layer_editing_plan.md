@@ -368,6 +368,12 @@ already-selected insertion position.
 - The same browser path covers layer-panel pointer resize, keyboard resize,
   local preference persistence, default reset, and exact agreement between the
   panel edge, iframe origin, and inactive canvas-slot origin.
+- Direct canvas touch uses the same pointer bridge as mouse movement. Edit-only
+  `touch-action: none` prevents sheet scrolling without changing Preview, only
+  the primary contact owns a drag, and the iframe scale converts screen pixels
+  before the existing local-coordinate commit. Current browser proof covers an
+  overlapping topmost layer, optimistic paint, a secondary contact, managed
+  CSS emission, and zero Preview/Edit geometry drift.
 - A long virtualized list also covers forward and reverse Tab navigation,
   unique sequential focus, automatic edge scrolling, active-row visibility,
   one roving tab stop, and an unchanged HTML/CSS emit.
@@ -396,6 +402,8 @@ re-import -> emit. A value-switch case panel owns the internal marker for its
 case block, and the parent switch preserves an imported checked radio as its
 editable initial value. Protected real-fixture and actual modern/legacy Roll20
 coverage remain future acceptance work.
+Touch insertion from the gallery or layer panel and landscape-phone ergonomics
+remain outside this direct-canvas movement proof.
 The fresh-sheet browser path additionally performs a real friendly-card drag
 onto the empty Edit surface and verifies preset presentation, pointer-aligned
 850px sheet coordinates, selection, and reuse of the first persistent iframe.

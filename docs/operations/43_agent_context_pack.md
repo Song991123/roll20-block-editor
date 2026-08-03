@@ -95,6 +95,11 @@ contain private source evidence or historical test dumps.
   movement and authoritative HTML use the same ordered IDs, and one undo/redo
   roundtrip preserves Preview/Edit DOM order. This is local synthetic editor
   proof, not actual Roll20 parity.
+- Direct canvas touch shares that persistent iframe path. Edit-only gesture
+  ownership prevents page/sheet scrolling, iframe scale is honored, and a
+  secondary contact cannot replace the primary drag. Current two-contact
+  browser proof preserves managed CSS and exact Preview/Edit geometry; gallery
+  and layer-panel touch insertion remain open.
 - Transformed containing frames report an accumulated 2D local-to-viewport
   matrix for common `transform`, individual `translate`/`rotate`/`scale`, and
   CSS zoom chains. Free placement and its optimistic paint invert the relevant

@@ -93,7 +93,7 @@ async function main() {
   await fs.mkdir(REPORT_DIR, { recursive: true });
   const server = await startServer();
   const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: { width: 1480, height: 960 } });
+  const page = await browser.newPage({ viewport: { width: 1480, height: 960 }, hasTouch: true });
   await page.route('https://imgsrv.roll20.net/**', async (route) => {
     const requestUrl = route.request().url();
     if (requestUrl.includes('synthetic-background.png')) {
@@ -2653,6 +2653,169 @@ async function main() {
     }, result.tests.freePlacement);
     assert(result.tests.freePlacement.hasManagedAbsolute, 'free placement did not emit absolute positioning');
     assert(result.tests.freePlacement.emittedManagedCss.cssHasAbsolute, 'free placement did not emit managed CSS');
+
+    const touchProbeBox = await frame.locator('.sheet-row-a').boundingBox();
+    const touchIframeBox = await iframe.boundingBox();
+    assert(touchProbeBox && touchIframeBox, 'touch placement geometry missing');
+    const touchStart = {
+      x: touchProbeBox.x + touchProbeBox.width / 2,
+      y: touchProbeBox.y + touchProbeBox.height / 2,
+    };
+    const touchDelta = { x: 46, y: 24 };
+    const touchIframeViewport = await frame.evaluate(() => ({
+      width: document.documentElement.clientWidth,
+      height: document.documentElement.clientHeight,
+    }));
+    const touchIframeScale = {
+      x: touchIframeBox.width / touchIframeViewport.width,
+      y: touchIframeBox.height / touchIframeViewport.height,
+    };
+    const touchPoint = (x, y, id = 1) => ({ x, y, id, radiusX: 1, radiusY: 1, force: 1 });
+    const readTouchPlacement = (blockId) => frame.evaluate((subjectId) => {
+      const node = document.querySelector(`[data-r20-block-id="${CSS.escape(subjectId)}"]`);
+      const rect = node?.getBoundingClientRect();
+      const scrolling = document.scrollingElement;
+      return {
+        rect: rect ? { left: rect.left, top: rect.top } : null,
+        className: node?.getAttribute('class') ?? '',
+        inlineStyle: node?.getAttribute('style') ?? '',
+        position: node ? getComputedStyle(node).position : '',
+        touchAction: node ? getComputedStyle(node).touchAction : '',
+        scrollLeft: scrolling?.scrollLeft ?? 0,
+        scrollTop: scrolling?.scrollTop ?? 0,
+      };
+    }, blockId);
+    await page.evaluate(() => {
+      window.__r20TouchPointerTrace = [];
+      window.addEventListener('message', (event) => {
+        const message = event.data;
+        if (message?.type === 'r20:edit-hit') {
+          window.__r20TouchPointerTrace.push({
+            blockId: message.blockId,
+            phase: message.phase,
+            pointer: message.pointer,
+          });
+        }
+      });
+    });
+    await frame.evaluate(() => {
+      window.__r20RawTouchTrace = [];
+      ['pointerdown', 'pointerup', 'pointercancel'].forEach((type) => {
+        window.addEventListener(type, (event) => {
+          window.__r20RawTouchTrace.push({
+            type,
+            isPrimary: event.isPrimary,
+            targetBlockId: event.target?.closest?.('[data-r20-block-id]')?.getAttribute('data-r20-block-id') ?? null,
+          });
+        }, true);
+      });
+    });
+    const touchSession = await page.context().newCDPSession(page);
+    let touchSubjectId = null;
+    let touchEnded = false;
+    try {
+      await touchSession.send('Input.dispatchTouchEvent', {
+        type: 'touchStart',
+        touchPoints: [touchPoint(touchStart.x, touchStart.y)],
+      });
+      await page.waitForTimeout(40);
+      const rawStart = await frame.evaluate(() => window.__r20RawTouchTrace?.[0] ?? null);
+      touchSubjectId = rawStart?.targetBlockId ?? null;
+      assert(touchSubjectId, `touch start did not resolve an editable block: ${JSON.stringify(rawStart)}`);
+      result.tests.touchPlacementBefore = await readTouchPlacement(touchSubjectId);
+      for (let step = 1; step <= 4; step += 1) {
+        const primary = touchPoint(
+          touchStart.x + touchDelta.x * step / 4,
+          touchStart.y + touchDelta.y * step / 4,
+        );
+        await touchSession.send('Input.dispatchTouchEvent', {
+          type: step === 2 ? 'touchStart' : 'touchMove',
+          touchPoints: step >= 2 ? [primary, touchPoint(touchStart.x + 8, touchStart.y + 8, 2)] : [primary],
+        });
+      }
+      await page.waitForTimeout(80);
+      result.tests.touchPlacementDuring = await readTouchPlacement(touchSubjectId);
+      await touchSession.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      touchEnded = true;
+    } finally {
+      if (!touchEnded) {
+        await touchSession.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] }).catch(() => {});
+      }
+      await touchSession.detach();
+    }
+    await page.waitForTimeout(350);
+    result.tests.touchPlacement = await readTouchPlacement(touchSubjectId);
+    result.tests.touchPointerTrace = await page.evaluate(() => window.__r20TouchPointerTrace ?? []);
+    result.tests.touchRawTrace = await frame.evaluate(() => window.__r20RawTouchTrace ?? []);
+    const touchPointerDown = result.tests.touchPointerTrace.find((entry) => entry.phase === 'pointerdown');
+    const touchPointerUp = [...result.tests.touchPointerTrace].reverse().find((entry) => entry.phase === 'pointerup');
+    assert(touchPointerDown && touchPointerUp, `touch bridge trace is incomplete: ${JSON.stringify(result.tests.touchPointerTrace)}`);
+    assert(result.tests.touchRawTrace.some((entry) => entry.type === 'pointerdown' && !entry.isPrimary), 'secondary touch did not reach the iframe');
+    assert(result.tests.touchPointerTrace.filter((entry) => entry.phase === 'pointerdown').length === 1, 'secondary touch replaced the primary drag');
+    assert(result.tests.touchPlacementBefore.touchAction === 'none', 'direct edit did not reserve touch gestures');
+    const touchPointerDelta = {
+      x: touchPointerUp.pointer.x - touchPointerDown.pointer.x,
+      y: touchPointerUp.pointer.y - touchPointerDown.pointer.y,
+    };
+    const expectedTouchPointerDelta = {
+      x: touchDelta.x / touchIframeScale.x,
+      y: touchDelta.y / touchIframeScale.y,
+    };
+    assert(
+      Math.abs(touchPointerDelta.x - expectedTouchPointerDelta.x) <= 1
+        && Math.abs(touchPointerDelta.y - expectedTouchPointerDelta.y) <= 1,
+      `touch bridge changed the scaled pointer delta: ${JSON.stringify({ touchPointerDelta, expectedTouchPointerDelta })}`,
+    );
+    const placementDelta = (placement) => ({
+      x: placement.rect.left - result.tests.touchPlacementBefore.rect.left,
+      y: placement.rect.top - result.tests.touchPlacementBefore.rect.top,
+    });
+    const optimisticTouchDelta = placementDelta(result.tests.touchPlacementDuring);
+    const committedTouchDelta = placementDelta(result.tests.touchPlacement);
+    assert(
+      Math.abs(optimisticTouchDelta.x - touchPointerDelta.x) <= 2
+        && Math.abs(optimisticTouchDelta.y - touchPointerDelta.y) <= 2,
+      'touch optimistic paint did not follow the finger',
+    );
+    assert(
+      Math.abs(committedTouchDelta.x - touchPointerDelta.x) <= 4.1
+        && Math.abs(committedTouchDelta.y - touchPointerDelta.y) <= 4.1,
+      `touch placement did not persist: ${JSON.stringify({ touchPointerDelta, committedTouchDelta })}`,
+    );
+    assert(result.tests.touchPlacement.position === 'absolute', 'touch placement did not persist free positioning');
+    assert(!/translate3d|will-change:\s*transform|transition:\s*none/i.test(result.tests.touchPlacement.inlineStyle), 'temporary touch paint leaked into inline HTML');
+    result.tests.touchPlacement.emittedManagedCss = await page.evaluate(({ blockId, className }) => {
+      const emitted = window.__perfHook.getEmitContent();
+      const classNames = className.split(/\s+/).filter(Boolean);
+      return {
+        htmlHasBlock: emitted.html.includes(`data-r20-block-id="${blockId}"`),
+        cssHasAbsolute: classNames.some((name) => (
+          new RegExp(`\\.${name.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\s*\\{[^}]*position\\s*:\\s*absolute`, 'i').test(emitted.css)
+        )),
+      };
+    }, { blockId: touchSubjectId, className: result.tests.touchPlacement.className });
+    assert(result.tests.touchPlacement.emittedManagedCss.htmlHasBlock && result.tests.touchPlacement.emittedManagedCss.cssHasAbsolute, 'touch placement did not reach emitted HTML/CSS');
+    assert(
+      result.tests.touchPlacement.scrollLeft === result.tests.touchPlacementBefore.scrollLeft
+        && result.tests.touchPlacement.scrollTop === result.tests.touchPlacementBefore.scrollTop,
+      'touch placement scrolled the sheet',
+    );
+    await page.click('[data-testid="main-mode-preview"]');
+    await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '0');
+    result.tests.touchPlacementPreview = await readTouchPlacement(touchSubjectId);
+    await page.click('[data-testid="preview-exit-edit"]');
+    await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '1');
+    result.tests.touchPlacementEditAgain = await readTouchPlacement(touchSubjectId);
+    assert(
+      result.tests.touchPlacementPreview.touchAction !== 'none'
+        && result.tests.touchPlacementEditAgain.touchAction === 'none'
+        && [result.tests.touchPlacementPreview, result.tests.touchPlacementEditAgain].every((placement) => (
+          placement.position === 'absolute'
+            && Math.abs(placement.rect.left - result.tests.touchPlacement.rect.left) <= 0.5
+            && Math.abs(placement.rect.top - result.tests.touchPlacement.rect.top) <= 0.5
+        )),
+      'touch placement diverged between Preview and Edit',
+    );
 
     result.tests.layerDropModes = await page.evaluate(async ({ movingId, targetId }) => {
       const target = document.querySelector(`[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(targetId)}"]`);

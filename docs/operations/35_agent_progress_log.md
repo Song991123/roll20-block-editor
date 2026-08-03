@@ -998,3 +998,20 @@ parity.
 - Claim boundary: local anonymous editor interaction only. No real sheet input
   or actual Roll20 destination was used, and modern Sandbox transfer remains
   externally unverified.
+
+## 2026-08-04 - Direct Canvas Touch Movement
+
+- Limited touch gesture ownership to editable sheet layers while Direct Edit
+  is active; Preview keeps normal Roll20 interaction and scrolling behavior.
+- Ignored non-primary pointer starts so an accidental second contact cannot
+  cancel or replace the layer already following the user's first finger.
+- Extended the full edit-flow browser smoke with real touch input. It resolves
+  the actual topmost hit in an overlapping canvas, measures the scaled iframe
+  coordinate conversion, checks optimistic movement before release, introduces
+  a second contact, and verifies one primary edit action.
+- The committed layer uses managed CSS with no temporary inline transform,
+  sheet scroll remains unchanged, Preview/Edit coordinates match exactly, and
+  console/page error counts remain zero.
+- Claim boundary: direct movement on the shared synthetic sheet surface only.
+  Gallery and layer-panel touch insertion, landscape-phone ergonomics, real
+  imported sheets, and actual Roll20 destinations remain separate gates.
