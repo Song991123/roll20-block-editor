@@ -958,6 +958,50 @@ pattern[id^='blocklyGridPattern'] line {
   }
 }
 
+@media (max-width: 920px) and (max-height: 500px) and (orientation: landscape) {
+  .app-shell.pastel {
+    --header-h: 48px;
+    --statusbar-h: 30px;
+  }
+
+  .app-shell > header {
+    margin-top: 4px;
+    margin-inline: 4px;
+    padding-inline: 4px;
+  }
+
+  .app-shell main.editor-main {
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .app-shell [data-testid='main-area-toolbar'] {
+    min-height: 48px;
+    padding-block: 2px;
+  }
+
+  .app-shell [data-testid='statusbar'] {
+    margin-inline: 4px;
+    margin-bottom: 4px;
+    gap: 4px;
+    padding-inline: 8px;
+  }
+
+  .app-shell aside[data-testid='sidebar-left'],
+  .app-shell aside[data-testid='sidebar-right'] {
+    top: calc(var(--header-h) + 8px);
+    bottom: 4px;
+  }
+
+  .app-shell aside[data-testid='sidebar-left'] {
+    left: 4px;
+  }
+
+  .app-shell aside[data-testid='sidebar-right'] {
+    right: 4px;
+  }
+}
+
 @media (min-width: 920.01px) {
   .r20-mobile-scrim {
     display: none;

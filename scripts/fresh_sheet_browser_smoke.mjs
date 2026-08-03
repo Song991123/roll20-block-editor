@@ -169,7 +169,7 @@ async function main() {
     );
     const emptyDropFrame = page.frames().find((candidate) => candidate !== page.mainFrame());
     assert(emptyDropFrame, 'empty sheet drop did not mount the shared iframe');
-    const emptyDropInput = emptyDropFrame.locator('input.sheet-text-input');
+    const emptyDropInput = emptyDropFrame.locator('input[data-r20-block-id]');
     await emptyDropInput.waitFor({ state: 'visible', timeout: 15000 });
     const emptyDropInputBox = await emptyDropInput.boundingBox();
     const mountedIframeBox = await page.locator('[data-testid="preview-iframe"]').boundingBox();
@@ -299,10 +299,12 @@ async function main() {
     const mobileShell = [];
     for (const viewport of [
       { name: 'phone', width: 390, height: 844 },
+      { name: 'phone-landscape', width: 844, height: 390 },
       { name: 'tablet', width: 768, height: 900 },
     ]) {
       const mobileContext = await browser.newContext({
         viewport: { width: viewport.width, height: viewport.height },
+        hasTouch: true,
       });
       const mobilePage = await mobileContext.newPage();
       const mobileConsoleErrors = [];
@@ -356,6 +358,7 @@ async function main() {
           toolbarOverflow: toolbar ? toolbar.scrollWidth - toolbar.clientWidth : Number.NaN,
         };
       });
+      await mobilePage.screenshot({ path: path.join(REPORT_DIR, `${viewport.name}-shell.png`) });
       assert(initial.rootScrollWidth <= initial.rootClientWidth, `${viewport.name} shell overflows horizontally`);
       assert(initial.headerOverflow <= 1, `${viewport.name} header overflows by ${initial.headerOverflow}px`);
       assert(
@@ -370,8 +373,12 @@ async function main() {
         initial.preview?.width >= initial.editor.width - 4 && initial.preview?.height > 0,
         `${viewport.name} preview surface is cramped: ${JSON.stringify(initial)}`,
       );
-      await mobilePage.screenshot({ path: path.join(REPORT_DIR, `${viewport.name}-shell.png`) });
-
+      if (viewport.width > viewport.height && viewport.height <= 500) {
+        assert(
+          initial.preview.height >= 180,
+          `${viewport.name} leaves too little vertical sheet space: ${JSON.stringify(initial.preview)}`,
+        );
+      }
       assert(
         await mobilePage.locator('[data-testid="edit-layer-panel"]').count() === 0,
         `${viewport.name} layer panel consumes canvas before opening`,

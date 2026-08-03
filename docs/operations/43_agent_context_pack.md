@@ -87,6 +87,9 @@ contain private source evidence or historical test dumps.
   surfaces become unusable side by side. Direct Edit receives the full center
   width, while the same layer tree opens as a contained overlay and desktop
   panel sizing remains unchanged.
+- At 844x390, short-landscape chrome compaction preserves primary 44px touch
+  targets and raises visible sheet height from 148px to 206px. Horizontal
+  overflow is zero; the layer overlay and both side drawers remain contained.
 - Its virtualized tree uses one roving tab stop. Tab navigation keeps the
   active layer visible without recentering rows already inside the viewport or
   mutating emitted source.
@@ -120,6 +123,11 @@ contain private source evidence or historical test dumps.
   Anonymous 5,200- and 9,000-item checks pass optimistic paint, parent
   scheduling, final ACK, iframe apply, and zero-drift budgets in both persistent
   modern and legacy render contracts.
+- Anonymous imported density now includes a one-root, depth-6 mixed
+  frame/row/input/list/table tree with 1,295 blocks. Non-leaf reorder, Flow/free
+  insertion, direct movement, targeted patch, Preview/Edit equality, stable
+  re-import, and resource/error gates pass. Dense user-owned imports remain a
+  separate usability boundary.
 - Ordinary JavaScript has a separate inert source workspace. Authored emission
   preserves it, Preview/Edit never execute or display it, and final Roll20
   `sheet.html` excludes every non-Worker script while the ZIP keeps an explicit

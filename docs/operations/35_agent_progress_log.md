@@ -1035,3 +1035,23 @@ parity.
   zero console or page errors.
 - Claim boundary: anonymous local editor proof only. Landscape-phone usability,
   dense real imports, and actual modern/legacy Roll20 destinations remain open.
+
+## 2026-08-04 - Landscape And Dense Imported Editing
+
+- Added an 844x390 touch viewport to the fresh-sheet shell smoke. The initial
+  capture exposed only 148 vertical pixels for the sheet despite having no
+  horizontal overflow.
+- Short-landscape CSS now reduces app-only spacing, status height, and toolbar
+  padding while preserving primary 44px touch targets. The sheet receives 206
+  pixels; the layer overlay and both side drawers remain inside the viewport.
+- Replaced a stale fresh-sheet assertion that expected a legacy-prefixed class
+  in modern mode. It now locates the generated input by its editor block marker,
+  preserving the authored-class contract.
+- Updated synthetic pointer input to declare one primary mouse pointer, matching
+  the current secondary-contact guard. A 1,205-block shallow import and a
+  one-root depth-6 mixed import with 1,295 blocks both pass direct movement,
+  Flow/free insertion, Preview/Edit synchronization, and stable re-import.
+- The mixed import additionally passes non-leaf layer reorder and targeted HTML
+  patching. Mapping is 100% with zero console, page, or resource errors.
+- Claim boundary: anonymous local browser proof only. Dense user-owned sheets,
+  broader landscape devices, and actual Roll20 destinations remain separate.

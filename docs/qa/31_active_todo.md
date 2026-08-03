@@ -343,10 +343,16 @@ belong in tracked documents.
   0.5ms transfer, 2ms iframe apply, and 294ms pointer-up-to-ACK with zero drift,
   matching Preview/Edit state, stable reimport, and zero console/page/resource
   errors. No speculative performance patch is warranted by this path.
-- `PARTIAL`: continue usability review for dense imported structures, longer
-  or dynamically changing/animated transform stacks, and 3D/perspective
-  transforms. Add longer mixed history runs for imported structures while
-  keeping local synthetic coverage distinct from actual Roll20 verification.
+- `DONE LOCAL DENSE IMPORT`: an anonymous mixed frame/row/input/list/table
+  fixture imports as one depth-6 tree with 1,295 blocks and 100% mapped source.
+  Browser proof covers non-leaf layer reorder, Flow and free insertion, direct
+  movement, one targeted HTML patch, exact Preview/Edit geometry, stable
+  re-import, and zero console/page/resource errors. A separate 1,205-block
+  shallow import passes the same direct synchronization path.
+- `PARTIAL`: continue usability review for dense user-owned imports, longer or
+  dynamically changing/animated transform stacks, and 3D/perspective
+  transforms. Add longer mixed history runs while keeping anonymous synthetic
+  coverage distinct from actual Roll20 verification.
 
 ## P1 - User Experience
 
@@ -367,9 +373,14 @@ belong in tracked documents.
   Preview/Edit and empty-drop width from 376px to 580px. Opening the layer tree
   leaves the iframe and drop-slot origin and width unchanged; its exposed scrim
   closes reliably. Full edit-flow and fresh-sheet desktop/mobile smokes pass.
-- `PARTIAL`: landscape phones and dense imported sheets still need broader
-  viewport review. Direct movement and gallery/layer-panel insertion have
-  current browser touch proof on the anonymous synthetic editor.
+- `DONE LOCAL`: the 844x390 landscape phone shell keeps primary 44px touch
+  targets while compacting short-screen chrome. Visible sheet height increases
+  from 148px to 206px, horizontal overflow remains zero, and the layer overlay
+  plus both tool drawers stay inside the viewport. Portrait phone and tablet
+  coverage remain unchanged.
+- `PARTIAL`: broader device/browser combinations and dense user-owned sheets
+  still need usability review. Direct movement, gallery/layer-panel insertion,
+  and the anonymous nested dense import have current browser proof.
 - `DONE LOCAL`: alignment actions are shown only for same-parent absolute
   selections whose logical and rendered coordinate parents agree. Flow, table,
   list, mixed-parent, and mixed-coordinate selections remain structure-driven.

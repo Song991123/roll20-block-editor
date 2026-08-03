@@ -142,6 +142,11 @@ invent separate DOM models.
     closing it must not move or resize the persistent iframe or the empty-canvas
     drop slot. The visible scrim starts outside the panel so every exposed point
     is a valid close target.
+23. A short landscape phone compacts only app chrome and outer spacing. Primary
+    header and mode controls retain 44-pixel touch targets, while the persistent
+    sheet receives at least 180 vertical pixels at the tested 844x390 viewport
+    (206 pixels in the current browser capture).
+    The layer overlay and side drawers must remain fully contained.
 
 ## Visual Language
 
@@ -408,6 +413,12 @@ re-import -> emit. A value-switch case panel owns the internal marker for its
 case block, and the parent switch preserves an imported checked radio as its
 editable initial value. Protected real-fixture and actual modern/legacy Roll20
 coverage remain future acceptance work.
+
+A large anonymous mixed structure additionally proves one-root import,
+non-leaf layer reorder, Flow/free insertion, direct movement, targeted
+HTML patching, Preview/Edit geometry equality, and stable re-import. This does
+not replace usability review with dense user-owned sheets.
+
 Browser touch input now covers gallery insertion onto the empty Edit surface,
 gallery insertion into an existing Flow container, layer-panel before/after
 reorder, and result-card insertion. It verifies held-object feedback, exact

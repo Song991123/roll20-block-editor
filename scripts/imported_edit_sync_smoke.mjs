@@ -205,6 +205,45 @@ function denseFreePlacementFixture(itemCount) {
   };
 }
 
+function denseMixedStructureFixture(itemCount) {
+  const groupCount = Math.max(2, Math.ceil(itemCount / 22));
+  const groups = Array.from({ length: groupCount }, (_, index) => [
+    '<section class="sheet-dense-mixed-section">',
+    `  <h3>Group ${index + 1}</h3>`,
+    '  <div class="sheet-dense-mixed-row">',
+    `    <label>Score <input type="number" name="attr_mixed_${index}_score" value="${index}"></label>`,
+    `    <label>Note <input type="text" name="attr_mixed_${index}_note" value="Item ${index + 1}"></label>`,
+    '  </div>',
+    '  <ul class="sheet-dense-mixed-list">',
+    `    <li><span>First ${index + 1}</span></li>`,
+    `    <li><span>Second ${index + 1}</span></li>`,
+    '  </ul>',
+    '  <table class="sheet-dense-mixed-table"><tbody>',
+    `    <tr><td>Current</td><td><input type="text" name="attr_mixed_${index}_current" value="${index + 1}"></td></tr>`,
+    `    <tr><td>Maximum</td><td><input type="number" name="attr_mixed_${index}_max" value="${index + 10}"></td></tr>`,
+    '  </tbody></table>',
+    '</section>',
+  ].join('\n')).join('\n');
+  return {
+    id: 'synthetic-dense-mixed',
+    html: `<div class="sheet-dense-mixed-root">\n${groups}\n</div>`,
+    css: [
+      '.sheet-dense-mixed-root { display:flex; flex-wrap:wrap; gap:8px; width:820px; padding:8px; background:#fff; }',
+      '.sheet-dense-mixed-section { width:252px; padding:8px; border:1px solid #aaa; }',
+      '.sheet-dense-mixed-section h3 { margin:0 0 6px; }',
+      '.sheet-dense-mixed-row { display:flex; gap:6px; }',
+      '.sheet-dense-mixed-row label { display:block; width:112px; }',
+      '.sheet-dense-mixed-row input { width:96px; }',
+      '.sheet-dense-mixed-list { margin:6px 0; padding-left:20px; }',
+      '.sheet-dense-mixed-table { width:100%; border-collapse:collapse; }',
+      '.sheet-dense-mixed-table td { padding:3px; border:1px solid #bbb; }',
+      '.sheet-dense-mixed-table input { width:88px; }',
+    ].join('\n'),
+    i18n: '{}',
+    synthetic: true,
+  };
+}
+
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript',
@@ -281,6 +320,9 @@ async function listFixtures() {
   if (ONLY === 'local-input') return out;
   if (DENSE_ITEMS > 0 && (!ONLY || ONLY === 'synthetic-dense-free')) {
     out.push(denseFreePlacementFixture(DENSE_ITEMS));
+  }
+  if (DENSE_ITEMS > 0 && (!ONLY || ONLY === 'synthetic-dense-mixed')) {
+    out.push(denseMixedStructureFixture(DENSE_ITEMS));
   }
   out.push(...BUILTIN_FIXTURES.filter((fixture) => !ONLY || fixture.id === ONLY).map((fixture) => ({ ...fixture })));
   let entries = [];
@@ -526,11 +568,13 @@ async function runCanonicalIframeEditSync(page) {
     const endX = startX + 24;
     const endY = startY + 16;
     node.dispatchEvent(new PointerEvent('pointerdown', {
-      bubbles: true, cancelable: true, pointerId, button: 0, buttons: 1,
+      bubbles: true, cancelable: true, pointerId, pointerType: 'mouse', isPrimary: true,
+      button: 0, buttons: 1,
       clientX: startX, clientY: startY,
     }));
     node.dispatchEvent(new PointerEvent('pointermove', {
-      bubbles: true, cancelable: true, pointerId, button: 0, buttons: 1,
+      bubbles: true, cancelable: true, pointerId, pointerType: 'mouse', isPrimary: true,
+      button: 0, buttons: 1,
       clientX: endX, clientY: endY,
     }));
     await new Promise((resolve) => requestAnimationFrame(resolve));
@@ -538,7 +582,8 @@ async function runCanonicalIframeEditSync(page) {
     const optimisticPaintMs = performance.now() - startedAt;
     const optimisticTransform = node.style.transform;
     node.dispatchEvent(new PointerEvent('pointerup', {
-      bubbles: true, cancelable: true, pointerId, button: 0, buttons: 0,
+      bubbles: true, cancelable: true, pointerId, pointerType: 'mouse', isPrimary: true,
+      button: 0, buttons: 0,
       clientX: endX, clientY: endY,
     }));
     const pointerUpRect = node.getBoundingClientRect();
