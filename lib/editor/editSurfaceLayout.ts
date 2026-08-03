@@ -4,6 +4,12 @@ export const EDIT_SURFACE_LAYER_PANEL_DEFAULT_WIDTH_PX = 248;
 export const EDIT_SURFACE_LAYER_PANEL_MAX_WIDTH_PX = 440;
 export const EDIT_SURFACE_LAYER_PANEL_KEYBOARD_STEP_PX = 16;
 export const EDIT_SURFACE_CANVAS_MIN_VISIBLE_WIDTH_PX = 280;
+export const EDIT_SURFACE_LAYER_PANEL_OVERLAY_WIDTH_PX = 760;
+
+export function shouldOverlayEditLayerPanel(availableWidth: number): boolean {
+  return Number.isFinite(availableWidth)
+    && availableWidth < EDIT_SURFACE_LAYER_PANEL_OVERLAY_WIDTH_PX;
+}
 
 export function clampEditLayerPanelWidth(width: number, availableWidth?: number): number {
   const safeWidth = Number.isFinite(width)

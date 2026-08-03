@@ -313,6 +313,11 @@ belong in tracked documents.
   the pastel shell inside the viewport. Narrow screens replace the unusable
   split view with direct edit, give the persistent Roll20 iframe the full
   editor width, and open app sidebars and the layer tree as contained overlays.
+- `DONE LOCAL`: when the center editor falls below 760px, its layer tree becomes
+  an on-demand overlay. At the current 1280px shell this restores the shared
+  Preview/Edit and empty-drop width from 376px to 580px. Opening the layer tree
+  leaves the iframe and drop-slot origin and width unchanged; its exposed scrim
+  closes reliably. Full edit-flow and fresh-sheet desktop/mobile smokes pass.
 - `PARTIAL`: landscape phones, touch drag behavior, and dense imported sheets
   still need broader viewport review without changing the Roll20 render surface.
 - `DONE LOCAL`: alignment actions are shown only for same-parent absolute

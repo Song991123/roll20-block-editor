@@ -54,7 +54,6 @@ import {
   SHEET_CANVAS_MAX_WIDTH,
   SHEET_CANVAS_MIN_WIDTH,
 } from '@/lib/preview/canvasDimensions';
-import { useIsMobile } from './useIsMobile';
 
 function formatDropModeLabel(mode: LayerDropMode): string {
   if (mode === 'inside') return '안에 넣기';
@@ -132,9 +131,12 @@ const EDIT_HISTORY_WORKSPACES = [
   'worker',
 ] as const satisfies readonly WorkspaceKey[];
 
-export default function EditCanvas() {
+interface EditCanvasProps {
+  layerPanelOverlay: boolean;
+}
+
+export default function EditCanvas({ layerPanelOverlay }: EditCanvasProps) {
   markEditorTimingOnce('edit-canvas-render-start');
-  const isMobile = useIsMobile();
   const editSubmode = useUiStore((s) => s.editSubmode);
   const editLayerPanelWidth = useUiStore((s) => s.editLayerPanelWidth);
   const setEditLayerPanelWidth = useUiStore((s) => s.setEditLayerPanelWidth);
@@ -151,9 +153,9 @@ export default function EditCanvas() {
   const selectedBlockId = useWorkspaceStore((s) => s.selectedBlockId);
   const setSelectedBlockId = useWorkspaceStore((s) => s.setSelectedBlockId);
   const [layerSearch, setLayerSearch] = useState('');
-  const [mobileLayerPanelOpen, setMobileLayerPanelOpen] = useState(false);
+  const [layerPanelOverlayOpen, setLayerPanelOverlayOpen] = useState(false);
   const layerPanelRef = useRef<HTMLElement | null>(null);
-  const editLayerPanelTrack = isMobile ? '0px' : getEditLayerPanelTrack(editLayerPanelWidth);
+  const editLayerPanelTrack = layerPanelOverlay ? '0px' : getEditLayerPanelTrack(editLayerPanelWidth);
   const canvasWidth = editSubmode === 'rolltemplate' ? rolltemplateCanvasWidth : sheetCanvasWidth;
   const setCanvasWidth = editSubmode === 'rolltemplate'
     ? setRolltemplateCanvasWidth
@@ -239,8 +241,8 @@ export default function EditCanvas() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && mobileLayerPanelOpen) {
-        setMobileLayerPanelOpen(false);
+      if (event.key === 'Escape' && layerPanelOverlayOpen) {
+        setLayerPanelOverlayOpen(false);
         return;
       }
       if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
@@ -259,7 +261,7 @@ export default function EditCanvas() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [mobileLayerPanelOpen, runHistoryAction]);
+  }, [layerPanelOverlayOpen, runHistoryAction]);
 
   useLayoutEffect(() => {
     markEditorTimingOnce('edit-canvas-layout-effect');
@@ -272,6 +274,7 @@ export default function EditCanvas() {
       data-edit-submode={editSubmode}
       data-edit-render-owner={editSubmode === 'rolltemplate' ? 'chat-renderer' : 'persistent-iframe'}
       data-r20-layer-panel-width={editLayerPanelWidth}
+      data-r20-layer-panel-overlay={layerPanelOverlay ? 'true' : 'false'}
     >
       <div
         className="r20-strip flex h-9 shrink-0 items-center gap-2 overflow-x-auto border-b border-[var(--border-subtle)] px-3 text-xs whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -280,19 +283,19 @@ export default function EditCanvas() {
         <span className="shrink-0 font-semibold text-foreground">
           {editSubmode === 'rolltemplate' ? '주사위 결과 카드 편집' : '시트 편집'}
         </span>
-        {isMobile && (
+        {layerPanelOverlay && (
           <button
             type="button"
-            onClick={() => setMobileLayerPanelOpen((open) => !open)}
+            onClick={() => setLayerPanelOverlayOpen((open) => !open)}
             className={cn(
               'grid h-7 w-7 shrink-0 place-items-center rounded-full border transition-colors active:scale-95',
-              mobileLayerPanelOpen
+              layerPanelOverlayOpen
                 ? 'border-[var(--primary-strong)] bg-[var(--primary-strong)] text-white'
                 : 'border-border bg-[var(--bg-elevated-2)] text-muted-foreground hover:bg-[var(--bg-hover)]',
             )}
             title="레이어 열기/닫기"
             aria-label="레이어 열기/닫기"
-            aria-expanded={mobileLayerPanelOpen}
+            aria-expanded={layerPanelOverlayOpen}
             aria-controls="edit-layer-panel"
             data-testid="edit-layer-panel-toggle"
           >
@@ -478,26 +481,27 @@ export default function EditCanvas() {
         className="relative grid flex-1 min-h-0"
         style={{ gridTemplateColumns: `${editLayerPanelTrack} minmax(0, 1fr)` }}
       >
-        {isMobile && mobileLayerPanelOpen && (
+        {layerPanelOverlay && layerPanelOverlayOpen && (
           <button
             type="button"
-            className="absolute inset-0 z-30 bg-black/20"
+            className="absolute inset-y-0 right-0 z-30 bg-black/20"
+            style={{ left: 'min(82vw, 320px)' }}
             aria-label="레이어 패널 닫기"
             data-testid="edit-layer-panel-scrim"
-            onClick={() => setMobileLayerPanelOpen(false)}
+            onClick={() => setLayerPanelOverlayOpen(false)}
           />
         )}
-        {(!isMobile || mobileLayerPanelOpen) && (
+        {(!layerPanelOverlay || layerPanelOverlayOpen) && (
           <EditLayerPanel
             search={layerSearch}
             onSearchChange={setLayerSearch}
             panelRef={layerPanelRef}
-            className={isMobile
+            className={layerPanelOverlay
               ? 'absolute inset-y-0 left-0 z-40 w-[min(82vw,320px)] shadow-xl'
               : undefined}
           />
         )}
-        {!isMobile && (
+        {!layerPanelOverlay && (
           <EditLayerPanelResizeHandle
             width={editLayerPanelWidth}
             track={editLayerPanelTrack}
@@ -507,6 +511,7 @@ export default function EditCanvas() {
         )}
         <div
           className="min-h-0 bg-[var(--bg-canvas)]"
+          style={{ gridColumn: 2 }}
           data-testid="edit-canvas-iframe-slot"
           aria-hidden="true"
         />

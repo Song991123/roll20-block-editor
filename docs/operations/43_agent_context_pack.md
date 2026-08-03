@@ -69,6 +69,10 @@ contain private source evidence or historical test dumps.
 - The edit layer panel has a persisted, pointer- and keyboard-resizable width.
   One responsive track positions both its edge and the persistent iframe, so
   resizing editor chrome does not create a Preview/Edit coordinate split.
+- Below a 760px center work-area width, that layer panel becomes an on-demand
+  overlay. The persistent iframe and empty drop slot use the whole center area;
+  opening the overlay does not move either surface. Current 1280px browser proof
+  measures 580px instead of the former 376px canvas width.
 - At 920px and below, split view is unavailable because two fixed-width work
   surfaces become unusable side by side. Direct Edit receives the full center
   width, while the same layer tree opens as a contained overlay and desktop

@@ -4,7 +4,9 @@ import {
   EDIT_SURFACE_LAYER_PANEL_DEFAULT_WIDTH_PX,
   EDIT_SURFACE_LAYER_PANEL_MAX_WIDTH_PX,
   EDIT_SURFACE_LAYER_PANEL_MIN_WIDTH_PX,
+  EDIT_SURFACE_LAYER_PANEL_OVERLAY_WIDTH_PX,
   getEditLayerPanelTrack,
+  shouldOverlayEditLayerPanel,
 } from '../editSurfaceLayout';
 
 assert.equal(clampEditLayerPanelWidth(Number.NaN), EDIT_SURFACE_LAYER_PANEL_DEFAULT_WIDTH_PX);
@@ -17,5 +19,8 @@ assert.equal(
   getEditLayerPanelTrack(360),
   'min(360px, max(220px, calc(100% - 280px)))',
 );
+assert.equal(shouldOverlayEditLayerPanel(EDIT_SURFACE_LAYER_PANEL_OVERLAY_WIDTH_PX - 1), true);
+assert.equal(shouldOverlayEditLayerPanel(EDIT_SURFACE_LAYER_PANEL_OVERLAY_WIDTH_PX), false);
+assert.equal(shouldOverlayEditLayerPanel(Number.NaN), false);
 
 console.log('editSurfaceLayout.test PASS');

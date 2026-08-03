@@ -308,6 +308,61 @@ async function main() {
     };
 
     await page.setViewportSize({ width: 1280, height: 720 });
+    await page.waitForFunction(() => (
+      document.querySelector('[data-testid="edit-canvas-root"]')
+        ?.getAttribute('data-r20-layer-panel-overlay') === 'true'
+    ));
+    const readCompactLayerGeometry = () => page.evaluate(() => {
+      const root = document.querySelector('[data-testid="edit-canvas-root"]');
+      const preview = document.querySelector('[data-testid="preview-pane"]');
+      const slot = document.querySelector('[data-testid="edit-canvas-iframe-slot"]');
+      if (![root, preview, slot].every((node) => node instanceof HTMLElement)) {
+        return { found: false };
+      }
+      const rootRect = root.getBoundingClientRect();
+      const previewRect = preview.getBoundingClientRect();
+      const slotRect = slot.getBoundingClientRect();
+      return {
+        found: true,
+        rootLeft: rootRect.left,
+        rootWidth: rootRect.width,
+        previewLeft: previewRect.left,
+        previewWidth: previewRect.width,
+        slotLeft: slotRect.left,
+        slotWidth: slotRect.width,
+        panelVisible: Boolean(document.querySelector('[data-testid="edit-layer-panel"]')),
+        resizerVisible: Boolean(document.querySelector('[data-testid="edit-layer-panel-resizer"]')),
+        toggleVisible: Boolean(document.querySelector('[data-testid="edit-layer-panel-toggle"]')),
+        scrimVisible: Boolean(document.querySelector('[data-testid="edit-layer-panel-scrim"]')),
+      };
+    });
+    const compactLayerClosed = await readCompactLayerGeometry();
+    assert(compactLayerClosed.found, 'compact layer geometry is unavailable');
+    assert(
+      Math.abs(compactLayerClosed.rootLeft - compactLayerClosed.previewLeft) <= 1
+        && Math.abs(compactLayerClosed.rootLeft - compactLayerClosed.slotLeft) <= 1
+        && Math.abs(compactLayerClosed.rootWidth - compactLayerClosed.previewWidth) <= 1
+        && Math.abs(compactLayerClosed.rootWidth - compactLayerClosed.slotWidth) <= 1,
+      `compact layer panel still consumed canvas width: ${JSON.stringify(compactLayerClosed)}`,
+    );
+    assert(compactLayerClosed.toggleVisible, 'compact layer toggle is missing');
+    assert(!compactLayerClosed.panelVisible && !compactLayerClosed.resizerVisible, 'compact layer panel stayed docked');
+    const compactLayerToggle = page.locator('[data-testid="edit-layer-panel-toggle"]');
+    await compactLayerToggle.click();
+    await page.waitForSelector('[data-testid="edit-layer-panel-scrim"]');
+    const compactLayerOpen = await readCompactLayerGeometry();
+    assert(compactLayerOpen.panelVisible && compactLayerOpen.scrimVisible, 'compact layer overlay did not open');
+    assert(
+      Math.abs(compactLayerOpen.previewLeft - compactLayerClosed.previewLeft) <= 1
+        && Math.abs(compactLayerOpen.previewWidth - compactLayerClosed.previewWidth) <= 1,
+      `opening compact layers moved the sheet canvas: ${JSON.stringify({ compactLayerClosed, compactLayerOpen })}`,
+    );
+    await page.locator('[data-testid="edit-layer-panel-scrim"]').click();
+    await page.waitForSelector('[data-testid="edit-layer-panel-scrim"]', { state: 'detached' });
+    result.tests.compactLayerPanelOverlay = {
+      closed: compactLayerClosed,
+      open: compactLayerOpen,
+    };
     result.tests.compactMainToolbar = await page.evaluate(() => {
       const toolbar = document.querySelector('[data-testid="main-area-toolbar"]');
       if (!(toolbar instanceof HTMLElement)) return { found: false };
@@ -423,6 +478,10 @@ async function main() {
       `compact edit toolbar control lost its accessible name: ${JSON.stringify(result.tests.compactEditToolbar.controls)}`,
     );
     await page.setViewportSize({ width: 1480, height: 960 });
+    await page.waitForFunction(() => (
+      document.querySelector('[data-testid="edit-canvas-root"]')
+        ?.getAttribute('data-r20-layer-panel-overlay') === 'false'
+    ));
 
     const syntheticImageUrl = `http://127.0.0.1:${PORT}${BASE_PATH}/synthetic-image.svg`;
     const syntheticHtml = [
@@ -4547,7 +4606,7 @@ async function main() {
         `- Status: ${result.pass ? 'PASS' : 'FAIL'}`,
         `- Console errors: ${consoleErrors.length}`,
         `- Page errors: ${pageErrors.length}`,
-        '- Coverage: flow/free placement including scaled and rotated/skewed nested coordinates, direct on-sheet keyboard nudge and resize, resizable layer panel with synchronized iframe origin, virtualized layer Tab navigation, canvas widget and block gallery drops, layer edge auto-scroll, layer collapse/drag-hover expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, managed visual styles, preview Roll/chat, sheet width, and the dedicated rolltemplate card editor with click/style/drop/chat synchronization plus empty-workspace template creation.',
+        '- Coverage: flow/free placement including scaled and rotated/skewed nested coordinates, direct on-sheet keyboard nudge and resize, docked resizing plus constrained-width layer overlay with synchronized iframe/drop-slot origin, virtualized layer Tab navigation, canvas widget and block gallery drops, layer edge auto-scroll, layer collapse/drag-hover expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, managed visual styles, preview Roll/chat, sheet width, and the dedicated rolltemplate card editor with click/style/drop/chat synchronization plus empty-workspace template creation.',
         '',
       ].join('\n'),
       'utf8',

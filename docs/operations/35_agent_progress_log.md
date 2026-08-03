@@ -887,3 +887,19 @@ parity.
   found the enabled extension and native host, but no tab or Roll20 room was
   opened or changed. Opening a fresh Chrome window remains a user-visible
   recovery action, not an automatic workaround.
+
+## 2026-08-03 - Constrained Editor Layer Overlay
+
+- A direct 1280px browser audit found four simultaneous columns leaving only
+  376px for the 850px sheet. The layer tree now switches from a docked track to
+  an on-demand overlay when the center work area is below 760px.
+- The shared Preview/Edit surface and empty drop slot now receive the full
+  580px center width in that shell. Opening the 320px layer overlay leaves their
+  left edge and width unchanged.
+- The exposed scrim begins outside the panel. Browser interaction proved that
+  it closes from its visible area instead of resolving a click behind the panel.
+- The first regression run caught a zero-width empty drop slot after the docked
+  panel was removed. The slot is now explicitly fixed to the canvas grid column.
+- Layout unit tests, the full edit-flow browser smoke, the empty-sheet desktop
+  drag, and 390x844/768x900 drawer checks pass. This is local editor UX proof;
+  it adds no actual Roll20 parity evidence.

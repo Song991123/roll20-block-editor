@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
 import { cn } from '@/lib/utils/cn';
 import { useUiStore, type MainMode } from '@/lib/stores/uiStore';
 import EditorHeader from './EditorHeader';
@@ -20,6 +20,7 @@ import EmptyCanvasHint from './EmptyCanvasHint';
 import {
   EDIT_SURFACE_TOOLBAR_HEIGHT_PX,
   getEditLayerPanelTrack,
+  shouldOverlayEditLayerPanel,
 } from '@/lib/editor/editSurfaceLayout';
 import { installAutosave } from '@/lib/persist/autosave';
 import { loadWorkspace, AUTOSAVE_KEY, type SavedRecord } from '@/lib/persist/indexeddb';
@@ -163,6 +164,19 @@ export default function EditorShell() {
   }, [isMobile, mainMode, setMainMode]);
 
   const splitContainerRef = useRef<HTMLDivElement>(null);
+  const [compactEditLayerPanel, setCompactEditLayerPanel] = useState(false);
+
+  useLayoutEffect(() => {
+    const node = splitContainerRef.current;
+    if (!node) return;
+    const update = () => {
+      setCompactEditLayerPanel(shouldOverlayEditLayerPanel(node.getBoundingClientRect().width));
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (mainMode !== 'edit' || editSubmode !== 'rolltemplate') return;
@@ -240,7 +254,8 @@ export default function EditorShell() {
   // edit 모드는 캔버스 자체가 full pane.
   const editVisible = mainMode === 'edit';
   const rolltemplateEditVisible = editVisible && editSubmode === 'rolltemplate';
-  const editLayerPanelTrack = isMobile ? '0px' : getEditLayerPanelTrack(editLayerPanelWidth);
+  const layerPanelOverlay = isMobile || compactEditLayerPanel;
+  const editLayerPanelTrack = layerPanelOverlay ? '0px' : getEditLayerPanelTrack(editLayerPanelWidth);
   const hiddenPaneStyle: CSSProperties = {
     width: 0,
     flexShrink: 0,
@@ -381,7 +396,7 @@ export default function EditorShell() {
               data-testid="edit-pane"
               data-visible={editVisible ? 'true' : 'false'}
             >
-              {editVisible && <EditCanvas />}
+              {editVisible && <EditCanvas layerPanelOverlay={layerPanelOverlay} />}
             </div>
           </div>
         </section>

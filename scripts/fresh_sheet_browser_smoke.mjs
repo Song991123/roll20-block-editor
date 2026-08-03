@@ -403,9 +403,7 @@ async function main() {
       });
       assert(layerOverlay?.hasScrim && layerOverlay.insideEditor, `${viewport.name} layer overlay escaped editor`);
       await mobilePage.screenshot({ path: path.join(REPORT_DIR, `${viewport.name}-layer-panel.png`) });
-      await mobilePage.click('[data-testid="edit-layer-panel-scrim"]', {
-        position: { x: initial.editor.width - 5, y: 10 },
-      });
+      await mobilePage.click('[data-testid="edit-layer-panel-scrim"]');
       await mobilePage.waitForSelector('[data-testid="edit-layer-panel"]', { state: 'detached' });
 
       await mobilePage.click('[data-testid="sidebar-left-toggle"]');

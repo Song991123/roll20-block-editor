@@ -137,6 +137,11 @@ invent separate DOM models.
     width as editor chrome only. It cannot emit a placeholder DOM block. When
     the first element creates the persistent iframe, the canvas origin and
     scaled width must remain continuous so the dropped element does not jump.
+22. When the center work area is narrower than 760px, the layer tree becomes a
+    toggleable overlay instead of consuming a permanent grid track. Opening or
+    closing it must not move or resize the persistent iframe or the empty-canvas
+    drop slot. The visible scrim starts outside the panel so every exposed point
+    is a valid close target.
 
 ## Visual Language
 
