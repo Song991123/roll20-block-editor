@@ -40,6 +40,9 @@ contain private source evidence or historical test dumps.
   generations in the emit-cache identity. The current five-fixture browser
   path also requires each mounted preview CSS hash to match the latest import,
   preventing a previous sheet from repainting the next one.
+- The edit layer panel has a persisted, pointer- and keyboard-resizable width.
+  One responsive track positions both its edge and the persistent iframe, so
+  resizing editor chrome does not create a Preview/Edit coordinate split.
 - Generated evidence and external validation inputs remain ignored, local, and
   ephemeral.
 

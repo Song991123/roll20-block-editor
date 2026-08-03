@@ -1,12 +1,17 @@
 'use client';
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { DragEvent as ReactDragEvent } from 'react';
+import type {
+  DragEvent as ReactDragEvent,
+  PointerEvent as ReactPointerEvent,
+  RefObject,
+} from 'react';
 import {
   ChevronDown,
   ChevronRight,
   CircleHelp,
   Grid3X3,
+  GripVertical,
   Layers,
   Maximize2,
   Move,
@@ -29,7 +34,14 @@ import {
   listSheetVisualScope,
   resolveActiveRolltemplateId,
 } from '@/lib/editor/rolltemplateScope';
-import { EDIT_SURFACE_LAYER_PANEL_WIDTH_PX } from '@/lib/editor/editSurfaceLayout';
+import {
+  clampEditLayerPanelWidth,
+  EDIT_SURFACE_LAYER_PANEL_DEFAULT_WIDTH_PX,
+  EDIT_SURFACE_LAYER_PANEL_KEYBOARD_STEP_PX,
+  EDIT_SURFACE_LAYER_PANEL_MAX_WIDTH_PX,
+  EDIT_SURFACE_LAYER_PANEL_MIN_WIDTH_PX,
+  getEditLayerPanelTrack,
+} from '@/lib/editor/editSurfaceLayout';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { cn } from '@/lib/utils/cn';
@@ -120,6 +132,8 @@ const EDIT_HISTORY_WORKSPACES = [
 
 export default function EditCanvas() {
   const editSubmode = useUiStore((s) => s.editSubmode);
+  const editLayerPanelWidth = useUiStore((s) => s.editLayerPanelWidth);
+  const setEditLayerPanelWidth = useUiStore((s) => s.setEditLayerPanelWidth);
   const zoom = useUiStore((s) => s.previewZoom);
   const setPreviewZoom = useUiStore((s) => s.setPreviewZoom);
   const sheetCanvasWidth = useUiStore((s) => s.sheetCanvasWidth);
@@ -133,6 +147,8 @@ export default function EditCanvas() {
   const selectedBlockId = useWorkspaceStore((s) => s.selectedBlockId);
   const setSelectedBlockId = useWorkspaceStore((s) => s.setSelectedBlockId);
   const [layerSearch, setLayerSearch] = useState('');
+  const layerPanelRef = useRef<HTMLElement | null>(null);
+  const editLayerPanelTrack = getEditLayerPanelTrack(editLayerPanelWidth);
   const canvasWidth = editSubmode === 'rolltemplate' ? rolltemplateCanvasWidth : sheetCanvasWidth;
   const setCanvasWidth = editSubmode === 'rolltemplate'
     ? setRolltemplateCanvasWidth
@@ -237,10 +253,11 @@ export default function EditCanvas() {
 
   return (
     <div
-      className="flex flex-1 min-h-0 flex-col bg-[var(--bg-canvas)]"
+      className="relative flex flex-1 min-h-0 flex-col bg-[var(--bg-canvas)]"
       data-testid="edit-canvas-root"
       data-edit-submode={editSubmode}
       data-edit-render-owner={editSubmode === 'rolltemplate' ? 'chat-renderer' : 'persistent-iframe'}
+      data-r20-layer-panel-width={editLayerPanelWidth}
     >
       <div
         className="r20-strip flex h-9 shrink-0 items-center gap-2 overflow-x-auto border-b border-[var(--border-subtle)] px-3 text-xs whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -425,10 +442,20 @@ export default function EditCanvas() {
         </div>
       </div>
       <div
-        className="grid flex-1 min-h-0"
-        style={{ gridTemplateColumns: `${EDIT_SURFACE_LAYER_PANEL_WIDTH_PX}px minmax(0, 1fr)` }}
+        className="relative grid flex-1 min-h-0"
+        style={{ gridTemplateColumns: `${editLayerPanelTrack} minmax(0, 1fr)` }}
       >
-        <EditLayerPanel search={layerSearch} onSearchChange={setLayerSearch} />
+        <EditLayerPanel
+          search={layerSearch}
+          onSearchChange={setLayerSearch}
+          panelRef={layerPanelRef}
+        />
+        <EditLayerPanelResizeHandle
+          width={editLayerPanelWidth}
+          track={editLayerPanelTrack}
+          panelRef={layerPanelRef}
+          onResize={setEditLayerPanelWidth}
+        />
         <div
           className="min-h-0 bg-[var(--bg-canvas)]"
           data-testid="edit-canvas-iframe-slot"
@@ -439,13 +466,151 @@ export default function EditCanvas() {
   );
 }
 
+function EditLayerPanelResizeHandle({
+  width,
+  track,
+  panelRef,
+  onResize,
+}: {
+  width: number;
+  track: string;
+  panelRef: RefObject<HTMLElement | null>;
+  onResize: (width: number) => void;
+}) {
+  const dragRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startWidth: number;
+    availableWidth: number;
+  } | null>(null);
+  const frameRef = useRef<number | null>(null);
+  const pendingWidthRef = useRef<number | null>(null);
+
+  const clearDraggingStyles = useCallback(() => {
+    if (document.body.dataset.r20LayerPanelResizing !== '1') return;
+    delete document.body.dataset.r20LayerPanelResizing;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }, []);
+
+  const flushPendingWidth = useCallback(() => {
+    frameRef.current = null;
+    const nextWidth = pendingWidthRef.current;
+    pendingWidthRef.current = null;
+    if (nextWidth !== null) onResize(nextWidth);
+  }, [onResize]);
+
+  const scheduleWidth = useCallback((nextWidth: number) => {
+    pendingWidthRef.current = nextWidth;
+    if (frameRef.current === null) {
+      frameRef.current = requestAnimationFrame(flushPendingWidth);
+    }
+  }, [flushPendingWidth]);
+
+  useEffect(() => () => {
+    if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+    clearDraggingStyles();
+  }, [clearDraggingStyles]);
+
+  const finishResize = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+    frameRef.current = null;
+    const pendingWidth = pendingWidthRef.current;
+    pendingWidthRef.current = null;
+    if (pendingWidth !== null) onResize(pendingWidth);
+    dragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    clearDraggingStyles();
+  }, [clearDraggingStyles, onResize]);
+
+  const resizeFromHandle = useCallback((handle: HTMLDivElement, nextWidth: number) => {
+    const availableWidth = handle.parentElement?.getBoundingClientRect().width;
+    onResize(clampEditLayerPanelWidth(nextWidth, availableWidth));
+  }, [onResize]);
+
+  return (
+    <div
+      role="separator"
+      aria-label="레이어 패널 너비 조절"
+      aria-orientation="vertical"
+      aria-valuemin={EDIT_SURFACE_LAYER_PANEL_MIN_WIDTH_PX}
+      aria-valuemax={EDIT_SURFACE_LAYER_PANEL_MAX_WIDTH_PX}
+      aria-valuenow={width}
+      aria-valuetext={`${width}px`}
+      tabIndex={0}
+      title="레이어 패널 너비 조절 · 두 번 눌러 기본 너비로"
+      data-testid="edit-layer-panel-resizer"
+      className="group absolute inset-y-0 z-30 flex w-3 -translate-x-1/2 touch-none cursor-col-resize items-center justify-center outline-none"
+      style={{ left: track }}
+      onPointerDown={(event) => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const availableWidth = event.currentTarget.parentElement?.getBoundingClientRect().width
+          ?? EDIT_SURFACE_LAYER_PANEL_MAX_WIDTH_PX;
+        const startWidth = panelRef.current?.getBoundingClientRect().width ?? width;
+        dragRef.current = {
+          pointerId: event.pointerId,
+          startX: event.clientX,
+          startWidth,
+          availableWidth,
+        };
+        event.currentTarget.setPointerCapture(event.pointerId);
+        document.body.dataset.r20LayerPanelResizing = '1';
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+      }}
+      onPointerMove={(event) => {
+        const drag = dragRef.current;
+        if (!drag || drag.pointerId !== event.pointerId) return;
+        scheduleWidth(clampEditLayerPanelWidth(
+          drag.startWidth + event.clientX - drag.startX,
+          drag.availableWidth,
+        ));
+      }}
+      onPointerUp={finishResize}
+      onPointerCancel={finishResize}
+      onLostPointerCapture={finishResize}
+      onDoubleClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        resizeFromHandle(event.currentTarget, EDIT_SURFACE_LAYER_PANEL_DEFAULT_WIDTH_PX);
+      }}
+      onKeyDown={(event) => {
+        const currentWidth = panelRef.current?.getBoundingClientRect().width ?? width;
+        const step = EDIT_SURFACE_LAYER_PANEL_KEYBOARD_STEP_PX * (event.shiftKey ? 3 : 1);
+        let nextWidth: number | null = null;
+        if (event.key === 'ArrowLeft') nextWidth = currentWidth - step;
+        else if (event.key === 'ArrowRight') nextWidth = currentWidth + step;
+        else if (event.key === 'Home') nextWidth = EDIT_SURFACE_LAYER_PANEL_MIN_WIDTH_PX;
+        else if (event.key === 'End') nextWidth = EDIT_SURFACE_LAYER_PANEL_MAX_WIDTH_PX;
+        if (nextWidth === null) return;
+        event.preventDefault();
+        event.stopPropagation();
+        resizeFromHandle(event.currentTarget, nextWidth);
+      }}
+    >
+      <GripVertical
+        className="h-5 w-3 rounded-sm border border-transparent bg-[var(--bg-elevated)] text-muted-foreground shadow-sm transition-colors group-hover:border-[var(--primary-soft-border)] group-hover:bg-[var(--primary-soft)] group-hover:text-[var(--primary-active)] group-focus-visible:border-[var(--primary)] group-focus-visible:bg-[var(--primary-soft)] group-focus-visible:text-[var(--primary-active)]"
+        aria-hidden="true"
+      />
+    </div>
+  );
+}
+
 
 function EditLayerPanel({
   search,
   onSearchChange,
+  panelRef,
 }: {
   search: string;
   onSearchChange: (value: string) => void;
+  panelRef: RefObject<HTMLElement | null>;
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const autoScrollFrameRef = useRef<number | null>(null);
@@ -662,6 +827,7 @@ function EditLayerPanel({
 
   return (
     <aside
+      ref={panelRef}
       className="flex min-h-0 flex-col border-r border-border bg-[var(--bg-elevated)]"
       data-testid="edit-layer-panel"
     >

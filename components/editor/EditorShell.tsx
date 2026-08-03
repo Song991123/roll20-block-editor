@@ -18,8 +18,8 @@ import MainAreaToolbar from './MainAreaToolbar';
 import WorkspaceSubToolbar from './WorkspaceSubToolbar';
 import EmptyCanvasHint from './EmptyCanvasHint';
 import {
-  EDIT_SURFACE_LAYER_PANEL_WIDTH_PX,
   EDIT_SURFACE_TOOLBAR_HEIGHT_PX,
+  getEditLayerPanelTrack,
 } from '@/lib/editor/editSurfaceLayout';
 import { installAutosave } from '@/lib/persist/autosave';
 import { loadWorkspace, AUTOSAVE_KEY, type SavedRecord } from '@/lib/persist/indexeddb';
@@ -132,6 +132,7 @@ export default function EditorShell() {
   }, []);
   const mainMode = useUiStore((s) => s.mainMode);
   const editSubmode = useUiStore((s) => s.editSubmode);
+  const editLayerPanelWidth = useUiStore((s) => s.editLayerPanelWidth);
   const setMainMode = useUiStore((s) => s.setMainMode);
   const mainSplit = useUiStore((s) => s.mainSplit);
   const setMainSplit = useUiStore((s) => s.setMainSplit);
@@ -238,6 +239,7 @@ export default function EditorShell() {
   // edit 모드는 캔버스 자체가 full pane.
   const editVisible = mainMode === 'edit';
   const rolltemplateEditVisible = editVisible && editSubmode === 'rolltemplate';
+  const editLayerPanelTrack = getEditLayerPanelTrack(editLayerPanelWidth);
   const hiddenPaneStyle: CSSProperties = {
     width: 0,
     flexShrink: 0,
@@ -263,7 +265,7 @@ export default function EditorShell() {
     workspaceStyle = hiddenPaneStyle;
     previewStyle = {
       position: 'absolute',
-      left: EDIT_SURFACE_LAYER_PANEL_WIDTH_PX,
+      left: editLayerPanelTrack,
       top: EDIT_SURFACE_TOOLBAR_HEIGHT_PX,
       right: 0,
       bottom: 0,
@@ -276,7 +278,7 @@ export default function EditorShell() {
     if (rolltemplateEditVisible) {
       rolltemplateEditStyle = {
         position: 'absolute',
-        left: EDIT_SURFACE_LAYER_PANEL_WIDTH_PX,
+        left: editLayerPanelTrack,
         top: EDIT_SURFACE_TOOLBAR_HEIGHT_PX,
         right: 0,
         bottom: 0,

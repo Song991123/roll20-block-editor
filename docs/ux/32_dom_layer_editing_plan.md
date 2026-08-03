@@ -35,6 +35,19 @@ same semantic information through `data-r20-layer-role` and
 `data-r20-can-drop`, so the visual layer panel and iframe drop overlay do not
 invent separate DOM models.
 
+## Layer Panel Sizing
+
+- The layer panel width is a saved browser preference between 220 and 440
+  pixels. A native pointer separator changes it without rebuilding the sheet
+  iframe; Left/Right and Shift plus Left/Right offer keyboard adjustment, and
+  a double click restores the 248-pixel default.
+- One shared responsive track expression positions the layer panel, the
+  persistent Preview/Edit iframe, and the inactive canvas slot. A narrower app
+  viewport may temporarily constrain the saved preference while leaving at
+  least 280 pixels for the sheet surface.
+- Separator key events stop at the separator. They must not trigger the
+  selected-layer keyboard movement contract below.
+
 ## Drop Rules
 
 1. `inside` is offered only for a role that can receive children.
@@ -317,6 +330,9 @@ already-selected insertion position.
   direct image resize, and a coordinated section theme. Multi-target section,
   control, result-card, Roll-button, layout, and composition presets use one
   outer event group so one visible command remains one history action.
+- The same browser path covers layer-panel pointer resize, keyboard resize,
+  local preference persistence, default reset, and exact agreement between the
+  panel edge, iframe origin, and inactive canvas-slot origin.
 - Longer mixed-operation runs on dense imported structures and actual Roll20
   interaction remain outside this local synthetic proof.
 

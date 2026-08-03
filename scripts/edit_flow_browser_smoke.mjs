@@ -211,6 +211,102 @@ async function main() {
     assert(!result.tests.editSurface.shadowEditHost, 'retired Shadow edit host is mounted');
     assert(result.tests.editSurface.layerPanel, 'layer panel is missing');
 
+    const layerPanelResizer = page.locator('[data-testid="edit-layer-panel-resizer"]');
+    await layerPanelResizer.waitFor({ state: 'visible' });
+    const readLayerPanelGeometry = () => page.evaluate(() => {
+      const panel = document.querySelector('[data-testid="edit-layer-panel"]');
+      const resizer = document.querySelector('[data-testid="edit-layer-panel-resizer"]');
+      const preview = document.querySelector('[data-testid="preview-pane"]');
+      const slot = document.querySelector('[data-testid="edit-canvas-iframe-slot"]');
+      if (![panel, resizer, preview, slot].every((node) => node instanceof HTMLElement)) {
+        return { found: false };
+      }
+      const panelRect = panel.getBoundingClientRect();
+      const resizerRect = resizer.getBoundingClientRect();
+      const previewRect = preview.getBoundingClientRect();
+      const slotRect = slot.getBoundingClientRect();
+      let storedWidth = null;
+      try {
+        const persisted = JSON.parse(localStorage.getItem('r20-ui') ?? 'null');
+        storedWidth = persisted?.state?.editLayerPanelWidth ?? null;
+      } catch {}
+      return {
+        found: true,
+        width: panelRect.width,
+        panelRight: panelRect.right,
+        resizerCenter: resizerRect.left + resizerRect.width / 2,
+        previewLeft: previewRect.left,
+        slotLeft: slotRect.left,
+        ariaNow: Number(resizer.getAttribute('aria-valuenow')),
+        storedWidth,
+      };
+    });
+    const initialLayerPanel = await readLayerPanelGeometry();
+    assert(initialLayerPanel.found, 'layer panel resize geometry is unavailable');
+    assert(
+      Math.abs(initialLayerPanel.panelRight - initialLayerPanel.previewLeft) <= 1
+        && Math.abs(initialLayerPanel.panelRight - initialLayerPanel.slotLeft) <= 1
+        && Math.abs(initialLayerPanel.panelRight - initialLayerPanel.resizerCenter) <= 1,
+      `initial layer panel and iframe origins diverged: ${JSON.stringify(initialLayerPanel)}`,
+    );
+    const resizerBox = await layerPanelResizer.boundingBox();
+    assert(resizerBox, 'layer panel resize handle has no box');
+    await page.mouse.move(resizerBox.x + resizerBox.width / 2, resizerBox.y + resizerBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(
+      resizerBox.x + resizerBox.width / 2 + 72,
+      resizerBox.y + resizerBox.height / 2,
+      { steps: 6 },
+    );
+    await page.mouse.up();
+    await page.waitForFunction((previousWidth) => {
+      const panel = document.querySelector('[data-testid="edit-layer-panel"]');
+      return panel instanceof HTMLElement
+        && panel.getBoundingClientRect().width >= Number(previousWidth) + 64;
+    }, initialLayerPanel.width);
+    const draggedLayerPanel = await readLayerPanelGeometry();
+    assert(
+      Math.abs(draggedLayerPanel.panelRight - draggedLayerPanel.previewLeft) <= 1
+        && Math.abs(draggedLayerPanel.panelRight - draggedLayerPanel.slotLeft) <= 1
+        && Math.abs(draggedLayerPanel.panelRight - draggedLayerPanel.resizerCenter) <= 1,
+      `resized layer panel and iframe origins diverged: ${JSON.stringify(draggedLayerPanel)}`,
+    );
+    assert(
+      Math.abs(draggedLayerPanel.width - draggedLayerPanel.ariaNow) <= 1
+        && Math.abs(draggedLayerPanel.width - draggedLayerPanel.storedWidth) <= 1,
+      `resized layer panel state was not persisted: ${JSON.stringify(draggedLayerPanel)}`,
+    );
+    await page.screenshot({
+      path: path.join(REPORT_DIR, 'layer-panel-resized.png'),
+      fullPage: false,
+    });
+
+    await layerPanelResizer.focus();
+    await layerPanelResizer.press('ArrowLeft');
+    await page.waitForFunction((previousWidth) => {
+      const panel = document.querySelector('[data-testid="edit-layer-panel"]');
+      return panel instanceof HTMLElement
+        && panel.getBoundingClientRect().width <= Number(previousWidth) - 15;
+    }, draggedLayerPanel.width);
+    const keyboardLayerPanel = await readLayerPanelGeometry();
+    assert(
+      Math.abs(keyboardLayerPanel.panelRight - keyboardLayerPanel.previewLeft) <= 1,
+      `keyboard-resized layer panel and iframe origins diverged: ${JSON.stringify(keyboardLayerPanel)}`,
+    );
+    await layerPanelResizer.dblclick();
+    await page.waitForFunction(() => {
+      const panel = document.querySelector('[data-testid="edit-layer-panel"]');
+      return panel instanceof HTMLElement
+        && Math.abs(panel.getBoundingClientRect().width - 248) <= 1;
+    });
+    const resetLayerPanel = await readLayerPanelGeometry();
+    result.tests.layerPanelResize = {
+      initial: initialLayerPanel,
+      dragged: draggedLayerPanel,
+      keyboard: keyboardLayerPanel,
+      reset: resetLayerPanel,
+    };
+
     await page.setViewportSize({ width: 1280, height: 720 });
     result.tests.compactMainToolbar = await page.evaluate(() => {
       const toolbar = document.querySelector('[data-testid="main-area-toolbar"]');
@@ -3970,7 +4066,7 @@ async function main() {
         `- Status: ${result.pass ? 'PASS' : 'FAIL'}`,
         `- Console errors: ${consoleErrors.length}`,
         `- Page errors: ${pageErrors.length}`,
-        '- Coverage: flow/free placement, direct on-sheet keyboard nudge and resize, canvas widget and block gallery drops, layer edge auto-scroll, layer collapse/drag-hover expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, managed visual styles, preview Roll/chat, sheet width, and the dedicated rolltemplate card editor with click/style/drop/chat synchronization plus empty-workspace template creation.',
+        '- Coverage: flow/free placement, direct on-sheet keyboard nudge and resize, resizable layer panel with synchronized iframe origin, canvas widget and block gallery drops, layer edge auto-scroll, layer collapse/drag-hover expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, managed visual styles, preview Roll/chat, sheet width, and the dedicated rolltemplate card editor with click/style/drop/chat synchronization plus empty-workspace template creation.',
         '',
       ].join('\n'),
       'utf8',

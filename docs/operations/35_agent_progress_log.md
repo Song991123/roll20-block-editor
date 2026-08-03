@@ -15,6 +15,19 @@ or source-derived measurement here.
 - Remote CI: passed safety/unit verification, lint, and production build.
 - Worktree and project server state were clean after the run.
 
+## 2026-08-03 - Resizable Layer Panel
+
+- Replaced the fixed layer-panel width with a persisted preference and an
+  accessible pointer/keyboard separator. Double click restores the default.
+- The panel grid and persistent Preview/Edit iframe use one responsive track,
+  preserving one horizontal origin when the preference or viewport changes.
+- Unit coverage checks clamping and responsive-track generation. The full
+  edit-flow browser smoke checks pointer resize, keyboard resize, persistence,
+  reset, and exact panel/iframe/slot alignment with no console or page errors.
+- All ten current modern/legacy anonymous Preview/Edit combinations remain
+  pixel-exact. This is local synthetic editor evidence, not actual Roll20
+  parity.
+
 ## 2026-08-03 - Sequential Import Render Cache Integrity
 
 - Reproduced a real cross-sheet failure in one browser session: replacing a

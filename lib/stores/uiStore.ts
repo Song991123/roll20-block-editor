@@ -14,6 +14,10 @@ import {
   SHEET_CANVAS_DEFAULT_WIDTH,
 } from '@/lib/preview/canvasDimensions';
 import { ROLL20_CHAT_PANEL_MIN_WIDTH } from '@/lib/dice/roll20ChatGeometry';
+import {
+  clampEditLayerPanelWidth,
+  EDIT_SURFACE_LAYER_PANEL_DEFAULT_WIDTH_PX,
+} from '@/lib/editor/editSurfaceLayout';
 
 export type SidebarLeftMode = 'blocks';
 export type SidebarRightTab = 'attrs' | 'code' | 'chat'; // D49 + chat (dice 굴림 결과)
@@ -83,6 +87,7 @@ export interface UiState {
 
   // Phase A — WYSIWYG 편집 모드 sub-tab.
   editSubmode: EditSubmode;
+  editLayerPanelWidth: number;
   // Phase A — 캔버스 폭 (시트 / 굴림틀 별도).
   sheetCanvasWidth: number;       // default 850
   rolltemplateCanvasWidth: number; // default 280
@@ -120,6 +125,7 @@ export interface UiState {
   setPreviewZoom: (z: PreviewZoom) => void;
   setPreviewLayer: (l: PreviewLayer) => void;
   setEditSubmode: (m: EditSubmode) => void;
+  setEditLayerPanelWidth: (px: number) => void;
   setSheetCanvasWidth: (w: number) => void;
   setRolltemplateCanvasWidth: (w: number) => void;
   setAutoSheetCanvasWidth: (w: number) => void;
@@ -153,6 +159,7 @@ const DEFAULT_STATE = {
   previewZoom: 'fit' as PreviewZoom,
   previewLayer: 'all' as PreviewLayer,
   editSubmode: 'sheet' as EditSubmode,
+  editLayerPanelWidth: EDIT_SURFACE_LAYER_PANEL_DEFAULT_WIDTH_PX,
   sheetCanvasWidth: SHEET_CANVAS_DEFAULT_WIDTH,
   rolltemplateCanvasWidth: ROLLTEMPLATE_CANVAS_DEFAULT_WIDTH,
   // Blank workspaces keep the documented fixed canvas defaults. Import
@@ -225,6 +232,9 @@ export const useUiStore = create<UiState>()(
       setPreviewZoom: (z) => set({ previewZoom: z }),
       setPreviewLayer: (l) => set({ previewLayer: l }),
       setEditSubmode: (m) => set({ editSubmode: m }),
+      setEditLayerPanelWidth: (px) => set({
+        editLayerPanelWidth: clampEditLayerPanelWidth(px),
+      }),
       setSheetCanvasWidth: (w) =>
         set({
           sheetCanvasWidth: clampCanvasWidth('sheet', w),
@@ -290,12 +300,14 @@ export const useUiStore = create<UiState>()(
         if (!merged.mainSplit || typeof merged.mainSplit.left !== 'number') {
           merged.mainSplit = { left: 50, right: 50 };
         }
+        merged.editLayerPanelWidth = clampEditLayerPanelWidth(merged.editLayerPanelWidth);
         return merged;
       },
       partialize: (s) => ({
         mainMode: s.mainMode,
         mainSplit: s.mainSplit,
         editSubmode: s.editSubmode,
+        editLayerPanelWidth: s.editLayerPanelWidth,
         sheetCanvasWidth: s.sheetCanvasWidth,
         rolltemplateCanvasWidth: s.rolltemplateCanvasWidth,
         sheetCanvasWidthAuto: s.sheetCanvasWidthAuto,

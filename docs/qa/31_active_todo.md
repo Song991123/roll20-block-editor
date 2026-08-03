@@ -103,6 +103,11 @@ belong in tracked documents.
   language, modern/legacy, and upload-rule control visible. Labels collapse to
   named icon controls with tooltips, and browser smoke checks clipping and
   horizontal overflow.
+- `DONE LOCAL`: the layer panel has a persisted 220-440px width with pointer,
+  keyboard, and default-reset controls. Its responsive track is shared with
+  the persistent iframe and inactive canvas slot. Browser coverage checks
+  248px to 320px pointer expansion, a 16px keyboard step, reset, persistence,
+  and identical panel/iframe/slot origins.
 - `DONE LOCAL`: eligible visual layers expose direct resize handles on the same
   persistent iframe surface. The iframe element follows the pointer before
   release; pointer-up writes width/height to managed CSS, removes the temporary
@@ -136,7 +141,8 @@ belong in tracked documents.
   control, result-card, Roll-button, layout, and composition presets all share
   one outer history group.
 - `PARTIAL`: continue usability review for dense imported structures, nested
-  coordinate systems, and layer-panel keyboard selection. Add longer mixed
+  coordinate systems, and layer-panel keyboard selection beyond width control.
+  Add longer mixed
   operation history runs for imported structures while keeping current local
   synthetic history coverage distinct from actual Roll20 verification.
 
