@@ -131,14 +131,14 @@ export const ADVANCED_BLOCKS: BlockDef[] = [
     type: 'r20_raw_worker',
     shape: 'stack',
     category: ADVANCED,
-    label: '직접 JS 작성 (고급)',
-    tooltip: `sheet worker JS 그대로 출력. ${WARN_RAW}`,
+    label: '자동 동작 원문 (고급)',
+    tooltip: `Roll20 자동 동작 코드를 원문 그대로 관리해요. ${WARN_RAW}`,
     init: mkInit((b) => {
-      b.appendDummyInput().appendField('직접 JS');
+      b.appendDummyInput().appendField('자동 동작 원문');
       b.appendDummyInput()
         .appendField('JS')
         .appendField(new Blockly.FieldTextInput(''), 'JS');
-      b.appendStatementInput('CHILDREN').setCheck(null).appendField('분해된 worker 블록');
+      b.appendStatementInput('CHILDREN').setCheck(null).appendField('연결된 자동 동작 블록');
       setStatementHooks(b);
     }),
     generator: (block, ctx) => {
@@ -151,10 +151,10 @@ export const ADVANCED_BLOCKS: BlockDef[] = [
     inspectorSchema: [
       {
         name: 'JS',
-        label: 'sheet worker JS',
+        label: '자동 동작 코드',
         kind: 'textarea',
         placeholder: 'on("change:foo", () => { ... });',
-        description: 'sheet worker 영역에 그대로 박힘. <script type="text/worker"> 안.',
+        description: '시트 화면에는 보이지 않고 Roll20 자동 동작으로 내보냅니다.',
       },
     ],
   },

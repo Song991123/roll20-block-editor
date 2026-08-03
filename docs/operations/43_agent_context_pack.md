@@ -96,6 +96,10 @@ contain private source evidence or historical test dumps.
   preserves it, Preview/Edit never execute or display it, and final Roll20
   `sheet.html` excludes every non-Worker script while the ZIP keeps an explicit
   non-executable text backup.
+- Raw Sheet Worker blocks derive plain-language unsupported-syntax reasons from
+  their current source. Import results expose the actual raw statement count,
+  block selection opens the matching inspector, and diagnostics never enter
+  emitted code. Structured Worker coverage remains partial.
 
 ## Always Read
 

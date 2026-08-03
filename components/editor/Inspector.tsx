@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useMemo } from 'react';
-import { MousePointerSquareDashed } from 'lucide-react';
+import { FileCode2, MousePointerSquareDashed } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { WORKSPACE_KEYS, useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { useUiStore } from '@/lib/stores/uiStore';
@@ -13,6 +13,7 @@ import {
 } from '@/lib/blockly/adapter';
 import { CATEGORIES } from '@/lib/blocks/types';
 import { categoryDisplayLabel, fieldDisplayLabel } from './fieldLabels';
+import { diagnoseRawWorkerSource } from '@/lib/import/workerDiagnostics';
 
 /**
  * Inspector — 선택된 블록의 schema 기반 자동 폼.
@@ -57,6 +58,12 @@ function BlockInspector() {
     return getBlocklyAdapter().getBlockFields(key, selectedId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId, key, htmlV, cssV, i18nV, jsV, workerV]);
+
+  const rawWorkerDiagnostics = useMemo(() => {
+    if (key !== 'worker' || snap?.type !== 'r20_raw_worker') return [];
+    const source = fields.find((field) => field.name === 'JS')?.value ?? '';
+    return diagnoseRawWorkerSource(source);
+  }, [fields, key, snap?.type]);
 
   const onFieldChange = useCallback(
     (name: string, value: string) => {
@@ -122,6 +129,29 @@ function BlockInspector() {
             </div>
           </details>
         </div>
+
+        {rawWorkerDiagnostics.length > 0 && (
+          <div
+            className="rounded-xl border border-[color-mix(in_srgb,var(--info)_35%,transparent)] bg-[var(--info-soft)] p-3.5 text-sm text-foreground"
+            data-testid="worker-raw-diagnostics"
+            role="status"
+          >
+            <div className="flex items-start gap-2.5">
+              <FileCode2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--info)]" aria-hidden="true" />
+              <div className="min-w-0">
+                <div className="font-semibold">원문으로 보관 중</div>
+                <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[var(--text-secondary)]">
+                  {rawWorkerDiagnostics.map((diagnostic) => (
+                    <li key={diagnostic.code}>{diagnostic.message}</li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs leading-relaxed text-[var(--text-secondary)]">
+                  시트 화면에는 나타나지 않으며, 내보낼 때 Roll20 자동 동작 코드로 들어가요.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {fields.length === 0 ? (
           <div className="rounded-xl border border-dashed border-[var(--border-strong)] bg-[var(--bg-elevated-2)] p-3.5 text-sm leading-relaxed text-[var(--text-secondary)]">

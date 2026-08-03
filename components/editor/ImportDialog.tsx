@@ -115,6 +115,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     i18nKeys: number;
     pageJsBlocks: number;
     workerBlocks: number;
+    workerRawStatements: number;
     templateMarkerCount: number;
     warnings: number;
     sanitizeDropped: number;
@@ -240,6 +241,10 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         i18nKeys: result.stats.i18nKeys,
         pageJsBlocks: jsBlocks,
         workerBlocks: workerSource.replaced ? workerSource.targetCount : workerMove.targetCount,
+        workerRawStatements: Math.max(
+          result.stats.scriptStatementsRaw,
+          workerSource.rawStatementCount,
+        ),
         templateMarkerCount: result.stats.templateMarkerCount,
         warnings: result.warnings.length,
         sanitizeDropped: result.stats.sanitizeDropped,
@@ -493,6 +498,11 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
               <div>
                 JS 블록: 보관 <span className="tabular-nums">{report.pageJsBlocks}</span> · 자동 동작{' '}
                 <span className="tabular-nums">{report.workerBlocks}</span>
+              </div>
+            )}
+            {report.workerRawStatements > 0 && (
+              <div className="mt-1 text-amber-500" data-testid="import-worker-raw-warning">
+                자동 동작 코드 {report.workerRawStatements}곳은 아직 작은 블록으로 나누지 못해 원문으로 보관했습니다. 코드는 사라지지 않으며 자동 동작 탭에서 직접 확인할 수 있습니다.
               </div>
             )}
             {report.wideRowBundles > 0 && (

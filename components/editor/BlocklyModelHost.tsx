@@ -49,6 +49,7 @@ export default function BlocklyModelHost({ visible, renderSvg }: Props) {
   const serializedRef = useRef<Partial<Record<WorkspaceKey, string>>>({});
   const renderer = useSettingsStore((s) => s.blocklyRenderer);
   const bumpStructure = useWorkspaceStore((s) => s.bumpStructure);
+  const setSelectedBlockId = useWorkspaceStore((s) => s.setSelectedBlockId);
   const activeWorkspace = useWorkspaceStore((s) => s.activeWorkspace);
   const appendBlock = useWorkspaceStore((s) => s.appendBlockToActive);
   const [dragOver, setDragOver] = useState(false);
@@ -108,12 +109,14 @@ export default function BlocklyModelHost({ visible, renderSvg }: Props) {
       // with a sub-microsecond version bump.
       //
       // Old listener: ran `Blockly.Xml.workspaceToDom + domToText` on EVERY
-      //   Blockly event (UI clicks, viewport pans, selection changes, etc.) —
+      //   Blockly mutation event (plus UI clicks, viewport pans, selection
+      //   changes, etc.) —
       //   serializing the full workspace at 4500 blocks ≈ 50-200ms per event,
       //   easily 5-15 longtasks per interactive second.
       // New listener:
-      //   (a) Filter to MUTATION events only (BLOCK_CHANGE/CREATE/DELETE/MOVE
-      //       + VAR_* + COMMENT_*). UI / viewport / selection events bypass.
+      //   (a) Filter serialization/version work to MUTATION events only
+      //       (BLOCK_CHANGE/CREATE/DELETE/MOVE + VAR_* + COMMENT_*).
+      //       Selection only updates the external inspector id.
       //   (b) No serialize — just `getAllBlocks(false).length` (single O(N)
       //       tree walk, < 0.5ms at 4500 blocks) + bumpStructure (counter++).
       //   (c) Coalesce bursts (Blockly fires CREATE+MOVE+CHANGE together for a
@@ -128,6 +131,14 @@ export default function BlocklyModelHost({ visible, renderSvg }: Props) {
       const listener = (ev?: Blockly.Events.Abstract) => {
         if (ws.rendered && (ws as Blockly.WorkspaceSvg).isDragging()) return;
         if (!ev) return;
+        if (ev.type === Blockly.Events.SELECTED) {
+          const selection = ev as Blockly.Events.Selected;
+          const nextId = selection.newElementId ?? null;
+          if (!nextId || ws.getBlockById(nextId)) {
+            setSelectedBlockId(nextId, 'tree');
+          }
+          return;
+        }
         // Snap SFX — preserved (drag-end BLOCK_MOVE with parent change).
         if (ev.type === Blockly.Events.BLOCK_MOVE) {
           const mv = ev as Blockly.Events.BlockMove;
@@ -205,7 +216,7 @@ export default function BlocklyModelHost({ visible, renderSvg }: Props) {
       }
       wsRef.current = {};
     };
-  }, [renderer, renderSvg, bumpStructure]);
+  }, [renderer, renderSvg, bumpStructure, setSelectedBlockId]);
 
   // visible 또는 activeWorkspace 변경 → 활성 워크스페이스 svgResize.
   // 컨테이너 크기가 변하면 (off-screen 1px → fill) Blockly 가 자동 측정 안 함 → 명시 호출 필요.

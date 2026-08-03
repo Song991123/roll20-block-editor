@@ -128,8 +128,15 @@ belong in tracked documents.
   ordinary/data script tags remain in authored source and are copied exactly
   into the ZIP's non-executable `unsupported-script-source.txt`. Export shows a
   non-blocking warning and plain-language conversion path to automatic actions.
-- `TODO`: expand structured Sheet Worker blocks and diagnostics for unsupported
-  Worker syntax. Raw Worker source remains the lossless fallback meanwhile.
+- `DONE LOCAL`: unsupported Sheet Worker statements now show a plain-language
+  reason in both the import result and the selected raw-code inspector. The
+  diagnostics are derived from the current source, never stored in or emitted
+  with it. Browser coverage confirms that the preserved code remains hidden
+  from the sheet canvas and returns to Roll20 output. Blockly selection now
+  updates the matching inspector without serializing the workspace.
+- `TODO`: expand structured Sheet Worker blocks beyond the current parser and
+  runtime subset. Raw Worker source remains the lossless fallback meanwhile;
+  diagnostics do not make unsupported syntax structurally editable.
 
 ## P0 - Edit And Preview Unity
 

@@ -144,6 +144,7 @@ export function replaceWorkerWorkspaceFromSourceHtml(html: string): {
   replaced: boolean;
   scriptCount: number;
   targetCount: number;
+  rawStatementCount: number;
 } {
   const scripts = extractRoll20WorkerScripts(html);
   if (scripts.length === 0) {
@@ -151,11 +152,13 @@ export function replaceWorkerWorkspaceFromSourceHtml(html: string): {
       replaced: false,
       scriptCount: 0,
       targetCount: getBlocklyAdapter().countBlocks('worker'),
+      rawStatementCount: 0,
     };
   }
   const adapter = getBlocklyAdapter();
   const sourceBodies = scripts.map((script) => script.body);
   const parsed = scripts.map((script) => parseSheetWorkerScript(script.body));
+  const rawStatementCount = parsed.reduce((total, result) => total + result.stats.unparsed, 0);
   const parsedXml =
     parsed.length > 0 && parsed.every((result) => result.blocks.length > 0 && result.stats.unparsed === 0)
       ? buildParsedWorkerXml(parsed.flatMap((result) => result.blocks))
@@ -178,6 +181,7 @@ export function replaceWorkerWorkspaceFromSourceHtml(html: string): {
     replaced: true,
     scriptCount: scripts.length,
     targetCount: adapter.countBlocks('worker'),
+    rawStatementCount,
   };
 }
 

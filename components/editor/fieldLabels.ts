@@ -24,6 +24,7 @@ export const FIELD_LABELS: Record<string, string> = {
   TYPE: '종류',
   FORMULA: '굴림식',
   MESSAGE: '보낼 내용',
+  JS: '코드 원문',
   KEY: '키',
   LANG: '언어',
   MIN: '최솟값',

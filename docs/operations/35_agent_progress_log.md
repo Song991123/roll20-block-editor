@@ -16,6 +16,28 @@ or source-derived measurement here.
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
 
+## 2026-08-03 - Raw Worker Diagnostics And Block Selection
+
+- Traced both raw-code paths: explicitly unsupported statements and the
+  whole-source fallback used when structured re-emission could change authored
+  code. Existing import totals missed a fully unsupported Worker body even
+  though the Worker workspace preserved it.
+- Added source-derived, read-only reasons for multi-event handlers, selection
+  branches, error handling, async flow, unsupported loops, declarations,
+  advanced Roll20 API shapes, and generic raw statements. Parseable code kept
+  in a raw block is described as a user-managed source choice.
+- Import results now use the actual Worker workspace parse count. Selecting a
+  Blockly block also updates the external inspector; selection still performs
+  no workspace serialization or structure-version work.
+- Worker parser and diagnostic tests, import structure tests, production build,
+  import-dialog browser smoke, Worker workspace smoke, and full edit-flow smoke
+  pass. The browser run covers import warning, real Blockly selection, reason
+  display, hidden preview runtime nodes, source emission, and zero console/page
+  errors.
+- Claim boundary: diagnostics and selection are complete for the current local
+  synthetic paths. Structured Worker syntax/runtime coverage remains partial,
+  and this batch adds no actual Roll20-screen evidence.
+
 ## 2026-08-03 - First-Run Direct Edit Canvas
 
 - Reproduced a product-priority mismatch on a clean browser: the technical

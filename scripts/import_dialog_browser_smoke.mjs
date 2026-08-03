@@ -262,6 +262,44 @@ async function main() {
     });
     assert(/<script\s+type=["']text\/worker/i.test(workerJs.html), 'worker JS was not retained in the export HTML boundary');
     assert(previewRuntime.visibleRuntimeNodeCount === 0, `runtime node became visible in preview: ${JSON.stringify(previewRuntime)}`);
+
+    const unsupportedWorker = 'on("change:hp change:mp", function () { setAttrs({ total: 1 }); });';
+    await page.locator('[data-testid="import-js-textarea"]').fill(unsupportedWorker);
+    await clickConvert();
+    await page.waitForSelector('[data-testid="import-worker-raw-warning"]', {
+      state: 'visible',
+      timeout: 20000,
+    });
+    const workerRawWarning = await page.getByTestId('import-worker-raw-warning').innerText();
+    assert(workerRawWarning.includes('원문으로 보관'), 'import result hides raw Worker preservation');
+    await page.waitForFunction(
+      (source) => window.__perfHook.getEmitContent().worker.includes(source),
+      unsupportedWorker,
+      { timeout: 20000 },
+    );
+
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('[data-testid="import-dialog"]', { state: 'detached', timeout: 5000 });
+    await page.evaluate(() => window.__perfHook.setMainMode('assemble'));
+    await page.getByTestId('main-workspace-worker').click();
+    const rawWorkerId = await page.evaluate(
+      () => window.__perfHook.getBlockGraph('worker').find((block) => block.type === 'r20_raw_worker')?.id ?? null,
+    );
+    assert(rawWorkerId, 'raw Worker block is missing after unsupported import');
+    const rawWorkerBlock = page.locator(`#bl-host-worker .blocklyDraggable[data-id="${rawWorkerId}"]`);
+    await rawWorkerBlock.waitFor({ state: 'visible', timeout: 15000 });
+    await rawWorkerBlock.click({ position: { x: 6, y: 6 } });
+    await page.waitForFunction(
+      (blockId) => window.__perfHook.getSelectedBlockId() === blockId,
+      rawWorkerId,
+      { timeout: 10000 },
+    );
+    await page.getByTestId('tab-attrs').click();
+    const rawDiagnostics = page.getByTestId('worker-raw-diagnostics');
+    await rawDiagnostics.waitFor({ state: 'visible', timeout: 15000 });
+    const rawDiagnosticsText = await rawDiagnostics.innerText();
+    assert(rawDiagnosticsText.includes('여러 감지 조건'), 'raw Worker inspector hides the unsupported syntax reason');
+    assert(rawDiagnosticsText.includes('시트 화면에는 나타나지 않으며'), 'raw Worker inspector hides runtime placement');
     assert(consoleErrors.length === 0, `console errors: ${consoleErrors.join(' | ')}`);
     assert(pageErrors.length === 0, `page errors: ${pageErrors.join(' | ')}`);
 
@@ -273,6 +311,7 @@ async function main() {
         externalJs: {
           pageWorkspace: pageJs.js.includes('r20ExternalPageProbe'),
           workerWorkspace: workerJs.worker.includes('external_worker_probe'),
+          rawWorkerDiagnostic: rawDiagnosticsText,
           workerExportedToHtml: /<script\s+type=["']text\/worker/i.test(workerJs.html),
           previewRuntime,
           exportScriptBoundary,

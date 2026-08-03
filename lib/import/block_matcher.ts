@@ -664,7 +664,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
         if (parsed.stats.unparsed > 0) {
           ctx.warnings.push({
             code: 'sheet_worker_partial',
-            message: `<script> 본문의 ${parsed.stats.unparsed} 개 statement 가 sheet_worker 카탈로그에 매칭되지 않음 — raw_worker 단편으로 fallback`,
+            message: `자동 동작 코드 ${parsed.stats.unparsed}곳은 아직 개별 블록으로 나누지 못해 원문으로 보관했습니다.`,
             hint: `matched=${parsed.stats.matched} raw=${parsed.stats.unparsed}`,
           });
         }
