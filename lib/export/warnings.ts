@@ -11,6 +11,10 @@
  */
 
 import type { EmitWarning } from '@/lib/stores/workspaceStore';
+import {
+  analyzeRepeatingSections,
+  describeRepeatingSectionIssue,
+} from '@/lib/validation/repeatingSections';
 import type { EmitOutput } from './types';
 import { parseTranslationMap, stripUnsupportedPageScripts } from './payload';
 
@@ -26,6 +30,7 @@ const CODE = {
   IMPORT_RULE: `${PREFIX}css.import`,
   LARGE_TEMPLATE: `${PREFIX}html.large_rolltemplate`,
   DUPLICATE_REPEATING_SECTION: `${PREFIX}html.duplicate_repeating_section`,
+  INVALID_REPEATING_SECTION_NAME: `${PREFIX}html.invalid_repeating_section_name`,
   EMPTY_TRANSLATION: `${PREFIX}i18n.empty`,
   TRANSLATION_PARSE: `${PREFIX}i18n.parse`,
   EMPTY_HTML: `${PREFIX}html.empty`,
@@ -133,12 +138,13 @@ export function analyzeEmit(out: EmitOutput): EmitWarning[] {
     });
   }
 
-  if (hasDuplicateRepeatingSection(roll20Html)) {
+  for (const issue of analyzeRepeatingSections(roll20Html)) {
     found.push({
-      severity: 'warning',
-      code: CODE.DUPLICATE_REPEATING_SECTION,
-      message:
-        '같은 반복 목록이 HTML에 두 번 이상 있습니다. Roll20에서는 순서를 바꾼 뒤 두 번째 목록의 표시값이 어긋날 수 있습니다. 같은 목록은 한 곳에서 편집하고 실제 Roll20에서 다시 확인하세요.',
+      severity: 'error',
+      code: issue.code === 'duplicate-name'
+        ? CODE.DUPLICATE_REPEATING_SECTION
+        : CODE.INVALID_REPEATING_SECTION_NAME,
+      message: describeRepeatingSectionIssue(issue),
       blockId: null,
     });
   }
@@ -199,23 +205,6 @@ function measureRollTemplateBytes(html: string): number {
     total += new TextEncoder().encode(m[1]).length;
   }
   return total;
-}
-
-function hasDuplicateRepeatingSection(html: string): boolean {
-  const seen = new Set<string>();
-  const fieldsetRe = /<fieldset\b[^>]*>/gi;
-  let fieldset: RegExpExecArray | null;
-  while ((fieldset = fieldsetRe.exec(html))) {
-    const classMatch = /\bclass\s*=\s*(["'])(.*?)\1/i.exec(fieldset[0]);
-    if (!classMatch) continue;
-    for (const token of classMatch[2].split(/\s+/)) {
-      if (!/^repeating_[\w-]+$/i.test(token)) continue;
-      const normalized = token.toLowerCase();
-      if (seen.has(normalized)) return true;
-      seen.add(normalized);
-    }
-  }
-  return false;
 }
 
 /**

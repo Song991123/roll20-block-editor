@@ -134,6 +134,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     workerRawStatements: number;
     templateMarkerCount: number;
     warnings: number;
+    errors: number;
     sanitizeDropped: number;
     wideRowBundles: number;
     wideRowCollapsed: number;
@@ -244,6 +245,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       workspaceStore.markSaved('js');
       workspaceStore.markSaved('worker');
 
+      const importErrorCount = result.warnings.filter(({ severity }) => severity === 'error').length;
       setReport({
         coverage: result.stats.coverage,
         cssCoverage: result.stats.cssCoverage,
@@ -263,6 +265,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         ),
         templateMarkerCount: result.stats.templateMarkerCount,
         warnings: result.warnings.length,
+        errors: importErrorCount,
         sanitizeDropped: result.stats.sanitizeDropped,
         wideRowBundles: result.stats.wideRowBundles ?? 0,
         wideRowCollapsed: result.stats.wideRowCollapsed ?? 0,
@@ -279,10 +282,17 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
           { duration: 4500 },
         );
       }
-      toast.success(
-        `불러오기 완료: HTML ${result.stats.htmlCoverage}% · CSS ${result.stats.cssCoverage}% · 원본 보존 ${result.stats.htmlRawFallback + result.stats.cssRawFallback}개`,
-        { duration: 3500 },
-      );
+      if (importErrorCount > 0) {
+        toast.error(
+          `불러오기는 완료됐지만 Roll20에 올리기 전 수정할 구조가 ${importErrorCount}개 있습니다.`,
+          { duration: 5000 },
+        );
+      } else {
+        toast.success(
+          `불러오기 완료: HTML ${result.stats.htmlCoverage}% · CSS ${result.stats.cssCoverage}% · 원본 보존 ${result.stats.htmlRawFallback + result.stats.cssRawFallback}개`,
+          { duration: 3500 },
+        );
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       toast.dismiss(progressToastId);
@@ -537,11 +547,21 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
               </div>
             )}
             {report.warnings > 0 && (
-              <details className="mt-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-2.5 py-2 text-amber-500" data-testid="import-warning-details">
-                <summary className="cursor-pointer font-medium">확인할 항목 {report.warnings}건</summary>
+              <details
+                className={report.errors > 0
+                  ? 'mt-2 rounded-lg border border-red-500/35 bg-red-500/5 px-2.5 py-2 text-red-500'
+                  : 'mt-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-2.5 py-2 text-amber-500'}
+                data-testid="import-warning-details"
+              >
+                <summary className="cursor-pointer font-medium">
+                  {report.errors > 0
+                    ? `수정이 필요한 항목 ${report.errors}건`
+                    : `확인할 항목 ${report.warnings}건`}
+                </summary>
                 <ul className="mt-2 space-y-1 pl-4 text-xs leading-relaxed">
                   {report.warningDetails.map((warning, index) => (
                     <li key={`${warning.workspace ?? 'general'}-${warning.severity}-${index}`}>
+                      {warning.severity === 'error' && <strong>[수정 필요] </strong>}
                       {warning.message}
                     </li>
                   ))}

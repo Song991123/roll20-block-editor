@@ -8,14 +8,16 @@ belong in tracked documents.
 
 ## P0 - Roll20 Render Truth
 
-- `PARTIAL ACTUAL SYNTHETIC`: fresh owner-only modern and legacy destinations
-  persisted the anonymous repeating-section payload with exact HTML/CSS,
-  semantically matching translation, and the expected compatibility mode.
-  Worker initialization, value changes, calculated totals, and deletion
-  synchronized across both rendered instances. Modern reorder changed the
-  shared row IDs in both instances, but Roll20 did not rebind the second
-  instance's displayed values to the new order. Legacy reorder remains
-  unverified after its compatibility sanitizer flattened unsupported wrappers.
+- `DONE DIAGNOSTIC / VERIFY VALID ACTUAL`: the earlier owner-only modern and
+  legacy repeating experiment used duplicate same-name fieldsets. Roll20's
+  documented contract requires every repeating name to be unique and forbids
+  underscores after `repeating_`, so that run is retained only as an
+  invalid-input diagnostic and is not parity evidence. Import now preserves
+  either invalid structure with a visible error, while export blocks the
+  payload. The corrected seven-fixture anonymous suite passes modern and legacy
+  local pre-upload gates; fresh valid Roll20 upload and screenshot proof remain
+  `VERIFY` because Chrome extension communication timed out before participant
+  preflight and no room was opened or changed.
 - `DONE LOCAL / VERIFY ACTUAL PIXELS`: the shared legacy Preview/Edit contract
   now applies the observed Roll20 HTML allow-list as well as legacy CSS
   sanitizing. Unsupported semantic wrappers are removed while supported
@@ -134,9 +136,9 @@ belong in tracked documents.
 - `DONE LOCAL`: modern Sandbox CSS preparation drops a blocked inline data URL
   without rejecting unrelated declarations or the rest of the stylesheet.
   Quoted CSS grammar such as `@property` angle syntax remains valid, while
-  script URLs and unquoted markup still reject the stylesheet. All six current
-  anonymous fixtures pass a fresh modern pre-upload run. This is preparation
-  evidence only; the actual Sandbox upload remains blocked above.
+  script URLs and unquoted markup still reject the stylesheet. All seven
+  current anonymous fixtures pass fresh modern and legacy pre-upload runs. This
+  is preparation evidence only; fresh actual upload proof remains open above.
 - `DONE LOCAL`: executable ordinary scripts use a separate inert source
   workspace with source-order slots. Preview/Edit remove them from the visual
   runtime. Final Roll20 `sheet.html` keeps only Sheet Worker scripts; excluded
@@ -171,15 +173,14 @@ belong in tracked documents.
   `removeRepeatingRow`. Browser state proof covers full, section-field,
   section-wide, and plain-field change aliases plus lowercased source state and
   `removedInfo` for both player and Worker deletion.
-- `PARTIAL`: duplicate fieldsets with the same repeating section share
-  row IDs, values, and order. Repeating handlers resolve row-context shorthand
-  for `getAttrs` and `setAttrs`; drag reorder persists
-  `_reporder_repeating_*`, dispatches `change:_reporder:*`, and stays synchronized
-  across every same-name instance. The browser smoke also guards against the
-  pointer-capture rollback found when a dragged row moved in the DOM. This is
-  local simulator behavior: actual Roll20 can leave a second instance's
-  displayed values stale after reorder. Export now warns about that structure;
-  a Roll20-safe mirror design remains TODO.
+- `DONE LOCAL / VERIFY ACTUAL`: valid repeating sections use one unique
+  `repeating_*` fieldset, and handlers resolve row-context shorthand for
+  `getAttrs` and `setAttrs`. Drag reorder persists `_reporder_repeating_*`,
+  dispatches `change:_reporder:*`, and guards against the pointer-capture
+  rollback found when a dragged row moves in the DOM. Duplicate same-name
+  fieldsets and names containing an extra underscore remain losslessly
+  editable for repair, but import marks them as errors and export blocks them.
+  Fresh actual proof for the corrected valid payload remains open.
 - `TODO`: expand structured Sheet Worker blocks beyond the current parser and
   runtime subset. Raw Worker source remains the lossless fallback meanwhile;
   diagnostics do not make unsupported syntax structurally editable. Arbitrary

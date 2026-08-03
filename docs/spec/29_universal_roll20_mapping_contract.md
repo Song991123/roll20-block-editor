@@ -80,13 +80,15 @@ Repeating-section runtime contract:
   live in sibling `repcontainer[data-groupname]` and
   `repcontrol[data-groupname]` nodes; each row is a
   `repitem[data-reprowid]`. This structure follows Roll20's documented
-  [repeating-section model](https://wiki.roll20.net/Character_Sheet_Development/Repeating_Section).
+  [sheet-development contract](https://help.roll20.net/hc/en-us/articles/360037773413-Intro-to-Sheet-Development).
 - Adding a row clones the template and rewrites `attr_`, `roll_`, and `act_`
   names with the repeating group and row ID. The source template itself must
   not be read as a live character attribute.
-- Multiple fieldsets with the same repeating group are alternate views of one
-  row set. Every instance uses the same row IDs, values, and display order;
-  fields present in only one instance still belong to that shared row.
+- Every repeating section name must be unique, and the name after
+  `repeating_` must not contain another underscore. Import preserves an invalid
+  duplicate or underscored section so the user can repair it, but reports a
+  blocking error and export must not produce an upload payload until it is
+  fixed.
 - `setAttrs` with a full repeating attribute may create a missing row.
   `generateRowID`, `getSectionIDs`, and `removeRepeatingRow` operate on the same
   runtime row set.
@@ -97,10 +99,10 @@ Repeating-section runtime contract:
   `change:repeating_group:field` alias, the `change:repeating_group` alias, and
   the plain field plus `_max` aliases. Removal includes the full lowercased
   source attribute and `removedInfo`, and may be observed by section or row ID.
-- Reordering every same-name instance together persists
-  `_reporder_repeating_group` and dispatches `change:_reporder:group`. The local
-  simulator stores the complete current display order. Browser proof covers the
-  local contract; actual Roll20 upload proof remains a separate gate.
+- Reordering a valid section persists `_reporder_repeating_group` and dispatches
+  `change:_reporder:group`. The local simulator stores the complete current
+  display order. Browser proof covers the local contract; actual Roll20 upload
+  proof remains a separate gate.
 
 Untyped script compatibility:
 

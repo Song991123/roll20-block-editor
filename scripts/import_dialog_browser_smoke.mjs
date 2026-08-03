@@ -164,6 +164,31 @@ async function main() {
       `fallback CSS did not reach the preview surface: ${computedSheetColor}`,
     );
 
+    await page.getByRole('tab', { name: 'HTML' }).click();
+    const htmlTextarea = page.locator('[data-testid="import-dialog"] [data-state="active"] textarea');
+    await htmlTextarea.fill([
+      '<fieldset class="repeating_items"><input name="attr_item_name"></fieldset>',
+      '<fieldset class="repeating_items"><input name="attr_item_name"></fieldset>',
+    ].join(''));
+    await clickConvert();
+    await page.waitForFunction(
+      () => document.querySelector('[data-testid="import-warning-details"] summary')?.textContent?.includes('수정이 필요한 항목 1건'),
+      null,
+      { timeout: 20000 },
+    );
+    assert(
+      (await page.getByTestId('import-warning-details').innerText()).includes('[수정 필요]'),
+      'invalid repeating structure is not visible as a required fix',
+    );
+
+    await htmlTextarea.fill(html);
+    await clickConvert();
+    await page.waitForFunction(
+      () => document.querySelector('[data-testid="import-warning-details"] summary')?.textContent?.includes('확인할 항목'),
+      null,
+      { timeout: 20000 },
+    );
+
     await page.getByRole('tab', { name: 'JS' }).click();
     await page.locator('[data-testid="import-js-textarea"]').fill('window.r20ExternalPageProbe = true;');
     await clickConvert();

@@ -55,7 +55,8 @@ contain private source evidence or historical test dumps.
 - Modern Sandbox CSS preparation drops blocked inline data URLs before the
   unsafe-token audit. Quoted CSS grammar remains intact, but script URLs and
   unquoted markup still reject the stylesheet. The current anonymous
-  six-fixture pre-upload gate passes; this is not actual-screen evidence.
+  seven-fixture pre-upload gate passes in both compatibility modes; this is not
+  actual-screen evidence.
 - The empty Edit surface is an explicit gallery drop target. Before the first
   iframe exists, it maps the pointer to the centered configured sheet canvas;
   friendly cards keep their preset and managed CSS instead of falling through
@@ -105,16 +106,15 @@ contain private source evidence or historical test dumps.
   completion behavior are covered. The shared iframe also turns repeating
   templates into Roll20-shaped rows and locally proves Add, Modify/Done,
   player/Worker deletion, row creation APIs, all documented field/section
-  change aliases, and `removedInfo`. Duplicate same-name fieldsets share rows,
-  values, and order; row-context shorthand and synchronized drag reorder with
-  `_reporder` events pass local browser proof. Fresh owner-only modern and
-  legacy checks confirm Worker initialization, value/total changes, and
-  deletion. Actual Roll20 can leave the second same-name instance's displayed
-  values stale after reorder, so export warns and duplicate-view reorder
-  remains partial. Actual legacy Roll20 also removes unsupported semantic
-  wrappers; local legacy Preview/Edit now applies the same allow-list
-  transform. Legacy reorder, normalized full-height comparison, and broader
-  Worker syntax remain open.
+  change aliases, row-context shorthand, `_reporder` events, and `removedInfo`
+  for valid unique sections. Roll20 requires each `repeating_*` name to be
+  unique and forbids an additional underscore in the section name. Import
+  preserves violations for repair but reports an error, and export blocks the
+  upload payload. An earlier owner-only duplicate-section experiment is only
+  invalid-input diagnostic evidence, not parity proof. Actual legacy Roll20
+  also removes unsupported semantic wrappers; local legacy Preview/Edit now
+  applies the same allow-list transform. A fresh valid actual repeating run,
+  normalized full-height comparison, and broader Worker syntax remain open.
 - ImportDialog waits for every Blockly model workspace before hydration. Keep
   the cold-load early-click browser check; analysis percentages alone do not
   prove blocks were applied.

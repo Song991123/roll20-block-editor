@@ -405,15 +405,6 @@ const files = {
     '        <div class="sheet-runtime-row">',
     '          <label><span data-i18n="item_name"></span><input type="text" name="attr_item_name" value="New item"></label>',
     '          <label><span data-i18n="item_qty"></span><input type="number" name="attr_item_qty" value="1"></label>',
-    '        </div>',
-    '      </fieldset>',
-    '    </section>',
-    '    <section class="sheet-repeating-pane sheet-summary-view">',
-    '      <h4 data-i18n="summary_view"></h4>',
-    '      <fieldset class="repeating_items">',
-    '        <div class="sheet-runtime-row sheet-summary-row">',
-    '          <label><span data-i18n="item_name"></span><input type="text" name="attr_item_name" value="New item" readonly></label>',
-    '          <label><span data-i18n="item_qty"></span><input type="number" name="attr_item_qty" value="1" readonly></label>',
     '          <label><span data-i18n="item_total"></span><input type="number" name="attr_item_total" value="2" readonly></label>',
     '        </div>',
     '      </fieldset>',
@@ -458,18 +449,16 @@ const files = {
   'fixture-G/source.css': [
     '.sheet-repeating-runtime-proof { background: #fffafc; border: 2px solid #b94c78; box-sizing: border-box; color: #3b2730; }',
     '.sheet-repeating-runtime-proof h3 { margin: 0 0 14px; color: #9f3158; }',
-    '.sheet-repeating-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }',
+    '.sheet-repeating-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }',
     '.sheet-repeating-pane { min-width: 0; padding: 12px; border: 1px solid #e7b5c6; background: #ffffff; }',
     '.sheet-repeating-pane h4 { margin: 0 0 10px; }',
-    '.sheet-runtime-row { display: grid; grid-template-columns: minmax(0, 1fr) 76px; gap: 8px; align-items: end; margin-bottom: 8px; }',
-    '.sheet-summary-row { grid-template-columns: minmax(0, 1fr) 62px 62px; }',
+    '.sheet-runtime-row { display: grid; grid-template-columns: minmax(0, 1fr) 76px 76px; gap: 8px; align-items: end; margin-bottom: 8px; }',
     '.sheet-runtime-row label, .sheet-runtime-row span { display: block; min-width: 0; }',
     '.sheet-runtime-row input { box-sizing: border-box; width: 100%; margin: 4px 0 0; }',
   ].join('\n'),
   'fixture-G/source.i18n': JSON.stringify({
     runtime_title: 'Repeating runtime',
     primary_view: 'Editable rows',
-    summary_view: 'Shared summary',
     item_name: 'Name',
     item_qty: 'Qty',
     item_total: 'Total',
@@ -478,28 +467,28 @@ const files = {
     id: 'fixture-G',
     synthetic: true,
     legacyMode: 'modern',
-    purpose: 'duplicate repeating views, row context, and reorder regression',
+    purpose: 'valid repeating rows, row context, and reorder regression',
     sandboxPreparationExpectation: 'change',
     expected: {
       normal: {
         controlValues: { attr_repeat_ready: 'yes' },
-        minimumTagCounts: { fieldset: 2, section: 2, input: 16 },
-        visibleI18nKeys: ['runtime_title', 'primary_view', 'summary_view', 'item_name', 'item_qty', 'item_total'],
+        minimumTagCounts: { fieldset: 1, section: 1, input: 12 },
+        visibleI18nKeys: ['runtime_title', 'primary_view', 'item_name', 'item_qty', 'item_total'],
         visibleTextFragments: ['Repeating runtime'],
         ordinaryScriptCount: 0,
       },
       sandbox: {
         controlValues: { attr_repeat_ready: 'yes' },
-        minimumTagCounts: { fieldset: 2, input: 16 },
+        minimumTagCounts: { fieldset: 1, input: 12 },
         maximumTagCounts: { section: 0 },
-        visibleI18nKeys: ['runtime_title', 'primary_view', 'summary_view', 'item_name', 'item_qty', 'item_total'],
+        visibleI18nKeys: ['runtime_title', 'primary_view', 'item_name', 'item_qty', 'item_total'],
         visibleTextFragments: ['Repeating runtime'],
         ordinaryScriptCount: 0,
       },
     },
     actualInteraction: {
       repeatingGroup: 'repeating_items',
-      duplicateInstances: 2,
+      duplicateInstances: 1,
       initialRowsPerInstance: 2,
       expectedNames: ['First item', 'Second item'],
       quantityChange: { rowName: 'Second item', value: '3', expectedTotal: '6' },
@@ -690,8 +679,8 @@ async function main() {
       throw new Error(`native input expectation helper rejected valid state: ${nativeInputExpectationFailures.join(', ')}`);
     }
     const repeatingHtml = files['fixture-G/source.html'];
-    if ((repeatingHtml.match(/<fieldset class="repeating_items">/g) ?? []).length !== 2) {
-      throw new Error('shared repeating fixture duplicate fieldsets missing');
+    if ((repeatingHtml.match(/<fieldset class="repeating_items">/g) ?? []).length !== 1) {
+      throw new Error('valid repeating fixture fieldset missing');
     }
     if (!repeatingHtml.includes('repeating_items_item_total')) {
       throw new Error('shared repeating fixture row-context write missing');
@@ -700,7 +689,7 @@ async function main() {
       throw new Error('shared repeating fixture reorder event missing');
     }
     const repeatingManifest = JSON.parse(files['fixture-G/manifest.json']);
-    if (repeatingManifest.actualInteraction?.duplicateInstances !== 2) {
+    if (repeatingManifest.actualInteraction?.duplicateInstances !== 1) {
       throw new Error('shared repeating fixture interaction contract missing');
     }
     console.log('VISUAL SYNTHETIC FIXTURE SELF-TEST PASS');

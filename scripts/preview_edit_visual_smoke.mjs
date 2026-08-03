@@ -1169,15 +1169,17 @@ async function main() {
       entry.editOverlay = entry.editCapture.overlay;
       entry.editSignature = entry.editCapture.signature;
       entry.domSignatureParity = compareSheetSignatures(entry.previewSignature, entry.editSignature);
-      const expectedNormal = fixture.expected?.normal ?? fixture.expected;
+      const expectedForMode = compatibilityMode === 'legacy'
+        ? fixture.expected?.sandbox ?? fixture.expected?.normal ?? fixture.expected
+        : fixture.expected?.normal ?? fixture.expected;
       const previewExpectationFailures = fixtureExpectationFailures(
         entry.previewSignature,
-        expectedNormal,
+        expectedForMode,
         entry.previewTranslations,
       );
       const editExpectationFailures = fixtureExpectationFailures(
         entry.editSignature,
-        expectedNormal,
+        expectedForMode,
         entry.editTranslations,
       );
       entry.previewExpectation = {

@@ -16,12 +16,35 @@ or source-derived measurement here.
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
 
+## 2026-08-03 - Valid Repeating Contract And Pre-Upload Gate
+
+- Reclassified the earlier duplicate same-name repeating experiment as an
+  invalid-input diagnostic. Roll20 requires a unique `repeating_*` name per
+  fieldset and forbids another underscore in the section name; it is not a
+  supported alternate-view contract.
+- Import keeps invalid authored sections editable but reports a visible error.
+  Export now blocks duplicate and underscored names instead of emitting a
+  non-blocking warning. The normal anonymous visual matrix uses one valid
+  repeating fieldset.
+- The Preview/Edit visual gate now selects the matching modern or legacy HTML
+  expectation. Seven anonymous fixtures across both modes pass with exact DOM,
+  computed style, geometry, and zero mismatched pixels. Fresh modern and legacy
+  pre-upload runs pass all seven local checks.
+- `lint`, production `build`, full `ci:verify`, ImportDialog browser smoke, and
+  the fourteen-pair Preview/Edit visual smoke pass on the final code. Import
+  validation reuses the existing parsed DOM instead of parsing large HTML a
+  second time.
+- Chrome extension communication timed out before participant preflight. No
+  Roll20 room was opened or changed, so a fresh valid actual upload and
+  full-height normalized comparison remain `VERIFY`.
+
 ## 2026-08-03 - Actual Repeating Runtime And Legacy HTML Sanitizing
 
-- Applied one anonymous repeating-section payload only to fresh owner-only
+- Applied one anonymous but invalid duplicate-section payload only to fresh owner-only
   modern and legacy verification destinations after current participant and
   compatibility checks. Persisted HTML/CSS matched exactly and translation
-  matched semantically.
+  matched semantically. This run is diagnostic evidence only because the
+  authored repeating name was not unique.
 - Both destinations initialized Worker rows and synchronized value changes,
   calculated totals, and deletion across duplicate rendered instances. Modern
   reorder synchronized row IDs but exposed an actual Roll20 limitation: the
@@ -31,8 +54,9 @@ or source-derived measurement here.
   their supported children. The shared local legacy render contract now reuses
   the existing HTML allow-list transform, so Preview and Edit reproduce that
   flattened structure instead of retaining panels Roll20 removes.
-- Export emits a non-blocking plain-language warning for duplicate same-name
-  repeating fieldsets. Focused preview/export tests, legacy preview smoke,
+- That batch originally emitted a non-blocking warning for duplicate same-name
+  repeating fieldsets; the current contract supersedes it with a blocking
+  error. Focused preview/export tests, legacy preview smoke,
   production build, and the fourteen-pair modern/legacy Preview/Edit visual
   smoke pass. Full `ci:verify`, lint, and tracked-document privacy checks also
   pass.

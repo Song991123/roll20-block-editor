@@ -20,6 +20,10 @@ import { parseI18n, newI18nCtx, type I18nOptions } from './i18n_extractor';
 import { emitWorkspaceXml } from './xml_emitter';
 import { splitOrdinaryPageScripts } from './pageJsWorkspace';
 import { detectTemplateMarkers } from './templateMarkers';
+import {
+  analyzeRepeatingSections,
+  describeRepeatingSectionIssue,
+} from '../validation/repeatingSections';
 import type { ImportHtmlOptions, ImportInput, ImportResult, ImportWarning } from './types';
 
 export type { ImportInput, ImportResult, ImportWarning } from './types';
@@ -35,6 +39,17 @@ export function importSheet(
 ): ImportResult {
   const warnings: ImportWarning[] = [];
   const pageJsSplit = splitOrdinaryPageScripts(input.html ?? '');
+  const htmlRoot = pageJsSplit.html.trim() ? parseHtml(pageJsSplit.html) : null;
+  for (const issue of htmlRoot ? analyzeRepeatingSections(htmlRoot) : []) {
+    warnings.push({
+      severity: 'error',
+      code: issue.code === 'duplicate-name'
+        ? 'html_repeating_duplicate_name'
+        : 'html_repeating_invalid_name',
+      message: describeRepeatingSectionIssue(issue),
+      workspace: 'html',
+    });
+  }
   const templateMarkers = detectTemplateMarkers(input.html ?? '');
   if (templateMarkers.count > 0) {
     warnings.push({
@@ -49,9 +64,8 @@ export function importSheet(
   // HTML.
   const htmlCtx = newMatchContext();
   let htmlXml = `<xml xmlns="https://developers.google.com/blockly/xml"></xml>`;
-  if (pageJsSplit.html.trim()) {
-    const root = parseHtml(pageJsSplit.html);
-    const tree = matchTree(root, htmlCtx);
+  if (htmlRoot) {
+    const tree = matchTree(htmlRoot, htmlCtx);
     // Phase 2 — composite packing layer. atomic chain 의 자주-반복 패턴을
     // composite block 1 개로 묶어 카탈로그 inflation 감소. 인식 실패 시
     // atomic 그대로 유지 (fail-safe).

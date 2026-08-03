@@ -107,6 +107,32 @@ function testRepeatingSection(): void {
   const r = importSheet({ html });
   assert(r.html.includes('r20_repeating_section'), 'repeating block');
   assert(r.html.includes('>skills<'), 'name preserved');
+  assert(!r.warnings.some(({ code }) => code.startsWith('html_repeating_')), 'valid repeating name has no contract error');
+}
+
+function testInvalidRepeatingSectionsStayLosslessAndVisible(): void {
+  const html = `
+    <fieldset class="repeating_items"><input name="attr_name"></fieldset>
+    <fieldset class="sheet-summary repeating_ITEMS"><input name="attr_name"></fieldset>
+    <fieldset class="repeating_melee_weapon"><input name="attr_damage"></fieldset>
+  `;
+  const r = importSheet({ html });
+  assert(
+    r.warnings.some(({ code, severity }) =>
+      code === 'html_repeating_duplicate_name' && severity === 'error'
+    ),
+    'duplicate repeating names surface as an import contract error',
+  );
+  assert(
+    r.warnings.some(({ code, severity }) =>
+      code === 'html_repeating_invalid_name' && severity === 'error'
+    ),
+    'underscored repeating names surface as an import contract error',
+  );
+  assert(
+    (r.html.match(/r20_repeating_section/g) ?? []).length === 3,
+    'invalid authored repeating sections remain editable instead of being dropped',
+  );
 }
 
 function testStructuralLabelContainer(): void {
@@ -569,6 +595,7 @@ const tests = [
   ['semantic container tags', testSemanticContainerTagsStayStructured],
   ['unknown safe elements', testUnknownSafeElementsStayEditable],
   ['repeating section', testRepeatingSection],
+  ['invalid repeating section contract', testInvalidRepeatingSectionsStayLosslessAndVisible],
   ['structural label container', testStructuralLabelContainer],
   ['list containers', testListContainers],
   ['direct text node', testDirectTextNodePreserved],

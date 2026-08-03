@@ -193,19 +193,26 @@ function testInlineHandlerBlocked(): void {
   );
 }
 
-function testDuplicateRepeatingSectionWarned(): void {
+function testInvalidRepeatingSectionsBlocked(): void {
   const html = `
     <fieldset class="repeating_items"><input name="attr_item_name"></fieldset>
     <fieldset class="sheet-summary repeating_items"><input name="attr_item_name" readonly></fieldset>
+    <fieldset class="repeating_melee_weapon"><input name="attr_damage"></fieldset>
   `;
   const warnings = analyzeEmit({ html, css: '', translation: '{}', warnings: [] });
   assert(
     warnings.some((w) =>
-      w.code === 'export.html.duplicate_repeating_section' && w.severity === 'warning'
+      w.code === 'export.html.duplicate_repeating_section' && w.severity === 'error'
     ),
-    'duplicate same-name repeating sections warn before Roll20 upload',
+    'duplicate same-name repeating sections block Roll20 upload',
   );
-  assert(!hasBlockingError(warnings), 'duplicate repeating section warning does not block export');
+  assert(
+    warnings.some((w) =>
+      w.code === 'export.html.invalid_repeating_section_name' && w.severity === 'error'
+    ),
+    'underscored repeating section names block Roll20 upload',
+  );
+  assert(hasBlockingError(warnings), 'invalid repeating section structure blocks export');
 }
 
 // ── (4) 한국어 메시지 자연스러움 — 어색한 한자/영문 잔재 없는지 ────────────
@@ -312,8 +319,8 @@ async function main(): Promise<void> {
   console.log('  ✓ ordinary page JS → backup warning');
   testInlineHandlerBlocked();
   console.log('  ✓ onclick → ERROR');
-  testDuplicateRepeatingSectionWarned();
-  console.log('  ✓ duplicate repeating section warning');
+  testInvalidRepeatingSectionsBlocked();
+  console.log('  ✓ invalid repeating sections → ERROR');
   await testI18nCommentExportedAsJson();
   console.log('  ??i18n comment export JSON');
   testKoreanMessages();
