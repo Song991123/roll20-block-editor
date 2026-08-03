@@ -521,6 +521,29 @@ or source-derived measurement here.
 - Claim boundary: local anonymous render/runtime coverage only. Supported
   modern Sandbox upload and broad actual Roll20 parity remain open.
 
+## 2026-08-03 - Roll20 Script Output Boundary
+
+- Reused the existing inert ordinary-JS and Worker workspaces instead of adding
+  a second JavaScript architecture.
+- Final Roll20 payload preparation now removes every non-Worker script from
+  `sheet.html`, preserves exact removed tags in a non-executable ZIP text file,
+  and keeps Sheet Worker source intact.
+- Export warnings and editor labels now explain that ordinary JavaScript is
+  stored source, not executable Roll20 behavior. Worker behavior remains under
+  the separate automatic-actions workspace.
+- Focused payload, README, and ZIP tests; lint; production build; and the import
+  browser smoke passed. The browser run preserved authored ordinary JS, kept it
+  invisible, retained Worker source, showed the export warning, downloaded and
+  inspected the ZIP, and reported zero console/page errors.
+- The same browser run exposed an over-height export dialog whose footer could
+  leave the viewport. The dialog now has a viewport-bounded scroll surface, and
+  the real pointer click reaches the ZIP action at the tested desktop viewport.
+- Full `ci:verify`, lint, production build, import-dialog browser smoke, and
+  export-dialog browser smoke pass. Both browser runs have zero console/page
+  errors and close their temporary servers.
+- Claim boundary: local output-contract proof based on the official Roll20
+  script model. This batch did not add new actual-room evidence.
+
 ## Current Product State
 
 - Preview and Edit share one persistent Roll20 iframe.
@@ -533,13 +556,16 @@ or source-derived measurement here.
 
 ## Open Gates
 
-1. Supported modern Custom Sheet Sandbox upload and actual-screen verification.
+1. Supported modern Custom Sheet Sandbox upload remains blocked at its visible
+   file chooser; current modern actual evidence comes from a dedicated
+   owner-only test room and must be broadened.
 2. Equivalent actual element-level evidence for the remaining synthetic and
    modern paths, plus deterministic lossless same-state result-card capture
    before renderer changes.
 3. Broader anonymous mapping and edit coverage for uncommon structures.
-4. Future JavaScript workspace and lossless unsupported-source policy.
-5. Current-tree privacy cleanup, followed by an explicit Git-history decision.
+4. Broader structured Sheet Worker blocks and unsupported-syntax diagnostics.
+5. Explicit clean-history publication decision; current-tree privacy guards
+   already pass.
 
 Do not turn any local pass into a claim of all-sheet support or Roll20 visual
 parity.

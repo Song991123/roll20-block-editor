@@ -10,6 +10,7 @@ import http from 'node:http';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
+import JSZip from 'jszip';
 
 const OUT_DIR = path.resolve(process.env.R20_IMPORT_SMOKE_OUT_DIR ?? './out');
 const PORT = Number(process.env.R20_IMPORT_SMOKE_PORT ?? '4182');
@@ -163,6 +164,70 @@ async function main() {
     );
     const pageJs = await page.evaluate(() => window.__perfHook.getEmitContent());
     assert(pageJs.js.includes('r20ExternalPageProbe'), 'external page JS did not reach the page-JS workspace');
+    assert(pageJs.html.includes('r20ExternalPageProbe'), 'authored page JS was lost from source emission');
+
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('[data-testid="import-dialog"]', { state: 'detached', timeout: 5000 });
+    await page.click('[data-testid="header-export-button"]');
+    await page.waitForSelector('[data-testid="export-warnings"]', { state: 'visible', timeout: 15000 });
+    const exportScriptBoundary = await page.evaluate(() => {
+      const warningText = document.querySelector('[data-testid="export-warnings"]')?.textContent ?? '';
+      return {
+        hasUnsupportedWarning: warningText.includes('export.script.unsupported_page_js'),
+        hasBackupName: warningText.includes('unsupported-script-source.txt'),
+        downloadEnabled: !document.querySelector('[data-testid="export-download-button"]')?.disabled,
+      };
+    });
+    assert(exportScriptBoundary.hasUnsupportedWarning, 'export dialog hides unsupported page-JS warning');
+    assert(exportScriptBoundary.hasBackupName, 'export dialog hides script backup file name');
+    assert(exportScriptBoundary.downloadEnabled, 'unsupported page JS incorrectly blocks ZIP export');
+
+    await page.evaluate(() => {
+      window.__r20CapturedZip = '';
+      const originalClick = HTMLAnchorElement.prototype.click;
+      HTMLAnchorElement.prototype.click = function captureZipClick() {
+        if (this.download.endsWith('.zip') && this.href.startsWith('blob:')) {
+          void fetch(this.href)
+            .then((response) => response.arrayBuffer())
+            .then((buffer) => {
+              const bytes = new Uint8Array(buffer);
+              let binary = '';
+              for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+                binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+              }
+              window.__r20CapturedZip = btoa(binary);
+            })
+            .catch((error) => {
+              window.__r20CapturedZip = `ERROR:${String(error)}`;
+            });
+        }
+        return originalClick.call(this);
+      };
+    });
+    await page.click('[data-testid="export-download-button"]');
+    await page.waitForFunction(
+      () => typeof window.__r20CapturedZip === 'string' && window.__r20CapturedZip.length > 0,
+      null,
+      { timeout: 15000 },
+    );
+    const capturedZip = await page.evaluate(() => window.__r20CapturedZip);
+    assert(!capturedZip.startsWith('ERROR:'), `could not read exported ZIP: ${capturedZip}`);
+    const downloadedZip = await JSZip.loadAsync(Buffer.from(capturedZip, 'base64'));
+    const sheetHtml = await downloadedZip.file('sheet.html')?.async('string');
+    const backupSource = await downloadedZip.file('unsupported-script-source.txt')?.async('string');
+    const exportZipBoundary = {
+      ordinaryScriptRemoved: !sheetHtml?.includes('r20ExternalPageProbe'),
+      backupPreserved: Boolean(backupSource?.includes('r20ExternalPageProbe')),
+      backupIsTextOnly: Boolean(downloadedZip.file('unsupported-script-source.txt')),
+    };
+    assert(exportZipBoundary.ordinaryScriptRemoved, 'downloaded sheet.html retained ordinary page JS');
+    assert(exportZipBoundary.backupPreserved, 'downloaded ZIP lost ordinary page JS backup');
+    assert(exportZipBoundary.backupIsTextOnly, 'downloaded ZIP backup is missing');
+    await page.waitForSelector('[data-testid="export-warnings"]', { state: 'detached', timeout: 5000 });
+
+    await page.click('[data-testid="header-import-button"]');
+    await page.waitForSelector('[data-testid="import-dialog"]', { state: 'visible', timeout: 15000 });
+    await page.getByRole('tab', { name: 'JS' }).click();
 
     await page.getByTestId('import-js-kind-worker').click();
     await page.locator('[data-testid="import-js-textarea"]').fill(
@@ -210,6 +275,8 @@ async function main() {
           workerWorkspace: workerJs.worker.includes('external_worker_probe'),
           workerExportedToHtml: /<script\s+type=["']text\/worker/i.test(workerJs.html),
           previewRuntime,
+          exportScriptBoundary,
+          exportZipBoundary,
         },
       },
       consoleErrors,

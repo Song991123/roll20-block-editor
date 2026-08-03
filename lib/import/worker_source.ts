@@ -6,8 +6,8 @@ const ROLL20_WORKER_API =
  *
  * Roll20 worker scripts should be marked `type="text/worker"`. Some older
  * sheets omit the type, so keep those that visibly use Roll20 worker APIs in
- * the worker workspace. Ordinary page JavaScript remains an HTML raw block
- * until a dedicated JS workspace can represent it.
+ * the worker workspace. Ordinary page JavaScript belongs in the separate,
+ * inert source workspace and never runs in local preview or Roll20 output.
  */
 export function isLikelyRoll20WorkerSource(body: string): boolean {
   return ROLL20_WORKER_API.test(stripNonCodeForWorkerDetection(String(body ?? '')));
@@ -103,8 +103,8 @@ export interface Roll20ScriptSource {
 }
 
 /**
- * Classify authored script tags once for import, preview, and future JS
- * workspace work. Ordinary page scripts remain inert in the local preview;
+ * Classify authored script tags once for import, preview, and JS workspace
+ * work. Ordinary page scripts remain inert in the local preview;
  * this helper only describes the source and does not execute it.
  */
 export function classifyRoll20Script(type: string, body: string): Roll20ScriptKind {
@@ -153,7 +153,7 @@ export function extractRoll20ScriptSources(html: string): Roll20ScriptSource[] {
   return sources;
 }
 
-function readScriptType(attrs: string): string {
+export function readScriptType(attrs: string): string {
   const match = /\btype\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>/]+))/i.exec(attrs);
   return String(match?.[1] ?? match?.[2] ?? match?.[3] ?? '').trim().toLowerCase();
 }

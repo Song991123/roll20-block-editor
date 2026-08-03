@@ -35,7 +35,9 @@ async function testDndSmoke(): Promise<void> {
           setAttrs({ proficiency: 2 + Math.floor(Number(v.level) / 4) });
         });
       });
-    </script>`;
+    </script>
+    <script>window.unsupportedPageProbe = true;</script>
+    <script type="application/json">{"preview":"data"}</script>`;
   const css = `.sheet-tab { padding: 8px; color: #222; }`;
   const translation = JSON.stringify({ 'basic-info': '기본 정보' });
 
@@ -55,6 +57,7 @@ async function testDndSmoke(): Promise<void> {
   assert(names.includes('translation.json'), 'translation.json present');
   assert(names.includes('sheet.json'), 'sheet.json present');
   assert(names.includes('README.txt'), 'README.txt present');
+  assert(names.includes('unsupported-script-source.txt'), 'unsupported script backup present');
 
   const manifest = JSON.parse(await unpacked.files['sheet.json'].async('string'));
   assert(manifest.html === 'sheet.html', 'manifest.html');
@@ -69,6 +72,13 @@ async function testDndSmoke(): Promise<void> {
 
   const sheetHtml = await unpacked.files['sheet.html'].async('string');
   assert(!sheetHtml.includes('data-r20-block-id'), 'export sheet.html strips internal block ids');
+  assert(!sheetHtml.includes('unsupportedPageProbe'), 'export sheet.html strips ordinary scripts');
+  assert(!sheetHtml.includes('application/json'), 'export sheet.html strips data scripts');
+  assert(sheetHtml.includes('type="text/worker"'), 'export sheet.html keeps Sheet Worker');
+
+  const unsupportedScripts = await unpacked.files['unsupported-script-source.txt'].async('string');
+  assert(unsupportedScripts.includes('unsupportedPageProbe'), 'ordinary script source is backed up');
+  assert(unsupportedScripts.includes('application/json'), 'data script source is backed up');
 
   const readme = await unpacked.files['README.txt'].async('string');
   assert(readme.includes('Roll20 커스텀 시트 등록 가이드'), 'README KR title');
@@ -76,6 +86,7 @@ async function testDndSmoke(): Promise<void> {
   assert(readme.includes('HTML Layout'), 'README mentions HTML Layout slot');
   assert(readme.includes('외부 이미지/폰트 확인'), 'README mentions asset verification');
   assert(readme.includes('http(s) 이미지/폰트 URL'), 'README mentions Roll20-ready asset URLs');
+  assert(readme.includes('Roll20에 올리지 마세요'), 'README blocks unsupported script backup upload');
 }
 
 // ── (2) PbtA narrative-style emit (정상) ──────────────────────────────────
@@ -235,6 +246,20 @@ function testManifestShape(): void {
   assert(legacy.legacy === true, 'legacy manifest follows selected mode');
 }
 
+function testOrdinaryPageJsWarnedButNotBlocked(): void {
+  const html = `<div>safe</div><script>fetch('https://example.invalid')</script>`;
+  const warnings = analyzeEmit({ html, css: '', translation: '{}', warnings: [] });
+  assert(
+    warnings.some((w) => w.code === 'export.script.unsupported_page_js' && w.severity === 'warning'),
+    'ordinary page JS warning',
+  );
+  assert(
+    !warnings.some((w) => w.code === 'export.script.external_fetch'),
+    'removed page JS does not create a false blocking fetch error',
+  );
+  assert(!hasBlockingError(warnings), 'unsupported page JS is preserved as backup instead of blocking');
+}
+
 function testReadmeIncludesSystem(): void {
   const r = buildReadme({ ...DEFAULT_METADATA, name: 'X', system: 'PbtA' });
   assert(r.includes('시스템: PbtA'), 'readme system line');
@@ -268,6 +293,8 @@ async function main(): Promise<void> {
   console.log('  ✓ fetch → ERROR');
   testEvalBlocked();
   console.log('  ✓ eval → ERROR');
+  testOrdinaryPageJsWarnedButNotBlocked();
+  console.log('  ✓ ordinary page JS → backup warning');
   testInlineHandlerBlocked();
   console.log('  ✓ onclick → ERROR');
   await testI18nCommentExportedAsJson();

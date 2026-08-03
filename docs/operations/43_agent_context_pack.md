@@ -21,11 +21,9 @@ contain private source evidence or historical test dumps.
   threshold, so the default chat renderer remains selected. Broad-sheet and
   broader result-card parity remain open.
 - A four-shape anonymous result-card matrix is locally exact between Preview
-  and Edit in both compatibility modes and passes unclipped chat expectations.
-  One additional conditional card has current owner-only modern payload,
-  translation, nested-at-rule, helper, and chat structure/text evidence. Its
-  active browser image was lossy, so that matrix case remains unproven at the
-  authoritative pixel level and has no equivalent current legacy-room result.
+  and Edit and has current owner-only modern and legacy structure plus
+  authoritative generated-sheet captures. Scope remains this synthetic matrix,
+  not broad result-card or all-sheet parity.
 - Rolltemplate CSS extraction keeps relevant nested at-rules and namespaced
   referenced animations, constrains retained selector branches to the chat
   pane, and lets authored card box sizing override the low-specificity shell
@@ -39,10 +37,11 @@ contain private source evidence or historical test dumps.
   Visible code editors must be replaced as whole documents; after save/reload,
   HTML/CSS source and translation JSON meaning must match before render capture.
   The Sandbox upload helper does not target legacy campaign settings.
-- Modern automated upload is stopped at the supported file-selection permission
-  boundary. A fresh dedicated Sandbox persisted an anonymous manifest and
-  launched the visible upload tools, but its supported HTML chooser failed
-  before transmission; do not bypass it.
+- Modern automated Custom Sheet Sandbox upload is stopped at the supported
+  file-selection permission boundary. A fresh dedicated Sandbox persisted an
+  anonymous manifest and launched the visible upload tools, but its supported
+  HTML chooser failed before transmission; do not bypass it. Separate modern
+  actual evidence exists through an owner-only dedicated test room.
 - Sequential imports use monotonic store versions plus Blockly hydration
   generations in the emit-cache identity. The current six-fixture browser
   path also requires each mounted preview CSS hash to match the latest import,
@@ -64,6 +63,10 @@ contain private source evidence or historical test dumps.
   optimistic paint, model commit, and Preview/Edit switches.
 - Generated evidence and external validation inputs remain ignored, local, and
   ephemeral.
+- Ordinary JavaScript has a separate inert source workspace. Authored emission
+  preserves it, Preview/Edit never execute or display it, and final Roll20
+  `sheet.html` excludes every non-Worker script while the ZIP keeps an explicit
+  non-executable text backup.
 
 ## Always Read
 
@@ -87,16 +90,17 @@ contain private source evidence or historical test dumps.
 
 ## Product Invariants
 
-- User HTML/CSS/translation and future JavaScript map generically; unsupported
-  content stays explicit.
+- User HTML/CSS/translation and Sheet Worker source map generically;
+  unsupported content stays explicit and lossless.
 - Preview/Edit/export switch compatibility mode atomically.
 - App CSS never enters the sheet iframe.
 - Edit is Preview plus overlays, not a separately drawn surface.
 - Flow/table/list structure remains valid; free placement is explicit and
   relative to an intended containing frame.
 - Managed design choices emit CSS, not presentation inline HTML.
-- Ordinary scripts stay inert and invisible; Sheet Worker support is a separate
-  controlled workspace/runtime.
+- Ordinary scripts stay inert and invisible, then leave final Roll20 HTML with
+  a ZIP text backup; Sheet Worker support is a separate controlled
+  workspace/runtime.
 - Internal editor markers are stripped from Roll20 export.
 - Existing Roll20 rooms are observation-only after an exact-one participant
   preflight. Generated writes use only modern Sandbox or a new dedicated test

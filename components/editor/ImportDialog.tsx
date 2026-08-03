@@ -380,7 +380,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
                 aria-pressed={jsKind === 'page'}
                 data-testid="import-js-kind-page"
               >
-                페이지 JS
+                일반 JS 보관
               </button>
               <button
                 type="button"
@@ -393,7 +393,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
                 aria-pressed={jsKind === 'worker'}
                 data-testid="import-js-kind-worker"
               >
-                Roll20 worker
+                Roll20 자동 동작
               </button>
             </div>
             <input
@@ -409,15 +409,17 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
               onChange={(event) => setJsText(event.target.value)}
               placeholder={
                 jsKind === 'worker'
-                  ? 'on("sheet:opened", ...), getAttrs(...), setAttrs(...) 같은 Roll20 worker 코드'
-                  : '일반 페이지 JS 또는 script 파일 내용을 붙여 넣으세요'
+                  ? 'on("sheet:opened", ...), getAttrs(...), setAttrs(...) 같은 Roll20 자동 동작 코드'
+                  : '보관할 일반 JavaScript 또는 script 파일 내용을 붙여 넣으세요'
               }
               className={textareaClassName}
               spellCheck={false}
               data-testid="import-js-textarea"
             />
             <p className="text-xs leading-relaxed text-muted-foreground">
-              JS는 미리보기 화면에 코드로 표시하지 않습니다. 선택한 종류에 따라 JS 작업 공간 또는 Roll20 내보내기에 포함됩니다.
+              {jsKind === 'worker'
+                ? '자동 동작은 화면에 보이지 않고 Roll20용 sheet.html에 포함됩니다.'
+                : '일반 JS는 Roll20에서 실행되지 않습니다. 편집 원문과 ZIP의 텍스트 백업에만 보관합니다.'}
             </p>
           </TabsContent>
         </Tabs>
@@ -489,7 +491,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
             )}
             {(report.pageJsBlocks > 0 || report.workerBlocks > 0) && (
               <div>
-                JS 블록: 페이지 <span className="tabular-nums">{report.pageJsBlocks}</span> · 동작{' '}
+                JS 블록: 보관 <span className="tabular-nums">{report.pageJsBlocks}</span> · 자동 동작{' '}
                 <span className="tabular-nums">{report.workerBlocks}</span>
               </div>
             )}

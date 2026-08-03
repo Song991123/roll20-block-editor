@@ -223,7 +223,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
     try {
       const cssForZip = roll20Upload.css;
       const collectedWarnings: SanitizeWarning[] = roll20Upload.legacyWarnings;
-      const extraFiles: Record<string, string> = {};
+      const extraFiles: Record<string, string> = { ...(roll20Upload.extraFiles ?? {}) };
       if (assetReplacementText.trim()) {
         extraFiles['asset-replacements.json'] = JSON.stringify(
           {
@@ -290,7 +290,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-2xl overflow-y-auto overscroll-contain">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileArchive className="h-6 w-6 text-[var(--primary)]" />

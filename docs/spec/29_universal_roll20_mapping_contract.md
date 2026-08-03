@@ -58,7 +58,7 @@ Every source artifact must become blocks, not opaque app-only state.
 
 ## Worker JS Editing Contract
 
-Sheet worker JavaScript is a first-class source artifact, not text that should appear in the sheet canvas. The current importer may preserve unsupported JS as `r20_raw_worker`, but the product direction is a separate worker workspace that can gradually become block-editable.
+Sheet worker JavaScript is a first-class source artifact, not text that should appear in the sheet canvas. It has a separate Worker workspace; the importer preserves statements that are not yet structurally mapped as `r20_raw_worker` while block coverage grows.
 
 Required behavior:
 
@@ -67,7 +67,7 @@ Required behavior:
 - Unsupported statements remain as raw worker blocks with exact source text and diagnostics.
 - Raw worker blocks must roundtrip without being lost. They are allowed while coverage grows.
 - Preview execution and chat rendering must consume the worker layer, not visible HTML text.
-- Future user-facing JS block coding should operate on this worker workspace without changing the HTML/CSS block model.
+- User-facing JS block coding grows inside this Worker workspace without changing the HTML/CSS block model.
 
 Untyped script compatibility:
 
@@ -76,10 +76,9 @@ Untyped script compatibility:
   workspace only when its source visibly calls a Roll20 worker API such as
   `on`, `getAttrs`, `setAttrs`, `getSectionIDs`, translation helpers, or
   compendium helpers.
-- An ordinary untyped page script remains an HTML raw block and is hidden by
-  the preview runtime. It must not be silently converted into a worker or
-  dropped from export. A future JS workspace can replace this raw fallback
-  without changing the HTML/CSS mapping contract.
+- An ordinary untyped page script moves to the separate inert JS workspace and
+  keeps its authored source-order slot. It is never silently converted into a
+  Worker and never executes in Preview/Edit or Roll20.
 
 Script MIME boundary:
 
@@ -93,9 +92,12 @@ Script MIME boundary:
 
 Preview execution boundary:
 
-- Ordinary page scripts are preserved as HTML raw blocks and in export, but
-  are removed from the local visual preview document so inline code and
-  external `src` resources cannot execute while a user is editing.
+- Ordinary page scripts remain lossless in the authored JS workspace and source
+  emission, but are removed from the local visual preview document so inline
+  code and external `src` resources cannot execute while a user is editing.
+- Final Roll20 `sheet.html` excludes every non-Worker script because Roll20
+  cannot execute page JavaScript. ZIP export copies the exact removed tags into
+  `unsupported-script-source.txt`; that backup is not uploaded or executed.
 - Only scripts classified as Roll20 worker source are retained in the preview
   document. This is a runtime-safety boundary, not a claim that arbitrary
   page JavaScript is supported by Roll20.
@@ -156,8 +158,8 @@ Legacy Roll20 sanitization must be an explicit toggle:
 
 | Mode | Behavior |
 |---|---|
-| Off | Preserve source HTML/CSS/worker output as authored, except for app-internal preview-only attributes removed during export. |
-| On | Apply documented Roll20 legacy-safe transformations and emit a warnings report. |
+| Off | Preserve authored HTML/CSS/Worker output, remove app-internal preview attributes, and exclude non-Worker scripts into the ZIP text backup. |
+| On | Apply documented Roll20 legacy-safe transformations, exclude non-Worker scripts into the same ZIP text backup, and emit a warnings report. |
 
 The toggle is a per-export/per-preview setting. It must not mutate source workspaces silently.
 

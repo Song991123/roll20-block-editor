@@ -164,18 +164,18 @@ export const ADVANCED_BLOCKS: BlockDef[] = [
     type: 'r20_raw_page_js',
     shape: 'stack',
     category: ADVANCED,
-    label: '페이지 JavaScript (고급)',
-    tooltip: `일반 페이지 JavaScript를 내보낼 때 보존해요. 로컬 미리보기에서는 실행하지 않아요. ${WARN_RAW}`,
+    label: '보관된 JavaScript (고급)',
+    tooltip: `Roll20에서 실행되지 않는 일반 JavaScript 원문을 보관해요. ${WARN_RAW}`,
     init: mkInit((b) => {
-      b.appendDummyInput().appendField('Page JS');
+      b.appendDummyInput().appendField('보관된 JS');
       b.appendDummyInput()
-        .appendField('slot')
+        .appendField('원본 위치')
         .appendField(new Blockly.FieldTextInput(''), 'SLOT');
       b.appendDummyInput()
-        .appendField('attrs')
+        .appendField('script 속성')
         .appendField(new Blockly.FieldTextInput(''), 'ATTRS');
       b.appendDummyInput()
-        .appendField('code')
+        .appendField('원문')
         .appendField(new Blockly.FieldTextInput(''), 'JS');
       setStatementHooks(b);
     }),
@@ -190,24 +190,24 @@ export const ADVANCED_BLOCKS: BlockDef[] = [
     inspectorSchema: [
       {
         name: 'SLOT',
-        label: 'source slot',
+        label: '원본 위치 표시',
         kind: 'text',
-        placeholder: 'Imported scripts keep this automatically; leave blank for the end.',
-        description: 'Internal source-order anchor. New scripts without a slot are appended after the HTML body.',
+        placeholder: '불러올 때 자동으로 기록됩니다. 새 항목이면 비워 두세요.',
+        description: '원본 HTML 안의 script 순서를 되돌리기 위한 내부 표시입니다.',
       },
       {
         name: 'ATTRS',
-        label: 'script attributes',
+        label: 'script 속성',
         kind: 'text',
         placeholder: 'src="page-runtime.js" defer',
-        description: 'Preserved script attributes. Inline event-handler attributes are removed.',
+        description: '원본 script 속성을 보관합니다. 인라인 이벤트 속성은 제거됩니다.',
       },
       {
         name: 'JS',
-        label: 'page JavaScript',
+        label: 'JavaScript 원문',
         kind: 'textarea',
         placeholder: 'window.sheetReady = true;',
-        description: 'Runs only in the exported Roll20 page context, never in local preview.',
+        description: 'Roll20에서는 실행되지 않습니다. 편집 원문과 ZIP의 텍스트 백업에만 보관됩니다.',
       },
     ],
   },

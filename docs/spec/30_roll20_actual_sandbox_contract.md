@@ -48,7 +48,8 @@ title bars or blank starter nodes are not authored sheet content.
 
 - Preserve authored class tokens according to the modern Roll20 contract.
 - Apply modern Sandbox preparation only when that destination is selected.
-- Keep ordinary scripts inert and strip unsupported visible runtime nodes.
+- Keep ordinary scripts inert, strip them from final Roll20 HTML, and preserve
+  their exact tags only in the non-executable ZIP text backup.
 - Preserve Sheet Worker source for the worker boundary.
 - Treat Custom Sheet Sandbox as modern-only actual evidence.
 
@@ -79,7 +80,8 @@ layout, box model, typography, or export output.
 - Internal block IDs may exist in Preview/Edit and must be removed from export.
 - Rolltemplates stay hidden on the sheet surface and render through the result
   card/chat path when invoked.
-- Ordinary page JavaScript stays invisible and non-executable.
+- Ordinary page JavaScript stays invisible and non-executable, then leaves the
+  final Roll20 HTML with an explicit ZIP text backup.
 - Supported Sheet Worker code runs only through the controlled worker runtime.
 - Unsupported source remains explicit; it is never silently reported as mapped.
 

@@ -50,6 +50,7 @@ export async function buildZip(
   }
   zip.file(ZIP_FILES.README, buildReadme(meta, {
     includesAssetReplacements: Boolean(payload.extraFiles?.['asset-replacements.json']),
+    includesUnsupportedScripts: Boolean(payload.extraFiles?.[ZIP_FILES.UNSUPPORTED_SCRIPTS]),
   }));
 
   const blob = await zip.generateAsync({

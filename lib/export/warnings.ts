@@ -12,7 +12,7 @@
 
 import type { EmitWarning } from '@/lib/stores/workspaceStore';
 import type { EmitOutput } from './types';
-import { parseTranslationMap } from './payload';
+import { parseTranslationMap, stripUnsupportedPageScripts } from './payload';
 
 /** export.* prefix — emit.ts 의 warning code 와 충돌 방지. */
 const PREFIX = 'export.';
@@ -29,6 +29,7 @@ const CODE = {
   TRANSLATION_PARSE: `${PREFIX}i18n.parse`,
   EMPTY_HTML: `${PREFIX}html.empty`,
   CIRCULAR_WORKER: `${PREFIX}script.circular`,
+  UNSUPPORTED_PAGE_JS: `${PREFIX}script.unsupported_page_js`,
 } as const;
 
 const LARGE_TEMPLATE_BYTES = 16 * 1024; // 16 KiB
@@ -39,9 +40,21 @@ const LARGE_TEMPLATE_BYTES = 16 * 1024; // 16 KiB
  */
 export function analyzeEmit(out: EmitOutput): EmitWarning[] {
   const found: EmitWarning[] = [];
+  const scriptResult = stripUnsupportedPageScripts(out.html);
+  const roll20Html = scriptResult.html;
+
+  if (scriptResult.removed > 0) {
+    found.push({
+      severity: 'warning',
+      code: CODE.UNSUPPORTED_PAGE_JS,
+      message:
+        `Roll20에서 실행되지 않는 일반/데이터 script ${scriptResult.removed}개를 찾았습니다. sheet.html에서는 제외하고, ZIP을 만들면 원문을 unsupported-script-source.txt에 보관합니다. 필요한 동작은 Roll20 자동 동작(Sheet Worker)으로 옮기세요.`,
+      blockId: null,
+    });
+  }
 
   // ── ERROR: <iframe> ──────────────────────────────────────────────────────
-  if (/<iframe[\s>]/i.test(out.html)) {
+  if (/<iframe[\s>]/i.test(roll20Html)) {
     found.push({
       severity: 'error',
       code: CODE.IFRAME,
@@ -54,7 +67,7 @@ export function analyzeEmit(out: EmitOutput): EmitWarning[] {
   // ── ERROR: 외부 fetch / XHR (sheet worker / 인라인 스크립트) ──────────────
   const fetchPattern =
     /\b(?:fetch|XMLHttpRequest|navigator\.sendBeacon|WebSocket|EventSource)\s*\(/;
-  if (fetchPattern.test(out.html) || fetchPattern.test(out.translation)) {
+  if (fetchPattern.test(roll20Html) || fetchPattern.test(out.translation)) {
     found.push({
       severity: 'error',
       code: CODE.EXTERNAL_FETCH,
@@ -65,7 +78,7 @@ export function analyzeEmit(out: EmitOutput): EmitWarning[] {
   }
 
   // ── ERROR: eval / Function 동적 코드 실행 ────────────────────────────────
-  if (/\b(?:eval|Function)\s*\(/.test(out.html)) {
+  if (/\b(?:eval|Function)\s*\(/.test(roll20Html)) {
     found.push({
       severity: 'error',
       code: CODE.EVAL_USAGE,
@@ -76,7 +89,7 @@ export function analyzeEmit(out: EmitOutput): EmitWarning[] {
   }
 
   // ── ERROR: on* 인라인 이벤트 핸들러 ─────────────────────────────────────
-  if (/\son[a-z]+\s*=\s*["']/i.test(out.html)) {
+  if (/\son[a-z]+\s*=\s*["']/i.test(roll20Html)) {
     found.push({
       severity: 'error',
       code: CODE.ON_ATTR,
@@ -87,7 +100,7 @@ export function analyzeEmit(out: EmitOutput): EmitWarning[] {
   }
 
   // ── WARN: 외부 이미지 URL (https://) ────────────────────────────────────
-  if (/<img[^>]+src\s*=\s*["']https?:\/\//i.test(out.html)) {
+  if (/<img[^>]+src\s*=\s*["']https?:\/\//i.test(roll20Html)) {
     found.push({
       severity: 'warning',
       code: CODE.REMOTE_IMG,
@@ -109,7 +122,7 @@ export function analyzeEmit(out: EmitOutput): EmitWarning[] {
   }
 
   // ── WARN: 큰 rolltemplate body (>16KiB) — 성능 저하 위험 ──────────────
-  const rollTemplateBytes = measureRollTemplateBytes(out.html);
+  const rollTemplateBytes = measureRollTemplateBytes(roll20Html);
   if (rollTemplateBytes > LARGE_TEMPLATE_BYTES) {
     found.push({
       severity: 'warning',
@@ -120,7 +133,7 @@ export function analyzeEmit(out: EmitOutput): EmitWarning[] {
   }
 
   // ── WARN: 빈 HTML ───────────────────────────────────────────────────────
-  if (out.html.trim().length === 0) {
+  if (roll20Html.trim().length === 0) {
     found.push({
       severity: 'warning',
       code: CODE.EMPTY_HTML,
@@ -153,7 +166,7 @@ export function analyzeEmit(out: EmitOutput): EmitWarning[] {
   }
 
   // ── INFO: sheet worker 의 self-reference (circular dep 휴리스틱) ────────
-  if (detectCircularWorker(out.html)) {
+  if (detectCircularWorker(roll20Html)) {
     found.push({
       severity: 'warning',
       code: CODE.CIRCULAR_WORKER,

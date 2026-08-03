@@ -66,4 +66,5 @@ export const ZIP_FILES = {
   TRANSLATION: 'translation.json',
   MANIFEST: 'sheet.json',
   README: 'README.txt',
+  UNSUPPORTED_SCRIPTS: 'unsupported-script-source.txt',
 } as const;

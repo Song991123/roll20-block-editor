@@ -4,9 +4,11 @@ import {
   sanitizeForRoll20Legacy,
   type SanitizeWarning,
 } from '../emit/sanitize';
+import { isRoll20WorkerScript, readScriptType } from '../import/worker_source';
 
 export interface PreparedPayload extends EmitOutput {
   removedInternalBlockIds: number;
+  removedUnsupportedScripts: number;
 }
 
 export interface Roll20UploadFile {
@@ -29,11 +31,18 @@ export interface PreparedRoll20Upload extends PreparedPayload {
  */
 export function prepareRoll20Payload(emit: EmitOutput): PreparedPayload {
   const htmlClean = stripInternalBlockIds(emit.html);
+  const scriptsClean = stripUnsupportedPageScripts(htmlClean.html);
+  const extraFiles = { ...(emit.extraFiles ?? {}) };
+  if (scriptsClean.removed > 0) {
+    extraFiles[ZIP_FILES.UNSUPPORTED_SCRIPTS] = scriptsClean.source;
+  }
   return {
     ...emit,
-    html: htmlClean.html,
+    html: scriptsClean.html,
     translation: normalizeTranslationForRoll20(emit.translation),
+    extraFiles: Object.keys(extraFiles).length > 0 ? extraFiles : undefined,
     removedInternalBlockIds: htmlClean.removed,
+    removedUnsupportedScripts: scriptsClean.removed,
   };
 }
 
@@ -86,6 +95,32 @@ export function stripInternalBlockIds(html: string): { html: string; removed: nu
     return '';
   });
   return { html: cleaned, removed };
+}
+
+/**
+ * Roll20 removes every script tag except Sheet Workers. Keep authored source
+ * in the editor, but exclude unsupported scripts from the upload payload and
+ * return their exact tags for a non-executable ZIP backup.
+ */
+export function stripUnsupportedPageScripts(
+  html: string,
+): { html: string; removed: number; source: string } {
+  let removed = 0;
+  const sources: string[] = [];
+  const cleaned = String(html ?? '').replace(
+    /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi,
+    (full, rawAttrs: string, body: string) => {
+      if (isRoll20WorkerScript(readScriptType(rawAttrs), body)) return full;
+      removed += 1;
+      sources.push(full);
+      return '';
+    },
+  );
+  return {
+    html: cleaned,
+    removed,
+    source: sources.join('\n\n'),
+  };
 }
 
 export function normalizeTranslationForRoll20(translation: string): string {

@@ -2740,8 +2740,9 @@ ${bodyInner}
 /**
  * Keep the preview runtime limited to Roll20 worker source.
  *
- * Ordinary page scripts remain in the HTML workspace and export output, but
- * they must not execute inside the editor iframe. Roll20 worker scripts are
+ * Ordinary page scripts remain in the authored workspace and source emission,
+ * but they must not execute inside the editor iframe. The final Roll20 payload
+ * excludes them and preserves a non-executable ZIP backup. Worker scripts are
  * the only authored script boundary that the local preview runtime emulates.
  * Removing the other script elements here also prevents external `src` files
  * from loading during import/preview while leaving the user's source intact.

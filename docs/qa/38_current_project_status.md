@@ -5,9 +5,10 @@ Date: 2026-08-03
 ## Product
 
 This project is a visual Roll20 custom-sheet editor. Users import or author
-HTML, CSS, translation data, and eventually JavaScript; the product maps those
+HTML, CSS, translation data, and Sheet Worker source; the product maps those
 sources to blocks and layers, renders them in a Roll20-like environment, and
-exports a Roll20 upload package.
+exports a Roll20 upload package. Unsupported ordinary JavaScript is retained as
+inert source but cannot be presented as Roll20 behavior.
 
 ## Implemented Locally
 
@@ -20,6 +21,8 @@ exports a Roll20 upload package.
   buttons, and result cards.
 - Local Sheet Worker subset, default-attribute behavior, Roll execution, chat
   history, and result-card rendering.
+- Separate inert ordinary-JS source workspace and a final Roll20 output filter
+  with a non-executable ZIP backup.
 - Local autosave and Roll20-oriented export.
 - Synthetic browser, import/export, sanitizer, privacy, lint, and build gates.
 
@@ -29,19 +32,25 @@ exports a Roll20 upload package.
 - Layer/widget selection channels are isolated and repeated browser runs pass.
 - Internal editor IDs are removed at the export boundary.
 - Ordinary page JavaScript stays inert and invisible in the sheet surface.
+- Final Roll20 HTML excludes non-Worker scripts while preserving exact source
+  tags in a ZIP text backup.
+- Dedicated owner-only modern and legacy destinations verify the current
+  anonymous synthetic payload suite. This is not broad-sheet parity.
 - Public product assets contain no bundled real sheet sample.
 
-These are local and synthetic results. They do not prove arbitrary-sheet or
-actual Roll20 parity.
+These are scoped local and actual-synthetic results. They do not prove
+arbitrary-sheet or broad Roll20 parity.
 
 ## Not Finished
 
-- Modern Custom Sheet Sandbox upload and same-payload actual-screen proof.
-- Separate legacy-enabled test-room proof.
+- Supported automated modern Custom Sheet Sandbox upload remains blocked at
+  the visible file chooser, though dedicated-room modern evidence exists.
+- Broader modern and legacy actual-screen coverage beyond the current anonymous
+  synthetic suite.
 - Broad uncommon-structure import/edit coverage.
-- Complete Sheet Worker/JavaScript block workspace.
-- Final direct-manipulation UX: resizing, alignment, keyboard workflows,
-  nested absolute placement, and undo/redo review.
+- Broader structured Sheet Worker blocks and unsupported-syntax diagnostics.
+- Dense imported-tree usability, rotated/skewed coordinate cases, and longer
+  mixed-operation history review.
 - Final user-facing Korean copy and full responsive shell review.
 - Historical Git privacy decision after current-tree cleanup.
 
@@ -56,8 +65,10 @@ actual Roll20 parity.
 
 ## Next Order
 
-1. Finish current-tree privacy cleanup and its deterministic guard.
-2. Obtain supported modern Sandbox upload evidence.
-3. Run the separate legacy test-room check.
+1. Broaden modern and legacy anonymous actual-screen coverage without using
+   existing user rooms.
+2. Obtain supported modern Sandbox file-selection evidence when the visible
+   permission boundary allows it.
+3. Expand Worker block coverage and uncommon HTML/CSS mapping.
 4. Classify actual differences before changing global renderer CSS.
 5. Continue direct-manipulation UX using synthetic regression coverage.

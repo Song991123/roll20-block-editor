@@ -116,9 +116,14 @@ belong in tracked documents.
   pixel-exact in both modern and legacy modes; Sandbox preparation keeps its
   restricted output separate. Actual user-owned hosted asset loading remains
   unverified.
-- `TODO`: give future JavaScript work its own inert source workspace and block
-  mapping. Ordinary page scripts must remain invisible and non-executable in
-  Preview/Edit.
+- `DONE LOCAL`: executable ordinary scripts use a separate inert source
+  workspace with source-order slots. Preview/Edit remove them from the visual
+  runtime. Final Roll20 `sheet.html` keeps only Sheet Worker scripts; excluded
+  ordinary/data script tags remain in authored source and are copied exactly
+  into the ZIP's non-executable `unsupported-script-source.txt`. Export shows a
+  non-blocking warning and plain-language conversion path to automatic actions.
+- `TODO`: expand structured Sheet Worker blocks and diagnostics for unsupported
+  Worker syntax. Raw Worker source remains the lossless fallback meanwhile.
 
 ## P0 - Edit And Preview Unity
 

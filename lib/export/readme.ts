@@ -11,6 +11,7 @@ import { ZIP_FILES } from './types';
 
 export interface ReadmeOptions {
   includesAssetReplacements?: boolean;
+  includesUnsupportedScripts?: boolean;
 }
 
 /** 사용자 메타를 반영한 README.txt 텍스트. */
@@ -35,12 +36,13 @@ export function buildReadme(meta: SheetMetadata, options: ReadmeOptions = {}): s
   lines.push('');
   lines.push('## 1. 압축 해제');
   lines.push('');
-  lines.push('이 .zip 파일의 압축을 해제하세요. 다음 4 개 파일이 들어 있습니다:');
+  lines.push('이 .zip 파일의 압축을 해제하세요. Roll20에 올릴 핵심 파일은 다음 4개입니다:');
   lines.push('');
   lines.push(`  - ${ZIP_FILES.HTML}        : Roll20 의 "HTML Layout" 영역에 들어갈 마크업`);
   lines.push(`  - ${ZIP_FILES.CSS}         : "Custom Stylesheet" 영역에 들어갈 CSS`);
   lines.push(`  - ${ZIP_FILES.TRANSLATION} : "Translation Lookup" 영역에 들어갈 i18n JSON (선택)`);
   lines.push(`  - ${ZIP_FILES.MANIFEST}        : sheet.json 메타데이터 (Custom Sheet Sandbox 용)`);
+  lines.push('  - README.txt와 점검용 보조 파일은 Roll20에 올리지 않습니다.');
   lines.push('');
   lines.push('## 2. Roll20 게임에 등록');
   lines.push('');
@@ -77,6 +79,10 @@ export function buildReadme(meta: SheetMetadata, options: ReadmeOptions = {}): s
   if (options.includesAssetReplacements) {
     lines.push('- 이 zip에는 asset-replacements.json 이 들어 있습니다. 어떤 URL이 교체됐는지 확인하고,');
     lines.push('  Roll20 등록 뒤에는 Sandbox 또는 새 테스트 방에서 다시 스크린샷 비교를 하세요.');
+  }
+  if (options.includesUnsupportedScripts) {
+    lines.push(`- ${ZIP_FILES.UNSUPPORTED_SCRIPTS}에는 Roll20에서 실행되지 않아 sheet.html에서 제외한 script 원문이 들어 있습니다.`);
+    lines.push('  이 파일은 Roll20에 올리지 마세요. 필요한 동작은 자동 동작(Sheet Worker)으로 옮기세요.');
   }
   lines.push('');
   lines.push('## 5. 문제 해결');

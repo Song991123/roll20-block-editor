@@ -21,6 +21,17 @@ function testZipWiresAssetReplacementNotice(): void {
   assert.match(zipBuilderSource, /includesAssetReplacements:\s*Boolean\(payload\.extraFiles\?\.\['asset-replacements\.json'\]\)/);
 }
 
+function testZipExplainsUnsupportedScriptBackup(): void {
+  assert.match(readmeSource, /includesUnsupportedScripts/);
+  assert.match(readmeSource, /ZIP_FILES\.UNSUPPORTED_SCRIPTS/);
+  assert.match(readmeSource, /Roll20에 올리지 마세요/);
+  assert.match(
+    zipBuilderSource,
+    /includesUnsupportedScripts:\s*Boolean\(payload\.extraFiles\?\.\[ZIP_FILES\.UNSUPPORTED_SCRIPTS\]\)/,
+  );
+}
+
 testReadmeSourceExplainsExternalAssets();
 testZipWiresAssetReplacementNotice();
+testZipExplainsUnsupportedScriptBackup();
 console.log('readme.test PASS');

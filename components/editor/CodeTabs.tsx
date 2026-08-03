@@ -12,9 +12,9 @@ import { toast } from 'sonner';
 const SUB_TABS = [
   {
     id: 'js',
-    label: '페이지 JS',
-    empty: '아직 페이지 자바스크립트가 없어요.',
-    note: '내보낼 때만 포함되고, 로컬 미리보기에서는 실행되지 않아요.',
+    label: '보관된 JS',
+    empty: '아직 보관된 일반 자바스크립트가 없어요.',
+    note: 'Roll20에서는 실행되지 않아 원문만 보관돼요.',
   },
   {
     id: 'html',
