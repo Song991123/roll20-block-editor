@@ -11,6 +11,9 @@ contain private source evidence or historical test dumps.
 - Active integration branch: `claude/design-reset`.
 - Preview and Edit share one persistent Roll20 iframe.
 - Modern and legacy compatibility paths are separate.
+- Export handoff copy follows that same mode. Modern directs the three final
+  files to Custom Sheet Sandbox; legacy directs their contents to a dedicated
+  legacy-enabled test room and explicitly excludes Sandbox as legacy proof.
 - Canonical import/block emit now preserves authored class and ID tokens.
   Modern Preview/Edit/export keeps them exact; the legacy destination prefixes
   matching HTML and CSS once at its render/export boundary. Anonymous
@@ -53,7 +56,8 @@ contain private source evidence or historical test dumps.
   anonymous manifest and launched the visible upload tools. The current
   seven-fixture modern baseline and exact pre-upload gate pass, but Chrome
   local-file access is not enabled and the supported HTML chooser returns
-  `Not allowed` before transmission; do not bypass it. Separate modern actual
+  `Not allowed` before transmission; a fresh browser reconnect and chooser
+  retry produced the same result. Do not bypass it. Separate modern actual
   evidence exists through an owner-only dedicated test room.
 - Sequential imports use monotonic store versions plus Blockly hydration
   generations in the emit-cache identity. The current six-fixture browser

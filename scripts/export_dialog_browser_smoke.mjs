@@ -626,6 +626,11 @@ async function main() {
         hasReadiness: Boolean(document.querySelector('[data-testid="export-roll20-readiness"]')),
         readinessItemCount: document.querySelectorAll('[data-testid="export-roll20-readiness-item"]').length,
         badgeText: document.querySelector('[data-testid="export-roll20-verification-badge"]')?.textContent?.trim() ?? '',
+        individualCopy: document.querySelector('[data-testid="export-roll20-individual-copy"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+        readinessCopy: document.querySelector('[data-testid="export-roll20-readiness-copy"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+        modeNote: document.querySelector('[data-testid="export-roll20-mode-note"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+        diagnosticTitle: document.querySelector('[data-testid="export-roll20-diagnostic-title"]')?.textContent?.trim() ?? '',
+        assetDestinationCopy: document.querySelector('[data-testid="export-asset-verification-destination"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
         hasAssetPreflight: Boolean(document.querySelector('[data-testid="export-asset-preflight"]')),
         assetPreflightStatus: document.querySelector('[data-testid="export-asset-preflight-status"]')?.textContent?.trim() ?? '',
         hasSandboxDiagnostics: Boolean(document.querySelector('[data-testid="export-roll20-sandbox-diagnostics"]')),
@@ -648,7 +653,7 @@ async function main() {
         })),
         legacyChecked: Boolean(document.querySelector('[data-testid="export-legacy-toggle"]')?.checked),
         hasLegacyToggle: dialogText.includes('구버전 Roll20 무해화'),
-        hasLocalVsActualCopy: dialogText.includes('실제 Roll20 화면 일치는 Sandbox나 새 테스트 방에 올린 뒤 스크린샷으로 다시 확인해야 합니다.'),
+        hasLocalVsActualCopy: dialogText.includes('사용자 정의 시트 샌드박스에 올린 뒤 스크린샷으로 다시 비교해야 합니다'),
         hasFileAccessClutter: dialogText.includes('Chrome 파일 선택이 막히면'),
         hasModeSyncCopy: dialogText.includes('sheet.json') && dialogText.includes('동시에 반영됩니다.'),
         hasAssetPreflightCopy: dialogText.includes('ZIP에는 HTML, CSS, 번역 파일만 들어갑니다.'),
@@ -689,11 +694,15 @@ async function main() {
       document.querySelector('[data-testid="export-legacy-toggle"]')?.click();
     });
     await page.waitForFunction(() => Boolean(document.querySelector('[data-testid="export-legacy-toggle"]')?.checked));
-    result.checks.roll20ModeSync = {
-      exportSelectedLegacy: await page.evaluate(() =>
-        Boolean(document.querySelector('[data-testid="export-legacy-toggle"]')?.checked),
-      ),
-    };
+    result.checks.roll20ModeSync = await page.evaluate(() => ({
+      exportSelectedLegacy: Boolean(document.querySelector('[data-testid="export-legacy-toggle"]')?.checked),
+      legacyBadgeText: document.querySelector('[data-testid="export-roll20-verification-badge"]')?.textContent?.trim() ?? '',
+      legacyIndividualCopy: document.querySelector('[data-testid="export-roll20-individual-copy"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+      legacyReadinessCopy: document.querySelector('[data-testid="export-roll20-readiness-copy"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+      legacyModeNote: document.querySelector('[data-testid="export-roll20-mode-note"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+      legacyDiagnosticTitle: document.querySelector('[data-testid="export-roll20-diagnostic-title"]')?.textContent?.trim() ?? '',
+      legacyAssetDestinationCopy: document.querySelector('[data-testid="export-asset-verification-destination"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+    }));
 
     await page.keyboard.press('Escape');
     await page.waitForSelector('[data-testid="export-roll20-readiness"]', {
@@ -840,7 +849,12 @@ async function main() {
     if (!result.checks.exportDialog.hasTitle) failures.push('export dialog title missing');
     if (!result.checks.exportDialog.hasReadiness) failures.push('export readiness panel missing');
     if (result.checks.exportDialog.readinessItemCount !== 5) failures.push('export readiness item count mismatch');
-    if (result.checks.exportDialog.badgeText !== '실제 검증 필요') failures.push('export verification badge mismatch');
+    if (result.checks.exportDialog.badgeText !== '샌드박스 검증 필요') failures.push('modern export verification badge mismatch');
+    if (!result.checks.exportDialog.individualCopy.includes('사용자 정의 시트 샌드박스')) failures.push('modern individual-file destination copy missing');
+    if (!result.checks.exportDialog.readinessCopy.includes('사용자 정의 시트 샌드박스')) failures.push('modern readiness destination copy missing');
+    if (!result.checks.exportDialog.modeNote.includes('신버전 모드')) failures.push('modern mode destination note missing');
+    if (result.checks.exportDialog.diagnosticTitle !== 'Roll20 Sandbox 고급 진단') failures.push('modern diagnostic title mismatch');
+    if (!result.checks.exportDialog.assetDestinationCopy.includes('사용자 정의 시트 샌드박스')) failures.push('modern asset destination copy missing');
     if (!result.checks.exportDialog.hasAssetPreflight) failures.push('export asset preflight panel missing');
     if (!['외부 자산 없음', '확인 필요'].includes(result.checks.exportDialog.assetPreflightStatus)) {
       failures.push('export asset preflight status mismatch');
@@ -879,6 +893,13 @@ async function main() {
     if (!result.checks.exportDialog.hasModeSyncCopy) failures.push('preview/export mode sync copy missing');
     if (result.checks.exportDialog.legacyChecked) failures.push('modern mode should be the default export mode');
     if (!result.checks.roll20ModeSync.exportSelectedLegacy) failures.push('export toggle did not select legacy mode');
+    if (result.checks.roll20ModeSync.legacyBadgeText !== '구버전 방 검증 필요') failures.push('legacy export verification badge mismatch');
+    if (!result.checks.roll20ModeSync.legacyIndividualCopy.includes('구버전 설정을 켠 전용 테스트 방')) failures.push('legacy individual-file destination copy missing');
+    if (!result.checks.roll20ModeSync.legacyReadinessCopy.includes('구버전 설정을 켠 전용 테스트 방')) failures.push('legacy readiness destination copy missing');
+    if (!result.checks.roll20ModeSync.legacyModeNote.includes('샌드박스에서는 확인할 수 없습니다')) failures.push('legacy Sandbox exclusion note missing');
+    if (result.checks.roll20ModeSync.legacyModeNote.includes('Custom Sheet Sandbox')) failures.push('legacy mode still directs users to Custom Sheet Sandbox');
+    if (result.checks.roll20ModeSync.legacyDiagnosticTitle !== '구버전 업로드 고급 진단') failures.push('legacy diagnostic title mismatch');
+    if (!result.checks.roll20ModeSync.legacyAssetDestinationCopy.includes('구버전 설정을 켠 전용 테스트 방')) failures.push('legacy asset destination copy missing');
     if (!result.checks.roll20ModeSync.previewSawLegacy || !result.checks.roll20ModeSync.previewLegacyLabel.includes('구버전')) {
       failures.push('preview toolbar did not receive legacy mode from export dialog');
     }

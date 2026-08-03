@@ -8,6 +8,12 @@ belong in tracked documents.
 
 ## P0 - Roll20 Render Truth
 
+- `DONE LOCAL / VERIFY MODERN SANDBOX`: export handoff now names the correct
+  actual destination for each compatibility mode. Modern mode presents the
+  three final files for Custom Sheet Sandbox; legacy mode points to a dedicated
+  legacy-enabled test room and explicitly states that Sandbox cannot verify
+  legacy behavior. Browser smoke covers both toggle states, destination copy,
+  readiness badges, and diagnostic titles with zero console or page errors.
 - `DONE ACTUAL LEGACY / VERIFY MODERN SANDBOX`: the corrected seven-fixture
   anonymous legacy suite now uses the exact manual-upload/ZIP preparation
   boundary instead of raw canonical emit text. Fresh pre-upload checks pass,
@@ -79,8 +85,9 @@ belong in tracked documents.
   tools. A fresh seven-fixture modern baseline and its exact export-boundary
   pre-upload checks pass, but the supported visible chooser still returns
   `Not allowed` before transmission while the Chrome extension lacks local-file
-  access. No file was transferred. No hidden input, endpoint, or existing-room
-  workaround is allowed.
+  access. A new reconnect and visible-label chooser retry reached the same
+  boundary. No file was transferred. No hidden input, endpoint, or
+  existing-room workaround is allowed.
 - `DONE CURRENT SYNTHETIC MATRIX`: local Preview/Edit and the dedicated modern and legacy destinations now have
   same-payload root comparisons against the exact authored top-level element,
   not the surrounding Roll20 wrapper. Authored-root dimensions and capture

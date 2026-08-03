@@ -129,6 +129,10 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
     return c;
   }, [combinedWarnings]);
 
+  const roll20VerificationDetail = legacyMode
+    ? '구버전 설정을 켠 전용 테스트 방에 올린 뒤 스크린샷으로 다시 비교해야 합니다'
+    : '사용자 정의 시트 샌드박스에 올린 뒤 스크린샷으로 다시 비교해야 합니다';
+
   const uploadReadiness = useMemo(() => {
     const htmlBytes = byteSize(exportText.html);
     const cssBytes = byteSize(exportText.css);
@@ -160,12 +164,12 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       },
       {
         label: 'Roll20 실제 검증',
-        detail: 'Sandbox나 새 테스트 방에 올린 뒤 스크린샷으로 다시 비교해야 합니다',
+        detail: roll20VerificationDetail,
         ok: false,
         pending: true,
       },
     ];
-  }, [emitCache.i18n, exportText.html, exportText.css]);
+  }, [emitCache.i18n, exportText.html, exportText.css, roll20VerificationDetail]);
 
   const sandboxDiagnostics = useMemo(() => {
     const payload = prepareRoll20Payload({
@@ -371,9 +375,14 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           >
             <div className="mb-2">
               <div className="text-sm font-medium">Roll20 파일을 하나씩 저장</div>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Custom Sheet Sandbox에서 HTML, CSS, 번역 파일을 각각 선택해야 할 때 사용하세요.
-                ZIP에 들어가는 것과 같은 최종 파일이 저장됩니다.
+              <p
+                className="mt-1 text-xs leading-relaxed text-muted-foreground"
+                data-testid="export-roll20-individual-copy"
+              >
+                {legacyMode
+                  ? '구버전 설정을 켠 전용 테스트 방의 시트 편집기에 붙여 넣을 최종 파일입니다.'
+                  : '사용자 정의 시트 샌드박스에서 HTML, CSS, 번역 버튼에 각각 선택할 최종 파일입니다.'}{' '}
+                ZIP에 들어가는 파일과 같습니다.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -449,6 +458,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           <AssetReplacementPanel
             value={assetReplacementText}
             onChange={setAssetReplacementText}
+            legacyMode={legacyMode}
             assetPreflight={assetPreflight}
             replacements={exportText.replacements}
             readiness={assetReplacementReadiness}
@@ -479,16 +489,18 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             <div className="mb-2 flex items-center justify-between gap-3">
               <div>
                 <div className="text-sm font-medium">Roll20 업로드 준비 상태</div>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                  이 항목은 zip 구성 파일의 로컬 준비 상태입니다. 실제 Roll20 화면 일치는
-                  Sandbox나 새 테스트 방에 올린 뒤 스크린샷으로 다시 확인해야 합니다.
+                <p
+                  className="mt-1 text-xs leading-relaxed text-muted-foreground"
+                  data-testid="export-roll20-readiness-copy"
+                >
+                  이 항목은 ZIP 구성 파일의 로컬 준비 상태입니다. {roll20VerificationDetail}.
                 </p>
               </div>
               <span
                 className="shrink-0 rounded border border-amber-500/35 bg-amber-500/10 px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-200"
                 data-testid="export-roll20-verification-badge"
               >
-                실제 검증 필요
+                {legacyMode ? '구버전 방 검증 필요' : '샌드박스 검증 필요'}
               </span>
             </div>
             <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -524,10 +536,15 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 </li>
               ))}
             </ul>
-            <div className="mt-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated-2)] px-2.5 py-2 text-xs leading-relaxed text-muted-foreground">
+            <div
+              className="mt-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated-2)] px-2.5 py-2 text-xs leading-relaxed text-muted-foreground"
+              data-testid="export-roll20-mode-note"
+            >
               시트가 만들어진 Roll20 버전을 아래에서 선택하세요. 이 선택은 미리보기와
-              `sheet.json` 설정에 동시에 반영됩니다. 실제 표시는 Custom Sheet Sandbox나
-              새 테스트 방에 올린 뒤 확인해야 합니다.
+              `sheet.json` 설정에 동시에 반영됩니다.{' '}
+              {legacyMode
+                ? '구버전 모드는 사용자 정의 시트 샌드박스에서는 확인할 수 없습니다. 구버전 설정을 켠 전용 테스트 방에서 확인하세요.'
+                : '신버전 모드는 Roll20 사용자 정의 시트 샌드박스에서 확인하세요.'}
             </div>
           </section>
 
@@ -537,10 +554,14 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           >
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-3 [&::-webkit-details-marker]:hidden">
               <div>
-                <div className="text-sm font-medium">Roll20 Sandbox 고급 진단</div>
+                <div className="text-sm font-medium" data-testid="export-roll20-diagnostic-title">
+                  {legacyMode ? '구버전 업로드 고급 진단' : 'Roll20 Sandbox 고급 진단'}
+                </div>
                 <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                  Roll20 Custom Sheet Sandbox가 업로드 때 적용하는 HTML/CSS 정리 규칙을
-                  로컬에서 미리 계산한 값입니다. 필요할 때만 펼쳐 보세요.
+                  {legacyMode
+                    ? '구버전 내보내기에 적용할 HTML/CSS 정리 규칙을 로컬에서 미리 계산한 값입니다.'
+                    : 'Roll20 사용자 정의 시트 샌드박스가 업로드 때 적용하는 HTML/CSS 정리 규칙을 로컬에서 미리 계산한 값입니다.'}{' '}
+                  필요할 때만 펼쳐 보세요.
                 </p>
               </div>
               <span
@@ -664,6 +685,9 @@ function AssetPreflightPanel({
   result: AssetPreflight;
   legacyMode: boolean;
 }) {
+  const verificationDestination = legacyMode
+    ? '구버전 설정을 켠 전용 테스트 방'
+    : '사용자 정의 시트 샌드박스';
   const hasExternalRisk =
     result.externalRefs > 0
     || result.relativeRefs > 0
@@ -677,9 +701,13 @@ function AssetPreflightPanel({
       <div className="mb-2 flex items-center justify-between gap-3">
         <div>
           <div className="text-sm font-medium">외부 자산 점검</div>
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+          <p
+            className="mt-1 text-xs leading-relaxed text-muted-foreground"
+            data-testid="export-asset-verification-destination"
+          >
             ZIP에는 HTML, CSS, 번역 파일만 들어갑니다. 이미지와 글꼴은 Roll20에서
-            주소로 다시 불러오므로 원본처럼 보이려면 링크가 살아 있어야 합니다.
+            주소로 다시 불러오므로 원본처럼 보이려면 링크가 살아 있어야 합니다. 최종
+            표시는 {verificationDestination}에서 확인하세요.
           </p>
         </div>
         <span
@@ -710,7 +738,7 @@ function AssetPreflightPanel({
         <div className="mt-2 rounded border border-amber-500/25 bg-amber-500/10 px-2.5 py-2 text-xs leading-relaxed text-amber-900 dark:text-amber-100">
           외부 이미지·글꼴은 ZIP에 포함되지 않습니다. 원본이 사라졌거나 막히면
           대체 이미지가 보여 실제 화면이 달라질 수 있습니다. 배포 전에 바로 열리는
-          사용자 소유 주소로 바꾸거나 Roll20 Sandbox에서 표시 상태를 확인하세요.
+          사용자 소유 주소로 바꾸거나 {verificationDestination}에서 표시 상태를 확인하세요.
           {result.canonicalDirectRefs > 0 ? (
             <span className="mt-1 block" data-testid="export-asset-canonical-candidates">
               교체 초안에 바로 열 수 있는 HTTPS 후보 {result.canonicalDirectRefs}개를 함께 적습니다.
@@ -743,6 +771,7 @@ function AssetPreflightPanel({
 function AssetReplacementPanel({
   value,
   onChange,
+  legacyMode,
   assetPreflight,
   replacements,
   readiness,
@@ -756,6 +785,7 @@ function AssetReplacementPanel({
 }: {
   value: string;
   onChange: (value: string) => void;
+  legacyMode: boolean;
   assetPreflight: AssetPreflight;
   replacements: number;
   readiness: AssetReplacementReadiness;
@@ -767,6 +797,9 @@ function AssetReplacementPanel({
   onDeleteProfile: (id: string) => void;
   onCreateDraft: () => void;
 }) {
+  const verificationDestination = legacyMode
+    ? '구버전 설정을 켠 전용 테스트 방'
+    : '사용자 정의 시트 샌드박스';
   const active = value.trim().length > 0;
   const draftableRefs = assetPreflight.refs.filter((ref) => ref.kind !== 'data-url').length;
   const [profileName, setProfileName] = useState('');
@@ -975,11 +1008,11 @@ function AssetReplacementPanel({
               <>
                 Roll20용 주소 {readiness.roll20ReadyTargets}건 중 {readiness.riskyRoll20Targets}건은 Roll20 경유 주소나
                 Imgur 페이지라 대체 이미지로 바뀔 수 있습니다. 사용 권한을 확인한 이미지 주소나
-                사용자가 직접 올린 HTTPS 주소로 바꾼 뒤 Sandbox에서 다시 비교해 주세요.
+                사용자가 직접 올린 HTTPS 주소로 바꾼 뒤 {verificationDestination}에서 다시 비교해 주세요.
               </>
             ) : readiness.hasLocalOnlyTargets ? (
               <>
-                Roll20 Sandbox 재검증에는 웹에서 바로 열 수 있는 사용자 소유 주소가 필요합니다.
+                {verificationDestination} 재검증에는 웹에서 바로 열 수 있는 사용자 소유 주소가 필요합니다.
                 현재 교체 목록에는 로컬 미리보기 전용 대상 {readiness.localOnlyTargets}건이 있습니다.
               </>
             ) : (

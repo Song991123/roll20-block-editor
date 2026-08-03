@@ -16,6 +16,25 @@ or source-derived measurement here.
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
 
+## 2026-08-04 - Mode-Specific Roll20 Upload Handoff
+
+- Export guidance now follows the selected compatibility mode. Modern mode
+  points individual files, readiness copy, and advanced diagnostics to Custom
+  Sheet Sandbox. Legacy mode points them to a dedicated legacy-enabled test
+  room and explicitly says Sandbox cannot verify that mode.
+- The selected destination updates in the same dialog as the shared
+  Preview/Edit/export compatibility switch. Browser smoke verifies both mode
+  transitions, destination labels, file handoff copy, and diagnostic titles
+  with zero console or page errors.
+- A fresh anonymous modern upload payload passes its generator self-test and
+  exact local Sandbox-preview smoke. The supported visible Roll20 chooser was
+  retried after reconnecting the browser, but local-file access is still denied
+  before transmission. No workaround or existing user room was used, so modern
+  Sandbox upload and chat evidence remain open.
+- Full `ci:verify`, lint, production build, export-dialog browser smoke, and
+  tracked-doc privacy guard pass. Final server hygiene reports zero project and
+  CDP listeners.
+
 ## 2026-08-04 - Legacy Asset Compatibility Guidance
 
 - Import/export preflight now distinguishes the documented legacy Google Fonts
