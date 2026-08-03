@@ -4,13 +4,28 @@ const INLINE_TAGS = new Set([
   'small', 'span', 'strong', 'sub', 'sup', 'textarea', 'time', 'u', 'var',
 ]);
 
+const VOID_TAGS = new Set([
+  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+  'link', 'meta', 'param', 'source', 'track', 'wbr',
+]);
+
 /** Return true when a generated fragment can stay in an inline flow. */
 export function isInlineMarkup(code: string): boolean {
   const source = String(code ?? '').trim();
   if (!source) return true;
-  const tags = source.matchAll(/<\/?([A-Za-z][\w:-]*)\b[^>]*>/g);
+  const tags = source.matchAll(/<!--[^]*?-->|<(\/)?([A-Za-z][\w:-]*)\b[^>]*>/g);
+  let depth = 0;
   for (const match of tags) {
-    if (!INLINE_TAGS.has(match[1].toLowerCase())) return false;
+    if (!match[2]) continue;
+    const closing = Boolean(match[1]);
+    const tag = match[2].toLowerCase();
+    if (closing) {
+      depth = Math.max(0, depth - 1);
+      continue;
+    }
+    if (depth === 0 && !INLINE_TAGS.has(tag)) return false;
+    const selfClosing = /\/\s*>$/.test(match[0]);
+    if (!selfClosing && !VOID_TAGS.has(tag)) depth += 1;
   }
   return true;
 }

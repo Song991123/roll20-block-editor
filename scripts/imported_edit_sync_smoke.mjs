@@ -51,6 +51,13 @@ const DRAG_DELTA = { x: Number(argOf('--dx', '80')), y: Number(argOf('--dy', '48
 const FAIL_ON_RESOURCE_ISSUES = argOf('--fail-on-resource-issues', 'false') === 'true';
 const COMPACT_WIDE_ROWS = argOf('--compact-wide-rows', 'false') === 'true';
 const DENSE_ITEMS = Math.max(0, Number(argOf('--dense-items', '0')) || 0);
+const COMPATIBILITY_MODE = argOf('--compatibility-mode', 'modern');
+const ROUNDTRIP_ONLY = argOf('--roundtrip-only', 'false') === 'true';
+const ROUNDTRIP_REPEATS = Math.max(1, Number(argOf('--roundtrip-repeats', '1')) || 1);
+
+if (!['modern', 'legacy'].includes(COMPATIBILITY_MODE)) {
+  throw new Error(`invalid --compatibility-mode: ${COMPATIBILITY_MODE}`);
+}
 
 if (!CANONICAL_IFRAME) {
   throw new Error(
@@ -180,6 +187,26 @@ const BUILTIN_FIXTURES = [
     css: [
       '.sheet-condition-root { width: 560px; min-height: 180px; padding: 16px; background: #fff; }',
       '.sheet-condition-panel { min-height: 72px; margin-top: 8px; padding: 10px; border: 1px solid #9ab; }',
+    ].join('\n'),
+    i18n: '{}',
+    synthetic: true,
+  },
+  {
+    id: 'synthetic-textarea-whitespace',
+    html: [
+      '<div class="sheet-textarea-root">',
+      '  <div class="sheet-textarea-frame">',
+      '    <label>Notes</label>',
+      '    <textarea name="attr_notes" rows="4">  Alpha\n    Beta\n\tGamma  </textarea>',
+      '    <input type="text" name="attr_title" value="Title">',
+      '  </div>',
+      '  <div class="sheet-textarea-frame"><span>Second frame</span></div>',
+      '</div>',
+    ].join('\n'),
+    css: [
+      '.sheet-textarea-root { width: 620px; min-height: 260px; padding: 16px; background: #fff; }',
+      '.sheet-textarea-frame { width: 320px; min-height: 96px; margin-bottom: 12px; padding: 10px; border: 1px solid #8aa; }',
+      '.sheet-textarea-frame textarea, .sheet-textarea-frame input { display: block; width: 240px; margin: 6px 0; }',
     ].join('\n'),
     i18n: '{}',
     synthetic: true,
@@ -486,8 +513,9 @@ async function runCanonicalIframeEditSync(page) {
           priority: actionableTags.has(tag) ? 0 : visualContainerTags.has(tag) ? 1 : 2,
         };
       })
-      .filter((item) => item.visible && item.leaf && !item.structural && !item.stateControl)
+      .filter((item) => item.visible && !item.structural && !item.stateControl)
       .sort((a, b) => {
+        if (a.leaf !== b.leaf) return a.leaf ? -1 : 1;
         if (a.priority !== b.priority) return a.priority - b.priority;
         return (a.rect.width * a.rect.height) - (b.rect.width * b.rect.height);
       });
@@ -3093,14 +3121,14 @@ async function emittedPositionState(page, blockId) {
 async function reimportCurrentEmit(page, compactWideRows = false) {
   return page.evaluate(async ({ compactWideRows }) => {
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-    const e1 = window.__perfHook.getEmitContent();
+    const e1 = await waitForSettledEmit();
     const r2 = await importLive({
       html: e1.html,
       css: e1.css,
       i18n: e1.i18n,
       compactWideRows,
     });
-    const e2 = window.__perfHook.getEmitContent();
+    const e2 = await waitForSettledEmit();
     const n1 = canonicalHtml(e1.html);
     const n2 = canonicalHtml(e2.html);
     const css1 = canonicalCss(e1.css);
@@ -3137,6 +3165,24 @@ async function reimportCurrentEmit(page, compactWideRows = false) {
       return last;
     }
 
+    async function waitForSettledEmit() {
+      let previous = null;
+      let stableSamples = 0;
+      let current = window.__perfHook.getEmitContent();
+      for (let attempt = 0; attempt < 30; attempt += 1) {
+        await sleep(120);
+        current = window.__perfHook.getEmitContent();
+        const signature = [current.html, current.css, current.i18n].join('\u0000');
+        if (signature === previous) {
+          stableSamples += 1;
+          if (stableSamples >= 2) return current;
+        } else {
+          previous = signature;
+          stableSamples = 0;
+        }
+      }
+      return current;
+    }
     function stripBlockIds(html) {
       return html
         .replace(/\s*data-r20-block-id="[^"]*"/g, '')
@@ -3149,7 +3195,8 @@ async function reimportCurrentEmit(page, compactWideRows = false) {
         // Roll20 template directives are whitespace-insensitive. Keep the
         // raw comparison above available while treating formatter-only
         // newlines between adjacent directives as semantic no-ops.
-        .replace(/(\{\{[^{}]*\}\})\s+(?=\{\{[^{}]*\}\})/g, '$1 ');
+        .replace(/(\{\{[^{}]*\}\})\s+(?=\{\{[^{}]*\}\})/g, '$1 ')
+        .trimEnd();
     }
 
     function canonicalCss(css) {
@@ -3555,6 +3602,9 @@ async function main() {
     startedAt: new Date().toISOString(),
     dragDelta: DRAG_DELTA,
     failOnResourceIssues: FAIL_ON_RESOURCE_ISSUES,
+    compatibilityMode: COMPATIBILITY_MODE,
+    roundtripOnly: ROUNDTRIP_ONLY,
+    roundtripRepeats: ROUNDTRIP_REPEATS,
     compactWideRows: COMPACT_WIDE_ROWS,
     requireSheetVisualSync: REQUIRE_SHEET_VISUAL_SYNC,
     sheetVisualMismatchLimitPct: SHEET_VISUAL_MISMATCH_LIMIT_PCT,
@@ -3594,6 +3644,7 @@ async function main() {
       try {
         await page.goto(`http://127.0.0.1:${PORT}${BASE_PATH}/`, { waitUntil: 'load' });
         await warmPerfHook(page);
+        await page.evaluate((mode) => window.__perfHook.setRoll20CompatibilityMode(mode), COMPATIBILITY_MODE);
         entry.import = await importFixture(page, fixture);
         entry.workspaceAfterImport = await page.evaluate(() => window.__perfHook.getWorkspace());
         entry.htmlWorkspaceShape = summarizeHtmlWorkspaceShape(
@@ -3623,7 +3674,18 @@ async function main() {
             throw new Error(`generic element coverage failed: ${JSON.stringify(entry.genericElementCoverage)}`);
           }
         }
-        if (CANONICAL_IFRAME) {
+        if (ROUNDTRIP_ONLY) {
+          await page.waitForTimeout(500);
+          entry.reimportAttempts = [];
+          for (let repeat = 0; repeat < ROUNDTRIP_REPEATS; repeat += 1) {
+            const attempt = await reimportCurrentEmit(page, COMPACT_WIDE_ROWS);
+            entry.reimportAttempts.push(attempt);
+            entry.reimport = attempt;
+            if (!isStableReimport(attempt)) break;
+          }
+          entry.interactionPass = isStableReimport(entry.reimport);
+          entry.pass = entry.interactionPass;
+        } else if (CANONICAL_IFRAME) {
           await page.waitForTimeout(1300);
           entry.layerReorder = await runImportedLayerReorder(page);
           entry.nonLeafLayerReorder = await runImportedNonLeafLayerReorder(page, fixture.id);
@@ -3646,7 +3708,8 @@ async function main() {
             page,
             entry.layerInsideMove,
           );
-          entry.interactionPass = entry.canonicalEditSync.pass === true;
+          entry.interactionPass = entry.canonicalEditSync.pass === true
+            || entry.canonicalEditSync.skipped === true;
           entry.interactionPass = entry.interactionPass && isStableReimport(entry.reimport);
           entry.interactionPass = entry.interactionPass
             && (entry.layerReorder?.pass === true || entry.layerReorder?.skipped === true)

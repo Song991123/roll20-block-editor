@@ -105,7 +105,7 @@ export function normalizeSelfClosingTags(html: string): string {
     }
     i = j + 1;
     // raw-text 요소 내부는 스캔 없이 통과 (script 안의 '<' 보호).
-    if (RAW_TEXT_TAGS.has(tag) && !rawTag.endsWith('/>')) {
+    if ((RAW_TEXT_TAGS.has(tag) || RCDATA_TAGS.has(tag)) && !rawTag.endsWith('/>')) {
       const close = html.toLowerCase().indexOf(`</${tag}`, i);
       const stop = close < 0 ? n : close;
       out += html.slice(i, stop);
@@ -173,6 +173,7 @@ const VOID_TAGS = new Set([
 ]);
 
 const RAW_TEXT_TAGS = new Set(['script', 'style']);
+const RCDATA_TAGS = new Set(['textarea', 'title']);
 
 function parseWithFallback(html: string): DomNode {
   const root: DomNode = { type: 'root', children: [], parent: null };
@@ -243,16 +244,27 @@ function parseWithFallback(html: string): DomNode {
       parent.children.push(el);
       i = close + 1;
       if (!selfClose && !VOID_TAGS.has(tag)) {
-        if (RAW_TEXT_TAGS.has(tag)) {
+        if (RAW_TEXT_TAGS.has(tag) || RCDATA_TAGS.has(tag)) {
           // raw text until </tag>
           const closeIdx = findClosingTag(html, i, tag);
           if (closeIdx < 0) {
-            el.children.push({ type: 'text', text: html.slice(i), children: [], parent: el });
+            const raw = html.slice(i);
+            el.children.push({
+              type: 'text',
+              text: RCDATA_TAGS.has(tag) ? decodeHtmlReferences(raw) : raw,
+              children: [],
+              parent: el,
+            });
             i = len;
           } else {
             const raw = html.slice(i, closeIdx);
             if (raw) {
-              el.children.push({ type: 'text', text: raw, children: [], parent: el });
+              el.children.push({
+                type: 'text',
+                text: RCDATA_TAGS.has(tag) ? decodeHtmlReferences(raw) : raw,
+                children: [],
+                parent: el,
+              });
             }
             i = closeIdx + `</${tag}>`.length;
           }
@@ -277,7 +289,7 @@ function parseWithFallback(html: string): DomNode {
     const stop = nextLt < 0 ? len : nextLt;
     const text = html.slice(i, stop);
     if (text) {
-      appendText(stack, text);
+      appendText(stack, decodeHtmlReferences(text));
     }
     i = stop;
   }
@@ -329,10 +341,31 @@ function parseAttrs(blob: string): Record<string, string> {
   let m: RegExpExecArray | null;
   while ((m = re.exec(blob)) !== null) {
     const name = m[1].toLowerCase();
-    const value = m[2] ?? m[3] ?? m[4] ?? '';
+    const value = decodeHtmlReferences(m[2] ?? m[3] ?? m[4] ?? '');
     out[name] = value;
   }
   return out;
+}
+
+function decodeHtmlReferences(value: string): string {
+  return String(value || '').replace(
+    /&(?:#(\d+)|#x([0-9a-f]+)|(amp|lt|gt|quot|apos|nbsp));/gi,
+    (token, decimal: string | undefined, hex: string | undefined, named: string | undefined) => {
+      if (decimal || hex) {
+        const codePoint = Number.parseInt(decimal ?? hex ?? '', decimal ? 10 : 16);
+        if (!Number.isFinite(codePoint) || codePoint < 0 || codePoint > 0x10ffff) return token;
+        try {
+          return String.fromCodePoint(codePoint);
+        } catch {
+          return token;
+        }
+      }
+      const entities: Record<string, string> = {
+        amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: '\u00a0',
+      };
+      return entities[String(named || '').toLowerCase()] ?? token;
+    },
+  );
 }
 
 // ---------------------------------------------------------------------------

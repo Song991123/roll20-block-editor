@@ -314,6 +314,31 @@ assert.match(
 );
 assert.match(
   bundle.doc,
+  /function scheduleSheetWorkerTask\(task\)[\s\S]*?context: sheetWorkerEventContext[\s\S]*?Promise\.resolve\(\)\.then\(function \(\)[\s\S]*?sheetWorkerEventContext = pending\[index\]\.context[\s\S]*?finally \{ sheetWorkerEventContext = previousContext; \}/,
+  'worker callbacks use a microtask queue and preserve their repeating-row context',
+);
+assert.match(
+  bundle.doc,
+  /function sheetWorkerGetAttrs\(names, cb\)[\s\S]*?scheduleSheetWorkerTask\(function \(\) \{ cb\(out\); \}\)/,
+  'worker getAttrs completion is asynchronous',
+);
+assert.match(
+  bundle.doc,
+  /function sheetWorkerSetAttrs\(values, opts, cb\)[\s\S]*?scheduleSheetWorkerTask\(function \(\)[\s\S]*?if \(typeof cb === 'function'\) cb\(\)/,
+  'worker setAttrs completion and dependent events leave the current stack',
+);
+assert.match(
+  bundle.doc,
+  /function sheetWorkerGetSectionIDs\(section, cb\)[\s\S]*?scheduleSheetWorkerTask\(function \(\) \{ cb\(rowIds\); \}\)/,
+  'worker getSectionIDs completion is asynchronous',
+);
+assert.match(
+  bundle.doc,
+  /function installSheetWorkers\(\) \{[\s\S]*?sheetWorkerRuntimeGeneration \+= 1;[\s\S]*?sheetWorkerAsyncTasks = \[\];/,
+  'worker reinstall invalidates callbacks from the previous render generation',
+);
+assert.match(
+  bundle.doc,
   /var changedAttrs = \[\][\s\S]*?var resolvedKey = resolveSheetWorkerAttrName\(k\)[\s\S]*?if \(writeSheetAttr\(resolvedKey, values\[k\]\)\)[\s\S]*?changedAttrs\.push\(\{ key: resolvedKey, previousValue: previousValue, newValue: newValue \}\)/,
   'worker setAttrs records only changed values with their previous and new state',
 );

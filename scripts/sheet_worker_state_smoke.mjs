@@ -30,7 +30,12 @@ const OUT_DIR = path.resolve(argOf('--out-dir', './out'));
 const BASE_PATH = argOf('--base-path', '/roll20-block-editor');
 const REPORT_DIR = path.resolve(argOf('--report-dir', 'reports/sheet-worker-state-smoke'));
 const PORT = Number(argOf('--port', '4198'));
+const COMPATIBILITY_MODE = argOf('--compatibility-mode', 'modern');
 const VIEWPORT = { width: 1280, height: 900 };
+
+if (!['modern', 'legacy'].includes(COMPATIBILITY_MODE)) {
+  throw new Error(`invalid --compatibility-mode: ${COMPATIBILITY_MODE}`);
+}
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -51,6 +56,7 @@ const SYNTHETIC_SHEET = {
   <button type="action" name="act_character">Character</button>
   <button type="action" name="act_combat">Combat</button>
   <button type="action" name="act_silent_update">Silent update</button>
+  <button type="action" name="act_async_callbacks">Async callbacks</button>
   <button type="action" name="act_worker_add_row">Worker add row</button>
   <button type="action" name="act_worker_remove_row">Worker remove row</button>
   <div class="character">Character panel</div>
@@ -83,6 +89,8 @@ const SYNTHETIC_SHEET = {
 <input type="hidden" name="attr_worker_source" value="">
 <input type="hidden" name="attr_silent_fired" value="">
 <input type="hidden" name="attr_callback_done" value="">
+<input type="hidden" name="attr_callback_timing" value="">
+<input type="hidden" name="attr_callback_chain" value="">
 <input type="hidden" name="attr_silent_probe" value="idle">
 <input type="hidden" name="attr_repeat_change_source" value="">
 <input type="hidden" name="attr_repeat_change_attr" value="">
@@ -127,6 +135,23 @@ const SYNTHETIC_SHEET = {
     setAttrs({ silent_probe: "updated" }, { silent: true }, function () {
       setAttrs({ callback_done: "yes" }, { silent: true });
     });
+  });
+  on("clicked:async_callbacks", function () {
+    var synchronous = true;
+    var remaining = 8000;
+    setAttrs({}, { silent: true }, function () {
+      setAttrs({ callback_timing: synchronous ? "sync" : "async" }, { silent: true });
+    });
+    synchronous = false;
+    function next() {
+      if (remaining <= 0) {
+        setAttrs({ callback_chain: "done" }, { silent: true });
+        return;
+      }
+      remaining -= 1;
+      setAttrs({}, { silent: true }, next);
+    }
+    next();
   });
   on("change:repeating_items:item_qty", function (eventInfo) {
     setAttrs({
@@ -242,26 +267,27 @@ async function warmPerfHook(page) {
 }
 
 async function importSynthetic(page) {
-  return page.evaluate(async (sheet) => {
+  return page.evaluate(async ({ sheet, compatibilityMode }) => {
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     window.__perfHook.clearAll();
+    window.__perfHook.setRoll20CompatibilityMode(compatibilityMode);
     await sleep(300);
     const result = await window.__perfHook.importSheet(sheet);
     window.__perfHook.setPreviewRenderMode('iframe');
     window.__perfHook.setPreviewZoom(1);
     window.__perfHook.setMainMode('preview');
     return result;
-  }, SYNTHETIC_SHEET);
+  }, { sheet: SYNTHETIC_SHEET, compatibilityMode: COMPATIBILITY_MODE });
 }
 
 async function readState(frame) {
   return frame.evaluate(() => {
     const input = document.querySelector('[name="attr_sheetTab"]');
-    const character = document.querySelector('.sheet-character');
-    const combat = document.querySelector('.sheet-combat');
-    const visibleLock = document.querySelector('.sheet-visible-lock');
-    const localLock = document.querySelector('.sheet-local-lock');
-    const choice = document.querySelector('.sheet-choice');
+    const character = document.querySelector('.character, .sheet-character');
+    const combat = document.querySelector('.combat, .sheet-combat');
+    const visibleLock = document.querySelector('.visible-lock, .sheet-visible-lock');
+    const localLock = document.querySelector('.local-lock, .sheet-local-lock');
+    const choice = document.querySelector('.choice, .sheet-choice');
     const charStyle = character ? getComputedStyle(character) : null;
     const combatStyle = combat ? getComputedStyle(combat) : null;
     const choiceStyle = choice ? getComputedStyle(choice) : null;
@@ -292,6 +318,8 @@ async function readState(frame) {
       workerSource: document.querySelector('[name="attr_worker_source"]')?.value ?? null,
       silentFired: document.querySelector('[name="attr_silent_fired"]')?.value ?? null,
       callbackDone: document.querySelector('[name="attr_callback_done"]')?.value ?? null,
+      callbackTiming: document.querySelector('[name="attr_callback_timing"]')?.value ?? null,
+      callbackChain: document.querySelector('[name="attr_callback_chain"]')?.value ?? null,
       silentProbe: document.querySelector('[name="attr_silent_probe"]')?.value ?? null,
       repeatingTemplateDisplay: getComputedStyle(document.querySelector('fieldset.repeating_items')).display,
       repeatingGroup: document.querySelector('.repcontainer')?.getAttribute('data-groupname') ?? null,
@@ -399,6 +427,7 @@ async function main() {
   const report = {
     startedAt: new Date().toISOString(),
     baseUrl: `http://127.0.0.1:${PORT}${BASE_PATH}/`,
+    compatibilityMode: COMPATIBILITY_MODE,
     steps: [],
     duplicateAttrSteps: [],
     repeatingSteps: [],
@@ -656,7 +685,7 @@ async function main() {
     await frame.locator('button[name="act_character"]').click({ timeout: 10000 });
     await frame.waitForFunction(() => {
       const input = document.querySelector('[name="attr_sheetTab"]');
-      const character = document.querySelector('.sheet-character');
+      const character = document.querySelector('.character, .sheet-character');
       return input?.getAttribute('value') === 'character' && getComputedStyle(character).display !== 'none';
     }, null, { timeout: 10000 });
     const character = await readState(frame);
@@ -669,7 +698,7 @@ async function main() {
     await frame.locator('button[name="act_combat"]').click({ timeout: 10000 });
     await frame.waitForFunction(() => {
       const input = document.querySelector('[name="attr_sheetTab"]');
-      const combat = document.querySelector('.sheet-combat');
+      const combat = document.querySelector('.combat, .sheet-combat');
       return input?.getAttribute('value') === 'combat' && getComputedStyle(combat).display !== 'none';
     }, null, { timeout: 10000 });
     const combat = await readState(frame);
@@ -681,10 +710,10 @@ async function main() {
       state: beforeLock,
       pass: beforeLock.visibleLockChecked === false && beforeLock.localLockChecked === false && beforeLock.choiceDisplay !== 'none',
     });
-    await frame.locator('.sheet-visible-lock').click({ timeout: 10000 });
+    await frame.locator('.visible-lock, .sheet-visible-lock').first().click({ timeout: 10000 });
     await frame.waitForFunction(() => {
-      const localLock = document.querySelector('.sheet-local-lock');
-      const choice = document.querySelector('.sheet-choice');
+      const localLock = document.querySelector('.local-lock, .sheet-local-lock');
+      const choice = document.querySelector('.choice, .sheet-choice');
       return localLock?.checked === true && localLock?.getAttribute('checked') === 'checked' && getComputedStyle(choice).display === 'none';
     }, null, { timeout: 10000 });
     const afterLock = await readState(frame);
@@ -754,6 +783,18 @@ async function main() {
         silentUpdate.silentProbe === 'updated' &&
         silentUpdate.callbackDone === 'yes' &&
         silentUpdate.silentFired === beforeSilentUpdate.silentFired,
+    });
+
+    await frame.locator('button[name="act_async_callbacks"]').click({ timeout: 10000 });
+    await frame.waitForFunction(() => (
+      document.querySelector('[name="attr_callback_timing"]')?.value === 'async' &&
+      document.querySelector('[name="attr_callback_chain"]')?.value === 'done'
+    ), null, { timeout: 20000 });
+    const asyncCallbacks = await readState(frame);
+    report.steps.push({
+      name: 'setattrs-callbacks-are-async-and-stack-safe',
+      state: asyncCallbacks,
+      pass: asyncCallbacks.callbackTiming === 'async' && asyncCallbacks.callbackChain === 'done',
     });
 
     report.screenshotPath = path.join(REPORT_DIR, 'sheet-worker-state.png');

@@ -136,6 +136,26 @@ belong in tracked documents.
 
 ## P0 - Universal Import And Export
 
+- `DONE LOCAL / VERIFY BROAD`: HTML emission now preserves RCDATA and preformatted
+  content, multiline quoted attributes, inline sibling order, and edited
+  boundary whitespace across import -> emit -> import. Internal editor IDs are
+  escaped at their attribute boundary, stale nested markers are removed, and
+  literal JavaScript replacement tokens no longer corrupt protected fragments.
+  The fallback parser now treats `textarea` and `title` as RCDATA and decodes
+  the supported HTML references. Anonymous modern and legacy browser
+  roundtrips pass repeatedly; ephemeral protected-input evidence also passes
+  with clean console and page-error gates and was removed after classification.
+- `DONE LOCAL / VERIFY BROAD`: local `getAttrs`, `setAttrs`, and
+  `getSectionIDs` callbacks now leave the current JavaScript stack, preserve
+  repeating-row context across the asynchronous boundary, and discard work
+  from an obsolete render generation. Modern and legacy Worker-state browser
+  smokes pass action state, repeating operations, callback timing, and a deep
+  callback chain. This is simulator fidelity, not broad Sheet Worker support
+  or actual Roll20 execution proof.
+- `VERIFY SCALE`: repeated roundtrips of a large protected input in one browser
+  process can still exceed the practical memory/time budget. Keep the single
+  current roundtrip gate and anonymous repeated synthetic gate; add bounded
+  process isolation before claiming broad repeated-import endurance.
 - `PARTIAL`: HTML, CSS, translation, Rolltemplate, and a useful Sheet Worker
   subset map to editable blocks. Unsupported content must remain explicit and
   lossless instead of disappearing.

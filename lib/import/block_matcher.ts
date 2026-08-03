@@ -163,6 +163,8 @@ export function matchElement(node: DomNode, ctx: MatchContext): MatchedBlock | n
     };
   }
 
+  stripInternalEditorAttributes(node);
+
   const result =
     matchInput(node, ctx) ??
     matchDice(node, ctx) ??
@@ -197,6 +199,13 @@ export function matchElement(node: DomNode, ctx: MatchContext): MatchedBlock | n
     raw: serializeRawHtml(node),
     hint: `unmatched:${node.tag}`,
   };
+}
+
+function stripInternalEditorAttributes(node: DomNode): void {
+  if (node.type === 'element' && node.attrs) {
+    delete node.attrs['data-r20-block-id'];
+    delete node.attrs['data-r20-text-node'];
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1566,6 +1575,10 @@ export function serializeRawHtml(node: DomNode): string {
   if (node.type === 'comment') return `<!--${node.text || ''}-->`;
   if (node.type !== 'element' || !node.tag) return '';
   const attrs = Object.entries(node.attrs || {})
+    .filter(([name]) => {
+      const lower = name.toLowerCase();
+      return lower !== 'data-r20-block-id' && lower !== 'data-r20-text-node';
+    })
     .map(([k, v]) => ` ${k}="${escapeAttr(v)}"`)
     .join('');
   if (isVoidTag(node.tag)) return `<${node.tag}${attrs}>`;
@@ -1582,7 +1595,12 @@ function escapeAttr(s: string): string {
 
 function serializeScriptAttrs(attrs: Record<string, string>): string {
   return Object.entries(attrs)
-    .filter(([name]) => !/^on[a-z]+$/i.test(name))
+    .filter(([name]) => {
+      const lower = name.toLowerCase();
+      return !/^on[a-z]+$/i.test(name)
+        && lower !== 'data-r20-block-id'
+        && lower !== 'data-r20-text-node';
+    })
     .map(([name, value]) => (value ? `${name}="${escapeAttr(value)}"` : name))
     .join(' ');
 }

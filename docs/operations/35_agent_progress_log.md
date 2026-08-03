@@ -1,6 +1,6 @@
 # Agent Progress Log
 
-Date: 2026-08-03
+Date: 2026-08-04
 
 This is a compact handoff log. Record only generic product changes, named
 verification commands, commit state, and remaining gates. Never record external
@@ -15,6 +15,29 @@ or source-derived measurement here.
 - Read the current remote checks from GitHub; do not rely on a cached CI result
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
+
+## 2026-08-04 - Import Roundtrip And Worker Callback Stability
+
+- Fixed a generic emission corruption where JavaScript replacement-token
+  syntax inside generated IDs was interpreted while restoring protected
+  preformatted fragments. Attribute escaping, stale-marker cleanup, RCDATA
+  parsing, multiline whitespace preservation, and inline sibling joining now
+  share anonymous regression coverage.
+- Limited final internal-marker normalization to real opening-tag attributes.
+  Worker source, RCDATA, ordinary text, and comments remain untouched. Import
+  cleanup no longer re-walks every descendant for every matched node.
+- Matched the official asynchronous callback contract for `getAttrs`,
+  `setAttrs`, and `getSectionIDs`. The local queue retains repeating-row
+  context, invalidates stale render generations, and prevents recursive
+  callback chains from exhausting the JavaScript stack.
+- Full `ci:verify`, `guard:docs-privacy`, `lint`, production `build`, and the
+  focused emit/import/Worker bundle tests pass. Explicit modern and legacy
+  Worker-state smokes pass, as do repeated anonymous modern and legacy import
+  roundtrips. An ephemeral protected-input run passes roundtrip plus clean
+  console/page gates; all private helpers and evidence were deleted afterward.
+- Claim boundary: actual Roll20 visual/runtime parity was not rerun in this
+  batch. Large protected-input repetition still needs bounded process
+  isolation before it can be an endurance gate.
 
 ## 2026-08-03 - Valid Repeating Contract And Pre-Upload Gate
 

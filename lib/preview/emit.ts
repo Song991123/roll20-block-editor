@@ -84,28 +84,58 @@ class EmitEngine implements GeneratorContext {
     if (!input) return '';
     const first = input.connection?.targetBlock();
     if (!first) return '';
-    const lines: string[] = [];
+    const lines: Array<{ block: Blockly.Block; code: string }> = [];
     let cur: Blockly.Block | null = first;
     while (cur) {
       const out = this.runGenerator(cur);
-      if (out.code) lines.push(out.code);
+      if (out.code) lines.push({ block: cur, code: out.code });
       cur = cur.getNextBlock();
     }
-    if (this.kind !== 'html') return lines.join('\n');
+    if (this.kind !== 'html') return lines.map((line) => line.code).join('\n');
+
+    const preservesWhitespace = (
+      (b.type === 'r20_semantic_container' || b.type === 'r20_element_container') &&
+      ['pre', 'textarea'].includes(String(b.getFieldValue('TAG') ?? '').trim().toLowerCase())
+    );
+    if (!preservesWhitespace) {
+      while (lines[0]?.block.type === 'r20_text_node' && !lines[0].code.trim()) lines.shift();
+      while (lines.at(-1)?.block.type === 'r20_text_node' && !lines.at(-1)!.code.trim()) lines.pop();
+    }
+
     return lines.reduce((out, line, index) => {
-      if (index === 0) return line;
-      const previous = lines[index - 1];
-      return out + (isInlineMarkup(previous) && isInlineMarkup(line) ? '' : '\n') + line;
+      if (index === 0) return line.code;
+      const previous = lines[index - 1].code;
+      return out + (isInlineMarkup(previous) && isInlineMarkup(line.code) ? '' : '\n') + line.code;
     }, '');
   }
 
   indent(code: string, level = 1): string {
     if (!code) return code;
     const pad = '  '.repeat(level);
-    return code
+    const protectedSegments: string[] = [];
+    const protect = (segment: string) => {
+      const token = `\uE000r20-raw-${protectedSegments.length}\uE001`;
+      protectedSegments.push(segment);
+      return token;
+    };
+    let source = code;
+    if (this.kind === 'html') {
+      source = source.replace(/<(pre|textarea)\b[^>]*>[\s\S]*?<\/\1>/gi, protect);
+      source = source.replace(/"[^"]*"|'[^']*'/g, (segment) => (
+        /[\r\n]/.test(segment) ? protect(segment) : segment
+      ));
+    }
+    const indented = source
       .split('\n')
       .map((line) => (line ? pad + line : line))
       .join('\n');
+    return protectedSegments.reduce(
+      (result, segment, index) => result.replace(
+        `\uE000r20-raw-${index}\uE001`,
+        () => segment,
+      ),
+      indented,
+    );
   }
 
   addGeneratedCss(css: string): void {
@@ -197,7 +227,7 @@ class EmitEngine implements GeneratorContext {
     if (this.kind === 'html' && block.type === 'r20_text_node') {
       // A top-level text node needs an inline selectable surface. A div
       // wrapper changes Roll20 inline spacing and is not stable on reimport.
-      return `<span data-r20-text-node="1" data-r20-block-id="${block.id}">${code}</span>`;
+      return `<span data-r20-text-node="1" data-r20-block-id="${escapeAttr(block.id)}">${code}</span>`;
     }
     const def = getBlockDef(block.type);
     const shape: BlockShape = def?.shape ?? 'stack';
@@ -205,7 +235,7 @@ class EmitEngine implements GeneratorContext {
     if (this.kind === 'html') {
       if (shape === 'reporter' || shape === 'boolean') {
         const safe = escapeAttr(code);
-        return `<input class="${shape === 'boolean' ? 'expr-bool' : 'expr-value'}" data-r20-block-id="${block.id}" type="text" readonly value="${safe}" />`;
+        return `<input class="${shape === 'boolean' ? 'expr-bool' : 'expr-value'}" data-r20-block-id="${escapeAttr(block.id)}" type="text" readonly value="${safe}" />`;
       }
       // stack / cap / hat / c / e —
       //   원래: `<div data-r20-block-id=...>${code}</div>` 로 감쌌으나, legacy-sheet-corpus legacy corpus
@@ -217,7 +247,7 @@ class EmitEngine implements GeneratorContext {
       //   (preview bridge 가 부모 walk 으로 id 탐색).
       //   pure text emit 또는 opening tag 검출 실패 시 안전망으로 div 래핑 유지.
       const injected = injectBlockIdAttr(code, block.id);
-      return injected ?? `<div data-r20-block-id="${block.id}">${code}</div>`;
+      return injected ?? `<div data-r20-block-id="${escapeAttr(block.id)}">${code}</div>`;
     }
 
     // CSS / i18n — top-level expression 은 아직 의미 X. raw dump (debugging).
@@ -256,13 +286,16 @@ export function emitWorkspace(
       cur = cur.getNextBlock();
     }
   }
-  const code = kind === 'html'
+  const joined = kind === 'html'
     ? pieces.reduce((out, piece, index) => {
       if (index === 0) return piece;
       const previous = pieces[index - 1];
       return out + (isInlineMarkup(previous) && isInlineMarkup(piece) ? '' : '\n') + piece;
     }, '')
     : pieces.join('\n');
+  const code = kind === 'html'
+    ? normalizeBlockIdAttributes(joined, new Set(ws.getAllBlocks(false).map((block) => block.id)))
+    : joined;
   return {
     code,
     warnings: engine.warnings,
@@ -351,6 +384,107 @@ function escapeAttr(s: string): string {
     .replace(/>/g, '&gt;');
 }
 
+export function normalizeBlockIdAttributes(html: string, allowedIds: ReadonlySet<string>): string {
+  const lower = html.toLowerCase();
+  const rawTextTags = new Set(['script', 'style', 'textarea', 'title']);
+  let cursor = 0;
+  let out = '';
+  while (cursor < html.length) {
+    const openingStart = html.indexOf('<', cursor);
+    if (openingStart < 0) return out + html.slice(cursor);
+    out += html.slice(cursor, openingStart);
+
+    if (html.startsWith('<!--', openingStart)) {
+      const commentEnd = html.indexOf('-->', openingStart + 4);
+      if (commentEnd < 0) return out + html.slice(openingStart);
+      out += html.slice(openingStart, commentEnd + 3);
+      cursor = commentEnd + 3;
+      continue;
+    }
+
+    const tagMatch = /^<([A-Za-z][\w:-]*)\b/.exec(html.slice(openingStart));
+    if (!tagMatch) {
+      out += '<';
+      cursor = openingStart + 1;
+      continue;
+    }
+    const openingEnd = findOpeningTagEnd(html, openingStart);
+    if (openingEnd < 0) return out + html.slice(openingStart);
+    const openingTag = html.slice(openingStart, openingEnd + 1);
+    out += normalizeBlockIdAttributesInTag(openingTag, allowedIds);
+    cursor = openingEnd + 1;
+
+    const tag = tagMatch[1].toLowerCase();
+    if (rawTextTags.has(tag) && !/\/\s*>$/.test(openingTag)) {
+      const closingStart = lower.indexOf(`</${tag}`, cursor);
+      if (closingStart < 0) return out + html.slice(cursor);
+      out += html.slice(cursor, closingStart);
+      cursor = closingStart;
+    }
+  }
+  return out;
+}
+
+function findOpeningTagEnd(html: string, openingStart: number): number {
+  let quote: string | null = null;
+  for (let index = openingStart + 1; index < html.length; index += 1) {
+    const char = html[index];
+    if (quote) {
+      if (char === quote) {
+        const next = html[index + 1] || '';
+        if (!next || /\s|>/.test(next) || (next === '/' && html[index + 2] === '>')) quote = null;
+      }
+      continue;
+    }
+    if (char === '"' || char === "'") quote = char;
+    else if (char === '>') return index;
+  }
+  return -1;
+}
+
+function normalizeBlockIdAttributesInTag(html: string, allowedIds: ReadonlySet<string>): string {
+  const marker = /\s+data-r20-block-id\s*=\s*/gi;
+  let cursor = 0;
+  let out = '';
+  let match: RegExpExecArray | null;
+  while ((match = marker.exec(html))) {
+    const valueStart = marker.lastIndex;
+    const quote = html[valueStart];
+    const quoted = quote === '"' || quote === "'";
+    let valueEnd = valueStart;
+    let attributeEnd = valueStart;
+    if (quoted) {
+      valueEnd += 1;
+      while (valueEnd < html.length) {
+        if (html[valueEnd] === quote) {
+          const next = html[valueEnd + 1] || '';
+          if (!next || /\s|>/.test(next) || (next === '/' && html[valueEnd + 2] === '>')) break;
+        }
+        valueEnd += 1;
+      }
+      if (valueEnd >= html.length) continue;
+      attributeEnd = valueEnd + 1;
+    } else {
+      while (valueEnd < html.length && !/\s|\/|>/.test(html[valueEnd])) valueEnd += 1;
+      attributeEnd = valueEnd;
+    }
+
+    const rawValue = html.slice(valueStart + (quoted ? 1 : 0), valueEnd);
+    const decodedValue = rawValue
+      .replace(/&quot;/gi, '"')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&amp;/gi, '&');
+    out += html.slice(cursor, match.index);
+    if (allowedIds.has(decodedValue)) {
+      out += ` data-r20-block-id="${escapeAttr(decodedValue)}"`;
+    }
+    cursor = attributeEnd;
+    marker.lastIndex = attributeEnd;
+  }
+  return out + html.slice(cursor);
+}
+
 function normalizeWorkerBody(code: string): string {
   const trimmed = code.trim();
   if (!trimmed) return '';
@@ -430,7 +564,10 @@ function injectBlockIdAttr(html: string, id: string): string | null {
   while (end < html.length) {
     const c = html[end];
     if (quote) {
-      if (c === quote) quote = null;
+      if (c === quote) {
+        const next = html[end + 1] || '';
+        if (!next || /\s|>/.test(next) || (next === '/' && html[end + 2] === '>')) quote = null;
+      }
       end++;
       continue;
     }
@@ -444,8 +581,39 @@ function injectBlockIdAttr(html: string, id: string): string | null {
   }
   if (end >= html.length) return null;
   const attrsRegion = html.slice(tagNameEnd, end);
-  if (/\sdata-r20-block-id\s*=/.test(attrsRegion) || /^data-r20-block-id\s*=/.test(attrsRegion.trimStart())) {
-    return html;
+  const replacedAttrs = replaceBlockIdAttribute(attrsRegion, id);
+  if (replacedAttrs !== null) {
+    return html.slice(0, tagNameEnd) + replacedAttrs + html.slice(end);
   }
-  return html.slice(0, tagNameEnd) + ` data-r20-block-id="${id}"` + html.slice(tagNameEnd);
+  return html.slice(0, tagNameEnd) + ` data-r20-block-id="${escapeAttr(id)}"` + html.slice(tagNameEnd);
+}
+
+function replaceBlockIdAttribute(attrs: string, id: string): string | null {
+  const marker = /(?:^|\s)data-r20-block-id\s*=\s*/i.exec(attrs);
+  if (!marker) return null;
+  const start = marker.index;
+  const valueStart = marker.index + marker[0].length;
+  if (valueStart >= attrs.length) {
+    return `${attrs.slice(0, start)} data-r20-block-id="${escapeAttr(id)}"`;
+  }
+
+  const quote = attrs[valueStart];
+  let end = valueStart;
+  if (quote === '"' || quote === "'") {
+    end += 1;
+    while (end < attrs.length) {
+      if (attrs[end] === quote) {
+        const next = attrs[end + 1] || '';
+        if (!next || /\s/.test(next) || (next === '/' && end + 2 === attrs.length)) {
+          end += 1;
+          break;
+        }
+      }
+      end += 1;
+    }
+  } else {
+    while (end < attrs.length && !/\s|\//.test(attrs[end])) end += 1;
+  }
+
+  return `${attrs.slice(0, start)} data-r20-block-id="${escapeAttr(id)}"${attrs.slice(end)}`;
 }

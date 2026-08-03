@@ -1922,6 +1922,9 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   var sheetWorkerEventQueue = [];
   var sheetWorkerDispatching = false;
   var sheetWorkerQueueOverflowCount = 0;
+  var sheetWorkerAsyncTasks = [];
+  var sheetWorkerAsyncScheduled = false;
+  var sheetWorkerRuntimeGeneration = 0;
   var settingAttrs = false;
   var sheetWorkerAttrValues = {};
   var sheetWorkerRowSequence = 0;
@@ -1932,6 +1935,27 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (typeof fn !== 'function') return;
     String(events || '').split(/\s+/).filter(Boolean).forEach(function (evt) {
       (sheetWorkerHandlers[evt] = sheetWorkerHandlers[evt] || []).push(fn);
+    });
+  }
+  function scheduleSheetWorkerTask(task) {
+    if (typeof task !== 'function') return;
+    sheetWorkerAsyncTasks.push({
+      generation: sheetWorkerRuntimeGeneration,
+      context: sheetWorkerEventContext,
+      task: task
+    });
+    if (sheetWorkerAsyncScheduled) return;
+    sheetWorkerAsyncScheduled = true;
+    Promise.resolve().then(function () {
+      sheetWorkerAsyncScheduled = false;
+      var pending = sheetWorkerAsyncTasks.splice(0);
+      for (var index = 0; index < pending.length; index += 1) {
+        if (pending[index].generation !== sheetWorkerRuntimeGeneration) continue;
+        var previousContext = sheetWorkerEventContext;
+        sheetWorkerEventContext = pending[index].context;
+        try { pending[index].task(); } catch (error) { console.error('[sheet worker async]', error); }
+        finally { sheetWorkerEventContext = previousContext; }
+      }
     });
   }
   function sheetAttrSelector(name) {
@@ -2054,7 +2078,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   function sheetWorkerGetAttrs(names, cb) {
     var out = {};
     (names || []).forEach(function (n) { out[n] = readSheetAttr(n); });
-    if (typeof cb === 'function') cb(out);
+    if (typeof cb === 'function') scheduleSheetWorkerTask(function () { cb(out); });
   }
   function sheetWorkerSetAttrs(values, opts, cb) {
     if (typeof opts === 'function') { cb = opts; opts = undefined; }
@@ -2073,18 +2097,24 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       }
     });
     settingAttrs = false;
-    if (!silent) {
-      changedAttrs.forEach(function (change) {
-        triggerSheetWorkerChange(change.key, {
-          sourceAttribute: change.key.toLowerCase(),
-          sourceType: 'sheetworker',
-          previousValue: change.previousValue,
-          newValue: change.newValue
-        });
+    if (!silent || typeof cb === 'function') {
+      scheduleSheetWorkerTask(function () {
+        if (!silent) {
+          changedAttrs.forEach(function (change) {
+            triggerSheetWorkerChange(change.key, {
+              sourceAttribute: change.key.toLowerCase(),
+              sourceType: 'sheetworker',
+              previousValue: change.previousValue,
+              newValue: change.newValue
+            });
+          });
+        }
+        if (typeof cb === 'function') cb();
+        scheduleResize();
       });
+    } else {
+      scheduleResize();
     }
-    if (typeof cb === 'function') cb();
-    scheduleResize();
   }
   function triggerSheetWorker(evt, payload) {
     if (!evt) return;
@@ -2633,9 +2663,12 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   function sheetWorkerGetSectionIDs(section, cb) {
     var groupName = String(section || '');
     if (groupName.indexOf('repeating_') !== 0) groupName = 'repeating_' + groupName;
-    if (typeof cb === 'function') cb(allRepeatingRowIds(groupName));
+    var rowIds = allRepeatingRowIds(groupName);
+    if (typeof cb === 'function') scheduleSheetWorkerTask(function () { cb(rowIds); });
   }
   function installSheetWorkers() {
+    sheetWorkerRuntimeGeneration += 1;
+    sheetWorkerAsyncTasks = [];
     snapshotSheetAttrs();
     var scripts = document.querySelectorAll('script[type="text/worker"]');
     scripts.forEach(function (script) {

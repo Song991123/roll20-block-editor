@@ -1,8 +1,16 @@
 import * as Blockly from 'blockly';
 import { registerAllBlocks } from '@/lib/blocks/registry';
-import { composeEmittedWorkspaces, emitAll, emitWorkspace, normalizeEmittedRoll20Pair } from '../emit';
+import {
+  composeEmittedWorkspaces,
+  emitAll,
+  emitWorkspace,
+  normalizeBlockIdAttributes,
+  normalizeEmittedRoll20Pair,
+} from '../emit';
 import { isRoll20WorkerScript } from '@/lib/import/worker_source';
 import { importSheet } from '@/lib/import/index';
+import { serializeRawHtml } from '@/lib/import/block_matcher';
+import type { DomNode } from '@/lib/import/dom_walker';
 
 function assert(condition: unknown, message: string): void {
   if (!condition) throw new Error(`Assertion failed: ${message}`);
@@ -155,6 +163,166 @@ function testSemanticContainerEmit(): void {
   workspace.dispose();
 }
 
+function testBlockIdAttributeEscaping(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const textarea = workspace.newBlock('r20_textarea', 'unsafe"/id<&>');
+  textarea.setFieldValue('notes', 'NAME');
+  textarea.setFieldValue('field', 'CLASS');
+
+  const result = emitAll({ html: workspace });
+  assert(
+    result.html.includes('data-r20-block-id="unsafe&quot;/id&lt;&amp;&gt;"'),
+    'block id is escaped before it enters an HTML attribute',
+  );
+  assert(result.html.includes('<textarea '), 'escaped block id keeps the opening tag valid');
+  assert(result.html.includes('</textarea>'), 'escaped block id keeps the closing tag valid');
+  workspace.dispose();
+}
+
+function testStaleRawBlockIdIsReplaced(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const raw = workspace.newBlock('r20_raw_html', 'current"id');
+  raw.setFieldValue(
+    '<textarea data-r20-block-id="stale"tail" name="attr_notes">Text</textarea>',
+    'HTML',
+  );
+
+  const result = emitAll({ html: workspace }).html;
+  assert(
+    result.includes('data-r20-block-id="current&quot;id"'),
+    'raw HTML receives the escaped current block id',
+  );
+  assert(!result.includes('stale"tail'), 'a stale malformed block id is fully replaced');
+  assert(result.includes(' name="attr_notes"'), 'attributes after a stale block id remain intact');
+  workspace.dispose();
+}
+
+function testNestedStaleRawBlockIdIsRemoved(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const raw = workspace.newBlock('r20_raw_html', 'current-root');
+  raw.setFieldValue(
+    '<section><textarea data-r20-block-id="stale"tail" name="attr_notes">Text</textarea></section>',
+    'HTML',
+  );
+
+  const result = emitAll({ html: workspace }).html;
+  assert(result.includes('data-r20-block-id="current-root"'), 'current outer raw block marker remains');
+  assert(!result.includes('stale"tail'), 'nested stale block marker is removed at the HTML boundary');
+  assert(result.includes('<textarea name="attr_notes">'), 'nested authored markup remains after cleanup');
+  workspace.dispose();
+}
+
+function testGeneratedBlockIdsSurviveFinalNormalization(): void {
+  const escape = (value: string) => String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  for (let index = 0; index < 128; index += 1) {
+    const id = Blockly.utils.idGenerator.genUid();
+    const normalized = normalizeBlockIdAttributes(
+      `<textarea data-r20-block-id="${escape(id)}"></textarea>`,
+      new Set([id]),
+    );
+    assert(
+      normalized.includes(`data-r20-block-id="${escape(id)}"`),
+      'generated block id survives final HTML normalization',
+    );
+  }
+
+  for (let index = 0; index < 64; index += 1) {
+    const workspace = new Blockly.Workspace();
+    const container = workspace.newBlock('r20_div');
+    const id = Blockly.utils.idGenerator.genUid();
+    const textarea = workspace.newBlock('r20_textarea', id);
+    textarea.setFieldValue('notes', 'NAME');
+    container.getInput('CONTENT')!.connection!.connect(textarea.previousConnection!);
+    const emitted = emitAll({ html: workspace }).html;
+    assert(
+      emitted.includes(`data-r20-block-id="${escape(id)}"`),
+      'generated nested textarea id survives the complete emit path',
+    );
+    if (index < 32) {
+      const imported = importSheet({ html: emitted });
+      const importedWorkspace = new Blockly.Workspace();
+      Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(imported.html), importedWorkspace);
+      const importedTextarea = importedWorkspace.getAllBlocks(false)
+        .find((block) => block.type === 'r20_textarea');
+      assert(importedTextarea?.getFieldValue('NAME') === 'notes', 'generated textarea name survives re-import');
+      assert(String(importedTextarea?.getFieldValue('ROWS')) === '3', 'generated textarea rows survive re-import');
+      importedWorkspace.dispose();
+    }
+    workspace.dispose();
+  }
+}
+
+function testBlockIdNormalizationOnlyTouchesOpeningTags(): void {
+  const source = [
+    '<script type="text/worker">var marker = \' data-r20-block-id="worker-literal"\';</script>',
+    '<textarea name="attr_notes"> data-r20-block-id="textarea-literal"</textarea>',
+    '<div> data-r20-block-id="text-literal"</div>',
+    '<!-- data-r20-block-id="comment-literal" -->',
+  ].join('');
+  assert(
+    normalizeBlockIdAttributes(source, new Set()) === source,
+    'block marker cleanup leaves Worker, RCDATA, text, and comments untouched',
+  );
+
+  const current = normalizeBlockIdAttributes(
+    '<section data-r20-block-id="current"><span data-r20-block-id="stale">Text</span></section>',
+    new Set(['current']),
+  );
+  assert(current.includes('data-r20-block-id="current"'), 'allowed opening-tag marker remains');
+  assert(!current.includes('data-r20-block-id="stale"'), 'stale opening-tag marker is removed');
+}
+
+function testRawSerializationDropsNestedEditorMarkers(): void {
+  const root: DomNode = {
+    type: 'element' as const,
+    tag: 'section',
+    attrs: { class: 'panel', 'data-r20-block-id': 'stale-root' },
+    parent: null,
+    children: [],
+  };
+  const child: DomNode = {
+    type: 'element' as const,
+    tag: 'textarea',
+    attrs: {
+      name: 'attr_notes',
+      'data-r20-block-id': 'stale"child',
+      'data-r20-text-node': '1',
+    },
+    parent: root,
+    children: [],
+  };
+  root.children.push(child);
+
+  const result = serializeRawHtml(root);
+  assert(!result.includes('data-r20-block-id'), 'raw serialization drops nested block markers');
+  assert(!result.includes('data-r20-text-node'), 'raw serialization drops nested text markers');
+  assert(result.includes('<textarea name="attr_notes"></textarea>'), 'authored nested attributes remain');
+}
+
+function testImportDropsNestedEditorMarkersBeforeMatching(): void {
+  registerAllBlocks();
+  const imported = importSheet({
+    html: '<section data-r20-block-id="stale-root"><textarea data-r20-block-id="stale-textarea" name="attr_notes">Text</textarea><input data-r20-block-id="stale-input" name="attr_name"></section>',
+  });
+  const workspace = new Blockly.Workspace();
+  Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(imported.html), workspace);
+  const result = emitAll({ html: workspace }).html;
+
+  assert(!result.includes('stale-root'), 'import drops a stale root editor marker');
+  assert(!result.includes('stale-textarea'), 'import drops a stale nested textarea marker');
+  assert(!result.includes('stale-input'), 'import drops a stale nested input marker');
+  assert(result.includes('name="attr_notes"'), 'authored textarea attributes survive marker cleanup');
+  assert(result.includes('name="attr_name"'), 'authored input attributes survive marker cleanup');
+  workspace.dispose();
+}
+
 function testGenericElementEmit(): void {
   registerAllBlocks();
   const workspace = new Blockly.Workspace();
@@ -239,6 +407,136 @@ function testInlineFlowDoesNotGainWhitespace(): void {
   const emitted = emitAll({ html: workspace }).html;
   assert(!/🕷\s+<b/.test(emitted), 'inline text before bold does not gain whitespace');
   assert(!/<\/b>\s+🕷/.test(emitted), 'inline text after bold does not gain whitespace');
+  workspace.dispose();
+}
+
+function testInlineSelectSiblingRoundTrip(): void {
+  registerAllBlocks();
+  const source = '<label><select name="attr_mode"><option value="a">A</option></select><span>Mode</span></label>';
+  const imported = importSheet({ html: source });
+  const firstWorkspace = new Blockly.Workspace();
+  Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(imported.html), firstWorkspace);
+  const first = emitAll({ html: firstWorkspace }).html;
+
+  const reimported = importSheet({ html: first });
+  const secondWorkspace = new Blockly.Workspace();
+  Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(reimported.html), secondWorkspace);
+  const second = emitAll({ html: secondWorkspace }).html;
+  const stripIds = (html: string) => html.replace(/\sdata-r20-block-id="[^"]*"/g, '');
+
+  assert(!/<\/select>\s+<span>/.test(stripIds(first)), 'inline select does not invent sibling whitespace');
+  assert(stripIds(first) === stripIds(second), 'inline select siblings stay stable after re-import');
+  firstWorkspace.dispose();
+  secondWorkspace.dispose();
+}
+
+function testTextareaRcdataRoundTrip(): void {
+  registerAllBlocks();
+  const source = '<div><textarea name="attr_code"><div class="sample"/> &lt;span&gt; @{name} &amp;{template:card}</textarea><span>After</span></div>';
+  const imported = importSheet({ html: source });
+  const firstWorkspace = new Blockly.Workspace();
+  Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(imported.html), firstWorkspace);
+  const first = emitAll({ html: firstWorkspace }).html;
+  const reimported = importSheet({ html: first });
+  const secondWorkspace = new Blockly.Workspace();
+  Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(reimported.html), secondWorkspace);
+  const second = emitAll({ html: secondWorkspace }).html;
+  const stripIds = (html: string) => html.replace(/\sdata-r20-block-id="[^"]*"/g, '');
+
+  assert(first.includes('&lt;div class=&quot;sample&quot;/&gt;'), 'textarea keeps literal self-closing markup as text');
+  assert(first.includes('&lt;span&gt;'), 'textarea keeps encoded markup text');
+  assert(stripIds(first) === stripIds(second), 'textarea RCDATA stays stable after re-import');
+  firstWorkspace.dispose();
+  secondWorkspace.dispose();
+}
+
+function testEditedBoundaryWhitespaceRoundTrip(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const container = workspace.newBlock('r20_semantic_container');
+  container.setFieldValue('p', 'TAG');
+  const leadingSpace = workspace.newBlock('r20_text_node');
+  leadingSpace.setFieldValue(' ', 'TEXT');
+  const label = workspace.newBlock('r20_static_text');
+  label.setFieldValue('Alpha', 'TEXT');
+  container.getInput('CONTENT')!.connection!.connect(leadingSpace.previousConnection!);
+  leadingSpace.nextConnection!.connect(label.previousConnection!);
+
+  const first = emitAll({ html: workspace }).html;
+  assert(!/>\s+<span/.test(first), 'ordinary container drops a stranded leading whitespace block');
+
+  const imported = importSheet({ html: first });
+  const secondWorkspace = new Blockly.Workspace();
+  Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(imported.html), secondWorkspace);
+  const second = emitAll({ html: secondWorkspace }).html;
+  const stripIds = (html: string) => html.replace(/\sdata-r20-block-id="[^"]*"/g, '');
+  assert(stripIds(first) === stripIds(second), 'edited boundary whitespace is stable after re-import');
+
+  const preWorkspace = new Blockly.Workspace();
+  const pre = preWorkspace.newBlock('r20_semantic_container');
+  pre.setFieldValue('pre', 'TAG');
+  const preSpace = preWorkspace.newBlock('r20_text_node');
+  preSpace.setFieldValue(' ', 'TEXT');
+  const preLabel = preWorkspace.newBlock('r20_static_text');
+  preLabel.setFieldValue('Alpha', 'TEXT');
+  pre.getInput('CONTENT')!.connection!.connect(preSpace.previousConnection!);
+  preSpace.nextConnection!.connect(preLabel.previousConnection!);
+  assert(/>\s+<span/.test(emitAll({ html: preWorkspace }).html), 'pre keeps leading whitespace');
+
+  workspace.dispose();
+  secondWorkspace.dispose();
+  preWorkspace.dispose();
+}
+
+function testNestedRawTextIndentationRoundTrip(): void {
+  registerAllBlocks();
+  const source = [
+    '<div class="outer">',
+    '  <div class="inner">',
+    '    <textarea name="attr_notes" rows="4">Alpha\n    Beta\n\tGamma</textarea>',
+    '    <pre>One\n  Two</pre>',
+    '  </div>',
+    '</div>',
+  ].join('\n');
+  const emitImported = (html: string) => {
+    const imported = importSheet({ html });
+    const workspace = new Blockly.Workspace();
+    Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(imported.html), workspace);
+    const emitted = emitAll({ html: workspace }).html;
+    workspace.dispose();
+    return emitted;
+  };
+  const first = emitImported(source);
+  const second = emitImported(first);
+  const stripIds = (html: string) => html.replace(/\sdata-r20-block-id="[^"]*"/g, '');
+  assert(stripIds(first) === stripIds(second), 'nested textarea and pre indentation stays stable');
+
+  const attributeSource = '<section><div data-note="Alpha\n  Beta"><span>Text</span></div></section>';
+  const attributeFirst = emitImported(attributeSource);
+  const attributeSecond = emitImported(attributeFirst);
+  assert(
+    stripIds(attributeFirst) === stripIds(attributeSecond),
+    'multiline attribute whitespace stays stable inside nested containers',
+  );
+}
+
+function testProtectedIndentRestoresLiteralReplacementTokens(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const container = workspace.newBlock('r20_div', 'container-id');
+  const textarea = workspace.newBlock('r20_textarea', "textarea-$`-$&-$'-$$_id");
+  textarea.setFieldValue('notes', 'NAME');
+  textarea.setFieldValue('Alpha\nBeta', 'DEFAULT');
+  container.getInput('CONTENT')!.connection!.connect(textarea.previousConnection!);
+
+  const emitted = emitAll({ html: workspace }).html;
+  assert(
+    emitted.includes('data-r20-block-id="textarea-$`-$&amp;-$\'-$$_id"'),
+    'protected textarea restores block ids without replacement-token expansion',
+  );
+  assert((emitted.match(/<textarea\b/g) || []).length === 1, 'protected textarea is emitted once');
+  assert((emitted.match(/<div\b/g) || []).length === 1, 'protected textarea does not duplicate its parent');
+  assert(emitted.includes('Alpha\nBeta</textarea>'), 'protected textarea keeps multiline text intact');
   workspace.dispose();
 }
 
@@ -556,11 +854,23 @@ testGeneratedPositionCss();
 testComposedWorkspaceCacheResultsKeepTheOutputContract();
 testBuilderLayoutCssIsEmittedWithItsBlock();
 testSemanticContainerEmit();
+testBlockIdAttributeEscaping();
+testStaleRawBlockIdIsReplaced();
+testNestedStaleRawBlockIdIsRemoved();
+testGeneratedBlockIdsSurviveFinalNormalization();
+testBlockIdNormalizationOnlyTouchesOpeningTags();
+testRawSerializationDropsNestedEditorMarkers();
+testImportDropsNestedEditorMarkersBeforeMatching();
 testGenericElementEmit();
 testGenericVoidElementEmit();
 testInlineBreakClassEmit();
 testTopLevelWhitespaceTextRoundTrip();
 testInlineFlowDoesNotGainWhitespace();
+testInlineSelectSiblingRoundTrip();
+testTextareaRcdataRoundTrip();
+testEditedBoundaryWhitespaceRoundTrip();
+testNestedRawTextIndentationRoundTrip();
+testProtectedIndentRestoresLiteralReplacementTokens();
 testRolltemplateDirectMustacheTokensRoundTrip();
 testGenericCssTagEmit();
 testCssDeclarationKeepsNestedSemicolons();
