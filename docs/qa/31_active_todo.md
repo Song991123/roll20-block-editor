@@ -1,6 +1,6 @@
 # Active TODO
 
-Date: 2026-08-03
+Date: 2026-08-04
 
 This file contains current work only. Historical per-sheet evidence, source
 identities, machine paths, screenshots, and source-derived measurements do not
@@ -76,9 +76,11 @@ belong in tracked documents.
 - `BLOCKED EXTERNAL`: the current automated modern upload path is stopped at
   the browser file-selection permission boundary. A fresh dedicated Sandbox
   accepted and persisted an anonymous manifest and launched its visible upload
-  tools. Fresh supported chooser attempts still stop before transmission while
-  the Chrome extension lacks local-file access. No file was transferred. No
-  hidden input, endpoint, or existing-room workaround is allowed.
+  tools. A fresh seven-fixture modern baseline and its exact export-boundary
+  pre-upload checks pass, but the supported visible chooser still returns
+  `Not allowed` before transmission while the Chrome extension lacks local-file
+  access. No file was transferred. No hidden input, endpoint, or existing-room
+  workaround is allowed.
 - `DONE CURRENT SYNTHETIC MATRIX`: local Preview/Edit and the dedicated modern and legacy destinations now have
   same-payload root comparisons against the exact authored top-level element,
   not the surrounding Roll20 wrapper. Authored-root dimensions and capture
@@ -218,6 +220,12 @@ belong in tracked documents.
 - `DONE LOCAL`: flow-aware before/inside/after moves, explicit free placement,
   grouping, container roles, table/list guards, layer auto-scroll, and
   collapsed-container opening have synthetic browser coverage.
+- `DONE LOCAL`: flow placement now follows the rendered parent axis instead of
+  assuming every container is vertical. Flex rows, column/row reversal, RTL,
+  grid auto-flow, table rows, and inline flow report their axis and direction
+  through the shared iframe bridge. Browser drag proof checks left/right
+  before/after insertion, a vertical insertion marker, same-parent emitted HTML
+  order, layer reorder, Rolltemplate editing, and zero console errors.
 - `DONE LOCAL`: dragging a friendly gallery piece onto a completely empty
   sheet now uses the piece preset instead of falling through to a raw block.
   The first object maps the pointer to the visible centered 850px sheet,

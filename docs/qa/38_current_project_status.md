@@ -1,6 +1,6 @@
 # Current Project Status
 
-Date: 2026-08-03
+Date: 2026-08-04
 
 ## Product
 
@@ -16,8 +16,9 @@ inert source but cannot be presented as Roll20 behavior.
 - Separate modern and legacy compatibility modes.
 - HTML/CSS/translation import and block emission with explicit fallback paths.
 - Layer tree with container roles, grouping, before/inside/after movement,
-  flow placement, explicit free placement, multi-selection, multi-move, and
-  local 2D affine coordinate conversion for transformed containing frames.
+  horizontal/vertical flow placement, explicit free placement, multi-selection,
+  multi-move, and local 2D affine coordinate conversion for transformed
+  containing frames.
 - Managed visual CSS for common sections, controls, text, images, tables, Roll
   buttons, and result cards.
 - Local Sheet Worker subset, default-attribute behavior, Roll execution, chat
@@ -31,6 +32,8 @@ inert source but cannot be presented as Roll20 behavior.
 
 - Edit is the same rendered sheet as Preview plus edit-only overlays.
 - Layer/widget selection channels are isolated and repeated browser runs pass.
+- Horizontal flow drag uses left/right insertion geometry and commits the same
+  order to emitted HTML; vertical flow keeps its existing top/bottom contract.
 - Internal editor IDs are removed at the export boundary.
 - Ordinary page JavaScript stays inert and invisible in the sheet surface.
 - Final Roll20 HTML excludes non-Worker scripts while preserving exact source
@@ -48,7 +51,8 @@ arbitrary-sheet or broad Roll20 parity.
 ## Not Finished
 
 - Supported automated modern Custom Sheet Sandbox upload remains blocked at
-  the visible file chooser, though dedicated-room modern evidence exists.
+  the visible file chooser after a fresh exact seven-fixture pre-upload pass;
+  no file was transmitted, though dedicated-room modern evidence exists.
 - Broader modern and legacy actual-screen coverage beyond the current anonymous
   synthetic suite.
 - Broad uncommon-structure import/edit coverage.

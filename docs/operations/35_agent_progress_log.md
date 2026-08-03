@@ -954,3 +954,26 @@ parity.
   modern Custom Sheet Sandbox chooser boundary and broad full-root candidate
   matrix remain open, so the renderer-action gate correctly holds a production
   renderer patch.
+
+## 2026-08-04 - Horizontal Flow Drop And Modern Sandbox Recheck
+
+- Rebuilt the current anonymous seven-fixture modern baseline through the exact
+  export boundary. Local baseline, payload audit, Sandbox sanitizing,
+  roundtrip, state, asset, and evidence guards all pass.
+- Reached the official visible file chooser in a dedicated owner-only Custom
+  Sheet Sandbox. The supported chooser returned `Not allowed` before transfer
+  because local-file access is unavailable. No file was sent and no hidden
+  input, endpoint, or existing-room workaround was used.
+- Fixed direct-edit drop planning so it reads the rendered parent flow axis and
+  direction. Horizontal flex/grid/table/inline parents now use left/right
+  before/after zones and a vertical insertion marker; reverse and RTL flows
+  invert those zones without changing canonical source order semantics.
+- Focused bridge, target-resolution, and indicator tests pass. The full
+  edit-flow browser smoke also proves left/right drag geometry, same-parent
+  emitted order, layer reordering, Rolltemplate edit/chat reuse, and zero
+  console errors.
+- Full `ci:verify`, lint, production build, tracked-document privacy, Roll20
+  evidence, UI-copy, and server-hygiene gates pass.
+- Claim boundary: the editor result is local synthetic interaction proof. The
+  modern Sandbox upload remains externally unverified until the supported
+  chooser can transmit the generated files.

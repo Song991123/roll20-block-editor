@@ -25,6 +25,8 @@ export function getDropIndicatorRect(
   mode: DropIndicatorMode,
   target: DropIndicatorRect,
   requestedThickness = 4,
+  axis: 'x' | 'y' = 'y',
+  reverse = false,
 ): DropIndicatorRect {
   const left = finiteOrZero(target.left);
   const top = finiteOrZero(target.top);
@@ -36,9 +38,20 @@ export function getDropIndicatorRect(
     Math.max(MIN_INDICATOR_THICKNESS, Math.round(finiteOrZero(requestedThickness))),
     Math.min(MAX_INDICATOR_THICKNESS, height),
   );
+  if (axis === 'x') {
+    const atStart = (mode === 'before') !== reverse;
+    const verticalThickness = Math.min(thickness, width);
+    return {
+      left: atStart ? left : left + width - verticalThickness,
+      top,
+      width: verticalThickness,
+      height,
+    };
+  }
+  const atStart = (mode === 'before') !== reverse;
   return {
     left,
-    top: mode === 'before' ? top : top + height - thickness,
+    top: atStart ? top : top + height - thickness,
     width,
     height: thickness,
   };

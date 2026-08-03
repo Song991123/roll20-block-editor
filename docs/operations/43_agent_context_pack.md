@@ -1,6 +1,6 @@
 # Agent Context Pack
 
-Date: 2026-08-03
+Date: 2026-08-04
 
 This is the mandatory short startup route. Current files are compact and do not
 contain private source evidence or historical test dumps.
@@ -45,10 +45,11 @@ contain private source evidence or historical test dumps.
   The Sandbox upload helper does not target legacy campaign settings.
 - Modern automated Custom Sheet Sandbox upload is stopped at the supported
   file-selection permission boundary. A fresh dedicated Sandbox persisted an
-  anonymous manifest and launched the visible upload tools, but Chrome
-  local-file access is not enabled and the supported HTML chooser stops before
-  transmission; do not bypass it. Separate modern actual evidence exists
-  through an owner-only dedicated test room.
+  anonymous manifest and launched the visible upload tools. The current
+  seven-fixture modern baseline and exact pre-upload gate pass, but Chrome
+  local-file access is not enabled and the supported HTML chooser returns
+  `Not allowed` before transmission; do not bypass it. Separate modern actual
+  evidence exists through an owner-only dedicated test room.
 - Sequential imports use monotonic store versions plus Blockly hydration
   generations in the emit-cache identity. The current six-fixture browser
   path also requires each mounted preview CSS hash to match the latest import,

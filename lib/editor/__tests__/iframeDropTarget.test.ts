@@ -92,6 +92,24 @@ assert.equal(resolveIframeEditDropTarget(
   lookup,
 )?.mode, 'after');
 
+const horizontalSibling = geometry('sibling', 100, 40, {
+  rect: { left: 100, top: 100, width: 200, height: 40 },
+  parentFlowAxis: 'x',
+  parentFlowReverse: false,
+});
+assert.equal(resolveIframeEditDropTarget({
+  ...message([horizontalSibling], 120),
+  pointer: { x: 101, y: 120 },
+}, lookup)?.mode, 'before');
+assert.equal(resolveIframeEditDropTarget({
+  ...message([horizontalSibling], 120),
+  pointer: { x: 299, y: 120 },
+}, lookup)?.mode, 'after');
+assert.equal(resolveIframeEditDropTarget({
+  ...message([{ ...horizontalSibling, parentFlowReverse: true }], 120),
+  pointer: { x: 101, y: 120 },
+}, lookup)?.mode, 'after');
+
 assert.deepEqual(resolveIframeEditDropTarget(
   message([geometry('frame', 0, 200)], 100),
   lookup,

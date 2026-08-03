@@ -485,31 +485,35 @@ async function main() {
 
     const syntheticImageUrl = `http://127.0.0.1:${PORT}${BASE_PATH}/synthetic-image.svg`;
     const syntheticHtml = [
-      '<div class="frame" style="width:520px; min-height:220px; padding:16px">',
-      '  <h2 class="title" style="font-size:18px; font-weight:700">Character</h2>',
-      '  <div class="row-a" style="padding:8px"><label class="field-label">Name</label><input type="text" name="attr_a" value="A"></div>',
-      '  <div class="row-b" style="padding:8px"><input type="text" name="attr_b" value="B"></div>',
-      `  <img class="portrait" src="${syntheticImageUrl}" alt="Synthetic portrait" style="width:160px; height:96px; object-fit:cover; object-position:center; opacity:0.9; border-radius:2px">`,
+      '<div class="sheet-frame" style="width:520px; min-height:220px; padding:16px">',
+      '  <h2 class="sheet-title" style="font-size:18px; font-weight:700">Character</h2>',
+      '  <div class="sheet-row-a" style="padding:8px"><label class="sheet-field-label">Name</label><input type="text" name="attr_a" value="A"></div>',
+      '  <div class="sheet-row-b" style="padding:8px"><input type="text" name="attr_b" value="B"></div>',
+      `  <img class="sheet-portrait" src="${syntheticImageUrl}" alt="Synthetic portrait" style="width:160px; height:96px; object-fit:cover; object-position:center; opacity:0.9; border-radius:2px">`,
+      '</div>',
+      '<div class="sheet-horizontal-flow" style="display:flex; gap:8px; width:320px; padding:8px">',
+      '  <div class="sheet-horizontal-flow-a" style="width:120px; min-height:36px; padding:6px">Left</div>',
+      '  <div class="sheet-horizontal-flow-b" style="width:120px; min-height:36px; padding:6px">Right</div>',
       '</div>',
       '<table class="sheet-table"><tbody><tr class="sheet-table-row">',
       '  <td class="sheet-table-cell-a"><input type="text" name="attr_table_a" value="A"></td>',
       '  <td class="sheet-table-cell-b"><input type="text" name="attr_table_b" value="B"></td>',
       '</tr></tbody></table>',
-      '<div class="outside" style="width:180px; min-height:54px; padding:8px">Outside</div>',
-      '<div class="scaled-frame">',
-      '  <div class="scaled-child">Scaled</div>',
-      '  <div class="affine-frame">',
-      '    <div class="affine-child">Turned</div>',
+      '<div class="sheet-outside" style="width:180px; min-height:54px; padding:8px">Outside</div>',
+      '<div class="sheet-scaled-frame">',
+      '  <div class="sheet-scaled-child">Scaled</div>',
+      '  <div class="sheet-affine-frame">',
+      '    <div class="sheet-affine-child">Turned</div>',
       '  </div>',
       '</div>',
-      '<div class="group-one" style="padding:4px">Group A</div>',
-      '<div class="group-two" style="padding:4px">Group B</div>',
-      '<div class="group-three" style="padding:4px">Group C</div>',
-      '<section class="layout-proof" style="width:420px; padding:12px">',
-      '  <h3 class="layout-proof-title">Layout</h3>',
-      '  <div class="layout-proof-a" style="min-height:28px; padding:6px">Main A</div>',
-      '  <div class="layout-proof-b" style="min-height:28px; padding:6px">Side B</div>',
-      '  <div class="layout-proof-c" style="min-height:28px; padding:6px">Main C</div>',
+      '<div class="sheet-group-one" style="padding:4px">Group A</div>',
+      '<div class="sheet-group-two" style="padding:4px">Group B</div>',
+      '<div class="sheet-group-three" style="padding:4px">Group C</div>',
+      '<section class="sheet-layout-proof" style="width:420px; padding:12px">',
+      '  <h3 class="sheet-layout-proof-title">Layout</h3>',
+      '  <div class="sheet-layout-proof-a" style="min-height:28px; padding:6px">Main A</div>',
+      '  <div class="sheet-layout-proof-b" style="min-height:28px; padding:6px">Side B</div>',
+      '  <div class="sheet-layout-proof-c" style="min-height:28px; padding:6px">Main C</div>',
       '</section>',
       '<rolltemplate class="sheet-rolltemplate-default">',
       '  <div class="sheet-template-card">',
@@ -543,6 +547,9 @@ async function main() {
       const rowAInput = document.querySelector('.sheet-row-a input');
       const rowB = document.querySelector('.sheet-row-b');
       const rowBInput = document.querySelector('.sheet-row-b input');
+      const horizontalFlow = document.querySelector('.sheet-horizontal-flow');
+      const horizontalFlowA = document.querySelector('.sheet-horizontal-flow-a');
+      const horizontalFlowB = document.querySelector('.sheet-horizontal-flow-b');
       const image = document.querySelector('.sheet-portrait');
       const table = document.querySelector('.sheet-table');
       const tableBody = document.querySelector('.sheet-table tbody');
@@ -570,6 +577,9 @@ async function main() {
         rowAInputId: rowAInput?.getAttribute('data-r20-block-id') ?? null,
         rowBId: rowB?.getAttribute('data-r20-block-id') ?? null,
         rowBInputId: rowBInput?.getAttribute('data-r20-block-id') ?? null,
+        horizontalFlowId: horizontalFlow?.getAttribute('data-r20-block-id') ?? null,
+        horizontalFlowAId: horizontalFlowA?.getAttribute('data-r20-block-id') ?? null,
+        horizontalFlowBId: horizontalFlowB?.getAttribute('data-r20-block-id') ?? null,
         imageId: image?.getAttribute('data-r20-block-id') ?? null,
         tableId: table?.getAttribute('data-r20-block-id') ?? null,
         tableBodyId: tableBody?.getAttribute('data-r20-block-id') ?? null,
@@ -592,7 +602,9 @@ async function main() {
       };
     });
     assert(
-      ids.frameId && ids.titleId && ids.labelId && ids.rowAId && ids.rowAInputId && ids.rowBId && ids.rowBInputId && ids.imageId && ids.tableId && ids.tableBodyId
+      ids.frameId && ids.titleId && ids.labelId && ids.rowAId && ids.rowAInputId && ids.rowBId && ids.rowBInputId
+        && ids.horizontalFlowId && ids.horizontalFlowAId && ids.horizontalFlowBId
+        && ids.imageId && ids.tableId && ids.tableBodyId
         && ids.tableRowId && ids.outsideId && ids.scaledFrameId && ids.scaledChildId
         && ids.affineFrameId && ids.affineChildId
         && ids.groupOneId && ids.groupTwoId && ids.groupThreeId
@@ -1733,6 +1745,83 @@ async function main() {
       `persistent iframe order did not match emitted flow order: ${JSON.stringify(result.tests.iframeFlowReparent.authoritative)}`,
     );
 
+    const horizontalABox = await frame.locator('.sheet-horizontal-flow-a').boundingBox();
+    const horizontalBBox = await frame.locator('.sheet-horizontal-flow-b').boundingBox();
+    assert(horizontalABox && horizontalBBox, 'synthetic horizontal flow targets are missing');
+    await page.mouse.move(horizontalABox.x + horizontalABox.width / 2, horizontalABox.y + horizontalABox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(horizontalBBox.x + horizontalBBox.width * 0.08, horizontalBBox.y + horizontalBBox.height / 2, { steps: 4 });
+    await page.waitForTimeout(40);
+    const horizontalBefore = await page.evaluate(() => {
+      const overlay = document.querySelector('[data-testid="iframe-edit-drop-overlay"]');
+      return {
+        mode: overlay?.getAttribute('data-r20-drop-mode') ?? null,
+        axis: overlay?.getAttribute('data-r20-drop-axis') ?? null,
+        width: overlay ? Number.parseFloat(getComputedStyle(overlay).width) : null,
+        height: overlay ? Number.parseFloat(getComputedStyle(overlay).height) : null,
+      };
+    });
+    await page.mouse.move(horizontalBBox.x + horizontalBBox.width * 0.92, horizontalBBox.y + horizontalBBox.height / 2, { steps: 6 });
+    await page.waitForTimeout(40);
+    const horizontalAfter = await page.evaluate(() => {
+      const overlay = document.querySelector('[data-testid="iframe-edit-drop-overlay"]');
+      return {
+        mode: overlay?.getAttribute('data-r20-drop-mode') ?? null,
+        axis: overlay?.getAttribute('data-r20-drop-axis') ?? null,
+        width: overlay ? Number.parseFloat(getComputedStyle(overlay).width) : null,
+        height: overlay ? Number.parseFloat(getComputedStyle(overlay).height) : null,
+      };
+    });
+    await page.mouse.up();
+    await page.waitForTimeout(700);
+    const horizontalOrder = await page.evaluate(({ movingId, targetId, parentId }) => {
+      const graph = window.__perfHook.getLayerSnapshot('html');
+      const moving = graph.find((node) => node.id === movingId);
+      const target = graph.find((node) => node.id === targetId);
+      const emitted = window.__perfHook.getEmitContent().html;
+      return {
+        movingParent: moving?.layerParentId ?? null,
+        targetParent: target?.layerParentId ?? null,
+        movingPrevious: moving?.layerPreviousId ?? null,
+        emittedAfter: emitted.indexOf(`data-r20-block-id="${movingId}"`) > emitted.indexOf(`data-r20-block-id="${targetId}"`),
+        expectedParent: parentId,
+      };
+    }, {
+      movingId: ids.horizontalFlowAId,
+      targetId: ids.horizontalFlowBId,
+      parentId: ids.horizontalFlowId,
+    });
+    result.tests.iframeHorizontalFlow = {
+      before: horizontalBefore,
+      after: horizontalAfter,
+      order: horizontalOrder,
+    };
+    assert(
+      horizontalBefore.mode === 'before'
+        && horizontalBefore.axis === 'x'
+        && Number.isFinite(horizontalBefore.width)
+        && horizontalBefore.width <= 12
+        && Number.isFinite(horizontalBefore.height)
+        && horizontalBefore.height > 12,
+      `horizontal before indicator did not use the left vertical edge: ${JSON.stringify(horizontalBefore)}`,
+    );
+    assert(
+      horizontalAfter.mode === 'after'
+        && horizontalAfter.axis === 'x'
+        && Number.isFinite(horizontalAfter.width)
+        && horizontalAfter.width <= 12
+        && Number.isFinite(horizontalAfter.height)
+        && horizontalAfter.height > 12,
+      `horizontal after indicator did not use the right vertical edge: ${JSON.stringify(horizontalAfter)}`,
+    );
+    assert(
+      horizontalOrder.movingParent === horizontalOrder.expectedParent
+        && horizontalOrder.targetParent === horizontalOrder.expectedParent
+        && horizontalOrder.movingPrevious === ids.horizontalFlowBId
+        && horizontalOrder.emittedAfter,
+      `horizontal flow order did not persist: ${JSON.stringify(horizontalOrder)}`,
+    );
+
     const outsideBox = await frame.locator('.sheet-outside').boundingBox();
     const rowBBoxAfterFlow = await frame.locator('.sheet-row-b').boundingBox();
     assert(outsideBox && rowBBoxAfterFlow, 'synthetic extraction targets are missing');
@@ -2655,6 +2744,12 @@ async function main() {
     );
 
     result.tests.layerReorder = await page.evaluate(async ({ movingId, targetId }) => {
+      const scroll = document.querySelector('[data-testid="edit-layer-scroll"]');
+      if (scroll instanceof HTMLElement) {
+        scroll.scrollTop = 0;
+        scroll.dispatchEvent(new Event('scroll', { bubbles: true }));
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      }
       const moving = document.querySelector(`[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(movingId)}"]`);
       const target = document.querySelector(`[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(targetId)}"]`);
       if (!moving || !target) return { moved: false, reason: 'missing moving or target layer row' };
@@ -4496,11 +4591,27 @@ async function main() {
       return { dispatched: true, dragoverPrevented: dragover.defaultPrevented, dropPrevented: drop.defaultPrevented };
     });
     assert(result.tests.rolltemplateDrop.dispatched, 'rolltemplate friendly widget drop did not dispatch');
-    await page.waitForFunction(
-      () => window.__perfHook.getEmitContent().html.includes('sheet-result-label'),
-      null,
-      { timeout: 10000 },
-    );
+    try {
+      await page.waitForFunction(
+        () => window.__perfHook.getEmitContent().html.includes('result-label'),
+        null,
+        { timeout: 10000 },
+      );
+    } catch {
+      const dropDebug = await page.evaluate(() => {
+        const html = window.__perfHook.getEmitContent().html;
+        return {
+          resultClasses: html.match(/class="[^"]*result[^"]*"/g)?.slice(-12) ?? [],
+          blockCount: window.__perfHook.getLayerSnapshot('html').length,
+          dropActive: document.querySelector('[data-testid="rolltemplate-edit-surface"]')
+            ?.getAttribute('data-drop-active') ?? null,
+        };
+      });
+      throw new Error(`rolltemplate label drop did not reach emit: ${JSON.stringify({
+        event: result.tests.rolltemplateDrop,
+        ...dropDebug,
+      })}`);
+    }
     result.tests.rolltemplateDrop.rendered = await page.locator('[data-testid="rolltemplate-edit-card"] .sheet-result-label').count();
     assert(result.tests.rolltemplateDrop.rendered === 1, 'dropped rolltemplate label did not render inside the card');
     await page.screenshot({

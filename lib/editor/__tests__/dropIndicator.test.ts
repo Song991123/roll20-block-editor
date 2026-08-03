@@ -20,6 +20,30 @@ assert.deepEqual(getDropIndicatorRect('after', target), {
   height: 4,
 });
 assert.deepEqual(getDropIndicatorRect('inside', target), target);
+assert.deepEqual(getDropIndicatorRect('before', target, 4, 'x'), {
+  left: 12,
+  top: 30,
+  width: 4,
+  height: 80,
+});
+assert.deepEqual(getDropIndicatorRect('after', target, 4, 'x'), {
+  left: 148,
+  top: 30,
+  width: 4,
+  height: 80,
+});
+assert.deepEqual(getDropIndicatorRect('before', target, 4, 'x', true), {
+  left: 148,
+  top: 30,
+  width: 4,
+  height: 80,
+});
+assert.deepEqual(getDropIndicatorRect('before', target, 4, 'y', true), {
+  left: 12,
+  top: 106,
+  width: 140,
+  height: 4,
+});
 assert.equal(getDropIndicatorRect('before', { ...target, height: 1 }, 8).height, 1);
 assert.equal(getDropIndicatorRect('after', target, 100).height, 12);
 assert.equal(dropIndicatorLabel('before'), '앞에 놓기');

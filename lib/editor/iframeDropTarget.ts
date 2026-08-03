@@ -127,14 +127,19 @@ export function resolveIframeContainerPoint(
 
 function pickDropMode(
   geometry: IframeEditNodeGeometry,
-  pointerY: number,
+  pointer: { x: number; y: number },
   canDropInside: boolean,
 ): IframeDropMode {
   const { rect } = geometry;
-  const y = rect.height > 0 ? (pointerY - rect.top) / rect.height : 0.5;
-  if (y < 0.24) return 'before';
-  if (y > 0.76) return 'after';
-  return canDropInside ? 'inside' : y < 0.5 ? 'before' : 'after';
+  const horizontal = geometry.parentFlowAxis === 'x';
+  const size = horizontal ? rect.width : rect.height;
+  const start = horizontal ? rect.left : rect.top;
+  const coordinate = horizontal ? pointer.x : pointer.y;
+  const physicalRatio = size > 0 ? (coordinate - start) / size : 0.5;
+  const ratio = geometry.parentFlowReverse === true ? 1 - physicalRatio : physicalRatio;
+  if (ratio < 0.24) return 'before';
+  if (ratio > 0.76) return 'after';
+  return canDropInside ? 'inside' : ratio < 0.5 ? 'before' : 'after';
 }
 
 function isSubjectDescendant(
@@ -209,7 +214,7 @@ export function resolveIframeEditDropTarget(
     if (isSubjectDescendant(block, message.subject.blockId, lookup)) continue;
 
     const canDropInside = canPlaceInside(message.subject.blockId, block.id, lookup);
-    const mode = pickDropMode(geometry, message.pointer.y, canDropInside);
+    const mode = pickDropMode(geometry, message.pointer, canDropInside);
     if (mode !== 'inside' && !canPlaceAdjacent(message.subject.blockId, block.id, lookup)) continue;
     return {
       blockId: block.id,
@@ -234,7 +239,7 @@ export function resolveIframeWidgetDropTarget(
     const block = lookup.getBlock(geometry.blockId);
     if (!block) continue;
     const canDropInside = canPlaceInside('', block.id, lookup, movingType);
-    const mode = pickDropMode(geometry, message.pointer.y, canDropInside);
+    const mode = pickDropMode(geometry, message.pointer, canDropInside);
     if (mode !== 'inside' && !canPlaceAdjacent('', block.id, lookup, movingType)) continue;
     // Free placement must prefer a containing frame. If the pointer is over
     // an existing child, its before/after slot is a flow target and would
@@ -268,7 +273,7 @@ export function resolveIframeLayerDropTarget(
     if (!block || block.id === message.blockId) continue;
     if (isSubjectDescendant(block, message.blockId, lookup)) continue;
     const canDropInside = canPlaceInside(message.blockId, block.id, lookup);
-    const mode = pickDropMode(geometry, message.pointer.y, canDropInside);
+    const mode = pickDropMode(geometry, message.pointer, canDropInside);
     if (mode !== 'inside' && !canPlaceAdjacent(message.blockId, block.id, lookup)) continue;
     // In free placement, hovering an existing child should still resolve to
     // the nearest eligible containing frame. A before/after target would

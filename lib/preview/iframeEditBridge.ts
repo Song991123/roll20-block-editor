@@ -40,6 +40,10 @@ export type IframeEditNodeGeometry = {
   position: string;
   tagName?: string;
   display?: string;
+  /** Physical axis used by this node's DOM parent for sibling ordering. */
+  parentFlowAxis?: 'x' | 'y';
+  /** Whether document order runs toward the decreasing side of that axis. */
+  parentFlowReverse?: boolean;
   computedWidth?: number;
   computedHeight?: number;
   /** Viewport pixels represented by one local CSS pixel on each axis. */
@@ -211,6 +215,11 @@ function isNodeGeometry(value: unknown): value is IframeEditNodeGeometry {
       || (typeof value.tagName === 'string' && value.tagName.length <= 64))
     && (value.display === undefined
       || (typeof value.display === 'string' && value.display.length <= 64))
+    && (value.parentFlowAxis === undefined
+      || value.parentFlowAxis === 'x'
+      || value.parentFlowAxis === 'y')
+    && (value.parentFlowReverse === undefined
+      || typeof value.parentFlowReverse === 'boolean')
     && (value.computedWidth === undefined
       || (isFiniteCoordinate(value.computedWidth) && value.computedWidth >= 0))
     && (value.computedHeight === undefined

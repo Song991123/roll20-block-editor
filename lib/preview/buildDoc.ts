@@ -292,6 +292,42 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       return '';
     }
   }
+  function parentFlowOf(node, nodeDisplay) {
+    var parent = node ? node.parentElement : null;
+    while (parent) {
+      try {
+        var style = window.getComputedStyle(parent);
+        var display = String(style.display || '').toLowerCase();
+        if (display === 'contents') {
+          parent = parent.parentElement;
+          continue;
+        }
+        var direction = String(style.direction || '').toLowerCase();
+        var axis = 'y';
+        var reverse = false;
+        if (display.indexOf('flex') !== -1) {
+          var flexDirection = String(style.flexDirection || 'row').toLowerCase();
+          axis = flexDirection.indexOf('row') === 0 ? 'x' : 'y';
+          reverse = flexDirection.indexOf('reverse') !== -1;
+          if (axis === 'x' && direction === 'rtl') reverse = !reverse;
+        } else if (display.indexOf('grid') !== -1) {
+          var gridAutoFlow = String(style.gridAutoFlow || 'row').toLowerCase();
+          axis = gridAutoFlow.indexOf('column') !== -1 ? 'y' : 'x';
+          reverse = axis === 'x' && direction === 'rtl';
+        } else if (display === 'table-row' || String(parent.tagName || '').toLowerCase() === 'tr') {
+          axis = 'x';
+          reverse = direction === 'rtl';
+        } else if (String(nodeDisplay || '').toLowerCase().indexOf('inline') === 0) {
+          axis = 'x';
+          reverse = direction === 'rtl';
+        }
+        return { axis: axis, reverse: reverse };
+      } catch (e) {
+        return { axis: 'y', reverse: false };
+      }
+    }
+    return { axis: 'y', reverse: false };
+  }
   function geometryOf(node) {
     if (!node || !node.dataset || !node.dataset.r20BlockId) return null;
     var rect = node.getBoundingClientRect();
@@ -316,6 +352,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       if (offsetWidth > 0 && rect.width > 0) scaleX = rect.width / offsetWidth;
       if (offsetHeight > 0 && rect.height > 0) scaleY = rect.height / offsetHeight;
     } catch (e) {}
+    var parentFlow = parentFlowOf(node, display);
     var linear = localToViewportOf(node);
     var geometry = {
       blockId: node.dataset.r20BlockId,
@@ -329,6 +366,8 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       position: position,
       tagName: String(node.tagName || '').toLowerCase(),
       display: display,
+      parentFlowAxis: parentFlow.axis,
+      parentFlowReverse: parentFlow.reverse,
       computedWidth: Number.isFinite(computedWidth) && computedWidth >= 0 ? computedWidth : undefined,
       computedHeight: Number.isFinite(computedHeight) && computedHeight >= 0 ? computedHeight : undefined,
       scaleX: Number.isFinite(scaleX) && scaleX > 0 ? scaleX : 1,

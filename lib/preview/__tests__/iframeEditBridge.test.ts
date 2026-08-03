@@ -18,6 +18,8 @@ const subject = {
   position: 'absolute',
   tagName: 'div',
   display: 'block',
+  parentFlowAxis: 'x',
+  parentFlowReverse: false,
   computedWidth: 98,
   computedHeight: 38,
   scaleX: 0.75,
@@ -179,6 +181,14 @@ assert.equal(parseIframeEditBridgeMessage({
 assert.equal(parseIframeEditBridgeMessage({
   ...hit,
   subject: { ...subject, tagName: 'x'.repeat(65) },
+}), null);
+assert.equal(parseIframeEditBridgeMessage({
+  ...hit,
+  subject: { ...subject, parentFlowAxis: 'z' },
+}), null);
+assert.equal(parseIframeEditBridgeMessage({
+  ...hit,
+  subject: { ...subject, parentFlowReverse: 'false' },
 }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...hit, modifiers: { ctrlKey: 'yes' } }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...nudge, deltaX: 11 }), null);

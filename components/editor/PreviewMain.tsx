@@ -2621,8 +2621,12 @@ export default function PreviewMain() {
                 const indicator = getDropIndicatorRect(
                   iframeEditDropTarget.mode,
                   iframeEditDropTarget.geometry.rect,
+                  4,
+                  iframeEditDropTarget.geometry.parentFlowAxis,
+                  iframeEditDropTarget.geometry.parentFlowReverse,
                 );
                 const inside = iframeEditDropTarget.mode === 'inside';
+                const horizontal = iframeEditDropTarget.geometry.parentFlowAxis === 'x';
                 return (
                   <div
                     aria-hidden="true"
@@ -2630,6 +2634,7 @@ export default function PreviewMain() {
                     data-r20-drop-target-id={iframeEditDropTarget.blockId}
                     data-r20-drop-mode={iframeEditDropTarget.mode}
                     data-r20-drop-indicator="exact"
+                    data-r20-drop-axis={horizontal ? 'x' : 'y'}
                     className={`pointer-events-none absolute z-30 box-border ${
                       inside
                         ? 'rounded-sm border-2 border-rose-500 bg-rose-400/10'
@@ -2647,7 +2652,10 @@ export default function PreviewMain() {
                       className={`absolute left-1 z-10 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold leading-4 text-white shadow-sm ${
                         inside ? 'bg-rose-600' : 'bg-teal-700'
                       }`}
-                      style={{ top: inside || iframeEditDropTarget.mode === 'before' ? '4px' : '-24px' }}
+                      style={{
+                        top: inside || horizontal || iframeEditDropTarget.mode === 'before' ? '4px' : '-24px',
+                        left: horizontal && !inside ? '4px' : undefined,
+                      }}
                     >
                       {dropIndicatorLabel(iframeEditDropTarget.mode)}
                     </span>
