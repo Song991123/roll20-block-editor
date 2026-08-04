@@ -50,6 +50,9 @@ or source-derived measurement here.
 - Claim boundary: this is a focused protected regression, not the complete
   baseline. Alpha progress remains withheld until every discovered row has a
   result under one committed Git SHA.
+- Full-baseline preparation no longer rereads the same source or image bytes
+  for every case. Per-run file digests are memoized as compact hashes, keeping
+  cache invalidation content-based without retaining protected file contents.
 
 ## 2026-08-04 - Custom Roll Chat Actions
 

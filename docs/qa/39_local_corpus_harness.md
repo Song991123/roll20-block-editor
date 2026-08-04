@@ -83,8 +83,9 @@ root geometry, console errors, page errors, and resource warnings.
   booleans, generic diagnostic categories, and aggregate counts only.
 - No source path, sheet name, creator, visible text, class token, attribute
   value, URL, screenshot, or child report survives case cleanup.
-- Cache identity includes input bytes, current Git SHA, compatibility mode, and
-  Harness version.
+- Cache identity includes SHA-256 digests of every input file, current Git SHA,
+  compatibility mode, and Harness version. A file digest is read once per run
+  and reused when multiple discovered cases reference the same local asset.
 - Commit only synthetic self-tests. Never commit config, cache, results, or
   protected source copies.
 

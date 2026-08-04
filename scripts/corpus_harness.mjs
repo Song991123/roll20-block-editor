@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawn, spawnSync } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -20,7 +20,7 @@ import {
 } from './lib/corpus_discovery.mjs';
 
 const REPO = path.resolve(import.meta.dirname, '..');
-const HARNESS_VERSION = '2';
+const HARNESS_VERSION = '3';
 const DEFAULT_CONFIG = path.join(REPO, '.tmp', 'corpus-harness', 'config.json');
 const ALLOWED_COMMANDS = new Set(['scan', 'changed', 'full', 'select']);
 const RESULT_FILE = 'corpus-results.json';
@@ -105,12 +105,23 @@ function modesFor(compatibility) {
   throw new Error('invalid discovered compatibility mode');
 }
 
-async function readBuffers(paths, typePrefix) {
+const fileDigestCache = new Map();
+
+async function readFileDigest(filePath) {
+  let pending = fileDigestCache.get(filePath);
+  if (!pending) {
+    pending = readFile(filePath).then((bytes) => createHash('sha256').update(bytes).digest());
+    fileDigestCache.set(filePath, pending);
+  }
+  return pending;
+}
+
+async function readDigests(paths, typePrefix) {
   const values = [];
   for (let index = 0; index < paths.length; index += 1) {
     values.push({
       type: `${typePrefix}:${String(index).padStart(4, '0')}`,
-      bytes: await readFile(paths[index]),
+      bytes: await readFileDigest(paths[index]),
     });
   }
   return values;
@@ -125,7 +136,7 @@ async function inputMaterial(caseDescriptor) {
     ['image', caseDescriptor.imagePaths],
   ];
   const inputs = [];
-  for (const [type, paths] of groups) inputs.push(...await readBuffers(paths, type));
+  for (const [type, paths] of groups) inputs.push(...await readDigests(paths, type));
   if (inputs.length === 0) throw new Error('discovered case contains no readable input');
   return inputs;
 }
