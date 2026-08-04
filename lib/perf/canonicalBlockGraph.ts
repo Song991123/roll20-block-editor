@@ -43,6 +43,63 @@ function stableValue(value: unknown): unknown {
   );
 }
 
+export function normalizeCssDeclarationValueWhitespace(value: string): string {
+  const source = String(value ?? '');
+  let output = '';
+  let quote = '';
+  let escaped = false;
+  let pendingWhitespace = false;
+  const flushWhitespace = () => {
+    if (pendingWhitespace && output) output += ' ';
+    pendingWhitespace = false;
+  };
+
+  for (let index = 0; index < source.length; index += 1) {
+    const char = source[index];
+    if (quote) {
+      output += char;
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === quote) quote = '';
+      continue;
+    }
+    if (char === '\\') {
+      flushWhitespace();
+      output += char;
+      if (index + 1 < source.length) {
+        output += source[index + 1];
+        index += 1;
+        if (source[index] === '\r' && source[index + 1] === '\n') {
+          output += source[index + 1];
+          index += 1;
+        }
+      }
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      flushWhitespace();
+      quote = char;
+      output += char;
+      continue;
+    }
+    if (/\s/.test(char)) {
+      pendingWhitespace = true;
+      continue;
+    }
+    flushWhitespace();
+    output += char;
+  }
+  return output.trim();
+}
+
+function canonicalField(nodeType: string, field: BlockFieldInfo): BlockFieldInfo {
+  if (nodeType !== 'r20_css_decl' || field.name !== 'VALUE') return { ...field };
+  return {
+    ...field,
+    value: normalizeCssDeclarationValueWhitespace(String(field.value ?? '')),
+  };
+}
+
 function normalizedFieldValue(field: BlockFieldInfo): string {
   const normalized = String(field.value ?? '').replace(/\r\n?/g, '\n').trim();
   if (field.name !== '__R20_PRESERVED_ATTRS') return normalized;
@@ -85,7 +142,9 @@ export function canonicalizeBlockGraph(source: CanonicalGraphSourceNode[]): Cano
     if (!node.id || byId.has(node.id)) continue;
     byId.set(node.id, {
       ...node,
-      fields: [...node.fields].sort((left, right) => left.name.localeCompare(right.name)),
+      fields: node.fields
+        .map((field) => canonicalField(node.type, field))
+        .sort((left, right) => left.name.localeCompare(right.name)),
       inputs: [...node.inputs].sort(
         (left, right) => left.ordinal - right.ordinal || left.name.localeCompare(right.name),
       ),

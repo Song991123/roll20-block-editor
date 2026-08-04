@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   canonicalizeBlockGraph,
+  normalizeCssDeclarationValueWhitespace,
   type CanonicalGraphSourceNode,
 } from '../canonicalBlockGraph';
 
@@ -74,5 +75,33 @@ for (let index = 0; index < 5_000; index += 1) {
   }));
 }
 assert.equal(canonicalizeBlockGraph(longChain).nodes.length, 5_000, 'large chains avoid recursive stack overflow');
+
+const multilineCss = canonicalizeBlockGraph([
+  node('css-a', 'r20_css_decl', {
+    fields: [
+      { name: 'PROPERTY', kind: 'text', value: 'background' },
+      { name: 'VALUE', kind: 'text', value: 'linear-gradient(red,\n  blue)' },
+    ],
+  }),
+]);
+const singleLineCss = canonicalizeBlockGraph([
+  node('css-b', 'r20_css_decl', {
+    fields: [
+      { name: 'PROPERTY', kind: 'text', value: 'background' },
+      { name: 'VALUE', kind: 'text', value: 'linear-gradient(red, blue)' },
+    ],
+  }),
+]);
+assert.deepEqual(singleLineCss, multilineCss, 'CSS whitespace outside strings is semantic');
+assert.notEqual(
+  normalizeCssDeclarationValueWhitespace('"line\nbreak"'),
+  normalizeCssDeclarationValueWhitespace('"line break"'),
+  'CSS whitespace inside strings remains exact',
+);
+assert.notEqual(
+  normalizeCssDeclarationValueWhitespace('calc(1px\\\n + 2px)'),
+  normalizeCssDeclarationValueWhitespace('calc(1px\\  + 2px)'),
+  'escaped CSS line breaks remain exact',
+);
 
 console.log('CANONICAL BLOCK GRAPH TEST PASS');
