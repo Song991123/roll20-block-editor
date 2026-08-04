@@ -719,13 +719,11 @@ function safeGraphDiagnostics(fixture) {
   }
 }
 
-function genericDiagnostics(row, fixture, child) {
+function genericDiagnostics(row, fixture, child, runtimeIssues) {
   const values = row.caseDescriptor.diagnostics.map(classifyDiagnosticCategory);
   for (const code of fixture?.import?.diagnosticCodes ?? []) values.push(classifyDiagnosticCategory(code));
   if ((fixture?.resourceIssueCount ?? 0) > 0) values.push('asset');
-  if ((fixture?.consoleErrors?.length ?? 0) > 0 || (fixture?.pageErrors?.length ?? 0) > 0) {
-    values.push('runtime');
-  }
+  if (runtimeIssues.applicationErrorCount > 0) values.push('runtime');
   if (!fixture?.localPreviewPass) values.push(row.mode === 'legacy' ? 'legacy-transform' : 'runtime');
   const stable = fixture?.reimport?.stable;
   const graph = fixture?.reimport?.graphByWorkspace;
@@ -818,7 +816,7 @@ async function executeRow(config, row, port) {
         pageErrors: fixture?.pageErrors?.length ?? 0,
         resourceWarnings: fixture?.resourceIssueCount ?? 0,
       },
-      diagnostics: genericDiagnostics(row, fixture, child),
+      diagnostics: genericDiagnostics(row, fixture, child, runtimeIssues),
       cacheKey: row.cacheKey,
     });
     assertPersistableCorpusCaseResult(result);
