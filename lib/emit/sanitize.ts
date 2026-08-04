@@ -77,26 +77,27 @@ export function sanitizeForRoll20Legacy(css: string): SanitizeResult {
 function stripKeyframes(css: string, warnings: SanitizeWarning[]): string {
   // `@keyframes name { ... }` / `@-webkit-keyframes ... { ... }` 통째 제거.
   // 중첩 brace 처리 — 단순 depth 카운터.
-  let out = '';
+  const out: string[] = [];
   let i = 0;
+  let copyStart = 0;
   let line = 0;
   const n = css.length;
   while (i < n) {
-    if (css[i] !== '@') {
-      if (css[i] === '\n') line += 1;
-      out += css[i];
-      i += 1;
-      continue;
-    }
+    const atIndex = css.indexOf('@', i);
+    if (atIndex < 0) break;
+
+    out.push(css.slice(copyStart, atIndex));
+    line += countNewlines(css, copyStart, atIndex);
+
     // case-insensitive @keyframes / @-webkit-keyframes 시작 매칭.
-    const kw = matchKeyframesStart(css, i);
+    const kw = matchKeyframesStart(css, atIndex);
     if (kw) {
       // body 의 `{` 찾기.
-      const braceStart = css.indexOf('{', i + kw.length);
+      const braceStart = css.indexOf('{', atIndex + kw.length);
       if (braceStart < 0) {
         // malformed — 그대로 옮김.
-        out += css.slice(i);
-        break;
+        out.push(css.slice(atIndex));
+        return out.join('');
       }
       // depth 매칭으로 `}` 찾기.
       let depth = 1;
@@ -108,18 +109,14 @@ function stripKeyframes(css: string, warnings: SanitizeWarning[]): string {
         j += 1;
       }
       const ruleEnd = depth === 0 ? j : n;
-      const original = css.slice(i, ruleEnd);
+      const original = css.slice(atIndex, ruleEnd);
       warnings.push({
         code: 'keyframes-stripped',
         message: `@keyframes at-rule 가 sandbox 차단으로 제거됨.`,
         line,
         source: shorten(original),
       });
-      // Visit each removed character once. Recounting from index 0 for every
-      // warning makes keyframe-heavy stylesheets quadratic.
-      for (let k = i; k < ruleEnd; k += 1) {
-        if (css[k] === '\n') line += 1;
-      }
+      line += countNewlines(css, atIndex, ruleEnd);
       // 빈 줄 보존 (gap 생기지 않도록 newline 1 개 정도).
       i = ruleEnd;
       // 연속 공백 정리 — 줄 끝 newline 만 보존.
@@ -127,12 +124,23 @@ function stripKeyframes(css: string, warnings: SanitizeWarning[]): string {
         line += 1;
         i += 1;
       }
+      copyStart = i;
     } else {
-      out += css[i];
-      i += 1;
+      out.push('@');
+      i = atIndex + 1;
+      copyStart = i;
     }
   }
-  return out;
+  out.push(css.slice(copyStart));
+  return out.join('');
+}
+
+function countNewlines(value: string, start: number, end: number): number {
+  let count = 0;
+  for (let index = start; index < end; index += 1) {
+    if (value[index] === '\n') count += 1;
+  }
+  return count;
 }
 
 function matchKeyframesStart(css: string, index: number): string | null {

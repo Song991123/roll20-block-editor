@@ -1363,3 +1363,25 @@ parity.
   prior cache; complete v5 corpus measurement remains open.
 - Claim boundary: generic synthetic proof only. Broad protected-corpus impact
   is not complete until the v5 full run finishes.
+
+## 2026-08-04 - Harness V5 Baseline And Radio Attribute Ownership
+
+- Completed the full Harness v5 browser baseline at `80029b2`. Every expected
+  result row exists and the measured Alpha score is 28.9%. The nonzero command
+  exit reflects unmet product gates, not an incomplete run. Broad L2 and all L3
+  work remain open.
+- The new attribute diagnostics exposed a generic compound-block ownership
+  bug: collapsing a radio input and its label allowed the outer wrapper to
+  overwrite the input's preserved attribute snapshot.
+- Plain radio wrappers now retain the nested control snapshot. A wrapper with
+  authored attributes stays as an explicit exact raw block until the block
+  model has separate editable wrapper and control targets. This prevents
+  silent loss while keeping the common plain wrapper structured.
+- Unit tests and synthetic modern/legacy browser roundtrips pass. The project
+  listener count returns to zero after each run.
+- Full CI exposed a noisy legacy CSS performance gate. Keyframe stripping now
+  appends retained source ranges and joins once instead of extending the output
+  one character at a time. The isolated correctness and linear-budget suite
+  passed six consecutive runs, then the complete `ci:verify` rerun passed.
+- Claim boundary: the 28.9% score belongs to `80029b2`. Current radio changes
+  require a new complete baseline before any higher score is claimed.

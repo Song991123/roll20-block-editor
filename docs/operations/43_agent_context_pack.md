@@ -38,9 +38,14 @@ contain private source evidence or historical test dumps.
   finished and exposed broad generic mapping failures. Imported elements now
   keep an origin snapshot even when they authored no attributes; omitted
   browser defaults do not appear during first emit. Harness v5 invalidates the
-  earlier baseline and adds name-based attribute delta diagnostics. Synthetic
-  modern/legacy integration passes; the complete v5 baseline and current Alpha
-  score remain open.
+  earlier baseline and adds name-based attribute delta diagnostics. The
+  complete v5 baseline at `80029b2` measured Alpha at 28.9% and still showed
+  broad L2 failures with L3 open. A follow-up fix now keeps collapsed radio
+  input attributes separate from wrapper ownership; attributed wrappers use an
+  exact raw block instead of losing either side. Synthetic modern/legacy
+  integration passes. Legacy keyframe sanitizing also uses range accumulation
+  after CI exposed unstable character-by-character output growth. A fresh
+  complete baseline is required before the 28.9% score can be updated.
 - Dedicated owner-only modern and legacy test rooms now cover current anonymous
   synthetic full-root rendering, translation, controls, Worker action state,
   Roll execution, and result-card output. The modern result-card comparison

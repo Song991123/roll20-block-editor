@@ -163,9 +163,12 @@ Gate weights live in
   independent-root order are ignored, while input slots and `next` sibling
   order remain strict. Synthetic roundtrip coverage passes. The complete v4
   browser baseline finished and exposed broad generic mapping failures; it is
-  retained only as the superseded diagnosis baseline. Harness v5 now includes
-  imported-attribute origin tracking and corrected attribute-delta reporting,
-  so its complete browser baseline and current Alpha score remain `VERIFY`.
+  retained only as the superseded diagnosis baseline. Harness v5 includes
+  imported-attribute origin tracking and corrected attribute-delta reporting.
+  Its complete browser baseline finished at commit `80029b2`; the measured
+  Alpha score there is 28.9%. Broad L2 mapping still fails, L3 remains open,
+  and the current follow-up mapping fix requires a fresh complete baseline
+  before that score can be called current.
 
 - `DONE LOCAL / VERIFY BROAD`: imported controls no longer invent browser
   defaults during their first emit. Missing number/hidden values stay missing,
@@ -175,6 +178,20 @@ Gate weights live in
   keep their explicit design defaults. Synthetic modern and legacy browser
   roundtrips preserve block graph, Preview/Edit state, and runtime cleanliness.
   Harness v5 broad impact remains `VERIFY`.
+
+- `DONE LOCAL / VERIFY BROAD`: a collapsed
+  `<label><input type="radio">...</label>` no longer lets the wrapper overwrite
+  the input's preserved attribute snapshot. Plain wrappers remain one editable
+  radio block and keep input-only attributes. Wrappers with their own
+  attributes use an explicit exact raw block until a dual-target structured
+  radio model exists, preventing silent loss or nested labels. Unit coverage
+  and modern/legacy browser roundtrips pass; broad corpus impact remains
+  `VERIFY`.
+
+- `DONE CI`: legacy keyframe sanitizing now accumulates retained
+  source ranges and joins once instead of extending the result per character.
+  Correctness and the large-input linear budget pass six consecutive isolated
+  runs, followed by a complete passing `ci:verify` run.
 
 - `DONE LOCAL / VERIFY BROAD`: ordinary HTML comments now map to the existing
   hidden-note block at the document root and inside nested structure. Compact

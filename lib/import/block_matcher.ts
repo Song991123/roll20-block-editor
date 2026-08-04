@@ -38,6 +38,8 @@ export interface MatchedBlock {
   valueInputs?: Record<string, MatchedBlock>;
   /** raw fallback 일 때 — 원본 HTML 보존. */
   raw?: string;
+  /** Count this escape hatch as raw preservation, not structured mapping. */
+  isRawFallback?: boolean;
   /** Original sanitized element HTML for optional lossless compaction. */
   sourceRaw?: string;
   /** 디버깅: 매칭에 사용된 token (어떤 hint 가 매칭 결정했는지). */
@@ -173,11 +175,18 @@ export function matchElement(node: DomNode, ctx: MatchContext): MatchedBlock | n
     matchGenericElement(node, ctx);
 
   if (result) {
-    ctx.matchedCount++;
+    if (result.isRawFallback) ctx.rawFallbackCount++;
+    else ctx.matchedCount++;
     const preservedAttrs = serializePreservedAttributes(node.attrs ?? {});
+    const ownsNestedAttributeSnapshot = Object.prototype.hasOwnProperty.call(
+      result.fields,
+      PRESERVED_ATTRS_FIELD,
+    );
     return {
       ...result,
-      fields: { ...result.fields, [PRESERVED_ATTRS_FIELD]: preservedAttrs },
+      fields: ownsNestedAttributeSnapshot
+        ? result.fields
+        : { ...result.fields, [PRESERVED_ATTRS_FIELD]: preservedAttrs },
       sourceRaw: serializeRawHtml(node),
     };
   }
@@ -1166,6 +1175,21 @@ function matchDualRollButton(node: DomNode, cls: string): MatchedBlock | null {
         (child.type === 'element' && child.tag === 'input' && (child.attrs?.type || '').toLowerCase() === 'radio'),
     );
     if (radioChildren.length === 1 && hasOnlyRadioAndText) {
+      if (Object.keys(a).length > 0) {
+        ctx.warnings.push({
+          code: 'raw_fallback',
+          message: '속성을 가진 라디오 레이블은 원문 보존 블록으로 가져왔습니다.',
+          hint: 'label-radio-wrapper',
+        });
+        return {
+          blockType: 'r20_raw_html',
+          fields: { HTML: serializeRawHtml(node) },
+          children: {},
+          raw: serializeRawHtml(node),
+          isRawFallback: true,
+          hint: 'label-radio-wrapper',
+        };
+      }
       const radio = matchElement(radioChildren[0], ctx);
       if (radio?.blockType === 'r20_radio') {
         const labelText = node.children

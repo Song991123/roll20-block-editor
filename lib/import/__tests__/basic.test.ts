@@ -253,6 +253,23 @@ function testDefaultControlStateIsEditable(): void {
   assert(r.stats.htmlRawFallback === 0, 'default state controls stay structured');
 }
 
+function testRadioWrapperKeepsInputAttributesOrFallsBackLosslessly(): void {
+  const structured = importSheet({
+    html: '<label><input type="radio" class="sheet-control" name="attr_mode" value="a" checked title="Mode">Alpha</label>',
+  });
+  assert(structured.html.includes('r20_radio'), 'plain radio wrapper stays structured');
+  assert(structured.html.includes('title'), 'input-only unknown attribute stays in the control snapshot');
+  assert(structured.html.includes('sheet-control'), 'input class stays in the control snapshot');
+  assert(structured.stats.htmlRawFallback === 0, 'plain wrapper needs no raw fallback');
+
+  const attributedWrapper = importSheet({
+    html: '<label class="sheet-choice" data-wrapper="choice"><input type="radio" name="attr_mode" value="a">Alpha</label>',
+  });
+  assert(attributedWrapper.html.includes('r20_raw_html'), 'attributed radio wrapper uses exact raw fallback');
+  assert(attributedWrapper.html.includes('data-wrapper'), 'wrapper-only attributes survive fallback');
+  assert(attributedWrapper.stats.htmlRawFallback === 1, 'lossless fallback is reported');
+}
+
 function testOmittedControlDefaultsStayOmittedInBlockState(): void {
   const html = [
     '<input name="attr_text">',
@@ -663,6 +680,7 @@ const tests = [
   ['inline sibling whitespace', testInlineWhitespaceBetweenSiblingsPreserved],
   ['stable formatted text', testFormattedDirectTextHasStableWhitespace],
   ['radio label wrapper', testRadioLabelDoesNotNestOnEmit],
+  ['radio wrapper attribute boundary', testRadioWrapperKeepsInputAttributesOrFallsBackLosslessly],
   ['default control state', testDefaultControlStateIsEditable],
   ['omitted control defaults', testOmittedControlDefaultsStayOmittedInBlockState],
   ['select option groups', testSelectOptionGroupsStayEditable],
