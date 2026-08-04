@@ -897,6 +897,9 @@ export const CSS_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('스타일')
         .appendField(new Blockly.FieldTextInput('normal'), 'STYLE');
+      b.appendDummyInput()
+        .appendField('그 밖의 글꼴 설정')
+        .appendField(new Blockly.FieldTextInput(''), 'EXTRA_DESCRIPTORS');
       setStatementHooks(b);
     }),
     generator: (block, ctx) => {
@@ -905,13 +908,24 @@ export const CSS_BLOCKS: BlockDef[] = [
       const src = safeDeclValue(String(bb.getFieldValue('SRC') ?? '')).trim();
       const weight = safeDeclValue(String(bb.getFieldValue('WEIGHT') ?? '')).trim();
       const style = safeDeclValue(String(bb.getFieldValue('STYLE') ?? '')).trim();
+      const extraDescriptors = String(bb.getFieldValue('EXTRA_DESCRIPTORS') ?? '').trim();
       const decls: string[] = [];
       if (family) decls.push(`font-family: '${family.replace(/'/g, '')}';`);
       if (src) decls.push(`src: ${src};`);
       if (weight) decls.push(`font-weight: ${weight};`);
       if (style) decls.push(`font-style: ${style};`);
+      if (extraDescriptors) decls.push(extraDescriptors);
       return wrapBraces(ctx, '@font-face', decls.join('\n'));
     },
+    inspectorSchema: [
+      {
+        name: 'EXTRA_DESCRIPTORS',
+        label: '그 밖의 글꼴 설정',
+        kind: 'textarea',
+        placeholder: 'font-display: swap;\nunicode-range: U+0000-00FF;',
+        description: '위 항목에 없는 글꼴 설정을 원문 그대로 보존합니다.',
+      },
+    ],
   },
 
   // 19) css rule chain -----------------------------------------------------

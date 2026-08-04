@@ -891,8 +891,89 @@ function renderAtRule(rule: Extract<CssRule, { kind: 'at' }>): string {
 
 /**
  * @font-face body → r20_css_font_face block.
- * font-family / src / font-weight / font-style 4 declaration 만 카탈로그 필드로 매핑.
- * 기타 declaration 은 보존되지 않음 (parse 후 누락 가능 — 추후 추가 필드 확장 영역).
+ * font-family / src / font-weight / font-style 4 declaration 은 구조 필드로
+ * 매핑하고, 나머지 descriptor는 편집 가능한 fallback 필드에 그대로 둔다.
+ */
+interface FontFaceDescriptorSegment {
+  declaration: string;
+  raw: string;
+}
+
+/**
+ * Split @font-face descriptors without treating semicolons inside strings or
+ * functions as declaration boundaries. `raw` keeps the authored descriptor,
+ * including its terminating semicolon, for the editable fallback field.
+ */
+function splitFontFaceDescriptorSegments(body: string): FontFaceDescriptorSegment[] {
+  const out: FontFaceDescriptorSegment[] = [];
+  let start = 0;
+  let quote = '';
+  let escaped = false;
+  let parenDepth = 0;
+  let inComment = false;
+
+  const push = (end: number, terminated: boolean): void => {
+    const declaration = body.slice(start, end).trim();
+    const raw = body.slice(start, end + (terminated ? 1 : 0)).trim();
+    if (declaration) out.push({ declaration, raw });
+  };
+
+  for (let i = 0; i < body.length; i++) {
+    const char = body[i];
+    const next = body[i + 1];
+
+    if (inComment) {
+      if (char === '*' && next === '/') {
+        inComment = false;
+        i++;
+      }
+      continue;
+    }
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === quote) {
+        quote = '';
+      }
+      continue;
+    }
+    if (char === '/' && next === '*') {
+      inComment = true;
+      i++;
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      continue;
+    }
+    if (char === '(') {
+      parenDepth++;
+      continue;
+    }
+    if (char === ')') {
+      parenDepth = Math.max(0, parenDepth - 1);
+      continue;
+    }
+    if (char === ';' && parenDepth === 0) {
+      push(i, true);
+      start = i + 1;
+    }
+  }
+
+  push(body.length, false);
+  return out;
+}
+
+function stripCssComments(value: string): string {
+  return value.replace(/\/\*[\s\S]*?\*\//g, ' ');
+}
+
+/**
+ * Map four common descriptors to structured fields. Preserve every other
+ * descriptor, malformed fragment, and duplicate structured descriptor in an
+ * explicit raw field instead of silently dropping it.
  */
 function fontFaceToBlock(body: string): MatchedBlock {
   const fields: Record<string, string> = {
@@ -900,13 +981,24 @@ function fontFaceToBlock(body: string): MatchedBlock {
     SRC: '',
     WEIGHT: 'normal',
     STYLE: 'normal',
+    EXTRA_DESCRIPTORS: '',
   };
-  const decls = splitDeclarations(body);
-  for (const d of decls) {
-    const idx = d.indexOf(':');
-    if (idx < 0) continue;
-    const prop = d.slice(0, idx).trim().toLowerCase();
-    const value = d.slice(idx + 1).trim();
+  const structured = new Set<string>();
+  const extras: string[] = [];
+  const descriptors = splitFontFaceDescriptorSegments(body);
+  for (const descriptor of descriptors) {
+    const declaration = stripCssComments(descriptor.declaration).trim();
+    const idx = declaration.indexOf(':');
+    if (idx < 0) {
+      extras.push(descriptor.raw);
+      continue;
+    }
+    const prop = declaration.slice(0, idx).trim().toLowerCase();
+    const value = declaration.slice(idx + 1).trim();
+    if (structured.has(prop)) {
+      extras.push(descriptor.raw);
+      continue;
+    }
     if (prop === 'font-family') {
       // strip surrounding quotes
       fields.FAMILY = value.replace(/^['"]|['"]$/g, '');
@@ -916,8 +1008,13 @@ function fontFaceToBlock(body: string): MatchedBlock {
       fields.WEIGHT = value;
     } else if (prop === 'font-style') {
       fields.STYLE = value;
+    } else {
+      extras.push(descriptor.raw);
+      continue;
     }
+    structured.add(prop);
   }
+  fields.EXTRA_DESCRIPTORS = extras.join('\n');
   return {
     blockType: 'r20_css_font_face',
     fields,

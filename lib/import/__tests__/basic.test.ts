@@ -392,12 +392,27 @@ function testInlineBreak(): void {
 }
 
 function testCssFontFace(): void {
-  const css = `@font-face { font-family: 'MyFont'; src: url('http://x/y.woff2') format('woff2'); font-weight: 700; font-style: normal; }`;
+  const css = `@font-face {
+    font-family: 'MyFont';
+    src: url('data:font/woff2;base64,AA;BB') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-00FF;
+    font-stretch: 75% 125%;
+    font-weight: 800;
+  }`;
   const r = importSheet({ css });
   assert(r.stats.cssMatched === 1, '@font-face matched 1');
   assert(r.stats.cssRawFallback === 0, 'no css raw fallback');
   assert(r.css.includes('r20_css_font_face'), 'font_face block emitted');
   assert(r.css.includes('>MyFont<'), 'FAMILY field carried');
+  assert(r.css.includes('name="EXTRA_DESCRIPTORS"'), 'extra descriptor field emitted');
+  assert(r.css.includes('font-display: swap;'), 'font-display preserved');
+  assert(r.css.includes('unicode-range: U+0000-00FF;'), 'unicode-range preserved');
+  assert(r.css.includes('font-stretch: 75% 125%;'), 'font-stretch preserved');
+  assert(r.css.includes('font-weight: 800;'), 'duplicate structured descriptor preserved');
+  assert(r.css.includes('AA;BB'), 'semicolon inside data URL stays inside src value');
 }
 
 function testTableColumnStructure(): void {
