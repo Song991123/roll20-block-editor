@@ -44,8 +44,11 @@ contain private source evidence or historical test dumps.
   input attributes separate from wrapper ownership; attributed wrappers use an
   exact raw block instead of losing either side. Synthetic modern/legacy
   integration passes. Legacy keyframe sanitizing also uses range accumulation
-  after CI exposed unstable character-by-character output growth. A fresh
-  complete baseline is required before the 28.9% score can be updated.
+  after CI exposed unstable character-by-character output growth. Empty
+  selector-list items and internal selector line breaks now remain exact raw
+  complex blocks; a protected local target passes all five workspace graphs
+  and local Preview/runtime/resource checks. A fresh complete baseline is
+  required before the 28.9% score can be updated.
 - Corpus `changed` runs now persist an ignored complete-run state and reuse only
   unchanged input rows outside classified code impact. Missing provenance,
   unknown runtime changes, or dirty runtime code trigger a safe stop/full rerun

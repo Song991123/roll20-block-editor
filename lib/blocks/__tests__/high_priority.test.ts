@@ -599,6 +599,18 @@ function testCssClassSelectorPreservesRoll20RuntimeClass(): void {
   expectEq(code, '.inlinerollresult', 'Roll20 inline-roll runtime class stays unprefixed');
 }
 
+function testCssComplexSelectorPreservesInternalLineBreaks(): void {
+  const def = findBlock(CSS_BLOCKS as Array<{ type: string }>, 'r20_selector_complex');
+  const selector = '.sheet-a,\n.sheet-b,';
+  const b = new FakeBlock({
+    type: 'r20_selector_complex',
+    fields: { TEXT: selector },
+  });
+  const out = def.generator!(b, makeCtx());
+  const code = Array.isArray(out) ? out[0] : out;
+  expectEq(code, selector, 'complex selector keeps authored line breaks');
+}
+
 // ---------- 4) r20_value_switch_panel -------------------------------------
 
 function testValueSwitchEmptyAttr(): void {
@@ -833,6 +845,7 @@ const tests: Array<[string, () => void]> = [
   ['css class selector preserves authored token', testCssClassSelectorPreservesAuthoredToken],
   ['css class selector does not double prefix', testCssClassSelectorDoesNotDoublePrefix],
   ['css class selector preserves Roll20 runtime class', testCssClassSelectorPreservesRoll20RuntimeClass],
+  ['css complex selector preserves internal line breaks', testCssComplexSelectorPreservesInternalLineBreaks],
   ['value switch empty attr', testValueSwitchEmptyAttr],
   ['value switch two cases', testValueSwitchTwoCases],
   ['value switch preserves custom classes', testValueSwitchPreservesCustomClasses],

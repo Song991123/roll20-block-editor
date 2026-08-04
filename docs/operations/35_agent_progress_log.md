@@ -1408,5 +1408,12 @@ parity.
   a complex `*` fallback and reimport classified that output as an element.
   Malformed lists now remain one exact complex selector block instead of being
   silently completed with a universal selector.
+- The next browser rerun showed the selector type was stable but the raw block
+  generator replaced an authored internal line break with a space. Complex
+  selector output now blocks only rule-boundary braces and preserves internal
+  line breaks. The generator regression suite passes, a clean production build
+  passes, and the protected target now passes all five workspace graphs plus
+  local Preview, runtime, and resource checks. No source value, path, identity,
+  or screenshot was retained in tracked output.
 - Claim boundary: the 28.9% score belongs to `80029b2`. Current radio changes
   require a new complete baseline before any higher score is claimed.

@@ -601,7 +601,8 @@ export const CSS_BLOCKS: BlockDef[] = [
     generator: (block) => {
       const bb = block as Blockly.Block;
       // selector 안에서 `{`, `}` 만 차단 (rule 경계 안전), 나머지 그대로.
-      const raw = String(bb.getFieldValue('TEXT') ?? '').replace(/[{}\r\n]/g, ' ').trim();
+      // Internal line breaks are valid selector whitespace and must roundtrip.
+      const raw = String(bb.getFieldValue('TEXT') ?? '').replace(/[{}]/g, ' ').trim();
       return [raw, ORDER.ATOMIC];
     },
   },

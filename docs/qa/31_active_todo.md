@@ -204,22 +204,25 @@ Gate weights live in
 - `DONE LOCAL`: clean-SHA synthetic corpus `full` executed modern and legacy
   rows, produced a complete baseline, and passed all required local gates.
 
-- `DONE CODE / VERIFY BROWSER`: graph failure envelopes now include only the
+- `DONE BROWSER`: graph failure envelopes now include only the
   generic block type and generic field names at the first mismatch. This closes
   a diagnostic gap in the old attribute-only cluster without persisting source
-  values, paths, or identities. A targeted failing-case browser rerun must prove
-  the new diagnostic before it is marked done.
+  values, paths, or identities. A protected local target exposed the expected
+  generic HTML and CSS mismatch shapes without retaining source evidence.
 
 - `DONE CI`: the legacy sanitizer performance test now compares
   8,000 and 24,000 keyframe-heavy rules. Its 6x ratio ceiling separates linear
   3x growth from quadratic 9x growth while retaining the 1500 ms absolute cap.
   Ten consecutive isolated runs and the complete CI suite pass.
 
-- `DONE UNIT / VERIFY BROWSER`: selector lists containing an empty item now
+- `DONE LOCAL / VERIFY BROAD`: selector lists containing an empty item now
   stay as one exact `r20_selector_complex` block. This prevents an empty list
   tail from becoming `*` and then changing into `r20_selector_element` on
-  reimport. The import suite passes; the same protected local target must pass
-  its CSS graph after a clean build.
+  reimport. Complex selector emission also preserves internal line breaks
+  instead of replacing them with spaces. After a clean production build, the
+  same protected local target passes HTML, CSS, i18n, Page JS, and Worker graph
+  roundtrip plus local Preview, runtime, and resource checks. Broad corpus
+  impact and L3 source normalization remain `VERIFY`.
 
 - `DONE LOCAL / VERIFY BROAD`: ordinary HTML comments now map to the existing
   hidden-note block at the document root and inside nested structure. Compact
