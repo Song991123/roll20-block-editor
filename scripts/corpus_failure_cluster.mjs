@@ -111,6 +111,14 @@ function facetsFor(result, envelope) {
   return {
     diagnostics: cleanList(result?.diagnostics, /^[a-z0-9:_-]{1,80}$/),
     failedChecks: collectFailedChecks(envelope?.checks),
+    runtimeIssueCategories: cleanList(
+      envelope?.checks?.runtimeIssueCategories,
+      /^(?:cors|csp|network|resource-load|reference-error|type-error|syntax-error|promise-rejection|other|harness-failure)$/,
+    ),
+    resourceIssueCategories: cleanList(
+      envelope?.checks?.resourceIssueCategories,
+      /^(?:request-failed|http-client|http-server|http-other|transient-abort|final-rendered|final-rendered-with-request-issues|final-render-failure|type:(?:document|font|image|manifest|media|script|stylesheet|xhr|fetch|other))$/,
+    ),
   };
 }
 
@@ -195,6 +203,8 @@ async function buildFailureClusters({ reportDir, cacheDir }) {
       ...signature,
       diagnostics: [],
       failedChecks: [],
+      runtimeIssueCategories: [],
+      resourceIssueCategories: [],
       occurrences: 0,
       representatives: [],
       indexedRepresentatives: [],
@@ -207,6 +217,14 @@ async function buildFailureClusters({ reportDir, cacheDir }) {
     current.failedChecks = cleanList(
       [...current.failedChecks, ...facets.failedChecks],
       /^(?:[a-z0-9-]+|emit:[a-zA-Z]+)$/,
+    );
+    current.runtimeIssueCategories = cleanList(
+      [...current.runtimeIssueCategories, ...facets.runtimeIssueCategories],
+      /^[a-z0-9-]{1,80}$/,
+    );
+    current.resourceIssueCategories = cleanList(
+      [...current.resourceIssueCategories, ...facets.resourceIssueCategories],
+      /^(?:[a-z0-9-]+|type:[a-z]+)$/,
     );
     if (
       /^case-[a-f0-9]{24}$/.test(result?.anonymousId ?? '')
@@ -254,6 +272,8 @@ async function selfTest() {
     const envelope = {
       checks: {
         semanticRoundtrip: false,
+        runtimeIssueCategories: ['resource-load'],
+        resourceIssueCategories: ['http-client', 'type:image'],
         graphDiagnostics: {
           html: {
             pass: false,
@@ -281,6 +301,10 @@ async function selfTest() {
     if (report.clusters.length !== 1 || report.clusters[0].occurrences !== 2) {
       throw new Error('equivalent generic failures were not clustered');
     }
+    if (
+      report.clusters[0].runtimeIssueCategories.join(',') !== 'resource-load'
+      || report.clusters[0].resourceIssueCategories.join(',') !== 'http-client,type:image'
+    ) throw new Error('privacy-safe runtime/resource categories were not retained');
     const text = await readFile(path.join(reportDir, OUTPUT_FILE), 'utf8');
     if (text.includes(root) || text.includes('corpus-cluster-selftest')) {
       throw new Error('cluster report leaked its local execution path');

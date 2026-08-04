@@ -22,6 +22,10 @@ import {
   classifyCorpusCodeImpact,
   corpusRowAffected,
 } from './lib/corpus_change_impact.mjs';
+import {
+  summarizeResourceIssueCategories,
+  summarizeRuntimeIssueCategories,
+} from './lib/corpus_runtime_diagnostics.mjs';
 
 const REPO = path.resolve(import.meta.dirname, '..');
 const HARNESS_VERSION = '5';
@@ -781,6 +785,14 @@ async function executeRow(config, row, port) {
     } catch {}
     const fixture = report?.fixtures?.[0] ?? null;
     const mapping = fixture?.import?.mapping ?? {};
+    const runtimeIssues = summarizeRuntimeIssueCategories(
+      fixture?.consoleErrors,
+      fixture?.pageErrors,
+    );
+    const resourceIssueCategories = summarizeResourceIssueCategories(
+      fixture?.resourceIssues,
+      fixture?.resourceStatus,
+    );
     const l0 = Boolean(fixture?.import?.blockCount > 0);
     const l1 = Boolean(
       l0
@@ -838,10 +850,12 @@ async function executeRow(config, row, port) {
         previewEditVisual: fixture?.sheetVisualSync?.pass === true,
         previewEditFormState: fixture?.formStateDiff?.pass === true,
         previewEditGeometry: fixture?.rootGeometryDiff?.pass === true,
-        runtimeClean:
-          (fixture?.consoleErrors?.length ?? 0) === 0
-          && (fixture?.pageErrors?.length ?? 0) === 0,
+        runtimeClean: runtimeIssues.applicationErrorCount === 0,
+        runtimeIssueCategories: runtimeIssues.categories,
+        runtimeIssueCounts: runtimeIssues.counts,
+        resourceConsoleErrorCount: runtimeIssues.resourceConsoleErrorCount,
         resourceClean: (fixture?.resourceIssueCount ?? 0) === 0,
+        resourceIssueCategories,
         normalizedSource: fixture?.reimport?.sourceComparison?.pass === true,
         normalizedSourceByArtifact: {
           html: fixture?.reimport?.sourceComparison?.html === true,
@@ -884,7 +898,11 @@ async function executeRow(config, row, port) {
         previewEditFormState: false,
         previewEditGeometry: false,
         runtimeClean: false,
+        runtimeIssueCategories: ['harness-failure'],
+        runtimeIssueCounts: { 'harness-failure': 1 },
+        resourceConsoleErrorCount: 0,
         resourceClean: false,
+        resourceIssueCategories: [],
         normalizedSource: false,
         normalizedSourceByArtifact: { html: false, css: false, i18n: false },
         childExit: null,
