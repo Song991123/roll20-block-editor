@@ -64,6 +64,7 @@ const SYNTHETIC_SHEET = {
   <button type="action" name="act_custom_roll">Custom roll</button>
   <button type="action" name="act_custom_roll_promise">Custom roll promise</button>
   <button type="action" name="act_custom_roll_timeout">Custom roll timeout</button>
+  <button type="action" name="act_custom_followup" style="display:none">Follow-up target</button>
   <div class="character">Character panel</div>
   <div class="combat">Combat panel</div>
 </div>

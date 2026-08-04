@@ -181,8 +181,10 @@ function runSelfTest() {
       assert.match(html, /computed::roll1/);
       assert.match(html, /originalRollId/);
       assert.match(html, /custom_followup/);
+      assert.match(html, /name="act_custom_followup"/);
       assert.match(html, /async function/);
       assert.match(css, /\.sheet-custom-roll-card/);
+      assert.match(css, /\.sheet-custom-followup-target/);
       assert.equal(translation.custom_title, 'Custom roll check');
     } else if (options.sectionCompositionId) {
       assert.match(html, /sheet-r20-node-composition-root/);
@@ -280,6 +282,7 @@ function buildCustomRollHtml(): string[] {
     '    <button type="action" name="act_custom_callback" data-i18n="callback_button">Callback roll</button>',
     '    <button type="action" name="act_custom_promise" data-i18n="promise_button">Promise roll</button>',
     '    <button type="action" name="act_custom_timeout" data-i18n="timeout_button">Automatic post</button>',
+    '    <button type="action" name="act_custom_followup" class="sheet-custom-followup-target">Follow-up target</button>',
     '  </div>',
     '  <label><span data-i18n="callback_value">Callback value</span><input type="text" name="attr_callback_total" value="" readonly></label>',
     '  <label><span data-i18n="promise_value">Promise value</span><input type="text" name="attr_promise_total" value="" readonly></label>',
@@ -330,6 +333,7 @@ function buildCustomRollCss(): string[] {
     '.sheet-custom-roll-proof { box-sizing: border-box; border: 2px solid #d96b91; background: #fffafc; color: #3b2730; }',
     '.sheet-custom-roll-proof h2 { margin: 0 0 14px; color: #9f3158; }',
     '.sheet-custom-roll-actions { display: flex; gap: 8px; margin-bottom: 16px; }',
+    '.sheet-custom-followup-target { display: none; }',
     '.sheet-custom-roll-proof label { display: grid; grid-template-columns: 130px 1fr; gap: 10px; align-items: center; margin-top: 8px; }',
     '.sheet-custom-roll-proof input[type="text"] { width: 100%; box-sizing: border-box; }',
     '.sheet-rolltemplate-custom-proof .sheet-custom-roll-card, .sheet-rolltemplate-timeout-proof .sheet-custom-roll-card { width: 280px; overflow: hidden; border: 2px solid #d96b91; border-radius: 6px; background: #fffafc; color: #3b2730; }',
