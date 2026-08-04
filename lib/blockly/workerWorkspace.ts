@@ -162,14 +162,17 @@ export function replaceWorkerWorkspaceFromSourceHtml(html: string): {
   const parsed = scripts.map((script) => parseSheetWorkerScript(script.body));
   const rawStatementCount = parsed.reduce((total, result) => total + result.stats.unparsed, 0);
   const parsedXml =
-    parsed.length > 0 && parsed.every((result) => result.blocks.length > 0 && result.stats.unparsed === 0)
+    scripts.length === 1
+    && parsed.length > 0
+    && parsed.every((result) => result.blocks.length > 0 && result.stats.unparsed === 0)
       ? buildParsedWorkerXml(parsed.flatMap((result) => result.blocks))
       : null;
 
-  // Use parsed worker blocks only when their generated source is byte-stable
-  // after the same whitespace normalization used by the preview emitter.
-  // Otherwise keep the original source as a raw block: visual/import fidelity
-  // is more important than pretending an incomplete JS mapping is editable.
+  // Use parsed worker blocks only for one source script whose generated source
+  // is byte-stable after the same normalization used by the preview emitter.
+  // Multiple authored script tags remain separate raw roots until the block
+  // model has a first-class script container. Merging those roots would lose
+  // source order and script boundaries even when every statement is parseable.
   if (parsedXml) {
     adapter.hydrateFromXml('worker', parsedXml);
     const emitted = emitWorkspace(adapter.getWorkspace('worker'), 'worker').code;

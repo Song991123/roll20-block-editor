@@ -1330,3 +1330,19 @@ parity.
   source identity, content, or per-sheet measurement was recorded here.
 - Claim boundary: measurement integrity and focused local browser proof only.
   The complete v4 corpus baseline and its Alpha score remain open.
+
+## 2026-08-04 - CSS Descriptor And Worker Boundary Preservation
+
+- Extended the structured `@font-face` block with one editable fallback field
+  for additional and repeated descriptors. The parser respects comments,
+  strings, functions, and nested semicolons while separating declarations.
+- Import, generator, and live browser reimport checks preserve additional font
+  descriptors, source CSS meaning, CSS graph shape, and clean runtime status.
+- Preserved multiple authored Sheet Worker script tags as separate raw roots
+  and separate final script tags. Single-script source still takes the
+  structured parser path when its output is byte-stable.
+- Added an import/emit/reimport regression for script count and order. A
+  first-class multi-script structure container remains future Worker editing
+  work; exact raw roots prevent data loss now.
+- Claim boundary: generic local lossless mapping proof. Broad corpus impact and
+  actual Roll20 execution remain open.

@@ -322,11 +322,15 @@ export function composeEmittedWorkspaces(
   const i18n = workspaces.i18n ?? { code: '', warnings: [], generatedCss: '' };
   const pageJs = workspaces.js ?? { code: '', warnings: [], generatedCss: '' };
   const worker = workspaces.worker ?? { code: '', warnings: [], generatedCss: '' };
-  const workerBody = normalizeWorkerBody(worker.code);
+  const workerScripts = normalizeWorkerScripts(worker.code);
+  const workerBody = workerScripts.join('\n');
   const htmlCode = stripWorkerScriptsFromHtml(html.code);
   const pageJsCode = pageJs.code.trim();
   const htmlWithPageJs = mergePageJsSlots(htmlCode, pageJsCode);
-  const htmlWithScripts = [htmlWithPageJs, workerBody ? `<script type="text/worker">\n${workerBody}\n</script>` : '']
+  const htmlWithScripts = [
+    htmlWithPageJs,
+    ...workerScripts.map((body) => `<script type="text/worker">\n${body}\n</script>`),
+  ]
     .filter(Boolean)
     .join('\n');
   // Generated HTML layout rules are appended after user CSS to preserve the
@@ -489,9 +493,9 @@ function normalizeBlockIdAttributesInTag(html: string, allowedIds: ReadonlySet<s
   return out + html.slice(cursor);
 }
 
-function normalizeWorkerBody(code: string): string {
+function normalizeWorkerScripts(code: string): string[] {
   const trimmed = code.trim();
-  if (!trimmed) return '';
+  if (!trimmed) return [];
   const pieces: string[] = [];
   const scriptRe = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
   let last = 0;
@@ -504,7 +508,7 @@ function normalizeWorkerBody(code: string): string {
   }
   const rest = trimmed.slice(last).trim();
   if (rest) pieces.push(rest);
-  return pieces.filter(Boolean).join('\n');
+  return pieces;
 }
 
 function stripWorkerScriptsFromHtml(html: string): string {

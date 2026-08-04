@@ -201,6 +201,17 @@ complete baseline. Gate weights live in
 - `PARTIAL`: HTML, CSS, translation, Rolltemplate, and a useful Sheet Worker
   subset map to editable blocks. Unsupported content must remain explicit and
   lossless instead of disappearing.
+- `DONE LOCAL`: `@font-face` keeps its four common settings structured and
+  preserves every additional or repeated descriptor in an editable fallback
+  field. Import, generator, and live browser reimport tests keep descriptor
+  grammar, data-value semicolons, CSS graph, and source meaning stable with
+  zero console/page/resource issues.
+- `DONE LOCAL / PARTIAL WORKER EDITABILITY`: multiple authored Sheet Worker
+  script tags no longer collapse into one tag. Until a first-class script
+  container exists, each source script becomes one exact raw Worker root;
+  single-script inputs still use structured blocks when byte-stable. Synthetic
+  import, emit, and reimport preserve script count and order. Rich structured
+  editing across multiple script containers remains `TODO`.
 - `PARTIAL`: modern and legacy output are separate contracts. Selector
   prefixing, modern Sandbox preparation, and legacy CSS sanitizing must never
   be reported as the same operation.

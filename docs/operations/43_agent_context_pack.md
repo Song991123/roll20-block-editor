@@ -81,6 +81,11 @@ contain private source evidence or historical test dumps.
   still removing top-level declaration boundaries. The actual-baseline generator
   must call the same exact upload preparation as ExportDialog; raw canonical emit
   is not valid upload evidence.
+- `@font-face` keeps common descriptors structured and all other descriptors
+  in an editable lossless field. Multiple authored Worker script tags remain
+  separate exact raw roots and separate output tags; one script still uses the
+  structured parser when stable. Multi-script structured containers remain
+  open.
 - Modern Sandbox CSS preparation drops blocked inline data URLs before the
   unsafe-token audit. Quoted CSS grammar remains intact, but script URLs and
   unquoted markup still reject the stylesheet. The current anonymous

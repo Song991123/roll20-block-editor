@@ -11,6 +11,8 @@ import { isRoll20WorkerScript } from '@/lib/import/worker_source';
 import { importSheet } from '@/lib/import/index';
 import { serializeRawHtml } from '@/lib/import/block_matcher';
 import type { DomNode } from '@/lib/import/dom_walker';
+import { getBlocklyAdapter } from '@/lib/blockly/adapter';
+import { replaceWorkerWorkspaceFromSourceHtml } from '@/lib/blockly/workerWorkspace';
 
 function assert(condition: unknown, message: string): void {
   if (!condition) throw new Error(`Assertion failed: ${message}`);
@@ -795,6 +797,43 @@ function testPageScriptOrderAndWorkerUniqueness(): void {
   workerWorkspace.dispose();
 }
 
+function testMultipleWorkerScriptBoundariesSurviveReimport(): void {
+  registerAllBlocks();
+  const adapter = getBlocklyAdapter();
+  const workspace = new Blockly.Workspace();
+  adapter.registerWorkspace('worker', workspace);
+  try {
+    const firstBody = 'on("sheet:opened", function () { setAttrs({ hp: 10 }); });';
+    const secondBody = 'on("change:hp", function () { setAttrs({ mp: 5 }); });';
+    const source = [
+      `<script type="text/worker">${firstBody}</script>`,
+      `<script type="text/worker">${secondBody}</script>`,
+    ].join('\n');
+
+    const imported = replaceWorkerWorkspaceFromSourceHtml(source);
+    assert(imported.scriptCount === 2, 'both authored worker scripts are discovered');
+    assert(imported.targetCount === 2, 'multiple scripts stay as separate raw roots');
+    assert(
+      adapter.listAllBlocks('worker').every((block) => block.type === 'r20_raw_worker'),
+      'multi-script input uses exact raw roots until script containers exist',
+    );
+
+    const firstEmit = emitAll({ worker: adapter.getWorkspace('worker') });
+    const firstCount = (firstEmit.html.match(/<script\b[^>]*type="text\/worker"/g) ?? []).length;
+    assert(firstCount === 2, 'emit preserves two worker script tags');
+    assert(firstEmit.html.indexOf(firstBody) < firstEmit.html.indexOf(secondBody), 'script order is preserved');
+
+    replaceWorkerWorkspaceFromSourceHtml(firstEmit.html);
+    const secondEmit = emitAll({ worker: adapter.getWorkspace('worker') });
+    const secondCount = (secondEmit.html.match(/<script\b[^>]*type="text\/worker"/g) ?? []).length;
+    assert(secondCount === 2, 'reimport and emit preserve worker script count');
+    assert(secondEmit.html.indexOf(firstBody) < secondEmit.html.indexOf(secondBody), 'reimport keeps script order');
+  } finally {
+    adapter.unregisterWorkspace('worker');
+    workspace.dispose();
+  }
+}
+
 function testWorkerIfDoesNotDuplicateReporterGrouping(): void {
   registerAllBlocks();
   const workspace = new Blockly.Workspace();
@@ -902,6 +941,7 @@ testDedicatedPageScriptWorkspaceAppendsExportOnly();
 testImportedPageScriptReturnsToItsHtmlSlot();
 testOrphanedPageScriptDoesNotDisappear();
 testPageScriptOrderAndWorkerUniqueness();
+testMultipleWorkerScriptBoundariesSurviveReimport();
 testWorkerIfDoesNotDuplicateReporterGrouping();
 testWorkerDeclarationKindIsEmitted();
 testMalformedRawTagDoesNotReceivePartialBlockId();
