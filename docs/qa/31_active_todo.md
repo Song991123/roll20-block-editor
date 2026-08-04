@@ -297,6 +297,13 @@ Gate weights live in
   L2 plus Preview/Edit visual, form-state, geometry, and app-runtime gates.
   External font loading remains an explicit `asset` warning; the full current-
   SHA corpus and actual legacy Roll20 checks remain `VERIFY`.
+- `DONE LOCAL REPRESENTATIVE / VERIFY CORPUS`: canonical CSS declaration values
+  now treat whitespace outside strings as semantic while keeping quoted and
+  escaped line breaks exact. Synthetic canonical-graph tests, lint, production
+  build, and one anonymous modern representative pass all five workspace
+  graphs plus Preview/Edit visual, form-state, geometry, runtime, and resource
+  gates. L3 source equality, full current-SHA corpus breadth, and actual Roll20
+  remain `VERIFY`.
 - `DONE LOCAL`: `@font-face` keeps its four common settings structured and
   preserves every additional or repeated descriptor in an editable fallback
   field. Import, generator, and live browser reimport tests keep descriptor

@@ -229,6 +229,10 @@ contain private source evidence or historical test dumps.
   Preview/Edit visual/state/geometry plus app-runtime gates. Its external font
   remains an explicit asset warning. Full current-SHA corpus and actual
   modern/legacy Roll20 evidence remain open.
+- Canonical CSS declaration values normalize whitespace only outside strings;
+  quoted and escaped line breaks remain exact. One anonymous modern
+  representative closes its current L2 and local Preview/Edit/runtime/resource
+  gates after this fix. Do not infer broad corpus completion or L3 from it.
 - ImportDialog waits for every Blockly model workspace before hydration. Keep
   the cold-load early-click browser check; analysis percentages alone do not
   prove blocks were applied.
@@ -315,6 +319,12 @@ corepack pnpm run check:server-hygiene
 
 Also run focused tests and the relevant browser smoke. After push, check the
 exact GitHub Actions run for the pushed commit.
+
+Keep heavy local jobs sequential and below-normal priority. Corpus concurrency
+stays at 1 or 2. When focused tests, lint, and one production build pass, prefer
+the pushed GitHub CI job over repeating another broad local run on the
+interactive workstation. Finish every browser/build batch with listener and
+project-owned-process hygiene checks.
 
 ## Handoff
 

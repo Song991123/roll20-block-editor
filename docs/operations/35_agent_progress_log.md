@@ -1477,3 +1477,20 @@ parity.
   lint, and server hygiene pass. Project and CDP listeners returned to zero.
 - Claim boundary: this is focused local evidence. A complete current-SHA corpus
   run is still required before updating the 28.9% baseline score.
+
+## 2026-08-05 - CSS Value Semantics And Local Resource Budget
+
+- Canonical CSS declaration graphs now collapse whitespace only outside quoted
+  strings. Quoted and escaped line breaks remain exact, preventing the semantic
+  rule from hiding content or CSS escape changes.
+- Synthetic graph tests, the Harness group, lint, and production build pass.
+  One anonymous modern representative now passes all five workspace graphs,
+  Preview/Edit visual/state/geometry, application runtime, and resources.
+- Long local build pressure was visible on the interactive workstation. Heavy
+  local jobs are now sequential, below-normal priority, and limited to one
+  broad run per coherent batch. Corpus concurrency remains capped at two.
+  After the focused run, project-owned processes and project/CDP listeners were
+  both zero. Final broad reruns should use pushed GitHub CI when focused tests,
+  lint, and one production build already pass locally.
+- Claim boundary: focused local proof only. L3, current-SHA full corpus, and
+  actual Roll20 evidence remain open.

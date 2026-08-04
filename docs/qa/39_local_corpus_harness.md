@@ -90,6 +90,9 @@ semantic normalizations already proven stable by emitted output: boundary
 whitespace for text/style/script source, browser-equivalent inline style, and
 equivalent HTML boolean-attribute values. Authored input names, translation
 keys and values, block types, hierarchy, and all other fields remain exact.
+For `r20_css_decl`, whitespace outside quoted strings is also semantic because
+the emitter may flatten a multiline declaration value. Whitespace inside
+strings and escaped line breaks remain exact.
 Imported element snapshots use JSON `[]` even when no attribute was authored;
 an empty Blockly field is reserved for a newly created block. This lets the
 emitter preserve omitted browser-default attributes while gallery blocks keep
