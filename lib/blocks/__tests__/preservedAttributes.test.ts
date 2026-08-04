@@ -100,6 +100,18 @@ assert(injected.includes('aria-label="Frame"'), 'ARIA attribute emitted');
 assert(!injected.includes('onclick'), 'event handler never emitted');
 assert(injectPreservedAttributes('<div id="existing"></div>', raw).includes('id="existing"'), 'existing attr wins');
 
+const preservedClassSpacing = serializePreservedAttributes({ class: 'sheet-wide  sheet-col' });
+assert(
+  injectPreservedAttributes('<div class="sheet-col sheet-wide"></div>', preservedClassSpacing)
+    .includes('class="sheet-wide  sheet-col"'),
+  'semantically unchanged class restores authored order and spacing',
+);
+assert(
+  injectPreservedAttributes('<div class="sheet-col sheet-edited"></div>', preservedClassSpacing)
+    .includes('class="sheet-col sheet-edited"'),
+  'edited class wins over the stale preserved snapshot',
+);
+
 const targeted = injectPreservedAttributes(
   `<label><input ${PRESERVED_ATTRIBUTE_TARGET} type="radio" name="attr_mode"></label>`,
   serializePreservedAttributes({ type: 'radio', name: 'attr_mode', value: 'beta', 'data-hook': 'mode' }),

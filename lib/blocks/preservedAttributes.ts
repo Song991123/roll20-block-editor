@@ -120,6 +120,35 @@ function existingAttributeNames(rawAttributes: string): Set<string> {
   return names;
 }
 
+function canonicalClassTokenMultiset(value: string): string {
+  return String(value)
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .sort()
+    .join(' ');
+}
+
+function restoreEquivalentClassFormatting(
+  rawAttributes: string,
+  entries: Array<[string, string]>,
+): string {
+  const preservedClass = entries.find(([name]) => name.toLowerCase() === 'class')?.[1];
+  if (preservedClass == null) return rawAttributes;
+  return rawAttributes.replace(
+    /(\sclass\s*=\s*)(["'])(.*?)\2/i,
+    (full, prefix: string, quote: string, generatedClass: string) => {
+      if (
+        canonicalClassTokenMultiset(generatedClass)
+        !== canonicalClassTokenMultiset(preservedClass)
+      ) {
+        return full;
+      }
+      return `${prefix}${quote}${escapeAttribute(preservedClass)}${quote}`;
+    },
+  );
+}
+
 /** Add imported attributes to the first generated opening element. */
 export function injectPreservedAttributes(code: string, raw: string): string {
   const entries = parsePreservedAttributes(raw);
@@ -142,12 +171,14 @@ function injectIntoFirstOpeningTag(code: string, entries: Array<[string, string]
   return code.replace(
     /<([A-Za-z][A-Za-z0-9:.-]*)(\s[^<>]*?)?(\/?)>/,
     (full, _tag: string, rawAttributes = '', close = '') => {
-      const existing = existingAttributeNames(rawAttributes);
+      const restoredAttributes = restoreEquivalentClassFormatting(rawAttributes, entries);
+      const existing = existingAttributeNames(restoredAttributes);
       const additions = entries
         .filter(([name]) => !existing.has(name.toLowerCase()))
         .map(([name, value]) => (value ? ` ${name}="${escapeAttribute(value)}"` : ` ${name}`))
         .join('');
-      return additions ? full.slice(0, full.length - close.length - 1) + additions + close + '>' : full;
+      if (restoredAttributes === rawAttributes && !additions) return full;
+      return `<${_tag}${restoredAttributes}${additions}${close}>`;
     },
   );
 }
