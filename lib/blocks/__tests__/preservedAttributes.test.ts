@@ -112,6 +112,28 @@ assert(
   'edited class wins over the stale preserved snapshot',
 );
 
+assert(
+  injectPreservedAttributes(
+    '<input type="text">',
+    serializePreservedAttributes({ type: 'TEXT' }),
+  ).includes('type="TEXT"'),
+  'semantically unchanged input type restores authored casing',
+);
+assert(
+  injectPreservedAttributes(
+    '<input type="text">',
+    serializePreservedAttributes({ type: '' }),
+  ).includes('type=""'),
+  'explicit empty input type retains its authored browser-default form',
+);
+assert(
+  injectPreservedAttributes(
+    '<input type="number">',
+    serializePreservedAttributes({ type: 'TEXT' }),
+  ).includes('type="number"'),
+  'edited input type wins over the stale preserved snapshot',
+);
+
 const targeted = injectPreservedAttributes(
   `<label><input ${PRESERVED_ATTRIBUTE_TARGET} type="radio" name="attr_mode"></label>`,
   serializePreservedAttributes({ type: 'radio', name: 'attr_mode', value: 'beta', 'data-hook': 'mode' }),

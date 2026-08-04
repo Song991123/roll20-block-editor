@@ -149,6 +149,22 @@ function restoreEquivalentClassFormatting(
   );
 }
 
+function restoreEquivalentTypeFormatting(
+  rawAttributes: string,
+  entries: Array<[string, string]>,
+): string {
+  const preservedType = entries.find(([name]) => name.toLowerCase() === 'type')?.[1];
+  if (preservedType == null) return rawAttributes;
+  return rawAttributes.replace(
+    /(\stype\s*=\s*)(["'])(.*?)\2/i,
+    (full, prefix: string, quote: string, generatedType: string) => {
+      const importedSemanticType = preservedType === '' ? 'text' : preservedType.toLowerCase();
+      if (generatedType.toLowerCase() !== importedSemanticType) return full;
+      return `${prefix}${quote}${escapeAttribute(preservedType)}${quote}`;
+    },
+  );
+}
+
 /** Add imported attributes to the first generated opening element. */
 export function injectPreservedAttributes(code: string, raw: string): string {
   const entries = parsePreservedAttributes(raw);
@@ -171,7 +187,10 @@ function injectIntoFirstOpeningTag(code: string, entries: Array<[string, string]
   return code.replace(
     /<([A-Za-z][A-Za-z0-9:.-]*)(\s[^<>]*?)?(\/?)>/,
     (full, _tag: string, rawAttributes = '', close = '') => {
-      const restoredAttributes = restoreEquivalentClassFormatting(rawAttributes, entries);
+      const restoredAttributes = restoreEquivalentClassFormatting(
+        restoreEquivalentTypeFormatting(rawAttributes, entries),
+        entries,
+      );
       const existing = existingAttributeNames(restoredAttributes);
       const additions = entries
         .filter(([name]) => !existing.has(name.toLowerCase()))
