@@ -16,6 +16,23 @@ or source-derived measurement here.
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
 
+## 2026-08-04 - Custom Roll Chat Actions
+
+- Preserved Roll20 custom-roll action fields such as `[label](~action)` as
+  literal template values instead of misclassifying the leading single bracket
+  as an inline-roll expression. Only `[[...]]` now starts an inline roll.
+- Result-card action links are rendered from validated action names, keep their
+  labels HTML-escaped, and route clicks back to the shared Preview/Edit Worker
+  runtime. Custom-roll cards carry their originating roll ID so the matching
+  `clicked:` handler receives `eventInfo.originalRollId` and player source.
+- `test:rolltemplate-render`, production build, synthetic payload self-test,
+  and anonymous modern plus legacy browser smokes pass. Both browser modes
+  cover the result-card click and original-roll-ID roundtrip with zero console
+  or page errors.
+- Claim boundary: local shared-runtime behavior is `DONE`. Actual modern
+  Sandbox and dedicated legacy-room execution of this action contract remain
+  `VERIFY`; the supported Sandbox file chooser still stops before transmission.
+
 ## 2026-08-04 - Sheet Worker Custom Roll Lifecycle
 
 - Added plain-language blocks and parser coverage for `startRoll`, `finishRoll`,

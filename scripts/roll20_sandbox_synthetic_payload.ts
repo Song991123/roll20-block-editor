@@ -115,6 +115,8 @@ function buildSyntheticSource({
     timeout_button: 'Automatic post',
     callback_value: 'Callback value',
     promise_value: 'Promise value',
+    followup_value: 'Follow-up roll ID',
+    followup_source: 'Follow-up source',
   } : compositionId ? {
     section_title: 'Generated section',
     name: 'Name',
@@ -177,6 +179,8 @@ function runSelfTest() {
       assert.match(html, /startRoll\(/);
       assert.match(html, /finishRoll\(/);
       assert.match(html, /computed::roll1/);
+      assert.match(html, /originalRollId/);
+      assert.match(html, /custom_followup/);
       assert.match(html, /async function/);
       assert.match(css, /\.sheet-custom-roll-card/);
       assert.equal(translation.custom_title, 'Custom roll check');
@@ -279,6 +283,8 @@ function buildCustomRollHtml(): string[] {
     '  </div>',
     '  <label><span data-i18n="callback_value">Callback value</span><input type="text" name="attr_callback_total" value="" readonly></label>',
     '  <label><span data-i18n="promise_value">Promise value</span><input type="text" name="attr_promise_total" value="" readonly></label>',
+    '  <label><span data-i18n="followup_value">Follow-up roll ID</span><input type="text" name="attr_followup_roll_id" value="" readonly></label>',
+    '  <label><span data-i18n="followup_source">Follow-up source</span><input type="text" name="attr_followup_source" value="" readonly></label>',
     '  <input type="hidden" name="attr_callback_roll_id" value="">',
     '  <input type="hidden" name="attr_timeout_roll_id" value="">',
     '</section>',
@@ -286,6 +292,7 @@ function buildCustomRollHtml(): string[] {
     '  <div class="sheet-custom-roll-card">',
     '    <div class="sheet-custom-roll-title">{{name}}</div>',
     '    <div class="sheet-custom-roll-row"><span>{{roll1}}</span><strong>{{computed::roll1}}</strong></div>',
+    '    {{#followup}}<div class="sheet-custom-roll-row">{{followup}}</div>{{/followup}}',
     '  </div>',
     '</rolltemplate>',
     '<rolltemplate class="sheet-rolltemplate-timeout-proof">',
@@ -296,10 +303,13 @@ function buildCustomRollHtml(): string[] {
     '</rolltemplate>',
     '<script type="text/worker">',
     '  on("clicked:custom_callback", function () {',
-    '    startRoll("&{template:custom-proof} {{name=Callback}} {{roll1=[[1d1+4]]}}", function (rollResult) {',
+    '    startRoll("&{template:custom-proof} {{name=Callback}} {{roll1=[[1d1+4]]}} {{followup=[Follow up](~custom_followup)}}", function (rollResult) {',
     '      setAttrs({ callback_total: rollResult.results.roll1.result, callback_roll_id: rollResult.rollId });',
     '      finishRoll(rollResult.rollId, { roll1: rollResult.results.roll1.result * 2 });',
     '    });',
+    '  });',
+    '  on("clicked:custom_followup", function (eventInfo) {',
+    '    setAttrs({ followup_roll_id: eventInfo.originalRollId || "", followup_source: eventInfo.sourceType || "" });',
     '  });',
     '  on("clicked:custom_promise", async function () {',
     '    const rollResult = await startRoll("&{template:custom-proof} {{name=Promise}} {{roll1=[[1d1+2]]}}");',

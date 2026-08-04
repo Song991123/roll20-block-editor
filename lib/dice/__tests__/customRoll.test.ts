@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
-import type { RolltemplateResult } from '../executor';
+import { executeRoot, type RolltemplateResult } from '../executor';
+import { parseRoot } from '../parser';
 import {
   normalizeComputedRollResults,
+  normalizeRoll20ActionName,
   toSheetWorkerRollResult,
   withComputedRollResults,
 } from '../customRoll';
@@ -40,6 +42,19 @@ assert.deepEqual(worker.results.roll1, {
   expression: '1d1+4',
   rolls: [{ dice: 1, sides: 1, results: [1] }],
 });
+
+assert.equal(normalizeRoll20ActionName('act_custom_followup'), 'custom_followup');
+assert.equal(normalizeRoll20ActionName('repeating_attack_-row-id_roll'), 'repeating_attack_-row-id_roll');
+assert.equal(normalizeRoll20ActionName('bad action'), '');
+
+const actionResult = executeRoot(parseRoot(
+  '&{template:custom} {{followup=[Follow up](~custom_followup)}}',
+));
+assert.equal(actionResult.kind, 'rolltemplate');
+if (actionResult.kind !== 'rolltemplate') throw new Error('expected action-link template');
+assert.equal(actionResult.fields[0]?.detail, null);
+assert.equal(actionResult.fields[0]?.text, '[Follow up](~custom_followup)');
+assert.equal(parseRoot('[Follow up](~custom_followup)').kind, 'chat');
 
 const normalized = normalizeComputedRollResults({
   roll1: 10,

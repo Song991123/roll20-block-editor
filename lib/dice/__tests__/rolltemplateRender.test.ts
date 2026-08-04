@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {
   defaultRolltemplateBody,
   extractRolltemplateBody,
+  renderRoll20ActionLinks,
   renderTemplateBody,
 } from '../rolltemplateRender';
 import {
@@ -59,6 +60,24 @@ assert.match(rendered, /&lt;img src=x&gt;/);
 assert.doesNotMatch(rendered, /<img src=x>/);
 assert.match(rendered, /class="inlinerollresult"/);
 assert.doesNotMatch(rendered, /javascript:|onerror|style=|<script/i);
+
+const actionLink = renderRoll20ActionLinks('[Follow up](~custom_followup)');
+assert.equal(
+  actionLink,
+  '<a href="#" data-r20-chat-action="custom_followup">Follow up</a>',
+);
+assert.match(
+  renderRoll20ActionLinks('[Character action](~-example_id|custom_followup)'),
+  /data-r20-chat-action="custom_followup"/,
+);
+assert.match(
+  renderRoll20ActionLinks('[<unsafe>](~custom_followup)'),
+  />&lt;unsafe&gt;<\/a>/,
+);
+assert.doesNotMatch(
+  renderRoll20ActionLinks('[Invalid](~custom|extra|action)'),
+  /data-r20-chat-action/,
+);
 
 const hiddenCritical = renderTemplateBody(
   body,

@@ -20,7 +20,20 @@ export interface SheetWorkerRollResult {
   results: Record<string, SheetWorkerRollEntry>;
 }
 
+export const ROLL20_CHAT_ACTION_EVENT = 'r20:chat-action';
+
+export interface Roll20ChatActionDetail {
+  actionName: string;
+  originalRollId?: string;
+}
+
 export type ComputedRollResults = Record<string, string | number>;
+
+export function normalizeRoll20ActionName(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  const normalized = value.trim().replace(/^act_/, '');
+  return /^[A-Za-z0-9_-]{1,256}$/.test(normalized) ? normalized : '';
+}
 
 function workerEntry(detail: RollDetail): SheetWorkerRollEntry {
   const expression = detail.expression.startsWith('[[') && detail.expression.endsWith(']]')

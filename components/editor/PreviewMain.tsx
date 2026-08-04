@@ -33,7 +33,10 @@ import {
 } from '@/lib/dice/executor';
 import {
   normalizeComputedRollResults,
+  normalizeRoll20ActionName,
+  ROLL20_CHAT_ACTION_EVENT,
   toSheetWorkerRollResult,
+  type Roll20ChatActionDetail,
   withComputedRollResults,
 } from '@/lib/dice/customRoll';
 import { usePreviewStore } from '@/lib/stores/previewStore';
@@ -176,8 +179,13 @@ function executePreviewRoll(
   }
 }
 
-function publishPreviewRoll(sender: string, expression: string, result: RollResult): void {
-  useChatStore.getState().pushRoll({ sender, expression, result });
+function publishPreviewRoll(
+  sender: string,
+  expression: string,
+  result: RollResult,
+  originalRollId?: string,
+): void {
+  useChatStore.getState().pushRoll({ sender, expression, result, originalRollId });
   if (result.kind === 'error') {
     playSfx('toast.error');
   } else if (result.kind === 'expr' && result.isCrit) {
@@ -397,6 +405,26 @@ export default function PreviewMain() {
   useEffect(() => () => {
     pendingCustomRollsRef.current.forEach((pending) => window.clearTimeout(pending.timeoutId));
     pendingCustomRollsRef.current.clear();
+  }, []);
+
+  useEffect(() => {
+    const onChatAction = (event: Event) => {
+      const detail = (event as CustomEvent<Roll20ChatActionDetail>).detail;
+      const actionName = normalizeRoll20ActionName(detail?.actionName);
+      if (!actionName) return;
+      const originalRollId = typeof detail?.originalRollId === 'string'
+        && detail.originalRollId.length <= 256
+        ? detail.originalRollId
+        : undefined;
+      iframeRef.current?.contentWindow?.postMessage({
+        type: ROLL20_CHAT_ACTION_EVENT,
+        protocol: 1,
+        actionName,
+        originalRollId,
+      }, '*');
+    };
+    window.addEventListener(ROLL20_CHAT_ACTION_EVENT, onChatAction);
+    return () => window.removeEventListener(ROLL20_CHAT_ACTION_EVENT, onChatAction);
   }, []);
 
   // Pointer events inside the iframe are already coalesced there. Coalesce the
@@ -2021,7 +2049,7 @@ export default function PreviewMain() {
           const pending = pendingCustomRollsRef.current.get(rollId);
           if (!pending) return;
           pendingCustomRollsRef.current.delete(rollId);
-          publishPreviewRoll(pending.sender, pending.expression, pending.result);
+          publishPreviewRoll(pending.sender, pending.expression, pending.result, rollId);
         }, CUSTOM_ROLL_AUTO_FINISH_MS);
         pendingCustomRollsRef.current.set(rollId, {
           expression,
@@ -2047,7 +2075,7 @@ export default function PreviewMain() {
           pending.result,
           normalizeComputedRollResults(data.computedResults),
         );
-        publishPreviewRoll(pending.sender, pending.expression, result);
+        publishPreviewRoll(pending.sender, pending.expression, result, rollId);
         return;
       }
       if (data?.type === 'r20:roll') {

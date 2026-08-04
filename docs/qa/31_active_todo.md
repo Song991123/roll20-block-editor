@@ -284,8 +284,12 @@ belong in tracked documents.
   Sandbox chooser still rejects local-file transfer before transmission until
   Chrome file-URL access is enabled, so actual Roll20 execution remains
   `VERIFY`. Complex whole-Worker imports intentionally stay exact raw source
-  until mixed Blockly hydration is safe. Action-link `originalRollId` behavior
-  also remains open.
+  until mixed Blockly hydration is safe. Result-card action links now remain
+  literal through parsing, render from validated and escaped values, and send
+  `eventInfo.originalRollId` plus player source back to the matching Worker
+  `clicked:` handler. Anonymous modern and legacy browser smokes pass that
+  roundtrip with zero console or page errors. Actual Roll20 execution of the
+  action-link contract remains `VERIFY` in both destinations.
 
 ## P0 - Edit And Preview Unity
 

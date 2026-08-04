@@ -3169,6 +3169,17 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       sheetWorkerEventContext = previousContext;
       return;
     }
+    if (e.data.type === 'r20:chat-action' && e.data.protocol === 1) {
+      var chatActionName = typeof e.data.actionName === 'string' ? e.data.actionName.trim() : '';
+      if (!/^[A-Za-z0-9_-]{1,256}$/.test(chatActionName)) return;
+      var chatActionPayload = { triggerName: chatActionName, sourceType: 'player' };
+      var originalRollId = typeof e.data.originalRollId === 'string' ? e.data.originalRollId : '';
+      if (originalRollId && originalRollId.length <= 256) {
+        chatActionPayload.originalRollId = originalRollId;
+      }
+      triggerSheetWorker('clicked:' + chatActionName, chatActionPayload);
+      return;
+    }
     if (
       e.data.type === 'r20:external-pointer-drag'
       && e.data.protocol === 1

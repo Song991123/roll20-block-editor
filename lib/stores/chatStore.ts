@@ -24,6 +24,7 @@ export interface ChatRoll {
   expression: string;
   /** 실행 결과. */
   result: RollResult;
+  originalRollId?: string;
 }
 
 interface ChatStore {
@@ -48,6 +49,7 @@ export const useChatStore = create<ChatStore>((set) => ({
         sender: r.sender,
         expression: r.expression,
         result: r.result,
+        originalRollId: r.originalRollId,
       };
       const next = [card, ...s.rolls];
       if (next.length > MAX_ROLLS) next.length = MAX_ROLLS;

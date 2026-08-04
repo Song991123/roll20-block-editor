@@ -169,7 +169,10 @@ contain private source evidence or historical test dumps.
   Custom roll parsing now has structured `startRoll`, `finishRoll`, roll-ID,
   and named-result blocks plus a shared runtime bridge. Local modern and legacy
   browser proof covers callback and Promise results, `computed::<name>` chat
-  fields, and the documented five-second automatic post. An anonymous
+  fields, the documented five-second automatic post, and validated result-card
+  action links that return the originating roll ID to the matching Worker
+  `clicked:` event. A single bracket action label remains literal while only
+  `[[...]]` starts an inline roll. An anonymous
   exact-upload payload now passes self-test, modern Sandbox preparation, and
   modern/legacy fixture visual smoke. The visible modern Sandbox chooser still
   stops before transmission while Chrome file-URL access is disabled. Whole

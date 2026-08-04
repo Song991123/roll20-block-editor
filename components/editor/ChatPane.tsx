@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -27,6 +27,11 @@ import {
   type RolltemplateFontPolicy,
 } from '@/lib/dice/rolltemplateCss';
 import { ROLL20_CHAT_SHELL_WIDTH } from '@/lib/dice/roll20ChatGeometry';
+import {
+  normalizeRoll20ActionName,
+  ROLL20_CHAT_ACTION_EVENT,
+  type Roll20ChatActionDetail,
+} from '@/lib/dice/customRoll';
 
 function formatTime(ts: number): string {
   const d = new Date(ts);
@@ -543,11 +548,13 @@ export function RolltemplateCardContent({
   emittedHtml,
   translations,
   rootBlockId,
+  originalRollId,
 }: {
   result: RolltemplateResult;
   emittedHtml: string;
   translations: Record<string, string>;
   rootBlockId?: string | null;
+  originalRollId?: string;
 }) {
   const customBody = useMemo(
     () => extractRolltemplateBody(emittedHtml, result.templateName),
@@ -562,9 +569,20 @@ export function RolltemplateCardContent({
   const rolltemplateClassName = customBody
     ? safeRolltemplateClass(result.templateName)
     : 'sheet-rolltemplate-default';
+  const onActionClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const action = event.target instanceof Element
+      ? event.target.closest<HTMLElement>('[data-r20-chat-action]')
+      : null;
+    const actionName = normalizeRoll20ActionName(action?.dataset.r20ChatAction);
+    if (!actionName) return;
+    event.preventDefault();
+    const detail: Roll20ChatActionDetail = { actionName };
+    if (originalRollId && originalRollId.length <= 256) detail.originalRollId = originalRollId;
+    window.dispatchEvent(new CustomEvent(ROLL20_CHAT_ACTION_EVENT, { detail }));
+  };
 
   return (
-    <div>
+    <div onClick={onActionClick}>
       <div
         className={rolltemplateClassName}
         data-r20-block-id={rootBlockId || undefined}
@@ -626,7 +644,12 @@ function RollCard({
           <span className="by">{card.sender || 'Sheet'}:</span>
         </div>
         <div className="message general you">
-          <RolltemplateCardContent result={r} emittedHtml={emittedHtml} translations={translations} />
+          <RolltemplateCardContent
+            result={r}
+            emittedHtml={emittedHtml}
+            translations={translations}
+            originalRollId={card.originalRollId}
+          />
         </div>
       </div>
     );

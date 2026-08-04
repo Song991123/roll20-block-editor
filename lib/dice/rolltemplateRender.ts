@@ -14,6 +14,7 @@
  */
 
 import type { RolltemplateFieldResult, RolltemplateResult } from './executor';
+import { normalizeRoll20ActionName } from './customRoll';
 import { sanitizeRolltemplateHtml } from './sanitizeRolltemplateHtml';
 
 /** 안전한 HTML 이스케이프 — 사용자 입력 그대로 박지 않도록. */
@@ -47,6 +48,34 @@ export function extractRolltemplateBody(html: string, name: string): string | nu
   return null;
 }
 
+export function renderRoll20ActionLinks(text: string): string {
+  const source = String(text);
+  const pattern = /\[([^\]\r\n]{1,512})\]\(\s*~([^\s)]+)\s*\)/g;
+  let cursor = 0;
+  let output = '';
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(source))) {
+    output += escapeHtml(source.slice(cursor, match.index));
+    const target = match[2] ?? '';
+    const parts = target.split('|');
+    const characterId = parts.length === 2 ? parts[0] : '';
+    const actionName = parts.length <= 2
+      ? normalizeRoll20ActionName(parts[parts.length - 1])
+      : '';
+    const validCharacter = !characterId
+      || characterId === '@{character_id}'
+      || /^[A-Za-z0-9_-]{1,256}$/.test(characterId);
+
+    output += actionName && validCharacter
+      ? `<a href="#" data-r20-chat-action="${actionName}">${escapeHtml(match[1] ?? '')}</a>`
+      : escapeHtml(match[0]);
+    cursor = match.index + match[0].length;
+  }
+
+  return output + escapeHtml(source.slice(cursor));
+}
+
 /**
  * `{{key}}` 형태의 Mustache 토큰을 fieldResults 로 치환.
  * helper (`{{rollWasCrit()}}` 같은) 는 ChatPane 기본 동작에 맡김.
@@ -75,7 +104,7 @@ export function renderTemplateBody(
     const f = map.get(expr);
     if (!f) return '';
     if (f.detail) return defaultFieldValue(f);
-    return escapeHtml(translateText(f.text, translations));
+    return renderRoll20ActionLinks(translateText(f.text, translations));
   });
   return applyDataI18n(rendered, translations);
 }
@@ -208,7 +237,7 @@ function defaultFieldLabel(key: string): string {
 }
 
 function defaultFieldValue(field: RolltemplateFieldResult): string {
-  if (!field.detail) return escapeHtml(field.text);
+  if (!field.detail) return renderRoll20ActionLinks(field.text);
 
   const classes = [
     'inlinerollresult',

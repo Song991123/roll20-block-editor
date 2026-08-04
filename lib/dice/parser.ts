@@ -375,7 +375,7 @@ export function parseRoot(input: string): ParseRoot {
       const trimmed = val.trim();
       // 표현식 값 패턴: 숫자, dice, [[..]], @{..}, 산술.
       // literal vs expr: 식별자/연산자 만 있으면 expr, 그 외 일반 text 면 literal.
-      const looksLikeExpr = /^([\[\(\{]|[+\-]?[0-9]|@\{|\?\{|[a-zA-Z]+\s*\()/.test(trimmed);
+      const looksLikeExpr = /^(\[\[|[\(\{]|[+\-]?[0-9]|@\{|\?\{|[a-zA-Z]+\s*\()/.test(trimmed);
       let parsedExpr: Expr | null = null;
       if (looksLikeExpr) {
         try {
@@ -396,7 +396,7 @@ export function parseRoot(input: string): ParseRoot {
 
   // 그냥 expression 처럼 보이는가?
   // dice / 숫자 / @{ / ?{ / [[ / 산술 시작.
-  if (/^[\[\(]|^[+\-]?[0-9]|^[0-9]*[dD][0-9]|^@\{|^\?\{|^[a-zA-Z]+\s*\(/.test(raw)) {
+  if (/^(?:\[\[|\()|^[+\-]?[0-9]|^[0-9]*[dD][0-9]|^@\{|^\?\{|^[a-zA-Z]+\s*\(/.test(raw)) {
     try {
       const expr = parseExpression(raw);
       return { kind: 'expr', expr };
