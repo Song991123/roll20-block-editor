@@ -3279,42 +3279,28 @@ async function reimportCurrentEmit(page, compactWideRows = false, source = null)
 
     function captureWorkspaceGraphs() {
       const keys = ['html', 'css', 'i18n', 'js', 'worker'];
-      return Object.fromEntries(keys.map((key) => {
-        const graph = window.__perfHook.getBlockGraph?.(key) || [];
-        const indexById = new Map(graph.map((node, index) => [node.id, index]));
-        const normalized = graph.map((node) => ({
-          type: node.type,
-          depth: node.depth,
-          parent: node.parentId == null ? null : indexById.get(node.parentId) ?? null,
-          previous: node.previousId == null ? null : indexById.get(node.previousId) ?? null,
-          next: node.nextId == null ? null : indexById.get(node.nextId) ?? null,
-          childCount: node.childCount,
-          fields: (window.__perfHook.getBlockFields?.(key, node.id) || [])
-            .map((field) => ({ ...field }))
-            .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))),
-        }));
-        return [key, normalized];
-      }));
+      return Object.fromEntries(keys.map((key) => [
+        key,
+        window.__perfHook.getCanonicalBlockGraph?.(key) || { roots: [], nodes: [], cycleEdges: 0 },
+      ]));
     }
 
     function compareWorkspaceGraph(key, before, after) {
-      if (key === 'i18n') {
-        const normalizeI18n = (nodes) => nodes
-          .map((node) => ({ type: node.type, fields: node.fields }))
-          .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
-        const left = normalizeI18n(before);
-        const right = normalizeI18n(after);
-        return compareGraphArrays(left, right, ['type', 'fields'], key);
-      }
       return compareGraphArrays(
-        before,
-        after,
-        ['type', 'depth', 'parent', 'previous', 'next', 'childCount', 'fields'],
+        before?.nodes || [],
+        after?.nodes || [],
+        ['type', 'inputs', 'next', 'fields'],
         key,
+        {
+          beforeRoots: before?.roots || [],
+          afterRoots: after?.roots || [],
+          beforeCycleEdges: before?.cycleEdges || 0,
+          afterCycleEdges: after?.cycleEdges || 0,
+        },
       );
     }
 
-    function compareGraphArrays(before, after, fields, workspaceKey) {
+    function compareGraphArrays(before, after, fields, workspaceKey, topology = {}) {
       const differences = new Set();
       const changedFieldNames = new Set();
       const normalizations = new Set();
@@ -3323,6 +3309,10 @@ async function reimportCurrentEmit(page, compactWideRows = false, source = null)
       const length = Math.max(before.length, after.length);
       let firstDifferenceIndex = null;
       if (before.length !== after.length) differences.add('block-count');
+      if (JSON.stringify(topology.beforeRoots) !== JSON.stringify(topology.afterRoots)) {
+        differences.add('roots');
+      }
+      if (topology.beforeCycleEdges !== topology.afterCycleEdges) differences.add('cycles');
       for (let index = 0; index < length; index += 1) {
         const left = before[index];
         const right = after[index];
@@ -3367,6 +3357,10 @@ async function reimportCurrentEmit(page, compactWideRows = false, source = null)
         normalizations: [...normalizations].sort(),
         fieldSemanticFailures: [...fieldSemanticFailures].sort(),
         fieldDifferenceTraits,
+        beforeRoots: topology.beforeRoots,
+        afterRoots: topology.afterRoots,
+        beforeCycleEdges: topology.beforeCycleEdges,
+        afterCycleEdges: topology.afterCycleEdges,
       };
     }
 

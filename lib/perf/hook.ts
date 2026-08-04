@@ -18,6 +18,11 @@
 'use client';
 
 import { getBlocklyAdapter, type BlockFieldInfo, type BlockSnapshot } from '@/lib/blockly/adapter';
+import {
+  canonicalizeBlockGraph,
+  type CanonicalBlockGraph,
+  type CanonicalGraphInputLink,
+} from '@/lib/perf/canonicalBlockGraph';
 import { registerAllBlocks } from '@/lib/blocks/registry';
 import {
   moveImportedWorkerBlocksToWorkspace,
@@ -72,6 +77,7 @@ export interface PerfBlockGraphNode {
   nextId: string | null;
   hasNextTarget: boolean;
   childCount: number;
+  inputs: CanonicalGraphInputLink[];
 }
 
 export interface PerfEmitSnap {
@@ -133,6 +139,7 @@ export interface PerfHook {
   getLayerSnapshot: (key?: WorkspaceKey) => BlockSnapshot[];
   getBlockFields: (key: WorkspaceKey, blockId: string) => BlockFieldInfo[];
   getBlockGraph: (key?: WorkspaceKey) => PerfBlockGraphNode[];
+  getCanonicalBlockGraph: (key?: WorkspaceKey) => CanonicalBlockGraph;
   getSelectedBlockId: () => string | null;
   /** emit 결과 (lazy emit). 길이만 — 본문 dump X (사용자 시트 식별자 leak 방지). */
   getEmitCache: () => PerfEmitSnap;
@@ -307,6 +314,39 @@ function buildHook(): PerfHook {
     return { total: snaps.length, root };
   }
 
+  function getBlockGraph(key: WorkspaceKey): PerfBlockGraphNode[] {
+    const adapter = getBlocklyAdapter();
+    const ws = adapter.getWorkspace(key);
+    if (!ws) return [];
+    const snapshots = new Map(adapter.listAllBlocks(key).map((block) => [block.id, block]));
+    return ws.getAllBlocks(false).map((block) => {
+      const snap = snapshots.get(block.id);
+      const previousBlock =
+        (block as { getPreviousBlock?: () => { id?: string } | null }).getPreviousBlock?.() ??
+        block.previousConnection?.targetBlock() ??
+        null;
+      const nextBlock =
+        (block as { getNextBlock?: () => { id?: string } | null }).getNextBlock?.() ??
+        block.nextConnection?.targetBlock() ??
+        null;
+      const parentBlock = (block as { getParent?: () => { id?: string } | null }).getParent?.() ?? null;
+      return {
+        id: block.id,
+        type: block.type,
+        depth: snap?.depth ?? 0,
+        label: snap?.label ?? block.type,
+        parentId: parentBlock?.id ?? null,
+        previousId: previousBlock?.id ?? null,
+        nextId: nextBlock?.id ?? null,
+        hasNextTarget: Boolean(block.nextConnection?.targetBlock()),
+        childCount: block.getChildren(false).filter((child) => child.id !== nextBlock?.id).length,
+        inputs: block.inputList.flatMap((input, ordinal) => input.connection
+          ? [{ name: input.name, ordinal, targetId: input.connection.targetBlock()?.id ?? null }]
+          : []),
+      };
+    });
+  }
+
   return {
     getWorkspace: () => {
       const html = countBlocks('html');
@@ -327,34 +367,19 @@ function buildHook(): PerfHook {
 
     getSelectedBlockId: () => useWorkspaceStore.getState().selectedBlockId,
 
-    getBlockGraph: (key = 'html') => {
+    getBlockGraph: (key = 'html') => getBlockGraph(key),
+
+    getCanonicalBlockGraph: (key = 'html') => {
       const adapter = getBlocklyAdapter();
-      const ws = adapter.getWorkspace(key);
-      if (!ws) return [];
-      const snapshots = new Map(adapter.listAllBlocks(key).map((block) => [block.id, block]));
-      return ws.getAllBlocks(false).map((block) => {
-        const snap = snapshots.get(block.id);
-        const previousBlock =
-          (block as { getPreviousBlock?: () => { id?: string } | null }).getPreviousBlock?.() ??
-          block.previousConnection?.targetBlock() ??
-          null;
-        const nextBlock =
-          (block as { getNextBlock?: () => { id?: string } | null }).getNextBlock?.() ??
-          block.nextConnection?.targetBlock() ??
-          null;
-        const parentBlock = (block as { getParent?: () => { id?: string } | null }).getParent?.() ?? null;
-        return {
-          id: block.id,
-          type: block.type,
-          depth: snap?.depth ?? 0,
-          label: snap?.label ?? block.type,
-          parentId: parentBlock?.id ?? null,
-          previousId: previousBlock?.id ?? null,
-          nextId: nextBlock?.id ?? null,
-          hasNextTarget: Boolean(block.nextConnection?.targetBlock()),
-          childCount: block.getChildren(false).filter((child) => child.id !== nextBlock?.id).length,
-        };
-      });
+      return canonicalizeBlockGraph(
+        getBlockGraph(key).map((node) => ({
+          id: node.id,
+          type: node.type,
+          fields: adapter.getBlockFields(key, node.id),
+          inputs: node.inputs,
+          nextId: node.nextId,
+        })),
+      );
     },
 
     getEmitCache: () => {

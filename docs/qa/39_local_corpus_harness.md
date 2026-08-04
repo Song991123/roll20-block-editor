@@ -72,6 +72,12 @@ whitespace for text/style/script source, browser-equivalent inline style, and
 equivalent HTML boolean-attribute values. Authored input names, translation
 keys and values, block types, hierarchy, and all other fields remain exact.
 
+L2 topology uses a canonical forest, not Blockly's block-creation array.
+Random block IDs and independent-root creation order are ignored. Named input
+slots and their targets remain explicit, and each `next` chain preserves real
+sibling order. The canonicalizer is iterative so dense sheets do not overflow
+the JavaScript stack. A Harness version change invalidates older cached rows.
+
 Preview/Edit equality is a separate local check inside the cache envelope. It
 uses the same persistent iframe in both modes and checks pixels, form state,
 root geometry, console errors, page errors, and resource warnings.

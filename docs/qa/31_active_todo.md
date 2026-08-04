@@ -158,8 +158,13 @@ complete baseline. Gate weights live in
   Protected discovery is current. A focused protected regression now passes
   L2 after generic empty-translation-key and authored-input-name preservation
   fixes; Preview/Edit pixels, form state, geometry, and console/page gates also
-  pass for that anonymous row. The complete browser baseline, further general
-  failure fixes, and measured Alpha score remain `VERIFY`.
+  pass for that anonymous row. Harness v4 now compares canonical Blockly
+  topology instead of `getAllBlocks()` creation order: random IDs and
+  independent-root order are ignored, while input slots and `next` sibling
+  order remain strict. Synthetic roundtrip coverage passes. Focused protected
+  rechecks still reject genuine field-value and block-count changes, so this
+  does not manufacture a higher pass rate. The complete v4 browser baseline,
+  further general failure fixes, and measured Alpha score remain `VERIFY`.
 
 - `DONE LOCAL / VERIFY BROAD`: ordinary HTML comments now map to the existing
   hidden-note block at the document root and inside nested structure. Compact

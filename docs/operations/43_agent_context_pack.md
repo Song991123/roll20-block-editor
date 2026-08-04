@@ -33,9 +33,11 @@ contain private source evidence or historical test dumps.
 - Public product assets contain no bundled real sheet sample.
 - Local corpus discovery, anonymous result validation, cache keys, failure
   clustering, per-case process isolation, and representative set-cover are
-  implemented. Synthetic modern/legacy integration passes. The protected
-  corpus scan is current, but the first complete browser baseline is still
-  open; Alpha progress therefore remains unset.
+  implemented. L2 graph comparison uses ID-independent canonical input-slot
+  trees with strict `next` order; Harness v4 invalidates earlier partial rows.
+  Synthetic modern/legacy integration passes. The protected corpus scan is
+  current, but the first complete v4 browser baseline is still open; Alpha
+  progress therefore remains unset.
 - Dedicated owner-only modern and legacy test rooms now cover current anonymous
   synthetic full-root rendering, translation, controls, Worker action state,
   Roll execution, and result-card output. The modern result-card comparison

@@ -1313,3 +1313,20 @@ parity.
 - Production build, fresh-sheet desktop/mobile browser smoke, tracked-document
   privacy, lint, diff checks, and server hygiene pass. Generated screenshots
   remain ignored local evidence.
+
+## 2026-08-04 - Corpus Graph Measurement Repair
+
+- Replaced L2 graph comparison based on Blockly creation-array indexes with a
+  canonical forest built from named input slots and ordered `next` chains.
+  Random IDs and independent-root creation order no longer create false
+  topology differences; real sibling order and field changes remain strict.
+- Added regression coverage for reordered hydration, independent roots,
+  sibling-order mutation, and a long iterative chain. The full anonymous
+  synthetic roundtrip browser set passes with every workspace graph stable.
+- Bumped the local Harness cache contract to v4. Older partial results remain
+  diagnostic only and cannot contribute to the next complete baseline.
+- Focused protected rechecks continue to fail on genuine field-value or
+  block-count changes. Those rows stay open for generic mapping fixes; no
+  source identity, content, or per-sheet measurement was recorded here.
+- Claim boundary: measurement integrity and focused local browser proof only.
+  The complete v4 corpus baseline and its Alpha score remain open.

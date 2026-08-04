@@ -20,7 +20,7 @@ import {
 } from './lib/corpus_discovery.mjs';
 
 const REPO = path.resolve(import.meta.dirname, '..');
-const HARNESS_VERSION = '3';
+const HARNESS_VERSION = '4';
 const DEFAULT_CONFIG = path.join(REPO, '.tmp', 'corpus-harness', 'config.json');
 const ALLOWED_COMMANDS = new Set(['scan', 'changed', 'full', 'select']);
 const RESULT_FILE = 'corpus-results.json';
