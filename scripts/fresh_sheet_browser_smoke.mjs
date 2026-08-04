@@ -105,6 +105,10 @@ async function main() {
     const url = `http://127.0.0.1:${PORT}${BASE_PATH}/`;
     await page.goto(url, { waitUntil: 'load' });
     await page.waitForFunction(() => Boolean(window.__perfHook), null, { timeout: 30000 });
+    await page.waitForSelector('[data-testid="app-logo"][data-logo-kind="sheet-blocks"]', {
+      state: 'visible',
+      timeout: 15000,
+    });
 
     await page.evaluate(() => window.__perfHook.clearAll());
     await page.waitForFunction(() => {

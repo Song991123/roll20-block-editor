@@ -6,6 +6,13 @@ This file contains current work only. Historical per-sheet evidence, source
 identities, machine paths, screenshots, and source-derived measurements do not
 belong in tracked documents.
 
+Fixed Alpha order: actual modern/legacy Roll20 Preview fidelity, universal
+lossless block/layer mapping, diagnostics/export, then import-first UI. Existing
+Figma-like editing stays behind an experimental boundary and resumes for Beta.
+No numeric Alpha progress is valid until the corpus harness emits its first
+complete baseline. Gate weights live in
+`docs/operations/41_product_reset_and_short_term_goals.md`.
+
 ## P0 - Roll20 Render Truth
 
 - `DONE LOCAL / VERIFY MODERN SANDBOX`: export handoff now names the correct

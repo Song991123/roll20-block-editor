@@ -9,6 +9,10 @@ contain private source evidence or historical test dumps.
 
 - Canonical worktree: `web-push-main/`; refresh branch and commit with Git.
 - Active integration branch: `claude/design-reset`.
+- Fixed priority: actual modern/legacy Roll20 Preview fidelity first, universal
+  lossless block/layer mapping second, Alpha diagnostics/export third. Figma-like
+  editing remains code-preserved but experimental until Beta. Branding and
+  shell polish do not close renderer or mapping gates.
 - Preview and Edit share one persistent Roll20 iframe.
 - Modern and legacy compatibility paths are separate.
 - Export handoff copy follows that same mode. Modern directs the three final

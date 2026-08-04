@@ -5,14 +5,46 @@ Status: ACTIVE
 
 ## Objective
 
-Build a general Roll20 custom-sheet editor where users import or author HTML,
-CSS, translation data, and later Sheet Worker JavaScript. Preview and Edit use
-the same rendered sheet document. Visual editing adds overlays and
-structure-aware operations without redrawing or flattening the authored sheet.
+The long-term product is a visual Roll20 sheet studio where a user can import
+or author HTML, CSS, translation data, and Sheet Worker JavaScript without
+being forced into source code. The import-first Alpha proves the foundation:
+import, actual-like Preview, lossless block mapping, diagnostics, and modern or
+legacy export.
 
-The product supports modern and legacy Roll20 as separate contracts. It ships
-no copied sheet, screenshot, or source-derived example. The application shell
-uses an original light pastel visual system and plain Korean task language.
+Figma-like visual editing remains in the codebase but is not an Alpha
+completion gate. It will be exposed only as an experimental feature until the
+render and mapping foundation passes the measured corpus harness. The product
+ships no copied sheet, screenshot, or source-derived example.
+
+## Fixed Product Priority
+
+1. Preview must reproduce the imported sheet in the correct modern or legacy
+   Roll20 contract, with comparable state, assets, translation, Worker output,
+   and result cards.
+2. HTML, CSS, translation, Rolltemplate, and supported Worker source must map
+   to blocks and layers generically and preserve unsupported source losslessly.
+3. Alpha diagnostics and export must explain preservation, warnings, and
+   blocking failures without claiming unsupported parity.
+4. Figma-like editing resumes for Beta on that same rendered document. It must
+   not maintain a second visual model or hide mapping/render gaps.
+5. Product chrome, branding, and onboarding improve usability but do not count
+   as completion of the renderer or mapping gates.
+
+## Alpha Progress Model
+
+Date: 2026-08-04
+
+| Alpha gate | Weight |
+| --- | ---: |
+| Corpus lossless roundtrip | 35 |
+| Modern and legacy local Preview | 25 |
+| Actual Roll20 representative verification | 20 |
+| Export and diagnostics | 10 |
+| Alpha UX, CI, and privacy | 10 |
+
+No numeric Alpha progress is reported until the corpus harness emits its first
+complete baseline. A discovered case without a result row is unfinished. Local
+synthetic success cannot raise an actual Roll20 gate to complete.
 
 ## Product Invariants
 
@@ -40,8 +72,11 @@ uses an original light pastel visual system and plain Korean task language.
   synthetic browser coverage.
 - `PARTIAL`: generic HTML, CSS, translation, Rolltemplate, and supported worker
   mapping exists. Broader unsupported-source preservation remains open.
+- `DEFERRED BETA`: the shared-render visual editing foundation remains covered
+  by local regression tests but receives no new Figma-like feature work during
+  the import-first Alpha.
 - `PARTIAL`: the pastel application shell and task-oriented controls exist, but
-  dense editing, first-run guidance, resize/alignment, and remaining technical
+  the import-first flow, experimental-feature boundary, and remaining technical
   copy need review.
 - `VERIFY EXTERNAL`: actual modern Sandbox and dedicated legacy-room parity
   require fresh generated-payload evidence. Local tests cannot satisfy either
@@ -49,15 +84,16 @@ uses an original light pastel visual system and plain Korean task language.
 
 ## Execution Order
 
-1. Keep tracked docs and product assets free of private/source-derived evidence.
-2. Prove Preview/Edit unity with anonymous synthetic browser tests.
-3. Close generic import/export losses with synthetic regression cases.
-4. Improve direct manipulation, parent-aware placement, resize, alignment,
-   keyboard selection, and undo/redo without forking the render surface.
-5. Validate a generated payload in modern Sandbox.
-6. Validate the same contract separately in a new legacy-enabled test room.
-7. Finish user-language and pastel-shell review across desktop and compact
-   viewports.
+1. Keep tracked docs and product assets free of private/source-derived evidence
+   throughout every gate.
+2. Close Preview differences against the correct actual modern and legacy
+   Roll20 destinations with anonymous generated payloads.
+3. Expand generic import, block/layer mapping, source preservation, Worker,
+   state, asset, and result-card coverage without source-specific branches.
+4. Repeat actual modern and legacy checks for every newly supported contract.
+5. Make import, Preview, diagnostics, compatibility selection, and export the
+   default Alpha flow. Keep the visual editor behind an experimental toggle.
+6. Resume direct manipulation for Beta only after the Alpha gates are stable.
 
 ## Evidence Gates
 

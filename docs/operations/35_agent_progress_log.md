@@ -1260,3 +1260,18 @@ parity.
   patching. Mapping is 100% with zero console, page, or resource errors.
 - Claim boundary: anonymous local browser proof only. Dense user-owned sheets,
   broader landscape devices, and actual Roll20 destinations remain separate.
+
+## 2026-08-04 - Import-First Alpha Boundary And Original Mark
+
+- Replaced the placeholder letter mark and stale favicon with one original
+  sheet-and-block mark shared by the header and generated browser icon.
+- Locked the current release milestone to import, modern/legacy Preview,
+  lossless mapping, diagnostics, and export. Existing Figma-like editing code
+  and regressions remain preserved but new direct-manipulation work is deferred
+  to the experimental Beta path.
+- Removed the manual 62/100 checkpoint. Numeric Alpha progress remains unset
+  until the local corpus harness emits a complete result row for every
+  discovered case.
+- Production build, fresh-sheet desktop/mobile browser smoke, tracked-document
+  privacy, lint, diff checks, and server hygiene pass. Generated screenshots
+  remain ignored local evidence.

@@ -23,6 +23,7 @@ import { useUiStore } from '@/lib/stores/uiStore';
 import { useWorkspaceStore, anyDirty } from '@/lib/stores/workspaceStore';
 import { deleteWorkspace, AUTOSAVE_KEY } from '@/lib/persist/indexeddb';
 import { saveCurrentWorkspaceSnapshot } from '@/lib/persist/autosave';
+import { AppLogo } from './AppLogo';
 
 const ImportDialog = dynamic(
   () => import('./ImportDialog').then((m) => ({ default: m.ImportDialog })),
@@ -34,24 +35,6 @@ const ExportDialog = dynamic(
 );
 
 const APP_VERSION = 'v0.1.0';
-
-function LogoMark({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 32 32" fill="none" className={className} aria-hidden>
-      <rect width="32" height="32" rx="10" fill="url(#logoGrad)" />
-      <path
-        d="M9 11h5.5c1.7 0 3 1 3 2.4 0 1.2-.8 2-1.8 2.3 1.3.2 2.3 1.2 2.3 2.5 0 1.7-1.5 2.8-3.4 2.8H9V11Zm2.4 4.1h2.7c.9 0 1.5-.5 1.5-1.2 0-.7-.5-1.1-1.4-1.1h-2.8v2.3Zm0 4.1h3c1.1 0 1.8-.5 1.8-1.3 0-.8-.6-1.3-1.7-1.3h-3.1V19.2Z"
-        fill="#FFFFFF"
-      />
-      <defs>
-        <linearGradient id="logoGrad" x1="0" y1="0" x2="32" y2="32">
-          <stop stopColor="#F49CB9" />
-          <stop offset="1" stopColor="#C74B74" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-}
 
 interface EditorHeaderProps {
   onNewSheet?: () => void;
@@ -131,7 +114,7 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
         )}
 
         <div className="flex min-w-0 items-center gap-1 sm:gap-2.5 sm:pl-1">
-          <LogoMark className="h-9 w-9 shrink-0 -rotate-3 drop-shadow-[0_2px_4px_rgba(178,84,122,0.3)] transition-transform duration-200 hover:rotate-0" />
+          <AppLogo className="h-9 w-9 shrink-0 drop-shadow-[0_2px_4px_rgba(178,84,122,0.22)] transition-transform duration-200 hover:-translate-y-0.5" />
           <div className="r20-header-title leading-tight">
             <div className="whitespace-nowrap text-base font-bold tracking-tight">Roll20 시트 편집기</div>
             <div className="hidden whitespace-nowrap text-xs text-muted-foreground lg:block">
