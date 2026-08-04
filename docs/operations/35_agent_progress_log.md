@@ -1455,3 +1455,25 @@ parity.
   breadth, and actual Roll20 evidence remain open.
 - Claim boundary: do not update the Alpha score from this representative. The
   last complete score still belongs to the earlier full baseline.
+
+## 2026-08-05 - Anonymous Failure Clusters And Structural Class Contracts
+
+- Added a local-only failure cluster report that groups old L2 failures by
+  compatibility, failed workspace, generic block type, changed field names,
+  and preserved attribute names. Diagnostics and failed checks remain facets,
+  so they do not split one structural root cause into unrelated clusters.
+- Runtime and resource failures now use a fixed privacy-safe taxonomy in cache
+  envelopes and cluster facets. Source messages, paths, hosts, and URLs are not
+  retained. Resource-origin console noise stays visible as an asset problem but
+  no longer masquerades as an application runtime crash.
+- Structural shortcuts now require complete, non-duplicated defining class
+  tokens. Incomplete and duplicate structural signatures use the generic exact
+  element path, preserving authored classes. Import regressions pass.
+- One anonymous legacy representative now passes L2 plus local Preview/Edit
+  visual, form-state, geometry, and application-runtime gates. Its external
+  font remains an asset warning, so hosted asset fidelity and actual Roll20
+  evidence are still open.
+- The Harness group, privacy-safe diagnostic self-test, import structure suite,
+  lint, and server hygiene pass. Project and CDP listeners returned to zero.
+- Claim boundary: this is focused local evidence. A complete current-SHA corpus
+  run is still required before updating the 28.9% baseline score.

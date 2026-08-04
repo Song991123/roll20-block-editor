@@ -223,8 +223,12 @@ contain private source evidence or historical test dumps.
   traversal and source reads use bounded concurrency and generic progress
   output. One anonymous modern protected representative currently passes every
   local mapping, Preview/Edit, runtime, and resource gate after equivalent
-  authored input `type` values were preserved. Full current-SHA corpus and
-  actual modern/legacy Roll20 evidence remain open.
+  authored input `type` values were preserved. Structural shortcuts now require
+  complete, non-duplicated defining class tokens; incomplete signatures remain
+  generic and exact. One anonymous legacy representative passes L2 and local
+  Preview/Edit visual/state/geometry plus app-runtime gates. Its external font
+  remains an explicit asset warning. Full current-SHA corpus and actual
+  modern/legacy Roll20 evidence remain open.
 - ImportDialog waits for every Blockly model workspace before hydration. Keep
   the cold-load early-click browser check; analysis percentages alone do not
   prove blocks were applied.

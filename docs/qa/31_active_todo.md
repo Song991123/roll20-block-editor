@@ -289,6 +289,14 @@ Gate weights live in
   type edit still wins. Unit coverage and one anonymous modern protected
   representative now pass every local mapping, Preview/Edit, runtime, and
   resource gate. This does not prove the remaining corpus or actual Roll20.
+- `DONE LOCAL REPRESENTATIVE / VERIFY CORPUS`: structural row, column, section,
+  toggle, repeating-row, and grid shortcuts now require one exact copy of every
+  defining class token. Incomplete or duplicate signatures stay generic and
+  preserve their authored classes instead of inventing or collapsing structure.
+  Synthetic import tests pass. One anonymous legacy representative now passes
+  L2 plus Preview/Edit visual, form-state, geometry, and app-runtime gates.
+  External font loading remains an explicit `asset` warning; the full current-
+  SHA corpus and actual legacy Roll20 checks remain `VERIFY`.
 - `DONE LOCAL`: `@font-face` keeps its four common settings structured and
   preserves every additional or repeated descriptor in an editable fallback
   field. Import, generator, and live browser reimport tests keep descriptor

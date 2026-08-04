@@ -36,6 +36,7 @@ corepack pnpm run harness:corpus:scan
 corepack pnpm run harness:corpus:changed
 corepack pnpm run harness:corpus:full
 corepack pnpm run harness:corpus:select
+corepack pnpm run harness:corpus:cluster
 ```
 
 - `scan`: read-only discovery and anonymous inventory. It never reports Alpha
@@ -77,10 +78,12 @@ last complete Git SHA and anonymous row/hash/cache-key tuples.
 | L3 | Original source and first emit match under documented normalization. |
 | L4 | Representative actual Roll20 visual verification. Local Harness never grants L4. |
 
-`runtimeClean` means zero browser console and page errors. External image/font
-load warnings remain visible as `resourceWarnings`, `resourceClean`, and the
-`asset` diagnostic, but do not turn an otherwise valid local L2 roundtrip into
-a crash. Asset fidelity is closed only by the separate actual Roll20 gate.
+`runtimeClean` means zero application-origin console errors and zero page
+errors. External image/font request failures can also emit browser console
+errors; the Harness classifies those with fixed privacy-safe categories and
+keeps them visible as `resourceWarnings`, `resourceClean`, and the `asset`
+diagnostic instead of calling them an application crash. Asset fidelity is
+closed only by the separate actual Roll20 gate.
 
 L2 field comparison keeps exact values by default. It accepts only bounded
 semantic normalizations already proven stable by emitted output: boundary
@@ -111,6 +114,9 @@ root geometry, console errors, page errors, and resource warnings.
   execution state: never print, copy into a report, or commit it.
 - Persisted rows contain anonymous IDs, hashes, generic feature tokens, level
   booleans, generic diagnostic categories, and aggregate counts only.
+- Cache envelopes and failure clusters may retain fixed runtime/resource
+  categories such as `type-error`, `resource-load`, or `type:font`; they never
+  retain the original message, host, URL, or local path.
 - No source path, sheet name, creator, visible text, class token, attribute
   value, URL, screenshot, or child report survives case cleanup.
 - Cache identity includes SHA-256 digests of every input file, current Git SHA,
