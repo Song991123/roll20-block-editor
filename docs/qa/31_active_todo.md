@@ -232,6 +232,15 @@ Gate weights live in
   Preview/Edit pixels, form state, geometry, runtime, and resource gates. The
   broader old class-only cluster remains `VERIFY` until a fresh baseline.
 
+- `DONE LOCAL / VERIFY BROAD`: imported roll and action buttons now retain an
+  authored bare or prefixed `name` while the visible `NAME` field is unchanged.
+  A real name edit emits the Roll20-standard `roll_` or `act_` prefix instead
+  of restoring a stale snapshot. An isolated protected legacy target that
+  previously failed two `r20_roll_button` name snapshots now passes all five
+  workspace graphs, Preview/Edit pixels, form state, geometry, runtime, and
+  resource gates. The broader old name-only cluster remains `VERIFY` until a
+  fresh baseline.
+
 - `DONE LOCAL / VERIFY BROAD`: ordinary HTML comments now map to the existing
   hidden-note block at the document root and inside nested structure. Compact
   title, button, radio-label, select, option, and inline shapes fall back to a

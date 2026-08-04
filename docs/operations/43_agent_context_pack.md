@@ -50,8 +50,11 @@ contain private source evidence or historical test dumps.
   and local Preview/runtime/resource checks. Equivalent generated class token
   multisets also restore authored token order and whitespace without
   overriding real class edits; an isolated protected legacy target closes its
-  five-graph and local visual/state/runtime/resource gates. A fresh complete
-  baseline is required before the 28.9% score can be updated.
+  five-graph and local visual/state/runtime/resource gates. Imported roll and
+  action button names likewise retain their authored bare/prefixed form until
+  the visible name is edited; an isolated protected legacy target closes the
+  same local gates. A fresh complete baseline is required before the 28.9%
+  score can be updated.
 - Corpus `changed` runs now persist an ignored complete-run state and reuse only
   unchanged input rows outside classified code impact. Missing provenance,
   unknown runtime changes, or dirty runtime code trigger a safe stop/full rerun

@@ -1422,5 +1422,12 @@ parity.
   multisets match; a real token edit still wins. The isolated protected legacy
   target now passes every workspace graph, Preview/Edit visual and state gates,
   runtime, and resources. Project listeners returned to zero after the run.
+- The next isolated attribute-only target exposed two `r20_roll_button`
+  snapshots where a bare authored button name gained the five-character
+  Roll20 prefix during emit. Roll and action generators now reuse an authored
+  bare or prefixed name only while it still maps to the visible `NAME` field;
+  an actual edit emits the standard prefix. The protected legacy target moved
+  from the 25-point local Preview-only result to the complete 60-point local
+  gate, and project listeners again returned to zero.
 - Claim boundary: the 28.9% score belongs to `80029b2`. Current radio changes
   require a new complete baseline before any higher score is claimed.
