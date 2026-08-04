@@ -3308,6 +3308,7 @@ async function reimportCurrentEmit(page, compactWideRows = false, source = null)
       const fieldDifferenceTraits = {};
       const length = Math.max(before.length, after.length);
       let firstDifferenceIndex = null;
+      let firstDifferenceNode = null;
       if (before.length !== after.length) differences.add('block-count');
       if (JSON.stringify(topology.beforeRoots) !== JSON.stringify(topology.afterRoots)) {
         differences.add('roots');
@@ -3317,7 +3318,7 @@ async function reimportCurrentEmit(page, compactWideRows = false, source = null)
         const left = before[index];
         const right = after[index];
         if (!left || !right) {
-          if (firstDifferenceIndex == null) firstDifferenceIndex = index;
+          recordFirstDifference(index, left, right);
           continue;
         }
         for (const field of fields) {
@@ -3344,7 +3345,7 @@ async function reimportCurrentEmit(page, compactWideRows = false, source = null)
             for (const reason of semanticFields.reasons) fieldSemanticFailures.add(reason);
           }
           differences.add(field);
-          if (firstDifferenceIndex == null) firstDifferenceIndex = index;
+          recordFirstDifference(index, left, right);
         }
       }
       return {
@@ -3352,6 +3353,7 @@ async function reimportCurrentEmit(page, compactWideRows = false, source = null)
         beforeBlocks: before.length,
         afterBlocks: after.length,
         firstDifferenceIndex,
+        firstDifferenceNode,
         differences: [...differences].sort(),
         changedFieldNames: [...changedFieldNames].sort(),
         normalizations: [...normalizations].sort(),
@@ -3362,6 +3364,27 @@ async function reimportCurrentEmit(page, compactWideRows = false, source = null)
         beforeCycleEdges: topology.beforeCycleEdges,
         afterCycleEdges: topology.afterCycleEdges,
       };
+
+      function recordFirstDifference(index, left, right) {
+        if (firstDifferenceIndex != null) return;
+        firstDifferenceIndex = index;
+        firstDifferenceNode = {
+          before: describeNode(left),
+          after: describeNode(right),
+        };
+      }
+
+      function describeNode(node) {
+        if (!node) return { type: 'missing', fieldNames: [] };
+        const type = /^r20_[a-z0-9_]{1,80}$/i.test(node.type ?? '')
+          ? node.type
+          : 'other';
+        const fieldNames = [...new Set((node.fields ?? [])
+          .map((field) => String(field?.name ?? ''))
+          .filter((name) => /^[A-Z][A-Z0-9_]{0,63}$/.test(name)))]
+          .sort();
+        return { type, fieldNames };
+      }
     }
 
     function compareFieldArraysSemantically(workspaceKey, before = [], after = []) {

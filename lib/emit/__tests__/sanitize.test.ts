@@ -273,26 +273,38 @@ function testLargeStylesheetLinearBudget(): void {
     { length: count },
     (_, index) => `.stable-${index} { color: #222; }\n@keyframes pulse-${index} { from { opacity: 0; } to { opacity: 1; } }\n`,
   ).join('');
-  const measureMedian = (css: string): { elapsedMs: number; result: ReturnType<typeof sanitizeForRoll20Legacy> } => {
-    sanitizeForRoll20Legacy(css);
-    const samples: Array<{ elapsedMs: number; result: ReturnType<typeof sanitizeForRoll20Legacy> }> = [];
-    for (let round = 0; round < 3; round += 1) {
-      const startedAt = performance.now();
-      const result = sanitizeForRoll20Legacy(css);
-      samples.push({ elapsedMs: performance.now() - startedAt, result });
-    }
-    samples.sort((a, b) => a.elapsedMs - b.elapsedMs);
-    return samples[1];
+  const smallCss = makeCss(8000);
+  const largeCss = makeCss(24000);
+  const measure = (css: string) => {
+    const startedAt = performance.now();
+    const result = sanitizeForRoll20Legacy(css);
+    return { elapsedMs: performance.now() - startedAt, result };
   };
+  const median = (
+    samples: Array<{ elapsedMs: number; result: ReturnType<typeof sanitizeForRoll20Legacy> }>,
+  ) => [...samples].sort((a, b) => a.elapsedMs - b.elapsedMs)[Math.floor(samples.length / 2)];
 
-  const small = measureMedian(makeCss(2000));
-  const large = measureMedian(makeCss(4000));
+  sanitizeForRoll20Legacy(smallCss);
+  sanitizeForRoll20Legacy(largeCss);
+  const smallSamples = [];
+  const largeSamples = [];
+  for (let round = 0; round < 7; round += 1) {
+    if (round % 2 === 0) {
+      smallSamples.push(measure(smallCss));
+      largeSamples.push(measure(largeCss));
+    } else {
+      largeSamples.push(measure(largeCss));
+      smallSamples.push(measure(smallCss));
+    }
+  }
+  const small = median(smallSamples);
+  const large = median(largeSamples);
   const growth = large.elapsedMs / Math.max(small.elapsedMs, 1);
 
   expectNotContains(large.result.sanitized, '@keyframes', 'large fixture keyframes removed');
-  expectContains(large.result.sanitized, '.stable-3999', 'large fixture stable rules preserved');
+  expectContains(large.result.sanitized, '.stable-23999', 'large fixture stable rules preserved');
   assert(
-    large.result.warnings.at(-1)?.line === 7999,
+    large.result.warnings.at(-1)?.line === 47999,
     'warning line stays correct without rescanning',
   );
   assert(
@@ -300,8 +312,8 @@ function testLargeStylesheetLinearBudget(): void {
     `large stylesheet sanitize should stay in budget (elapsed ${large.elapsedMs.toFixed(1)}ms)`,
   );
   assert(
-    growth < 3.5,
-    `doubling keyframe-heavy input should not show quadratic growth (${growth.toFixed(2)}x)`,
+    growth < 6,
+    `tripling keyframe-heavy input should stay below quadratic growth (${growth.toFixed(2)}x; small ${small.elapsedMs.toFixed(1)}ms, large ${large.elapsedMs.toFixed(1)}ms)`,
   );
 }
 

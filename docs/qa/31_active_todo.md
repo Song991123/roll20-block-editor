@@ -204,6 +204,17 @@ Gate weights live in
 - `DONE LOCAL`: clean-SHA synthetic corpus `full` executed modern and legacy
   rows, produced a complete baseline, and passed all required local gates.
 
+- `DONE CODE / VERIFY BROWSER`: graph failure envelopes now include only the
+  generic block type and generic field names at the first mismatch. This closes
+  a diagnostic gap in the old attribute-only cluster without persisting source
+  values, paths, or identities. A targeted failing-case browser rerun must prove
+  the new diagnostic before it is marked done.
+
+- `DONE CI`: the legacy sanitizer performance test now compares
+  8,000 and 24,000 keyframe-heavy rules. Its 6x ratio ceiling separates linear
+  3x growth from quadratic 9x growth while retaining the 1500 ms absolute cap.
+  Ten consecutive isolated runs and the complete CI suite pass.
+
 - `DONE LOCAL / VERIFY BROAD`: ordinary HTML comments now map to the existing
   hidden-note block at the document root and inside nested structure. Compact
   title, button, radio-label, select, option, and inline shapes fall back to a

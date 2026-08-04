@@ -1392,5 +1392,15 @@ parity.
   legacy rows with a complete 60-point local result. A following docs-only SHA
   verified cross-SHA `changed` re-keying: zero rows executed, zero current-key
   cache hits, and both prior rows safely reused with all local gates passing.
+- Baseline clustering found that most HTML graph failures still report field
+  deltas, led by preserved attributes, but old safe envelopes omitted the block
+  type at the first mismatch. Browser diagnostics now retain only generic first
+  block types and field names so the next targeted runs can separate control
+  ownership bugs without storing source values or identities.
+- Repeated full CI showed that the legacy linear-time benchmark's old 2x input
+  ratio was too close to its 4x quadratic boundary at millisecond scale. The
+  test now separates 3x linear from 9x quadratic growth, keeps the absolute
+  1500 ms limit, passed ten consecutive isolated runs, and passed the complete
+  CI rerun.
 - Claim boundary: the 28.9% score belongs to `80029b2`. Current radio changes
   require a new complete baseline before any higher score is claimed.

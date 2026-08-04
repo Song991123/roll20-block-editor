@@ -446,6 +446,7 @@ function safeGraphDiagnostics(fixture) {
       firstDifferenceIndex: Number.isSafeInteger(value.firstDifferenceIndex)
         ? value.firstDifferenceIndex
         : null,
+      firstDifferenceNode: sanitizeFirstDifferenceNode(value.firstDifferenceNode),
       differences: Array.isArray(value.differences)
         ? value.differences.filter((item) => allowedDifferences.has(item)).sort()
         : [],
@@ -530,6 +531,22 @@ function safeGraphDiagnostics(fixture) {
       ),
     }];
   }));
+
+  function sanitizeFirstDifferenceNode(value) {
+    const sanitizeSide = (side) => ({
+      type: /^r20_[a-z0-9_]{1,80}$/i.test(side?.type ?? '') ? side.type : 'missing',
+      fieldNames: Array.isArray(side?.fieldNames)
+        ? side.fieldNames
+          .filter((name) => /^[A-Z][A-Z0-9_]{0,63}$/.test(name))
+          .sort()
+        : [],
+    });
+    if (!value || typeof value !== 'object') return null;
+    return {
+      before: sanitizeSide(value.before),
+      after: sanitizeSide(value.after),
+    };
+  }
 }
 
 function genericDiagnostics(row, fixture, child) {
