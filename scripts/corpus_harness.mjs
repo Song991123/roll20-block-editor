@@ -33,6 +33,7 @@ const INVENTORY_FILE = 'corpus-inventory.json';
 const SCAN_SUMMARY_FILE = 'corpus-scan-summary.json';
 const SELECTED_FILE = 'corpus-selected.json';
 const RUN_STATE_FILE = 'corpus-run-state.json';
+const PRIVATE_DISCOVERY_FILE = 'corpus-private-discovery.json';
 const MAX_CAPTURE_BYTES = 8 * 1024 * 1024;
 
 function argOf(args, name, fallback) {
@@ -92,6 +93,171 @@ async function loadConfig(configPath) {
     );
   }
   return assertConfigShape(JSON.parse(await readFile(configPath, 'utf8')), configPath);
+}
+
+function privateDiscoveryPath(config) {
+  return path.join(config.cacheDir, PRIVATE_DISCOVERY_FILE);
+}
+
+function privateRootKey(root) {
+  if (
+    !root
+    || typeof root.id !== 'string'
+    || typeof root.path !== 'string'
+    || typeof root.mode !== 'string'
+  ) return '';
+  return `${root.id}\0${path.resolve(root.path)}\0${root.mode}`;
+}
+
+function normalizePrivatePathList(value, rootPath) {
+  if (!Array.isArray(value)) return null;
+  const paths = [];
+  for (const item of value) {
+    if (typeof item !== 'string' || !path.isAbsolute(item) || !isInside(rootPath, item)) return null;
+    paths.push(path.resolve(item));
+  }
+  return paths;
+}
+
+function normalizePrivateCase(value, root) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  if (value.rootId !== root.id || typeof value.relativeKey !== 'string' || !value.relativeKey) return null;
+  if (!['modern', 'legacy', 'both'].includes(value.compatibility)) return null;
+  const pathFields = [
+    'htmlPaths',
+    'cssPaths',
+    'translationPaths',
+    'javascriptPaths',
+    'workerPaths',
+    'imagePaths',
+    'assetImagePaths',
+    'referenceImagePaths',
+  ];
+  const normalizedPaths = {};
+  for (const field of pathFields) {
+    const paths = normalizePrivatePathList(value[field], root.path);
+    if (!paths) return null;
+    normalizedPaths[field] = paths;
+  }
+  if (normalizedPaths.htmlPaths.length === 0) return null;
+  const features = Array.isArray(value.features)
+    ? value.features.filter((item) => typeof item === 'string' && item.length > 0 && item.length <= 128)
+    : null;
+  const diagnostics = Array.isArray(value.diagnostics)
+    ? value.diagnostics.filter((item) => typeof item === 'string' && item.length > 0 && item.length <= 128)
+    : null;
+  if (!features || features.length !== value.features.length) return null;
+  if (!diagnostics || diagnostics.length !== value.diagnostics.length) return null;
+  if (value.sourceMode !== root.mode || path.resolve(value.rootPath ?? '') !== root.path) return null;
+  if (typeof value.casePath !== 'string' || !isInside(root.path, value.casePath)) return null;
+  return {
+    rootId: value.rootId,
+    sourceMode: value.sourceMode,
+    relativeKey: value.relativeKey,
+    compatibility: value.compatibility,
+    rootPath: root.path,
+    casePath: path.resolve(value.casePath),
+    features,
+    diagnostics,
+    ...normalizedPaths,
+  };
+}
+
+async function readPrivateDiscoveryIndex(config) {
+  try {
+    const parsed = JSON.parse(await readFile(privateDiscoveryPath(config), 'utf8'));
+    if (
+      parsed?.version !== 1
+      || parsed?.harnessVersion !== HARNESS_VERSION
+      || !Array.isArray(parsed?.entries)
+    ) return [];
+    const configuredRoots = new Map(config.roots.map((root) => [privateRootKey(root), root]));
+    const entries = [];
+    for (const entry of parsed.entries) {
+      const root = configuredRoots.get(privateRootKey(entry?.root ?? {}));
+      if (!root || !Array.isArray(entry?.cases) || !Array.isArray(entry?.diagnostics)) continue;
+      const cases = entry.cases.map((item) => normalizePrivateCase(item, root));
+      if (cases.some((item) => !item)) continue;
+      const diagnostics = entry.diagnostics.filter(
+        (item) => typeof item === 'string' && item.length > 0 && item.length <= 128,
+      );
+      if (diagnostics.length !== entry.diagnostics.length) continue;
+      entries.push({ root, cases, diagnostics });
+    }
+    return entries;
+  } catch {
+    return [];
+  }
+}
+
+async function writePrivateDiscoveryIndex(config, entries) {
+  await mkdir(config.cacheDir, { recursive: true });
+  const value = {
+    version: 1,
+    harnessVersion: HARNESS_VERSION,
+    entries: entries.map((entry) => ({
+      root: entry.root,
+      cases: entry.cases,
+      diagnostics: entry.diagnostics,
+    })),
+  };
+  await writeFile(privateDiscoveryPath(config), `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+function findPrivateTarget(entries, onlyId) {
+  for (const entry of entries) {
+    for (const caseDescriptor of entry.cases) {
+      for (const mode of modesFor(caseDescriptor.compatibility)) {
+        const anonymousId = createAnonymousCaseId({
+          rootId: caseDescriptor.rootId,
+          relativeKey: `${caseDescriptor.relativeKey}\0${mode}`,
+        });
+        if (anonymousId === onlyId) {
+          return { cases: [caseDescriptor], diagnostics: entry.diagnostics };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+async function discoverForCommand(config, onlyId) {
+  const onProgress = ({ rootId, phase, completed, total }) => {
+    const progress = Number.isSafeInteger(total) ? `${completed}/${total}` : String(completed);
+    console.error(`[corpus-discovery] ${rootId} ${phase} ${progress}`);
+  };
+  const cachedEntries = await readPrivateDiscoveryIndex(config);
+  if (onlyId) {
+    const cachedTarget = findPrivateTarget(cachedEntries, onlyId);
+    if (cachedTarget) return { discovery: cachedTarget, source: 'private-index' };
+
+    const entries = [...cachedEntries];
+    const cachedRootKeys = new Set(entries.map((entry) => privateRootKey(entry.root)));
+    for (const root of config.roots) {
+      if (cachedRootKeys.has(privateRootKey(root))) continue;
+      const discovery = await discoverCorpusCases([root], { onProgress });
+      const entry = { root, cases: discovery.cases, diagnostics: discovery.diagnostics };
+      entries.push(entry);
+      await writePrivateDiscoveryIndex(config, entries);
+      const target = findPrivateTarget([entry], onlyId);
+      if (target) return { discovery: target, source: 'root-scan' };
+    }
+    throw new Error('anonymous corpus case is absent from the private discovery index; run scan to refresh it');
+  }
+
+  const entries = [];
+  for (const root of config.roots) {
+    const discovery = await discoverCorpusCases([root], { onProgress });
+    entries.push({ root, cases: discovery.cases, diagnostics: discovery.diagnostics });
+    await writePrivateDiscoveryIndex(config, entries);
+  }
+  return {
+    discovery: {
+      cases: entries.flatMap((entry) => entry.cases),
+      diagnostics: [...new Set(entries.flatMap((entry) => entry.diagnostics))].sort(),
+    },
+    source: 'scan',
+  };
 }
 
 function currentGitSha() {
@@ -895,7 +1061,8 @@ async function executeCommand(command, configPath, { force = false, onlyId = '' 
   const config = await loadConfig(configPath);
   if (command === 'select') return runSelect(config);
   if (command === 'changed' || command === 'full') assertMeasurableGitState();
-  const discovery = await discoverCorpusCases(config.roots);
+  const discovered = await discoverForCommand(config, onlyId);
+  const { discovery } = discovered;
   if (discovery.diagnostics.some((category) => category.startsWith('root:'))) {
     throw new Error('one or more configured corpus roots are unavailable or unsafe');
   }
@@ -903,13 +1070,15 @@ async function executeCommand(command, configPath, { force = false, onlyId = '' 
   const rows = await makeRows(discovery, gitSha, onlyId);
   if (rows.length === 0) throw new Error('corpus discovery found no HTML cases');
   await writeInventory(config, rows);
-  if (command === 'scan') return runScan(config, rows);
+  if (command === 'scan') {
+    return { ...await runScan(config, rows), discoverySource: discovered.source };
+  }
   const reuse = command === 'changed'
     ? await prepareChangedReuse(config, rows, gitSha, { force })
     : { envelopes: new Map(), impactScope: 'all' };
   const result = await runCases(config, rows, { force, reusable: reuse.envelopes });
   if (result.summary.baselineComplete && !onlyId) await writeRunState(config, gitSha, rows);
-  return { ...result, impactScope: reuse.impactScope };
+  return { ...result, impactScope: reuse.impactScope, discoverySource: discovered.source };
 }
 
 async function selfTest() {
@@ -929,12 +1098,24 @@ async function selfTest() {
       concurrency: 1,
     }, null, 2), 'utf8');
     const run = await executeCommand('scan', configPath);
+    if (run.discoverySource !== 'scan') throw new Error('initial scan must discover the source root');
     if (run.summary.progressPct !== null || run.summary.baselineComplete !== false) {
       throw new Error('scan must withhold progress before full baseline');
     }
     const text = await readFile(path.join(rootDir, 'reports', INVENTORY_FILE), 'utf8');
     if (text.includes('private-source-label') || text.includes('sheet.html') || text.includes(sourceDir)) {
       throw new Error('scan report leaked private source identity');
+    }
+    const privateText = await readFile(
+      path.join(rootDir, 'cache', PRIVATE_DISCOVERY_FILE),
+      'utf8',
+    );
+    if (!privateText.includes('private-source-label') || !privateText.includes('sheet.html')) {
+      throw new Error('private discovery cache omitted the local source identity');
+    }
+    const targeted = await executeCommand('scan', configPath, { onlyId: run.rows[0].anonymousId });
+    if (targeted.discoverySource !== 'private-index' || targeted.rows.length !== 1) {
+      throw new Error('targeted scan did not reuse the private discovery index');
     }
     console.log('corpus harness self-test PASS');
   } finally {
@@ -969,6 +1150,7 @@ async function main() {
     executed: result.executed,
     cached: result.cached,
     reused: result.reused,
+    discoverySource: result.discoverySource,
     impactScope: result.impactScope ?? 'none',
     baselineComplete: result.summary.baselineComplete,
     progressPct: result.summary.progressPct,

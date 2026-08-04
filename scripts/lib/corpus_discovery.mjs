@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { lstat, readFile, readdir, realpath, stat } from 'node:fs/promises';
+import { lstat, readFile, readdir, stat } from 'node:fs/promises';
 import {
   basename,
   dirname,
@@ -35,6 +35,7 @@ const COMPATIBILITY_METADATA_NAMES = new Set([
   'sheet-manifest.json',
 ]);
 const DEFAULT_MAX_TEXT_BYTES = 16 * 1024 * 1024;
+const DEFAULT_FS_CONCURRENCY = 8;
 
 const HTML_TAG_FAMILIES = new Map([
   ['layout', new Set(['article', 'aside', 'div', 'footer', 'header', 'main', 'nav', 'section'])],
@@ -142,11 +143,13 @@ export function resolveCompatibilityMode(mode, evidence = []) {
 export async function discoverCorpusCases(roots, options = {}) {
   const normalizedRoots = validateCorpusRoots(roots, options);
   const maxTextBytes = normalizeMaxTextBytes(options.maxTextBytes);
+  const fsConcurrency = normalizeFsConcurrency(options.fsConcurrency);
+  const onProgress = typeof options.onProgress === 'function' ? options.onProgress : () => {};
   const cases = [];
   const diagnostics = new Set();
 
   for (const root of normalizedRoots) {
-    const rootResult = await discoverRoot(root, { maxTextBytes });
+    const rootResult = await discoverRoot(root, { maxTextBytes, fsConcurrency, onProgress });
     rootResult.diagnostics.forEach((category) => diagnostics.add(category));
     cases.push(...rootResult.cases);
   }
@@ -322,9 +325,14 @@ export function sanitizeDiscoveryResult(discoveryResult, options = {}) {
   };
 }
 
-async function discoverRoot(root, { maxTextBytes }) {
+async function discoverRoot(root, { maxTextBytes, fsConcurrency, onProgress }) {
   const diagnostics = new Set();
-  const walked = await walkReadOnly(root.path, diagnostics);
+  onProgress({ rootId: root.id, phase: 'walk-start', completed: 0, total: null });
+  const walked = await walkReadOnly(root.path, diagnostics, {
+    concurrency: fsConcurrency,
+    onProgress,
+    rootId: root.id,
+  });
   if (!walked) return { cases: [], diagnostics };
 
   const files = walked.files;
@@ -332,11 +340,17 @@ async function discoverRoot(root, { maxTextBytes }) {
     filterByExtensions(files, TEXT_SOURCE_EXTENSIONS),
     diagnostics,
     maxTextBytes,
+    fsConcurrency,
   );
   const htmlCandidatePaths = files.filter((filePath) =>
     HTML_EXTENSIONS.has(extname(filePath).toLowerCase()) || textSourceKinds.get(filePath) === 'html',
   );
-  const manifestEntries = await readManifestEntries(files, diagnostics, maxTextBytes);
+  const manifestEntries = await readManifestEntries(
+    files,
+    diagnostics,
+    maxTextBytes,
+    fsConcurrency,
+  );
   const manifestDirectories = new Set(manifestEntries.keys());
   const candidateDirectories = new Set(manifestDirectories);
   for (const filePath of htmlCandidatePaths) {
@@ -355,7 +369,16 @@ async function discoverRoot(root, { maxTextBytes }) {
   }
 
   const cases = [];
-  for (const casePath of candidateDirectoryList) {
+  for (let caseIndex = 0; caseIndex < candidateDirectoryList.length; caseIndex += 1) {
+    const casePath = candidateDirectoryList[caseIndex];
+    if (caseIndex === 0 || caseIndex % 100 === 0) {
+      onProgress({
+        rootId: root.id,
+        phase: 'case-read',
+        completed: caseIndex,
+        total: candidateDirectoryList.length,
+      });
+    }
     const ownedCaseFiles = ownedFiles.get(casePath).sort(compareText);
     const allHtmlPaths = ownedCaseFiles
       .filter((filePath) =>
@@ -401,15 +424,34 @@ async function discoverRoot(root, { maxTextBytes }) {
     const jsonPaths = filterByExtensions(caseFiles, JSON_EXTENSIONS);
     const imagePaths = filterByExtensions(caseFiles, RASTER_IMAGE_EXTENSIONS);
 
-    const htmlEntries = await readTextEntries(htmlPaths, 'html', caseDiagnostics, maxTextBytes);
-    const cssEntries = await readTextEntries(cssPaths, 'css', caseDiagnostics, maxTextBytes);
+    const htmlEntries = await readTextEntries(
+      htmlPaths,
+      'html',
+      caseDiagnostics,
+      maxTextBytes,
+      fsConcurrency,
+    );
+    const cssEntries = await readTextEntries(
+      cssPaths,
+      'css',
+      caseDiagnostics,
+      maxTextBytes,
+      fsConcurrency,
+    );
     const javascriptEntries = await readTextEntries(
       javascriptPaths,
       'javascript',
       caseDiagnostics,
       maxTextBytes,
+      fsConcurrency,
     );
-    const jsonEntries = await readTextEntries(jsonPaths, 'json', caseDiagnostics, maxTextBytes);
+    const jsonEntries = await readTextEntries(
+      jsonPaths,
+      'json',
+      caseDiagnostics,
+      maxTextBytes,
+      fsConcurrency,
+    );
 
     const translationPaths = jsonEntries
       .filter((entry) => isTranslationJson(entry.path, entry.text))
@@ -478,22 +520,36 @@ async function discoverRoot(root, { maxTextBytes }) {
     }
   }
 
+  onProgress({
+    rootId: root.id,
+    phase: 'complete',
+    completed: candidateDirectoryList.length,
+    total: candidateDirectoryList.length,
+  });
+
   return { cases, diagnostics };
 }
 
-async function readManifestEntries(files, diagnostics, maxTextBytes) {
+async function readManifestEntries(files, diagnostics, maxTextBytes, concurrency) {
   const manifestPaths = files
     .filter((filePath) => basename(filePath).toLowerCase() === 'sheet.json')
     .sort(compareText);
   const entries = new Map();
-  for (const filePath of manifestPaths) {
-    try {
-      const fileStats = await stat(filePath);
-      if (fileStats.size > maxTextBytes) {
+  const values = await mapLimit(manifestPaths, concurrency, async (filePath) => ({
+    filePath,
+    result: await readBoundedText(filePath, maxTextBytes),
+  }));
+  for (const { filePath, result } of values) {
+    if (result.status === 'too-large') {
         diagnostics.add('compatibility:manifest-too-large');
-        continue;
-      }
-      const value = parseJsonObject(await readFile(filePath, 'utf8'));
+      continue;
+    }
+    if (result.status === 'error') {
+      diagnostics.add('compatibility:invalid-metadata');
+      continue;
+    }
+    try {
+      const value = parseJsonObject(result.text);
       if (!value || (!Object.hasOwn(value, 'html') && !Object.hasOwn(value, 'css'))) continue;
       entries.set(dirname(filePath), { path: filePath, value });
     } catch {
@@ -503,18 +559,20 @@ async function readManifestEntries(files, diagnostics, maxTextBytes) {
   return entries;
 }
 
-async function classifyTextSourceFiles(paths, diagnostics, maxTextBytes) {
+async function classifyTextSourceFiles(paths, diagnostics, maxTextBytes, concurrency) {
   const kinds = new Map();
-  for (const filePath of paths) {
-    try {
-      const fileStats = await stat(filePath);
-      if (fileStats.size > maxTextBytes) continue;
-      const text = await readFile(filePath, 'utf8');
-      const kind = classifyTextSource(text);
-      if (kind) kinds.set(filePath, kind);
-    } catch {
+  const values = await mapLimit(paths, concurrency, async (filePath) => ({
+    filePath,
+    result: await readBoundedText(filePath, maxTextBytes),
+  }));
+  for (const { filePath, result } of values) {
+    if (result.status === 'error') {
       diagnostics.add('read:unreadable:text-source');
+      continue;
     }
+    if (result.status === 'too-large') continue;
+    const kind = classifyTextSource(result.text);
+    if (kind) kinds.set(filePath, kind);
   }
   return kinds;
 }
@@ -565,7 +623,11 @@ function artifactStem(filePath) {
     .replace(/[^\p{L}\p{N}]+/gu, '');
 }
 
-async function walkReadOnly(rootPath, diagnostics) {
+async function walkReadOnly(
+  rootPath,
+  diagnostics,
+  { concurrency = DEFAULT_FS_CONCURRENCY, onProgress = () => {}, rootId = 'corpus' } = {},
+) {
   let rootStats;
   try {
     rootStats = await lstat(rootPath);
@@ -583,47 +645,47 @@ async function walkReadOnly(rootPath, diagnostics) {
   }
 
   const files = [];
-  const visitedDirectories = new Set();
-  const stack = [rootPath];
+  const visitedDirectories = new Set([normalizeComparablePath(rootPath)]);
+  const queue = [rootPath];
+  let cursor = 0;
 
-  while (stack.length > 0) {
-    const directoryPath = stack.pop();
-    let canonicalDirectory;
-    try {
-      canonicalDirectory = await realpath(directoryPath);
-    } catch {
-      diagnostics.add('directory:unreadable');
-      continue;
-    }
-    const comparableDirectory = normalizeComparablePath(canonicalDirectory);
-    if (visitedDirectories.has(comparableDirectory)) {
-      diagnostics.add('directory:cycle-skipped');
-      continue;
-    }
-    visitedDirectories.add(comparableDirectory);
+  while (cursor < queue.length) {
+    const batch = queue.slice(cursor, cursor + concurrency);
+    cursor += batch.length;
+    const results = await Promise.all(batch.map(async (directoryPath) => {
+      try {
+        const entries = await readdir(directoryPath, { withFileTypes: true });
+        entries.sort((left, right) => compareText(left.name, right.name));
+        return { directoryPath, entries };
+      } catch {
+        return { directoryPath, entries: null };
+      }
+    }));
 
-    let entries;
-    try {
-      entries = await readdir(directoryPath, { withFileTypes: true });
-    } catch {
-      diagnostics.add('directory:unreadable');
-      continue;
-    }
-    entries.sort((left, right) => compareText(left.name, right.name));
-
-    const childDirectories = [];
-    for (const entry of entries) {
-      const entryPath = resolve(directoryPath, entry.name);
-      if (entry.isSymbolicLink()) {
-        diagnostics.add('entry:symlink-skipped');
-      } else if (entry.isDirectory()) {
-        childDirectories.push(entryPath);
-      } else if (entry.isFile()) {
-        files.push(entryPath);
+    for (const { directoryPath, entries } of results) {
+      if (!entries) {
+        diagnostics.add('directory:unreadable');
+        continue;
+      }
+      for (const entry of entries) {
+        const entryPath = resolve(directoryPath, entry.name);
+        if (entry.isSymbolicLink()) {
+          diagnostics.add('entry:symlink-skipped');
+        } else if (entry.isDirectory()) {
+          const comparable = normalizeComparablePath(entryPath);
+          if (visitedDirectories.has(comparable)) {
+            diagnostics.add('directory:cycle-skipped');
+          } else {
+            visitedDirectories.add(comparable);
+            queue.push(entryPath);
+          }
+        } else if (entry.isFile()) {
+          files.push(entryPath);
+        }
       }
     }
-    for (let index = childDirectories.length - 1; index >= 0; index -= 1) {
-      stack.push(childDirectories[index]);
+    if (cursor === batch.length || cursor % 250 < concurrency) {
+      onProgress({ rootId, phase: 'walk', completed: cursor, total: queue.length });
     }
   }
 
@@ -631,18 +693,56 @@ async function walkReadOnly(rootPath, diagnostics) {
   return { files };
 }
 
-async function readTextEntries(paths, artifact, diagnostics, maxTextBytes) {
-  const entries = [];
-  for (const filePath of paths) {
-    try {
-      const fileStats = await stat(filePath);
-      if (fileStats.size > maxTextBytes) {
-        diagnostics.add(`read:too-large:${artifact}`);
-        continue;
+const boundedTextCache = new Map();
+
+async function readBoundedText(filePath, maxTextBytes) {
+  const key = `${filePath}\0${maxTextBytes}`;
+  let pending = boundedTextCache.get(key);
+  if (!pending) {
+    pending = (async () => {
+      try {
+        const fileStats = await stat(filePath);
+        if (fileStats.size > maxTextBytes) return { status: 'too-large' };
+        return { status: 'ok', text: await readFile(filePath, 'utf8') };
+      } catch {
+        return { status: 'error' };
       }
-      entries.push({ path: filePath, text: await readFile(filePath, 'utf8') });
-    } catch {
+    })();
+    boundedTextCache.set(key, pending);
+  }
+  return pending;
+}
+
+async function mapLimit(values, concurrency, mapper) {
+  const results = new Array(values.length);
+  let cursor = 0;
+  const workers = Array.from(
+    { length: Math.min(Math.max(1, concurrency), Math.max(1, values.length)) },
+    async () => {
+      while (cursor < values.length) {
+        const index = cursor;
+        cursor += 1;
+        results[index] = await mapper(values[index], index);
+      }
+    },
+  );
+  await Promise.all(workers);
+  return results;
+}
+
+async function readTextEntries(paths, artifact, diagnostics, maxTextBytes, concurrency) {
+  const entries = [];
+  const values = await mapLimit(paths, concurrency, async (filePath) => ({
+    filePath,
+    result: await readBoundedText(filePath, maxTextBytes),
+  }));
+  for (const { filePath, result } of values) {
+    if (result.status === 'too-large') {
+      diagnostics.add(`read:too-large:${artifact}`);
+    } else if (result.status === 'error') {
       diagnostics.add(`read:unreadable:${artifact}`);
+    } else {
+      entries.push({ path: filePath, text: result.text });
     }
   }
   return entries;
@@ -867,6 +967,12 @@ function normalizeComparablePath(filePath) {
 
 function normalizeComparableFileName(fileName) {
   return process.platform === 'win32' ? fileName.toLowerCase() : fileName;
+}
+
+function normalizeFsConcurrency(value) {
+  return Number.isSafeInteger(value) && value >= 1 && value <= 32
+    ? value
+    : DEFAULT_FS_CONCURRENCY;
 }
 
 function normalizeTextList(value) {
