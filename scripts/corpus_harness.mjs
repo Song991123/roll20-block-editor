@@ -20,7 +20,7 @@ import {
 } from './lib/corpus_discovery.mjs';
 
 const REPO = path.resolve(import.meta.dirname, '..');
-const HARNESS_VERSION = '4';
+const HARNESS_VERSION = '5';
 const DEFAULT_CONFIG = path.join(REPO, '.tmp', 'corpus-harness', 'config.json');
 const ALLOWED_COMMANDS = new Set(['scan', 'changed', 'full', 'select']);
 const RESULT_FILE = 'corpus-results.json';
@@ -274,6 +274,7 @@ function stableRoundtrip(fixture) {
 function safeGraphDiagnostics(fixture) {
   const allowedDifferences = new Set([
     'block-count', 'type', 'depth', 'parent', 'previous', 'next', 'childCount', 'fields',
+    'roots', 'cycles',
   ]);
   return Object.fromEntries(['html', 'css', 'i18n', 'js', 'worker'].map((key) => {
     const value = fixture?.reimport?.graphDiagnostics?.[key] ?? {};
@@ -347,6 +348,21 @@ function safeGraphDiagnostics(fixture) {
                 'readonly', 'required', 'role', 'rows', 'selected', 'size', 'src', 'step',
                 'title', 'type', 'value', 'width',
               ].includes(item)).sort()
+              : [],
+            addedAttributeNames: Array.isArray(traits?.addedAttributeNames)
+              ? traits.addedAttributeNames
+                .filter((item) => /^[a-z_:][a-z0-9:._-]*$/i.test(item) && item.length <= 64)
+                .sort()
+              : [],
+            removedAttributeNames: Array.isArray(traits?.removedAttributeNames)
+              ? traits.removedAttributeNames
+                .filter((item) => /^[a-z_:][a-z0-9:._-]*$/i.test(item) && item.length <= 64)
+                .sort()
+              : [],
+            changedAttributeValueNames: Array.isArray(traits?.changedAttributeValueNames)
+              ? traits.changedAttributeValueNames
+                .filter((item) => /^[a-z_:][a-z0-9:._-]*$/i.test(item) && item.length <= 64)
+                .sort()
               : [],
             maxLengthDelta: Number.isSafeInteger(traits?.maxLengthDelta) ? traits.maxLengthDelta : 0,
           }]),

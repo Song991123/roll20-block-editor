@@ -14,6 +14,7 @@
 import * as Blockly from 'blockly';
 import { type BlockDef, type GeneratorContext } from './types';
 import {
+  hasImportedAttributeSnapshot,
   PRESERVED_ATTRS_FIELD,
   PRESERVED_ATTRIBUTE_TARGET,
   readPreservedAttribute,
@@ -82,6 +83,17 @@ function importedNameAttr(block: Blockly.Block, name: string): string {
   return nameAttr(name);
 }
 
+function importedAttributePresence(block: Blockly.Block, name: string): {
+  imported: boolean;
+  authored: boolean;
+} {
+  const preserved = String(block.getFieldValue(PRESERVED_ATTRS_FIELD) ?? '');
+  return {
+    imported: hasImportedAttributeSnapshot(preserved),
+    authored: readPreservedAttribute(preserved, name) !== null,
+  };
+}
+
 // ---------- 10 블록 정의 ----------
 
 export const INPUT_BLOCKS: BlockDef[] = [
@@ -132,8 +144,10 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const ph = String(b.getFieldValue('PLACEHOLDER') ?? '');
       const i18n = String(b.getFieldValue('I18N') ?? '');
       const disabled = String(b.getFieldValue('DISABLED') ?? 'FALSE') === 'TRUE';
+      const typePresence = importedAttributePresence(b, 'type');
+      const typeAttr = !typePresence.imported || typePresence.authored ? ' type="text"' : '';
       return (
-        `<input type="text"${authoredClassAttr(cls)}${importedNameAttr(b, name)}${attr('value', def)}` +
+        `<input${typeAttr}${authoredClassAttr(cls)}${importedNameAttr(b, name)}${attr('value', def)}` +
         `${attr('placeholder', ph)}${attr('data-i18n', i18n)}` +
         `${disabled ? ' disabled="true"' : ''}${styleAttr(style)}>`
       );
@@ -387,9 +401,13 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const def = String(b.getFieldValue('DEFAULT') ?? '');
       const ph = String(b.getFieldValue('PLACEHOLDER') ?? '');
       const i18nPh = String(b.getFieldValue('I18N_PLACEHOLDER') ?? '');
+      const rowsPresence = importedAttributePresence(b, 'rows');
+      const rowsAttr = !rowsPresence.imported || rowsPresence.authored || rows !== 2
+        ? ` rows="${rows}"`
+        : '';
       return (
         `<textarea${authoredClassAttr(cls)}${importedNameAttr(b, name)}` +
-        ` rows="${rows}"${attr('placeholder', ph)}${attr('data-i18n-placeholder', i18nPh)}` +
+        `${rowsAttr}${attr('placeholder', ph)}${attr('data-i18n-placeholder', i18nPh)}` +
         `${styleAttr(style)}>${escapeAttr(def)}</textarea>`
       );
     },

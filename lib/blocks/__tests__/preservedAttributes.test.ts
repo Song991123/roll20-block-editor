@@ -1,4 +1,5 @@
 import {
+  hasImportedAttributeSnapshot,
   injectPreservedAttributes,
   PRESERVED_ATTRIBUTE_TARGET,
   readPreservedAttribute,
@@ -11,20 +12,57 @@ assert(
   readPreservedAttribute('[["name","plain-name"]]', 'name') === 'plain-name',
   'preserved authored name can be read by input generators',
 );
+assert(hasImportedAttributeSnapshot('[]'), 'empty imported attribute snapshot stays distinguishable');
+assert(!hasImportedAttributeSnapshot(''), 'new blocks have no imported attribute snapshot');
 
 const textInput = INPUT_BLOCKS.find((definition) => definition.type === 'r20_text_input');
 assert(textInput, 'text input block definition exists');
-function emitTextInput(fields: Record<string, string>): string {
-  const generated = textInput?.generator({
+function emitInput(type: string, fields: Record<string, string>): string {
+  const definition = INPUT_BLOCKS.find((candidate) => candidate.type === type);
+  assert(definition, `${type} block definition exists`);
+  const generated = definition?.generator({
     getFieldValue: (name: string) => fields[name] ?? '',
   } as never, {} as never);
-  if (typeof generated !== 'string') throw new Error('text input generator returned a reporter tuple');
+  if (typeof generated !== 'string') throw new Error(`${type} generator returned a reporter tuple`);
   return generated;
 }
+const emitTextInput = (fields: Record<string, string>) => emitInput('r20_text_input', fields);
 assert(
   emitTextInput({ NAME: 'plain-name', __R20_PRESERVED_ATTRS: '[["name","plain-name"]]' })
     .includes('name="plain-name"'),
   'unchanged imported plain name remains exact',
+);
+assert(
+  !emitTextInput({ NAME: 'plain', __R20_PRESERVED_ATTRS: '[["name","attr_plain"]]' })
+    .includes('type="text"'),
+  'imported text input keeps an omitted default type omitted',
+);
+assert(
+  emitTextInput({ NAME: 'plain', __R20_PRESERVED_ATTRS: '' }).includes('type="text"'),
+  'new text input still emits its explicit design default type',
+);
+assert(
+  !emitInput('r20_number_input', {
+    NAME: 'score', DEFAULT: '', __R20_PRESERVED_ATTRS: '[["name","attr_score"],["type","number"]]',
+  }).includes(' value='),
+  'imported number input does not invent a zero value',
+);
+assert(
+  !emitInput('r20_hidden_input', {
+    NAME: 'state', DEFAULT: '', __R20_PRESERVED_ATTRS: '[["name","attr_state"],["type","hidden"]]',
+  }).includes(' value='),
+  'imported hidden input does not invent a zero value',
+);
+assert(
+  !emitInput('r20_textarea', {
+    NAME: 'notes', ROWS: '2', __R20_PRESERVED_ATTRS: '[["name","attr_notes"]]',
+  }).includes(' rows='),
+  'imported textarea keeps an omitted rows attribute omitted',
+);
+assert(
+  emitInput('r20_textarea', { NAME: 'notes', ROWS: '3', __R20_PRESERVED_ATTRS: '' })
+    .includes(' rows="3"'),
+  'new textarea still emits its explicit design default rows',
 );
 assert(
   emitTextInput({ NAME: 'hp', __R20_PRESERVED_ATTRS: '[["name","attr_hp"]]' })

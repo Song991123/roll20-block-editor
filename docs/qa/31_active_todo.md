@@ -9,8 +9,8 @@ belong in tracked documents.
 Fixed Alpha order: actual modern/legacy Roll20 Preview fidelity, universal
 lossless block/layer mapping, diagnostics/export, then import-first UI. Existing
 Figma-like editing stays behind an experimental boundary and resumes for Beta.
-No numeric Alpha progress is valid until the corpus harness emits its first
-complete baseline. Gate weights live in
+Numeric Alpha progress is valid only for the latest complete Harness version.
+Gate weights live in
 `docs/operations/41_product_reset_and_short_term_goals.md`.
 
 ## P0 - Roll20 Render Truth
@@ -161,10 +161,20 @@ complete baseline. Gate weights live in
   pass for that anonymous row. Harness v4 now compares canonical Blockly
   topology instead of `getAllBlocks()` creation order: random IDs and
   independent-root order are ignored, while input slots and `next` sibling
-  order remain strict. Synthetic roundtrip coverage passes. Focused protected
-  rechecks still reject genuine field-value and block-count changes, so this
-  does not manufacture a higher pass rate. The complete v4 browser baseline,
-  further general failure fixes, and measured Alpha score remain `VERIFY`.
+  order remain strict. Synthetic roundtrip coverage passes. The complete v4
+  browser baseline finished and exposed broad generic mapping failures; it is
+  retained only as the superseded diagnosis baseline. Harness v5 now includes
+  imported-attribute origin tracking and corrected attribute-delta reporting,
+  so its complete browser baseline and current Alpha score remain `VERIFY`.
+
+- `DONE LOCAL / VERIFY BROAD`: imported controls no longer invent browser
+  defaults during their first emit. Missing number/hidden values stay missing,
+  textarea keeps the browser default without adding a `rows` attribute, and an
+  omitted text-input `type` remains omitted. Imported elements carry an empty
+  attribute snapshot distinct from gallery-created blocks, so new controls
+  keep their explicit design defaults. Synthetic modern and legacy browser
+  roundtrips preserve block graph, Preview/Edit state, and runtime cleanliness.
+  Harness v5 broad impact remains `VERIFY`.
 
 - `DONE LOCAL / VERIFY BROAD`: ordinary HTML comments now map to the existing
   hidden-note block at the document root and inside nested structure. Compact

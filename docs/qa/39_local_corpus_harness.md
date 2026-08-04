@@ -71,6 +71,11 @@ semantic normalizations already proven stable by emitted output: boundary
 whitespace for text/style/script source, browser-equivalent inline style, and
 equivalent HTML boolean-attribute values. Authored input names, translation
 keys and values, block types, hierarchy, and all other fields remain exact.
+Imported element snapshots use JSON `[]` even when no attribute was authored;
+an empty Blockly field is reserved for a newly created block. This lets the
+emitter preserve omitted browser-default attributes while gallery blocks keep
+their explicit design defaults. Attribute diagnostics compare names instead of
+array positions and never persist attribute values.
 
 L2 topology uses a canonical forest, not Blockly's block-creation array.
 Random block IDs and independent-root creation order are ignored. Named input

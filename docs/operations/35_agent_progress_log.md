@@ -1346,3 +1346,20 @@ parity.
   work; exact raw roots prevent data loss now.
 - Claim boundary: generic local lossless mapping proof. Broad corpus impact and
   actual Roll20 execution remain open.
+
+## 2026-08-04 - Imported Control Default Preservation
+
+- Completed the first full Harness v4 baseline. It is retained as a superseded
+  diagnostic baseline because a new generic control-default fix changes the
+  mapping contract; no source identity or per-source measurement was recorded.
+- Distinguished imported empty attribute snapshots from new gallery blocks.
+  Imported text, number, hidden, and textarea controls no longer gain omitted
+  `type`, `value`, or `rows` attributes during their first emit.
+- Replaced position-based preserved-attribute diagnostics with name-based
+  comparison. Reports keep only generic added, removed, and changed attribute
+  names; attribute values remain excluded.
+- Unit coverage plus synthetic modern and legacy browser roundtrips pass block
+  graph, Preview/Edit, runtime, and resource gates. Harness v5 invalidates the
+  prior cache; complete v5 corpus measurement remains open.
+- Claim boundary: generic synthetic proof only. Broad protected-corpus impact
+  is not complete until the v5 full run finishes.

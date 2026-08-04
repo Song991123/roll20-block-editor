@@ -34,7 +34,19 @@ export function serializePreservedAttributes(attrs: Record<string, string>): str
   const entries = Object.entries(attrs)
     .filter(([name]) => isPreservableAttribute(name))
     .sort(([a], [b]) => a.localeCompare(b));
-  return entries.length ? JSON.stringify(entries) : '';
+  // `[]` is intentionally distinct from the empty field used by a newly
+  // created block. Generators can therefore preserve omitted browser-default
+  // attributes on imported elements without changing gallery-created blocks.
+  return JSON.stringify(entries);
+}
+
+export function hasImportedAttributeSnapshot(raw: string): boolean {
+  if (!raw.trim()) return false;
+  try {
+    return Array.isArray(JSON.parse(raw));
+  } catch {
+    return false;
+  }
 }
 
 function parsePreservedAttributes(raw: string): Array<[string, string]> {

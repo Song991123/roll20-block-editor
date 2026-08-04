@@ -253,6 +253,20 @@ function testDefaultControlStateIsEditable(): void {
   assert(r.stats.htmlRawFallback === 0, 'default state controls stay structured');
 }
 
+function testOmittedControlDefaultsStayOmittedInBlockState(): void {
+  const html = [
+    '<input name="attr_text">',
+    '<input type="number" name="attr_number">',
+    '<input type="hidden" name="attr_hidden">',
+    '<textarea name="attr_notes"></textarea>',
+  ].join('');
+  const r = importSheet({ html });
+  assert(r.html.includes('<field name="DEFAULT"></field>'), 'missing input values stay empty');
+  assert(!r.html.includes('<field name="DEFAULT">0</field>'), 'import does not invent zero values');
+  assert(r.html.includes('<field name="ROWS">2</field>'), 'textarea uses browser default rows in block state');
+  assert(r.html.includes('<field name="__R20_PRESERVED_ATTRS">'), 'all imported elements keep origin snapshots');
+}
+
 function testSelectOptionGroupsStayEditable(): void {
   const html = [
     '<select name="attr_role">',
@@ -650,6 +664,7 @@ const tests = [
   ['stable formatted text', testFormattedDirectTextHasStableWhitespace],
   ['radio label wrapper', testRadioLabelDoesNotNestOnEmit],
   ['default control state', testDefaultControlStateIsEditable],
+  ['omitted control defaults', testOmittedControlDefaultsStayOmittedInBlockState],
   ['select option groups', testSelectOptionGroupsStayEditable],
   ['unknown attributes', testUnknownAttributesSurviveMatchedBlocks],
   ['css rule', testCssRule],

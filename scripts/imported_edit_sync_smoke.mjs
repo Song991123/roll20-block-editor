@@ -3410,6 +3410,9 @@ async function reimportCurrentEmit(page, compactWideRows = false, source = null)
       const reasons = new Set();
       const changedStandardAttributeNames = new Set();
       const attributeValueTransformations = new Set();
+      const addedAttributeNames = new Set();
+      const removedAttributeNames = new Set();
+      const changedAttributeValueNames = new Set();
       const standardAttributeNames = new Set([
         'accept', 'action', 'checked', 'cols', 'disabled', 'for', 'height', 'href',
         'max', 'maxlength', 'min', 'minlength', 'multiple', 'name', 'placeholder',
@@ -3420,9 +3423,10 @@ async function reimportCurrentEmit(page, compactWideRows = false, source = null)
         try {
           const parsed = JSON.parse(value);
           if (!Array.isArray(parsed)) return null;
-          const entries = parsed.map((entry) => [String(entry?.[0] ?? ''), String(entry?.[1] ?? '')]);
-          entries.sort(([left], [right]) => left.localeCompare(right));
-          return entries;
+          return new Map(parsed.map((entry) => [
+            String(entry?.[0] ?? '').toLowerCase(),
+            String(entry?.[1] ?? ''),
+          ]));
         } catch {
           return null;
         }
@@ -3435,24 +3439,34 @@ async function reimportCurrentEmit(page, compactWideRows = false, source = null)
           reasons: ['attribute-json'],
           changedStandardAttributeNames: [],
           attributeValueTransformations: [],
+          addedAttributeNames: [],
+          removedAttributeNames: [],
+          changedAttributeValueNames: [],
         };
       }
-      if (left.length !== right.length) reasons.add('attribute-count');
-      for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
-        if (!left[index] || !right[index]) continue;
-        const [leftName, leftValue] = left[index];
-        const [rightName, rightValue] = right[index];
-        if (leftName !== rightName) {
-          reasons.add('attribute-name');
+      const names = new Set([...left.keys(), ...right.keys()]);
+      for (const lowerName of names) {
+        if (!left.has(lowerName)) {
+          reasons.add('attribute-count');
+          addedAttributeNames.add(lowerName);
+          if (standardAttributeNames.has(lowerName)) changedStandardAttributeNames.add(lowerName);
           continue;
         }
+        if (!right.has(lowerName)) {
+          reasons.add('attribute-count');
+          removedAttributeNames.add(lowerName);
+          if (standardAttributeNames.has(lowerName)) changedStandardAttributeNames.add(lowerName);
+          continue;
+        }
+        const leftValue = left.get(lowerName) ?? '';
+        const rightValue = right.get(lowerName) ?? '';
         if (leftValue === rightValue) continue;
-        const lowerName = leftName.toLowerCase();
         if (lowerName === 'checked' || lowerName === 'selected' || lowerName === 'disabled'
           || lowerName === 'readonly' || lowerName === 'required' || lowerName === 'multiple') {
           attributeValueTransformations.add('boolean-attribute-value');
           continue;
         }
+        changedAttributeValueNames.add(lowerName);
         if (lowerName === 'style') {
           const leftElement = document.createElement('div');
           const rightElement = document.createElement('div');
@@ -3489,6 +3503,9 @@ async function reimportCurrentEmit(page, compactWideRows = false, source = null)
         reasons: [...reasons].sort(),
         changedStandardAttributeNames: [...changedStandardAttributeNames].sort(),
         attributeValueTransformations: [...attributeValueTransformations].sort(),
+        addedAttributeNames: [...addedAttributeNames].sort(),
+        removedAttributeNames: [...removedAttributeNames].sort(),
+        changedAttributeValueNames: [...changedAttributeValueNames].sort(),
       };
     }
 
@@ -3509,6 +3526,9 @@ async function reimportCurrentEmit(page, compactWideRows = false, source = null)
         preservedAttributeFailures: [],
         changedStandardAttributeNames: [],
         attributeValueTransformations: [],
+        addedAttributeNames: [],
+        removedAttributeNames: [],
+        changedAttributeValueNames: [],
         maxLengthDelta: 0,
       };
       current.occurrences += 1;
@@ -3535,6 +3555,18 @@ async function reimportCurrentEmit(page, compactWideRows = false, source = null)
           ...new Set([
             ...current.attributeValueTransformations,
             ...comparison.attributeValueTransformations,
+          ]),
+        ].sort();
+        current.addedAttributeNames = [
+          ...new Set([...current.addedAttributeNames, ...comparison.addedAttributeNames]),
+        ].sort();
+        current.removedAttributeNames = [
+          ...new Set([...current.removedAttributeNames, ...comparison.removedAttributeNames]),
+        ].sort();
+        current.changedAttributeValueNames = [
+          ...new Set([
+            ...current.changedAttributeValueNames,
+            ...comparison.changedAttributeValueNames,
           ]),
         ].sort();
       }

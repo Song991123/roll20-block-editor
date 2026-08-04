@@ -177,9 +177,7 @@ export function matchElement(node: DomNode, ctx: MatchContext): MatchedBlock | n
     const preservedAttrs = serializePreservedAttributes(node.attrs ?? {});
     return {
       ...result,
-      fields: preservedAttrs
-        ? { ...result.fields, [PRESERVED_ATTRS_FIELD]: preservedAttrs }
-        : result.fields,
+      fields: { ...result.fields, [PRESERVED_ATTRS_FIELD]: preservedAttrs },
       sourceRaw: serializeRawHtml(node),
     };
   }
@@ -270,7 +268,7 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
         fields: {
           NAME: name, CLASS: cls,
           MIN: a.min || '', MAX: a.max || '',
-          DEFAULT: a.value || '0',
+          DEFAULT: a.value || '',
           PLACEHOLDER: a.placeholder || '',
           DISABLED: 'disabled' in a ? 'TRUE' : 'FALSE',
           STYLE: a.style || '',
@@ -305,7 +303,7 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     if (inputType === 'hidden') {
       return {
         blockType: 'r20_hidden_input',
-        fields: { NAME: name, DEFAULT: a.value || '0', CLASS: cls, STYLE: a.style || '' },
+        fields: { NAME: name, DEFAULT: a.value || '', CLASS: cls, STYLE: a.style || '' },
         children: {},
       };
     }
@@ -368,7 +366,7 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   if (tag === 'textarea') {
     const name = stripAttrPrefix(a.name || '');
     const cls = normalizeAuthoredClassTokens(a.class || '');
-    const rows = a.rows || '3';
+    const rows = a.rows || '2';
     const text = firstTextContent(node);
     return {
       blockType: 'r20_textarea',
