@@ -47,8 +47,11 @@ contain private source evidence or historical test dumps.
   after CI exposed unstable character-by-character output growth. Empty
   selector-list items and internal selector line breaks now remain exact raw
   complex blocks; a protected local target passes all five workspace graphs
-  and local Preview/runtime/resource checks. A fresh complete baseline is
-  required before the 28.9% score can be updated.
+  and local Preview/runtime/resource checks. Equivalent generated class token
+  multisets also restore authored token order and whitespace without
+  overriding real class edits; an isolated protected legacy target closes its
+  five-graph and local visual/state/runtime/resource gates. A fresh complete
+  baseline is required before the 28.9% score can be updated.
 - Corpus `changed` runs now persist an ignored complete-run state and reuse only
   unchanged input rows outside classified code impact. Missing provenance,
   unknown runtime changes, or dirty runtime code trigger a safe stop/full rerun

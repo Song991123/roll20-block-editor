@@ -1415,5 +1415,12 @@ parity.
   passes, and the protected target now passes all five workspace graphs plus
   local Preview, runtime, and resource checks. No source value, path, identity,
   or screenshot was retained in tracked output.
+- The old attribute-only cluster also contained isolated `r20_col` failures
+  where generated structural classes were semantically unchanged but their
+  authored order and spacing changed. Preserved attributes now restore the
+  original class spelling only when the generated and preserved token
+  multisets match; a real token edit still wins. The isolated protected legacy
+  target now passes every workspace graph, Preview/Edit visual and state gates,
+  runtime, and resources. Project listeners returned to zero after the run.
 - Claim boundary: the 28.9% score belongs to `80029b2`. Current radio changes
   require a new complete baseline before any higher score is claimed.

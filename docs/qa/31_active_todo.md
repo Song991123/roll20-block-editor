@@ -224,6 +224,14 @@ Gate weights live in
   roundtrip plus local Preview, runtime, and resource checks. Broad corpus
   impact and L3 source normalization remain `VERIFY`.
 
+- `DONE LOCAL / VERIFY BROAD`: preserved class snapshots now restore authored
+  token order and whitespace when the generated class token multiset is
+  unchanged. Added, removed, or otherwise edited class tokens still win over
+  the stale snapshot. An isolated protected legacy target that previously
+  failed seven `r20_col` class snapshots now passes all five workspace graphs,
+  Preview/Edit pixels, form state, geometry, runtime, and resource gates. The
+  broader old class-only cluster remains `VERIFY` until a fresh baseline.
+
 - `DONE LOCAL / VERIFY BROAD`: ordinary HTML comments now map to the existing
   hidden-note block at the document root and inside nested structure. Compact
   title, button, radio-label, select, option, and inline shapes fall back to a
