@@ -45,6 +45,14 @@ function testCommentMultiLang(): void {
   assert(r.i18n.match(/>en</g)?.length === 2, 'two en entries');
 }
 
+function testCommentEmptyKey(): void {
+  const i18n = `<!-- i18n[ko] "": "empty-key value" -->`;
+  const r = importSheet({ i18n });
+  eq(r.stats.i18nKeys, 1, 'empty JSON key remains an i18n entry');
+  assert(r.i18n.includes('<field name="KEY"></field>'), 'empty KEY field preserved');
+  assert(r.i18n.includes('>empty-key value<'), 'empty-key value preserved');
+}
+
 function testCommentCustomLocales(): void {
   const i18n = [
     `<!-- i18n[fr] "title.sheet": "Fiche de personnage" -->`,
@@ -107,6 +115,7 @@ function testCommentChainEmit(): void {
 
 const tests = [
   ['comment single', testCommentSingle],
+  ['comment empty key', testCommentEmptyKey],
   ['comment multi-lang', testCommentMultiLang],
   ['comment custom locales', testCommentCustomLocales],
   ['comment escape no-accumulation', testCommentEscapeNoAccumulation],

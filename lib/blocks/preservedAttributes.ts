@@ -53,6 +53,12 @@ function parsePreservedAttributes(raw: string): Array<[string, string]> {
   }
 }
 
+export function readPreservedAttribute(raw: string, requestedName: string): string | null {
+  const normalized = requestedName.toLowerCase();
+  const entry = parsePreservedAttributes(raw).find(([name]) => name.toLowerCase() === normalized);
+  return entry?.[1] ?? null;
+}
+
 /** Remove selected CSS properties from a preserved `style` attribute. */
 export function removePreservedStyleDeclarations(
   raw: string,

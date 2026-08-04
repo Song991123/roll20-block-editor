@@ -20,7 +20,7 @@ import {
 } from './lib/corpus_discovery.mjs';
 
 const REPO = path.resolve(import.meta.dirname, '..');
-const HARNESS_VERSION = '1';
+const HARNESS_VERSION = '2';
 const DEFAULT_CONFIG = path.join(REPO, '.tmp', 'corpus-harness', 'config.json');
 const ALLOWED_COMMANDS = new Set(['scan', 'changed', 'full', 'select']);
 const RESULT_FILE = 'corpus-results.json';
@@ -162,16 +162,17 @@ async function composeRuntimeInput(caseDescriptor) {
   };
 }
 
-async function makeRows(discovery, gitSha) {
+async function makeRows(discovery, gitSha, onlyId = '') {
   const rows = [];
   for (const caseDescriptor of discovery.cases) {
-    const material = await inputMaterial(caseDescriptor);
-    const inputHash = createCombinedInputHash(material);
+    let inputHash = '';
     for (const mode of modesFor(caseDescriptor.compatibility)) {
       const anonymousId = createAnonymousCaseId({
         rootId: caseDescriptor.rootId,
         relativeKey: `${caseDescriptor.relativeKey}\0${mode}`,
       });
+      if (onlyId && anonymousId !== onlyId) continue;
+      if (!inputHash) inputHash = createCombinedInputHash(await inputMaterial(caseDescriptor));
       rows.push({
         anonymousId,
         mode,
@@ -252,9 +253,95 @@ function stableRoundtrip(fixture) {
     stable?.html
     && stable?.css
     && stable?.i18n
+    && stable?.js
+    && stable?.worker
     && stable?.blockCount
     && stable?.graph,
   );
+}
+
+function safeGraphDiagnostics(fixture) {
+  const allowedDifferences = new Set([
+    'block-count', 'type', 'depth', 'parent', 'previous', 'next', 'childCount', 'fields',
+  ]);
+  return Object.fromEntries(['html', 'css', 'i18n', 'js', 'worker'].map((key) => {
+    const value = fixture?.reimport?.graphDiagnostics?.[key] ?? {};
+    return [key, {
+      pass: value.pass === true,
+      beforeBlocks: Number.isSafeInteger(value.beforeBlocks) ? value.beforeBlocks : 0,
+      afterBlocks: Number.isSafeInteger(value.afterBlocks) ? value.afterBlocks : 0,
+      firstDifferenceIndex: Number.isSafeInteger(value.firstDifferenceIndex)
+        ? value.firstDifferenceIndex
+        : null,
+      differences: Array.isArray(value.differences)
+        ? value.differences.filter((item) => allowedDifferences.has(item)).sort()
+        : [],
+      changedFieldNames: Array.isArray(value.changedFieldNames)
+        ? value.changedFieldNames
+          .filter((item) => typeof item === 'string' && item.length > 0 && item.length <= 64)
+          .sort()
+        : [],
+      normalizations: Array.isArray(value.normalizations)
+        ? value.normalizations.filter((item) => item === 'boundary-whitespace')
+        : [],
+      fieldSemanticFailures: Array.isArray(value.fieldSemanticFailures)
+        ? value.fieldSemanticFailures.filter((item) => [
+          'field-count',
+          'field-missing',
+          'field-not-normalizable',
+          'field-kind',
+          'field-options',
+          'field-value',
+        ].includes(item)).sort()
+        : [],
+      fieldDifferenceTraits: Object.fromEntries(
+        Object.entries(value.fieldDifferenceTraits ?? {})
+          .filter(([name]) => name.length > 0 && name.length <= 64)
+          .map(([name, traits]) => [name, {
+            occurrences: Number.isSafeInteger(traits?.occurrences) ? traits.occurrences : 0,
+            valueExact: traits?.valueExact === true,
+            valueTrimmed: traits?.valueTrimmed === true,
+            lineEndingNormalized: traits?.lineEndingNormalized === true,
+            whitespaceNormalized: traits?.whitespaceNormalized === true,
+            kindEqual: traits?.kindEqual === true,
+            optionsEqual: traits?.optionsEqual === true,
+            preservedAttributesSemantic: traits?.preservedAttributesSemantic === true,
+            preservedAttributeFailures: Array.isArray(traits?.preservedAttributeFailures)
+              ? traits.preservedAttributeFailures.filter((item) => [
+                'attribute-json',
+                'attribute-count',
+                'attribute-name',
+                'attribute-style',
+                'attribute-class',
+                'attribute-data',
+                'attribute-aria',
+                'attribute-name-value',
+                'attribute-other',
+              ].includes(item)).sort()
+              : [],
+            attributeValueTransformations: Array.isArray(traits?.attributeValueTransformations)
+              ? traits.attributeValueTransformations.filter((item) => [
+                'boolean-attribute-value',
+                'name-trim',
+                'name-add-attr-prefix',
+                'name-remove-attr-prefix',
+                'name-remove-sheet-prefix',
+                'name-other',
+              ].includes(item)).sort()
+              : [],
+            changedStandardAttributeNames: Array.isArray(traits?.changedStandardAttributeNames)
+              ? traits.changedStandardAttributeNames.filter((item) => [
+                'accept', 'action', 'checked', 'cols', 'disabled', 'for', 'height', 'href',
+                'max', 'maxlength', 'min', 'minlength', 'multiple', 'name', 'placeholder',
+                'readonly', 'required', 'role', 'rows', 'selected', 'size', 'src', 'step',
+                'title', 'type', 'value', 'width',
+              ].includes(item)).sort()
+              : [],
+            maxLengthDelta: Number.isSafeInteger(traits?.maxLengthDelta) ? traits.maxLengthDelta : 0,
+          }]),
+      ),
+    }];
+  }));
 }
 
 function genericDiagnostics(row, fixture, child) {
@@ -265,6 +352,18 @@ function genericDiagnostics(row, fixture, child) {
     values.push('runtime');
   }
   if (!fixture?.localPreviewPass) values.push(row.mode === 'legacy' ? 'legacy-transform' : 'runtime');
+  const stable = fixture?.reimport?.stable;
+  const graph = fixture?.reimport?.graphByWorkspace;
+  if (stable && stable.html !== true) values.push('html-structure');
+  if (stable && stable.css !== true) values.push('css-parser');
+  if (stable && stable.i18n !== true) values.push('translation');
+  if (graph) {
+    if (graph.html !== true) values.push('html-structure');
+    if (graph.css !== true) values.push('css-parser');
+    if (graph.i18n !== true) values.push('translation');
+    if (graph.worker !== true) values.push('worker');
+    if (graph.js !== true) values.push('runtime');
+  }
   if (child.code !== 0 && !fixture) values.push('runtime');
   return [...new Set(values)].sort();
 }
@@ -345,15 +444,39 @@ async function executeRow(config, row, port) {
       mode: row.mode,
       result,
       checks: {
+        mappingAccounted: mapping.htmlAccounted === true && mapping.cssAccounted === true,
+        semanticRoundtrip: stableRoundtrip(fixture),
+        emitStable: {
+          html: fixture?.reimport?.stable?.html === true,
+          css: fixture?.reimport?.stable?.css === true,
+          i18n: fixture?.reimport?.stable?.i18n === true,
+          i18nRaw: fixture?.reimport?.stable?.i18nRaw === true,
+          js: fixture?.reimport?.stable?.js === true,
+          worker: fixture?.reimport?.stable?.worker === true,
+          blockCount: fixture?.reimport?.stable?.blockCount === true,
+          graph: fixture?.reimport?.stable?.graph === true,
+        },
+        graphByWorkspace: Object.fromEntries(
+          ['html', 'css', 'i18n', 'js', 'worker'].map((key) => [
+            key,
+            fixture?.reimport?.graphByWorkspace?.[key] === true,
+          ]),
+        ),
+        graphDiagnostics: safeGraphDiagnostics(fixture),
         localPreview: fixture?.localPreviewPass === true,
         previewEditVisual: fixture?.sheetVisualSync?.pass === true,
         previewEditFormState: fixture?.formStateDiff?.pass === true,
         previewEditGeometry: fixture?.rootGeometryDiff?.pass === true,
         runtimeClean:
           (fixture?.consoleErrors?.length ?? 0) === 0
-          && (fixture?.pageErrors?.length ?? 0) === 0
-          && (fixture?.resourceIssueCount ?? 0) === 0,
+          && (fixture?.pageErrors?.length ?? 0) === 0,
+        resourceClean: (fixture?.resourceIssueCount ?? 0) === 0,
         normalizedSource: fixture?.reimport?.sourceComparison?.pass === true,
+        normalizedSourceByArtifact: {
+          html: fixture?.reimport?.sourceComparison?.html === true,
+          css: fixture?.reimport?.sourceComparison?.css === true,
+          i18n: fixture?.reimport?.sourceComparison?.i18n === true,
+        },
         childExit: child.code,
       },
     };
@@ -371,12 +494,28 @@ async function executeRow(config, row, port) {
       mode: row.mode,
       result,
       checks: {
+        mappingAccounted: false,
+        semanticRoundtrip: false,
+        emitStable: {
+          html: false,
+          css: false,
+          i18n: false,
+          i18nRaw: false,
+          js: false,
+          worker: false,
+          blockCount: false,
+          graph: false,
+        },
+        graphByWorkspace: { html: false, css: false, i18n: false, js: false, worker: false },
+        graphDiagnostics: safeGraphDiagnostics(null),
         localPreview: false,
         previewEditVisual: false,
         previewEditFormState: false,
         previewEditGeometry: false,
         runtimeClean: false,
+        resourceClean: false,
         normalizedSource: false,
+        normalizedSourceByArtifact: { html: false, css: false, i18n: false },
         childExit: null,
       },
     };
@@ -408,6 +547,7 @@ function aggregate(rows, envelopes, { baselineComplete }) {
   const count = (predicate) => results.filter(predicate).length;
   const localPreviewPassed = envelopes.filter((entry) => entry.checks?.localPreview).length;
   const runtimeClean = envelopes.filter((entry) => entry.checks?.runtimeClean).length;
+  const resourceClean = envelopes.filter((entry) => entry.checks?.resourceClean).length;
   const l2Passed = count((entry) => entry.levels.l2);
   const l3Passed = count((entry) => entry.levels.l3);
   const score = baselineComplete && total > 0
@@ -431,6 +571,7 @@ function aggregate(rows, envelopes, { baselineComplete }) {
     },
     localPreviewPassed,
     runtimeClean,
+    resourceClean,
     unexplainedDrops: results.reduce((sum, entry) => sum + entry.mapping.unexplainedDrops, 0),
     diagnostics: Object.fromEntries(
       [...new Set(results.flatMap((entry) => entry.diagnostics))]
@@ -527,14 +668,14 @@ async function runSelect(config) {
   return report;
 }
 
-async function executeCommand(command, configPath, { force = false } = {}) {
+async function executeCommand(command, configPath, { force = false, onlyId = '' } = {}) {
   const config = await loadConfig(configPath);
   if (command === 'select') return runSelect(config);
   const discovery = await discoverCorpusCases(config.roots);
   if (discovery.diagnostics.some((category) => category.startsWith('root:'))) {
     throw new Error('one or more configured corpus roots are unavailable or unsafe');
   }
-  const rows = await makeRows(discovery, currentGitSha());
+  const rows = await makeRows(discovery, currentGitSha(), onlyId);
   if (rows.length === 0) throw new Error('corpus discovery found no HTML cases');
   await writeInventory(config, rows);
   if (command === 'scan') return runScan(config, rows);
@@ -579,12 +720,15 @@ async function main() {
   }
   const command = args[0];
   if (!ALLOWED_COMMANDS.has(command)) {
-    console.error('usage: node scripts/corpus_harness.mjs scan|changed|full|select [--config <ignored-path>] [--force]');
+    console.error('usage: node scripts/corpus_harness.mjs scan|changed|full|select [--config <ignored-path>] [--only <anonymous-id>] [--force]');
     process.exitCode = 2;
     return;
   }
   const configPath = path.resolve(argOf(args, '--config', DEFAULT_CONFIG));
-  const result = await executeCommand(command, configPath, { force: args.includes('--force') });
+  const result = await executeCommand(command, configPath, {
+    force: args.includes('--force'),
+    onlyId: argOf(args, '--only', ''),
+  });
   if (command === 'select') {
     console.log(JSON.stringify(result, null, 2));
     return;

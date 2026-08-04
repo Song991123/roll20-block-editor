@@ -155,7 +155,10 @@ complete baseline. Gate weights live in
   roots, emits anonymous mode rows, caches by input/code/mode, isolates every
   browser case, clusters generic failures, and selects feature-cover actual
   representatives. Synthetic modern/legacy full and cache-hit runs pass.
-  Protected discovery is current; the complete browser baseline, general
+  Protected discovery is current. A focused protected regression now passes
+  L2 after generic empty-translation-key and authored-input-name preservation
+  fixes; Preview/Edit pixels, form state, geometry, and console/page gates also
+  pass for that anonymous row. The complete browser baseline, further general
   failure fixes, and measured Alpha score remain `VERIFY`.
 
 - `DONE LOCAL / VERIFY BROAD`: ordinary HTML comments now map to the existing

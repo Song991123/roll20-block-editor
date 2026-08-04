@@ -61,6 +61,17 @@ stop later cases.
 | L3 | Original source and first emit match under documented normalization. |
 | L4 | Representative actual Roll20 visual verification. Local Harness never grants L4. |
 
+`runtimeClean` means zero browser console and page errors. External image/font
+load warnings remain visible as `resourceWarnings`, `resourceClean`, and the
+`asset` diagnostic, but do not turn an otherwise valid local L2 roundtrip into
+a crash. Asset fidelity is closed only by the separate actual Roll20 gate.
+
+L2 field comparison keeps exact values by default. It accepts only bounded
+semantic normalizations already proven stable by emitted output: boundary
+whitespace for text/style/script source, browser-equivalent inline style, and
+equivalent HTML boolean-attribute values. Authored input names, translation
+keys and values, block types, hierarchy, and all other fields remain exact.
+
 Preview/Edit equality is a separate local check inside the cache envelope. It
 uses the same persistent iframe in both modes and checks pixels, form state,
 root geometry, console errors, page errors, and resource warnings.

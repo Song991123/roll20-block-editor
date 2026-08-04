@@ -105,12 +105,7 @@ function sanitizeKey(raw: string): string {
 
 /** JSON 문자열 escape — locale value emit 용. */
 function jsonEscape(value: string): string {
-  return String(value ?? '')
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"')
-    .replace(/\n/g, '\\n')
-    .replace(/\r/g, '\\r')
-    .replace(/\t/g, '\\t');
+  return JSON.stringify(String(value ?? '')).slice(1, -1);
 }
 
 // ---------- 11 블록 정의 ----------
@@ -383,9 +378,8 @@ export const I18N_BLOCKS: BlockDef[] = [
     generator: (block) => {
       const b = block as Blockly.Block;
       const lang = pickLanguage(String(b.getFieldValue('LANG') ?? ''), 'en');
-      const key = sanitizeKey(String(b.getFieldValue('KEY') ?? ''));
+      const key = String(b.getFieldValue('KEY') ?? '');
       const value = String(b.getFieldValue('VALUE') ?? '');
-      if (!key) return '<!-- i18n: empty key -->';
       return `<!-- i18n[${lang}] "${jsonEscape(key)}": "${jsonEscape(value)}" -->`;
     },
   },

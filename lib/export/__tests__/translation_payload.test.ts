@@ -14,14 +14,17 @@ assert.deepEqual(JSON.parse(normalizeTranslationForRoll20('{"name":"Name","neste
 });
 
 const comments = [
+  '<!-- i18n[ko] "": "empty-key value" -->',
   '<!-- i18n[ko] "name-u": "이름" -->',
   '<!-- i18n[ko] "quote": "그가 \\"안녕\\"이라고 말했다" -->',
 ].join('\n');
 assert.deepEqual(parseTranslationMap(comments), {
+  '': 'empty-key value',
   'name-u': '이름',
   quote: '그가 "안녕"이라고 말했다',
 });
 assert.deepEqual(JSON.parse(normalizeTranslationForRoll20(comments)), {
+  '': 'empty-key value',
   'name-u': '이름',
   quote: '그가 "안녕"이라고 말했다',
 });

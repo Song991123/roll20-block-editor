@@ -34,6 +34,23 @@ or source-derived measurement here.
   baseline remains open. No Alpha percentage is valid yet, and local success
   cannot grant actual Roll20 L4.
 
+## 2026-08-04 - Corpus L2 Preservation Fixes
+
+- Fixed a real translation roundtrip loss: an empty JSON key now remains an
+  editable locale block and survives import, emit, reimport, and Roll20 export.
+- Imported input controls now retain their authored `name` attribute when the
+  visible NAME field is unchanged. A user edit still produces the normal
+  Roll20 `attr_` form, so new-block behavior remains compatible.
+- L2 now checks stable HTML, CSS, translation, Page JS, Worker source, block
+  counts, and all five workspace graphs. Only bounded semantic normalization
+  is accepted; changed attribute names or values remain failures.
+- One protected anonymous case now passes L2 plus Preview/Edit pixels, form
+  state, geometry, and zero console/page errors. External asset failures stay
+  visible as resource warnings instead of being mislabeled as a runtime crash.
+- Claim boundary: this is a focused protected regression, not the complete
+  baseline. Alpha progress remains withheld until every discovered row has a
+  result under one committed Git SHA.
+
 ## 2026-08-04 - Custom Roll Chat Actions
 
 - Preserved Roll20 custom-roll action fields such as `[label](~action)` as

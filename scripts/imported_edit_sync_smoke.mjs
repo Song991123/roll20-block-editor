@@ -503,7 +503,7 @@ async function runCanonicalIframeEditSync(page) {
     { timeout: 30000 },
   );
 
-  const target = await frame.locator('[data-r20-block-id]').evaluateAll((elements) => {
+  const target = await frame.locator('[data-r20-block-id]').evaluateAll((_elements) => {
     const doc = document;
     const structuralTags = new Set([
       'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th', 'colgroup', 'col', 'option',
@@ -3157,8 +3157,14 @@ async function reimportCurrentEmit(page, compactWideRows = false, source = null)
     const css1 = canonicalCss(e1.css);
     const css2 = canonicalCss(e2.css);
     const afterGraphs = captureWorkspaceGraphs();
+    const graphDiagnostics = Object.fromEntries(
+      Object.keys(beforeGraphs).map((key) => [
+        key,
+        compareWorkspaceGraph(key, beforeGraphs[key], afterGraphs[key]),
+      ]),
+    );
     const graphByWorkspace = Object.fromEntries(
-      Object.keys(beforeGraphs).map((key) => [key, beforeGraphs[key] === afterGraphs[key]]),
+      Object.entries(graphDiagnostics).map(([key, value]) => [key, value.pass]),
     );
     const sourceComparison = source
       ? {
@@ -3179,11 +3185,15 @@ async function reimportCurrentEmit(page, compactWideRows = false, source = null)
         htmlRawWithIds: e1.html === e2.html,
         css: css1 === css2,
         cssRaw: e1.css === e2.css,
-        i18n: e1.i18n === e2.i18n,
+        i18n: canonicalI18n(e1.i18n) === canonicalI18n(e2.i18n),
+        i18nRaw: e1.i18n === e2.i18n,
+        js: e1.js === e2.js,
+        worker: e1.worker === e2.worker,
         blockCount: r2.blockCount > 0,
         graph: Object.values(graphByWorkspace).every(Boolean),
       },
       graphByWorkspace,
+      graphDiagnostics,
       sourceComparison,
       firstDiff: {
         html: n1 === n2 ? null : diffSnippet(n1, n2),
@@ -3283,8 +3293,262 @@ async function reimportCurrentEmit(page, compactWideRows = false, source = null)
             .map((field) => ({ ...field }))
             .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))),
         }));
-        return [key, JSON.stringify(normalized)];
+        return [key, normalized];
       }));
+    }
+
+    function compareWorkspaceGraph(key, before, after) {
+      if (key === 'i18n') {
+        const normalizeI18n = (nodes) => nodes
+          .map((node) => ({ type: node.type, fields: node.fields }))
+          .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+        const left = normalizeI18n(before);
+        const right = normalizeI18n(after);
+        return compareGraphArrays(left, right, ['type', 'fields'], key);
+      }
+      return compareGraphArrays(
+        before,
+        after,
+        ['type', 'depth', 'parent', 'previous', 'next', 'childCount', 'fields'],
+        key,
+      );
+    }
+
+    function compareGraphArrays(before, after, fields, workspaceKey) {
+      const differences = new Set();
+      const changedFieldNames = new Set();
+      const normalizations = new Set();
+      const fieldSemanticFailures = new Set();
+      const fieldDifferenceTraits = {};
+      const length = Math.max(before.length, after.length);
+      let firstDifferenceIndex = null;
+      if (before.length !== after.length) differences.add('block-count');
+      for (let index = 0; index < length; index += 1) {
+        const left = before[index];
+        const right = after[index];
+        if (!left || !right) {
+          if (firstDifferenceIndex == null) firstDifferenceIndex = index;
+          continue;
+        }
+        for (const field of fields) {
+          if (JSON.stringify(left[field]) === JSON.stringify(right[field])) continue;
+          if (field === 'fields') {
+            const beforeByName = new Map((left.fields || []).map((item) => [item.name, item]));
+            const afterByName = new Map((right.fields || []).map((item) => [item.name, item]));
+            for (const name of new Set([...beforeByName.keys(), ...afterByName.keys()])) {
+              const beforeField = beforeByName.get(name);
+              const afterField = afterByName.get(name);
+              if (JSON.stringify(beforeField) === JSON.stringify(afterField)) continue;
+              changedFieldNames.add(name);
+              recordFieldDifference(fieldDifferenceTraits, name, beforeField, afterField);
+            }
+            const semanticFields = compareFieldArraysSemantically(
+              workspaceKey,
+              left.fields,
+              right.fields,
+            );
+            if (semanticFields.pass) {
+              normalizations.add('boundary-whitespace');
+              continue;
+            }
+            for (const reason of semanticFields.reasons) fieldSemanticFailures.add(reason);
+          }
+          differences.add(field);
+          if (firstDifferenceIndex == null) firstDifferenceIndex = index;
+        }
+      }
+      return {
+        pass: differences.size === 0,
+        beforeBlocks: before.length,
+        afterBlocks: after.length,
+        firstDifferenceIndex,
+        differences: [...differences].sort(),
+        changedFieldNames: [...changedFieldNames].sort(),
+        normalizations: [...normalizations].sort(),
+        fieldSemanticFailures: [...fieldSemanticFailures].sort(),
+        fieldDifferenceTraits,
+      };
+    }
+
+    function compareFieldArraysSemantically(workspaceKey, before = [], after = []) {
+      const allowed = workspaceKey === 'html'
+        ? new Set(['STYLE', 'TEXT', '__R20_PRESERVED_ATTRS'])
+        : workspaceKey === 'worker' || workspaceKey === 'js'
+          ? new Set(['JS'])
+          : new Set();
+      const reasons = new Set();
+      if (before.length !== after.length) reasons.add('field-count');
+      const afterByName = new Map(after.map((field) => [field.name, field]));
+      for (const beforeField of before) {
+        const afterField = afterByName.get(beforeField.name);
+        if (!afterField) {
+          reasons.add('field-missing');
+          continue;
+        }
+        if (JSON.stringify(beforeField) === JSON.stringify(afterField)) continue;
+        if (!allowed.has(beforeField.name)) reasons.add('field-not-normalizable');
+        if (beforeField.kind !== afterField.kind) reasons.add('field-kind');
+        if (JSON.stringify(beforeField.options ?? null) !== JSON.stringify(afterField.options ?? null)) {
+          reasons.add('field-options');
+        }
+        if (!fieldValueSemanticallyEqual(
+          beforeField.name,
+          beforeField.value,
+          afterField.value,
+        )) {
+          reasons.add('field-value');
+        }
+      }
+      return { pass: reasons.size === 0, reasons: [...reasons] };
+    }
+
+    function fieldValueSemanticallyEqual(name, before, after) {
+      const beforeValue = String(before ?? '');
+      const afterValue = String(after ?? '');
+      if (beforeValue === afterValue) return true;
+      if (name === '__R20_PRESERVED_ATTRS') {
+        return comparePreservedAttributes(beforeValue, afterValue).pass;
+      }
+      return beforeValue.trim() === afterValue.trim();
+    }
+
+    function comparePreservedAttributes(before, after) {
+      const reasons = new Set();
+      const changedStandardAttributeNames = new Set();
+      const attributeValueTransformations = new Set();
+      const standardAttributeNames = new Set([
+        'accept', 'action', 'checked', 'cols', 'disabled', 'for', 'height', 'href',
+        'max', 'maxlength', 'min', 'minlength', 'multiple', 'name', 'placeholder',
+        'readonly', 'required', 'role', 'rows', 'selected', 'size', 'src', 'step',
+        'title', 'type', 'value', 'width',
+      ]);
+      const parse = (value) => {
+        try {
+          const parsed = JSON.parse(value);
+          if (!Array.isArray(parsed)) return null;
+          const entries = parsed.map((entry) => [String(entry?.[0] ?? ''), String(entry?.[1] ?? '')]);
+          entries.sort(([left], [right]) => left.localeCompare(right));
+          return entries;
+        } catch {
+          return null;
+        }
+      };
+      const left = parse(before);
+      const right = parse(after);
+      if (!left || !right) {
+        return {
+          pass: false,
+          reasons: ['attribute-json'],
+          changedStandardAttributeNames: [],
+          attributeValueTransformations: [],
+        };
+      }
+      if (left.length !== right.length) reasons.add('attribute-count');
+      for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
+        if (!left[index] || !right[index]) continue;
+        const [leftName, leftValue] = left[index];
+        const [rightName, rightValue] = right[index];
+        if (leftName !== rightName) {
+          reasons.add('attribute-name');
+          continue;
+        }
+        if (leftValue === rightValue) continue;
+        const lowerName = leftName.toLowerCase();
+        if (lowerName === 'checked' || lowerName === 'selected' || lowerName === 'disabled'
+          || lowerName === 'readonly' || lowerName === 'required' || lowerName === 'multiple') {
+          attributeValueTransformations.add('boolean-attribute-value');
+          continue;
+        }
+        if (lowerName === 'style') {
+          const leftElement = document.createElement('div');
+          const rightElement = document.createElement('div');
+          leftElement.setAttribute('style', leftValue);
+          rightElement.setAttribute('style', rightValue);
+          if (leftElement.style.cssText !== rightElement.style.cssText) reasons.add('attribute-style');
+        } else if (lowerName === 'class') {
+          reasons.add('attribute-class');
+        } else if (lowerName.startsWith('data-')) {
+          reasons.add('attribute-data');
+        } else if (lowerName.startsWith('aria-')) {
+          reasons.add('attribute-aria');
+        } else if (lowerName === 'name') {
+          reasons.add('attribute-name-value');
+          changedStandardAttributeNames.add(lowerName);
+          if (leftValue.trim() === rightValue.trim()) {
+            attributeValueTransformations.add('name-trim');
+          } else if (`attr_${leftValue}` === rightValue) {
+            attributeValueTransformations.add('name-add-attr-prefix');
+          } else if (leftValue === `attr_${rightValue}`) {
+            attributeValueTransformations.add('name-remove-attr-prefix');
+          } else if (leftValue.replace(/^sheet-/, '') === rightValue) {
+            attributeValueTransformations.add('name-remove-sheet-prefix');
+          } else {
+            attributeValueTransformations.add('name-other');
+          }
+        } else {
+          reasons.add('attribute-other');
+          if (standardAttributeNames.has(lowerName)) changedStandardAttributeNames.add(lowerName);
+        }
+      }
+      return {
+        pass: reasons.size === 0,
+        reasons: [...reasons].sort(),
+        changedStandardAttributeNames: [...changedStandardAttributeNames].sort(),
+        attributeValueTransformations: [...attributeValueTransformations].sort(),
+      };
+    }
+
+    function recordFieldDifference(target, name, beforeField, afterField) {
+      const beforeValue = String(beforeField?.value ?? '');
+      const afterValue = String(afterField?.value ?? '');
+      const normalizeLines = (value) => value.replace(/\r\n?/g, '\n');
+      const normalizeWhitespace = (value) => normalizeLines(value).replace(/\s+/g, ' ').trim();
+      const current = target[name] || {
+        occurrences: 0,
+        valueExact: true,
+        valueTrimmed: true,
+        lineEndingNormalized: true,
+        whitespaceNormalized: true,
+        kindEqual: true,
+        optionsEqual: true,
+        preservedAttributesSemantic: true,
+        preservedAttributeFailures: [],
+        changedStandardAttributeNames: [],
+        attributeValueTransformations: [],
+        maxLengthDelta: 0,
+      };
+      current.occurrences += 1;
+      current.valueExact &&= beforeValue === afterValue;
+      current.valueTrimmed &&= beforeValue.trim() === afterValue.trim();
+      current.lineEndingNormalized &&= normalizeLines(beforeValue) === normalizeLines(afterValue);
+      current.whitespaceNormalized &&= normalizeWhitespace(beforeValue) === normalizeWhitespace(afterValue);
+      current.kindEqual &&= beforeField?.kind === afterField?.kind;
+      current.optionsEqual &&= JSON.stringify(beforeField?.options ?? null)
+        === JSON.stringify(afterField?.options ?? null);
+      if (name === '__R20_PRESERVED_ATTRS') {
+        const comparison = comparePreservedAttributes(beforeValue, afterValue);
+        current.preservedAttributesSemantic &&= comparison.pass;
+        current.preservedAttributeFailures = [
+          ...new Set([...current.preservedAttributeFailures, ...comparison.reasons]),
+        ].sort();
+        current.changedStandardAttributeNames = [
+          ...new Set([
+            ...current.changedStandardAttributeNames,
+            ...comparison.changedStandardAttributeNames,
+          ]),
+        ].sort();
+        current.attributeValueTransformations = [
+          ...new Set([
+            ...current.attributeValueTransformations,
+            ...comparison.attributeValueTransformations,
+          ]),
+        ].sort();
+      }
+      current.maxLengthDelta = Math.max(
+        current.maxLengthDelta,
+        Math.abs(beforeValue.length - afterValue.length),
+      );
+      target[name] = current;
     }
 
     function diffSnippet(a, b) {
@@ -3342,6 +3606,8 @@ function isStableReimport(reimport) {
     reimport?.stable?.html &&
     reimport?.stable?.css &&
     reimport?.stable?.i18n &&
+    reimport?.stable?.js &&
+    reimport?.stable?.worker &&
     reimport?.stable?.blockCount &&
     reimport?.stable?.graph,
   );

@@ -13,7 +13,11 @@
 
 import * as Blockly from 'blockly';
 import { type BlockDef, type GeneratorContext } from './types';
-import { PRESERVED_ATTRIBUTE_TARGET } from './preservedAttributes';
+import {
+  PRESERVED_ATTRS_FIELD,
+  PRESERVED_ATTRIBUTE_TARGET,
+  readPreservedAttribute,
+} from './preservedAttributes';
 import { styleAttr } from './style_field';
 import { normalizeAuthoredClassTokens } from '@/lib/utils/classTokens';
 
@@ -69,6 +73,15 @@ function nameAttr(name: string): string {
   return ` name="attr_${escapeAttr(v)}"`;
 }
 
+function importedNameAttr(block: Blockly.Block, name: string): string {
+  const preserved = String(block.getFieldValue(PRESERVED_ATTRS_FIELD) ?? '');
+  const authoredName = readPreservedAttribute(preserved, 'name');
+  if (authoredName !== null && authoredName.replace(/^attr_/, '') === name) {
+    return ` name="${escapeAttr(authoredName)}"`;
+  }
+  return nameAttr(name);
+}
+
 // ---------- 10 블록 정의 ----------
 
 export const INPUT_BLOCKS: BlockDef[] = [
@@ -120,7 +133,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const i18n = String(b.getFieldValue('I18N') ?? '');
       const disabled = String(b.getFieldValue('DISABLED') ?? 'FALSE') === 'TRUE';
       return (
-        `<input type="text"${authoredClassAttr(cls)}${nameAttr(name)}${attr('value', def)}` +
+        `<input type="text"${authoredClassAttr(cls)}${importedNameAttr(b, name)}${attr('value', def)}` +
         `${attr('placeholder', ph)}${attr('data-i18n', i18n)}` +
         `${disabled ? ' disabled="true"' : ''}${styleAttr(style)}>`
       );
@@ -178,7 +191,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const ph = String(b.getFieldValue('PLACEHOLDER') ?? '');
       const disabled = String(b.getFieldValue('DISABLED') ?? 'FALSE') === 'TRUE';
       return (
-        `<input type="number"${authoredClassAttr(cls)}${nameAttr(name)}` +
+        `<input type="number"${authoredClassAttr(cls)}${importedNameAttr(b, name)}` +
         `${attr('min', min)}${attr('max', max)}${attr('value', def)}` +
         `${attr('placeholder', ph)}${disabled ? ' disabled="true"' : ''}${styleAttr(style)}>`
       );
@@ -219,7 +232,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const val = String(b.getFieldValue('VALUE') ?? '');
       const checked = String(b.getFieldValue('CHECKED') ?? 'FALSE') === 'TRUE';
       const checkedAttr = checked ? ' checked="checked"' : '';
-      return `<input type="checkbox"${authoredClassAttr(cls)}${nameAttr(name)}${attr('value', val)}${checkedAttr}${styleAttr(style)}>`;
+      return `<input type="checkbox"${authoredClassAttr(cls)}${importedNameAttr(b, name)}${attr('value', val)}${checkedAttr}${styleAttr(style)}>`;
     },
   },
 
@@ -249,7 +262,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const name = String(b.getFieldValue('NAME') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const options = ctx.statementToCode(block, 'OPTIONS');
-      const head = `<select${authoredClassAttr(cls)}${nameAttr(name)}${styleAttr(style)}>`;
+      const head = `<select${authoredClassAttr(cls)}${importedNameAttr(b, name)}${styleAttr(style)}>`;
       if (!options || !options.trim()) return `${head}</select>`;
       return `${head}\n${ctx.indent(options)}\n</select>`;
     },
@@ -375,7 +388,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const ph = String(b.getFieldValue('PLACEHOLDER') ?? '');
       const i18nPh = String(b.getFieldValue('I18N_PLACEHOLDER') ?? '');
       return (
-        `<textarea${authoredClassAttr(cls)}${nameAttr(name)}` +
+        `<textarea${authoredClassAttr(cls)}${importedNameAttr(b, name)}` +
         ` rows="${rows}"${attr('placeholder', ph)}${attr('data-i18n-placeholder', i18nPh)}` +
         `${styleAttr(style)}>${escapeAttr(def)}</textarea>`
       );
@@ -419,7 +432,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const label = String(b.getFieldValue('LABEL') ?? '');
       const checked = String(b.getFieldValue('CHECKED') ?? 'FALSE') === 'TRUE';
       return (
-        `<label><input ${PRESERVED_ATTRIBUTE_TARGET} type="radio"${authoredClassAttr(cls)}${nameAttr(name)}` +
+        `<label><input ${PRESERVED_ATTRIBUTE_TARGET} type="radio"${authoredClassAttr(cls)}${importedNameAttr(b, name)}` +
         `${attr('value', value)}${checked ? ' checked="checked"' : ''}${styleAttr(style)}>` +
         `${escapeAttr(label)}</label>`
       );
@@ -455,7 +468,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const name = String(b.getFieldValue('NAME') ?? '');
       const def = String(b.getFieldValue('DEFAULT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
-      return `<input type="hidden"${authoredClassAttr(cls)}${nameAttr(name)}${attr('value', def)}${styleAttr(style)}>`;
+      return `<input type="hidden"${authoredClassAttr(cls)}${importedNameAttr(b, name)}${attr('value', def)}${styleAttr(style)}>`;
     },
   },
 
@@ -488,7 +501,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const name = String(b.getFieldValue('NAME') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const accept = String(b.getFieldValue('ACCEPT') ?? '');
-      return `<input type="file"${authoredClassAttr(cls)}${nameAttr(name)}${attr('accept', accept)}${styleAttr(style)}>`;
+      return `<input type="file"${authoredClassAttr(cls)}${importedNameAttr(b, name)}${attr('accept', accept)}${styleAttr(style)}>`;
     },
   },
 
@@ -549,7 +562,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const readOnly = String(b.getFieldValue('READONLY') ?? 'FALSE') === 'TRUE';
       const style = String(b.getFieldValue('STYLE') ?? '');
       return (
-        `<input type="${escapeAttr(type)}"${authoredClassAttr(cls)}${nameAttr(name)}` +
+        `<input type="${escapeAttr(type)}"${authoredClassAttr(cls)}${importedNameAttr(b, name)}` +
         `${attr('value', def)}${attr('placeholder', placeholder)}` +
         `${attr('min', min)}${attr('max', max)}${attr('step', step)}` +
         `${disabled ? ' disabled="disabled"' : ''}${readOnly ? ' readonly="readonly"' : ''}` +

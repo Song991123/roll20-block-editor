@@ -1,9 +1,41 @@
 import {
   injectPreservedAttributes,
   PRESERVED_ATTRIBUTE_TARGET,
+  readPreservedAttribute,
   removePreservedStyleDeclarations,
   serializePreservedAttributes,
 } from '../preservedAttributes';
+import { INPUT_BLOCKS } from '../input';
+
+assert(
+  readPreservedAttribute('[["name","plain-name"]]', 'name') === 'plain-name',
+  'preserved authored name can be read by input generators',
+);
+
+const textInput = INPUT_BLOCKS.find((definition) => definition.type === 'r20_text_input');
+assert(textInput, 'text input block definition exists');
+function emitTextInput(fields: Record<string, string>): string {
+  const generated = textInput?.generator({
+    getFieldValue: (name: string) => fields[name] ?? '',
+  } as never, {} as never);
+  if (typeof generated !== 'string') throw new Error('text input generator returned a reporter tuple');
+  return generated;
+}
+assert(
+  emitTextInput({ NAME: 'plain-name', __R20_PRESERVED_ATTRS: '[["name","plain-name"]]' })
+    .includes('name="plain-name"'),
+  'unchanged imported plain name remains exact',
+);
+assert(
+  emitTextInput({ NAME: 'hp', __R20_PRESERVED_ATTRS: '[["name","attr_hp"]]' })
+    .includes('name="attr_hp"'),
+  'unchanged imported Roll20 name remains exact',
+);
+assert(
+  emitTextInput({ NAME: 'renamed', __R20_PRESERVED_ATTRS: '[["name","plain-name"]]' })
+    .includes('name="attr_renamed"'),
+  'edited imported name uses Roll20 attr prefix',
+);
 
 function assert(condition: unknown, message: string): void {
   if (!condition) throw new Error(`Assertion failed: ${message}`);
