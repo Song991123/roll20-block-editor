@@ -49,7 +49,8 @@ contain private source evidence or historical test dumps.
 - Corpus `changed` runs now persist an ignored complete-run state and reuse only
   unchanged input rows outside classified code impact. Missing provenance,
   unknown runtime changes, or dirty runtime code trigger a safe stop/full rerun
-  instead of stale cache reuse.
+  instead of stale cache reuse. Synthetic modern/legacy full-to-docs-only-change
+  integration passed with zero executions and two cross-SHA reused rows.
 - Dedicated owner-only modern and legacy test rooms now cover current anonymous
   synthetic full-root rendering, translation, controls, Worker action state,
   Roll execution, and result-card output. The modern result-card comparison

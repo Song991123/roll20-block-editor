@@ -193,17 +193,16 @@ Gate weights live in
   Correctness and the large-input linear budget pass six consecutive isolated
   runs, followed by a complete passing `ci:verify` run.
 
-- `DONE UNIT / VERIFY INTEGRATION`: `harness:corpus:changed` now compares the
+- `DONE INTEGRATION`: `harness:corpus:changed` now compares the
   last complete ignored state, input hashes, and classified Git code impact.
   It re-keys only unaffected rows, reruns affected or changed rows, falls back
   to all rows when uncertain, and blocks runtime-dirty measurements. Pure
-  impact and Harness self-tests pass; synthetic full-to-changed browser reuse
-  remains the commit-after-build integration gate.
+  impact and Harness self-tests pass. A clean modern/legacy synthetic full run
+  followed by a docs-only SHA reused both rows, executed zero, and kept every
+  local gate passing.
 
 - `DONE LOCAL`: clean-SHA synthetic corpus `full` executed modern and legacy
-  rows, produced a complete baseline, and passed all required local gates. The
-  next docs-only SHA must report two reused rows and zero executed rows before
-  incremental integration is marked done.
+  rows, produced a complete baseline, and passed all required local gates.
 
 - `DONE LOCAL / VERIFY BROAD`: ordinary HTML comments now map to the existing
   hidden-note block at the document root and inside nested structure. Compact

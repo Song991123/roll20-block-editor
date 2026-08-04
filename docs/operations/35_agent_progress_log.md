@@ -1390,6 +1390,7 @@ parity.
   rejected so one SHA cannot hold results from two code states.
 - The first clean-SHA synthetic `full` integration executed both modern and
   legacy rows with a complete 60-point local result. A following docs-only SHA
-  is reserved to verify cross-SHA `changed` re-keying without runtime impact.
+  verified cross-SHA `changed` re-keying: zero rows executed, zero current-key
+  cache hits, and both prior rows safely reused with all local gates passing.
 - Claim boundary: the 28.9% score belongs to `80029b2`. Current radio changes
   require a new complete baseline before any higher score is claimed.
