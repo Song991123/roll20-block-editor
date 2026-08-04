@@ -73,6 +73,32 @@ function testNestedDiv(): void {
   assert(r.html.includes('>sheet-header<'), 'authored class is preserved');
 }
 
+function testIncompleteSectionPatternStaysGeneric(): void {
+  const complete = importSheet({
+    html: '<div class="sheet-section sheet-section-main"></div>',
+  });
+  assert(complete.html.includes('r20_section_wrap'), 'complete section pair stays structured');
+
+  const incomplete = importSheet({ html: '<div class="sheet-section-main"></div>' });
+  assert(incomplete.html.includes('r20_div'), 'named section class alone stays a generic div');
+  assert(!incomplete.html.includes('r20_section_wrap'), 'missing base class is not invented');
+  assert(incomplete.html.includes('sheet-section-main'), 'authored named class remains visible');
+
+  const duplicateColumn = importSheet({
+    html: '<div class="sheet-col sheet-col sheet-wide"></div>',
+  });
+  assert(duplicateColumn.html.includes('r20_div'), 'duplicate structural class stays generic');
+  assert(!duplicateColumn.html.includes('r20_col'), 'duplicate base class is not collapsed');
+  assert(
+    duplicateColumn.html.includes('sheet-col sheet-col sheet-wide'),
+    'duplicate authored class tokens remain visible',
+  );
+
+  const incompleteToggle = importSheet({ html: '<div class="sheet-toggle-panel"></div>' });
+  assert(incompleteToggle.html.includes('r20_div'), 'named toggle class alone stays generic');
+  assert(!incompleteToggle.html.includes('r20_toggle_wrap'), 'missing toggle base class is not invented');
+}
+
 function testSemanticContainerTagsStayStructured(): void {
   const html = [
     '<main class="sheet-shell" data-layout="flow">',
@@ -676,6 +702,7 @@ const tests = [
   ['other native input leaf', testOtherNativeInputStaysAnEditableLeaf],
   ['generic void element leaf', testGenericVoidElementStaysAnEditableLeaf],
   ['nested div', testNestedDiv],
+  ['incomplete section pattern', testIncompleteSectionPatternStaysGeneric],
   ['semantic container tags', testSemanticContainerTagsStayStructured],
   ['unknown safe elements', testUnknownSafeElementsStayEditable],
   ['repeating section', testRepeatingSection],

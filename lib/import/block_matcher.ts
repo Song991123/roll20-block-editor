@@ -948,14 +948,14 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     // r20_row 의 generator 는 `class="sheet-row"` 만 emit → 추가 class 손실.
     // r20_div 의 generator (sheetUserClassAttr) 는 모든 토큰을 보존.
     const tokens = cls.split(/\s+/).filter(Boolean);
-    if (/\bsheet-row\b/.test(cls)) {
+    if (hasExactStructuralClassTokens(tokens, ['sheet-row'])) {
       return {
         blockType: 'r20_row',
         fields: { CLASS: stripKnownClasses(cls, ['sheet-row']), STYLE: a.style || '' },
         children: { CONTENT: matchChildren(node, ctx) },
       };
     }
-    if (/\bsheet-col\b/.test(cls)) {
+    if (hasExactStructuralClassTokens(tokens, ['sheet-col'])) {
       return {
         blockType: 'r20_col',
         fields: { CLASS: stripKnownClasses(cls, ['sheet-col']), STYLE: a.style || '' },
@@ -965,8 +965,7 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     const colrowN = /\bsheet-colrow-(\d+)\b/.exec(cls);
     if (
       colrowN &&
-      tokens.includes('sheet-colrow') &&
-      tokens.includes(`sheet-colrow-${colrowN[1]}`)
+      hasExactStructuralClassTokens(tokens, ['sheet-colrow', `sheet-colrow-${colrowN[1]}`])
     ) {
       return {
         blockType: 'r20_colrow_n',
@@ -978,15 +977,12 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
         children: { CONTENT: matchChildren(node, ctx) },
       };
     }
-    // multi-class guard (row/col 과 동일 원칙): 인식 패턴 외 추가 class 토큰이
-    // 있으면 r20_div 로 떨어뜨려 모든 토큰을 보존한다. 가드가 없으면
-    // `sheet-col small-outline section-oublie` 가 자기 emit 을 재import 할 때
-    // section_wrap 으로 흡수돼 col/small-outline 이 소실됐다 (fixtureB
-    // browser L2 roundtrip FAIL 원인).
+    // Require the complete structural pair. Matching only the named variant
+    // would make the section generator invent a missing `sheet-section` class.
     const sectionN = /\bsheet-section-(\S+)/.exec(cls);
     if (
       sectionN &&
-      tokens.includes(`sheet-section-${sectionN[1]}`)
+      hasExactStructuralClassTokens(tokens, ['sheet-section', `sheet-section-${sectionN[1]}`])
     ) {
       return {
         blockType: 'r20_section_wrap',
@@ -1001,7 +997,7 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     const toggleN = /\bsheet-toggle-(\S+)/.exec(cls);
     if (
       toggleN &&
-      tokens.includes(`sheet-toggle-${toggleN[1]}`)
+      hasExactStructuralClassTokens(tokens, ['sheet-toggle', `sheet-toggle-${toggleN[1]}`])
     ) {
       return {
         blockType: 'r20_toggle_wrap',
@@ -1014,8 +1010,7 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       };
     }
     if (
-      /\bsheet-repeating-row\b/.test(cls) &&
-      tokens.includes('sheet-repeating-row')
+      hasExactStructuralClassTokens(tokens, ['sheet-repeating-row'])
     ) {
       return {
         blockType: 'r20_repeating_row',
@@ -1027,8 +1022,7 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       };
     }
     if (
-      /\bsheet-grid\b/.test(cls) &&
-      tokens.includes('sheet-grid')
+      hasExactStructuralClassTokens(tokens, ['sheet-grid'])
     ) {
       const cols = extractGridCols(a.style || '') || '2';
       return {
@@ -1528,6 +1522,12 @@ function stripKnownClasses(cls: string, known: string[]): string {
     .split(' ')
     .filter((token) => !ignored.has(token))
     .join(' ');
+}
+
+function hasExactStructuralClassTokens(tokens: string[], required: string[]): boolean {
+  return required.every((requiredToken) => (
+    tokens.filter((token) => token === requiredToken).length === 1
+  ));
 }
 
 function extractGridCols(style: string): string {
