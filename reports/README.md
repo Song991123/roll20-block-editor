@@ -11,6 +11,7 @@ Keep this README as the only public index unless the user explicitly approves a 
 | Folder | Local Scope |
 | --- | --- |
 | `corpus-static-audit/` | Static inventory of local source corpora and risk flags. |
+| `corpus-harness/` | Anonymous scan, cached mode results, and representative selection for the current local corpus. |
 | `roundtrip-node/` | Node-side import/emit diagnostics for selected local fixtures. |
 | `roundtrip-browser/` | Browser-side import/emit roundtrip diagnostics. |
 | `edit-flow-smoke/` | Browser evidence for edit-mode drag/drop behavior. |

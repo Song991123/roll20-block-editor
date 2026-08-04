@@ -1,0 +1,85 @@
+# Local Corpus Harness
+
+Date: 2026-08-04
+
+## Purpose
+
+This harness measures import, block mapping, local Preview/Edit rendering, and
+semantic roundtrip behavior across protected local sheet sources. It does not
+publish or identify those sources, and it does not replace actual Roll20
+verification.
+
+## Local Configuration
+
+Create `.tmp/corpus-harness/config.json`. The file and every generated output
+remain ignored.
+
+```json
+{
+  "version": 1,
+  "roots": [
+    { "id": "corpus-01", "path": "<protected-path>", "mode": "auto" }
+  ],
+  "reportDir": "reports/corpus-harness",
+  "cacheDir": ".tmp/corpus-harness",
+  "concurrency": 2
+}
+```
+
+`mode` accepts `modern`, `legacy`, `both`, or `auto`. `auto` is conservative:
+it runs both modes unless trusted local manifest metadata selects one mode.
+
+## Commands
+
+```text
+corepack pnpm run harness:corpus:scan
+corepack pnpm run harness:corpus:changed
+corepack pnpm run harness:corpus:full
+corepack pnpm run harness:corpus:select
+```
+
+- `scan`: read-only discovery and anonymous inventory. It never reports Alpha
+  progress.
+- `changed`: reuse current cache and run only missing current input/code keys.
+- `full`: require a result for every discovered mode row; `--force` bypasses
+  cache when diagnosing transient failures.
+- `select`: greedily choose anonymous feature-cover representatives for actual
+  Roll20 verification.
+
+Each browser case runs in its own Node and Chromium process. Temporary source
+copies and child reports are removed after one anonymous result envelope is
+written. A case timeout or crash becomes a failed generic result and does not
+stop later cases.
+
+## Evidence Levels
+
+| Level | Meaning |
+| --- | --- |
+| L0 | Live app import created blocks without a crash. |
+| L1 | Structured plus raw fallback mapping accounts for HTML/CSS units and records zero unexplained drops. |
+| L2 | Emit and reimport preserve normalized output plus block types, hierarchy, and fields. |
+| L3 | Original source and first emit match under documented normalization. |
+| L4 | Representative actual Roll20 visual verification. Local Harness never grants L4. |
+
+Preview/Edit equality is a separate local check inside the cache envelope. It
+uses the same persistent iframe in both modes and checks pixels, form state,
+root geometry, console errors, page errors, and resource warnings.
+
+## Privacy And Cache
+
+- External roots are read-only.
+- Persisted rows contain anonymous IDs, hashes, generic feature tokens, level
+  booleans, generic diagnostic categories, and aggregate counts only.
+- No source path, sheet name, creator, visible text, class token, attribute
+  value, URL, screenshot, or child report survives case cleanup.
+- Cache identity includes input bytes, current Git SHA, compatibility mode, and
+  Harness version.
+- Commit only synthetic self-tests. Never commit config, cache, results, or
+  protected source copies.
+
+## Claim Boundary
+
+A successful `scan` proves discovery only. A complete local baseline can score
+at most the 35-point corpus roundtrip gate plus the 25-point local Preview gate.
+Actual Roll20, export/diagnostics, and Alpha UX/CI weights remain zero until
+their own evidence gates pass.

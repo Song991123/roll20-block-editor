@@ -9,12 +9,30 @@ or source-derived measurement here.
 
 ## Current Branch
 
-- Branch: `claude/design-reset`
+- Branch: `codex/alpha-integration`
 - Read the current branch tip from Git; do not rely on a cached commit hash in
   this handoff file.
 - Read the current remote checks from GitHub; do not rely on a cached CI result
   in this handoff file.
 - Confirm worktree and project server state at the end of every run.
+
+## 2026-08-04 - Local Corpus Harness Foundation
+
+- Added read-only discovery for manifest-selected HTML/CSS, translation,
+  Worker, ordinary JavaScript, raster assets, reference images, and text-file
+  source variants. Persisted output uses anonymous IDs and generic features.
+- Added input/code/mode cache keys, strict result validation, generic failure
+  clusters, stable representative set-cover, and isolated browser processes
+  with bounded concurrency, timeout, cleanup, and resumable per-case cache.
+- Strengthened L2 browser roundtrip from output-string stability to block type,
+  hierarchy, and field equality. Import metrics now separate structured blocks,
+  raw fallback preservation, and unexplained drops.
+- Preview/Edit Harness checks use the same persistent iframe in modern and
+  legacy modes. Synthetic full and cache-hit runs pass both modes; production
+  build and focused self-tests pass.
+- Claim boundary: protected discovery is current, but its first full browser
+  baseline remains open. No Alpha percentage is valid yet, and local success
+  cannot grant actual Roll20 L4.
 
 ## 2026-08-04 - Custom Roll Chat Actions
 

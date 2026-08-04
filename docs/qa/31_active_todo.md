@@ -150,6 +150,14 @@ complete baseline. Gate weights live in
 
 ## P0 - Universal Import And Export
 
+- `DONE TOOLING / VERIFY FULL BASELINE`: the local-only Corpus Harness now
+  discovers manifest-selected and text-file sources without writing to external
+  roots, emits anonymous mode rows, caches by input/code/mode, isolates every
+  browser case, clusters generic failures, and selects feature-cover actual
+  representatives. Synthetic modern/legacy full and cache-hit runs pass.
+  Protected discovery is current; the complete browser baseline, general
+  failure fixes, and measured Alpha score remain `VERIFY`.
+
 - `DONE LOCAL / VERIFY BROAD`: ordinary HTML comments now map to the existing
   hidden-note block at the document root and inside nested structure. Compact
   title, button, radio-label, select, option, and inline shapes fall back to a

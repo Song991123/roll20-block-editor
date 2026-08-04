@@ -51,6 +51,7 @@ const tasks = [
   'test:high-priority-mapping',
   'test:imported-edit-budget',
   'test:isolated-import-roundtrip',
+  'test:corpus-harness',
   'test:legacy-css-sanitize',
   'audit:legacy-export',
   'test:roll20-sandbox-sanitize',

@@ -8,7 +8,7 @@ contain private source evidence or historical test dumps.
 ## Current Control State
 
 - Canonical worktree: `web-push-main/`; refresh branch and commit with Git.
-- Active integration branch: `claude/design-reset`.
+- Active integration branch: `codex/alpha-integration`.
 - Fixed priority: actual modern/legacy Roll20 Preview fidelity first, universal
   lossless block/layer mapping second, Alpha diagnostics/export third. Figma-like
   editing remains code-preserved but experimental until Beta. Branding and
@@ -31,6 +31,11 @@ contain private source evidence or historical test dumps.
   are stable.
 - Structural layer and friendly-widget selection channels are isolated.
 - Public product assets contain no bundled real sheet sample.
+- Local corpus discovery, anonymous result validation, cache keys, failure
+  clustering, per-case process isolation, and representative set-cover are
+  implemented. Synthetic modern/legacy integration passes. The protected
+  corpus scan is current, but the first complete browser baseline is still
+  open; Alpha progress therefore remains unset.
 - Dedicated owner-only modern and legacy test rooms now cover current anonymous
   synthetic full-root rendering, translation, controls, Worker action state,
   Roll execution, and result-card output. The modern result-card comparison

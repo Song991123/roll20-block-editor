@@ -24,6 +24,9 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 - Keep `docs/qa/31_active_todo.md` current after each coherent work batch.
 - Keep unverified work as `TODO`, `VERIFY`, or `BLOCKED`.
 - Do not mark visual parity, full import/export, or all-sheet support as complete without exact current evidence.
+- A corpus `scan` is inventory only. Numeric Alpha progress requires a complete
+  current `harness:corpus:full` baseline; L4 still requires actual Roll20
+  evidence for the selected anonymous representatives.
 - Do not put agent-only instructions into README files. README files are human/project presentation material.
 - Record agent-facing progress in `docs/operations/35_agent_progress_log.md` and task status in `docs/qa/31_active_todo.md`, not in `README.md`.
 - Keep README as a Korean portfolio landing page: visual first, compact cards, details linked out.

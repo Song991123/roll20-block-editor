@@ -90,6 +90,14 @@ export interface PerfImportResult {
   matchPct: number;
   blockCount: number;
   workerBlockCount: number;
+  mapping: {
+    structured: number;
+    rawPreserved: number;
+    unexplainedDrops: number;
+    htmlAccounted: boolean;
+    cssAccounted: boolean;
+  };
+  diagnosticCodes: string[];
   warnings: number;
   compositeCollapsed: number;
   compositePackedByType: Record<string, number>;
@@ -488,6 +496,9 @@ function buildHook(): PerfHook {
 
       const heapAfterMb = getHeapMb();
       const blockCount = adapter.listAllBlocks('html').length;
+      const workerBlocks = adapter.listAllBlocks('worker');
+      const workerRawBlocks = workerBlocks.filter((block) => block.type === 'r20_raw_worker').length;
+      const workerStructuredBlocks = Math.max(0, workerBlocks.length - workerRawBlocks);
       const matchPct =
         result.stats.htmlTotal > 0
           ? Math.round((result.stats.htmlMatched / result.stats.htmlTotal) * 1000) / 10
@@ -501,6 +512,24 @@ function buildHook(): PerfHook {
         matchPct,
         blockCount,
         workerBlockCount: workerSource.replaced ? workerSource.targetCount : workerMove.targetCount,
+        mapping: {
+          structured:
+            result.stats.htmlMatched
+            + result.stats.cssMatched
+            + result.stats.i18nKeys
+            + workerStructuredBlocks,
+          rawPreserved:
+            result.stats.htmlRawFallback
+            + result.stats.cssRawFallback
+            + result.stats.pageScriptBlocks
+            + workerRawBlocks,
+          unexplainedDrops: result.stats.sanitizeDropped,
+          htmlAccounted:
+            result.stats.htmlMatched + result.stats.htmlRawFallback === result.stats.htmlTotal,
+          cssAccounted:
+            result.stats.cssMatched + result.stats.cssRawFallback === result.stats.cssTotal,
+        },
+        diagnosticCodes: [...new Set(result.warnings.map((warning) => warning.code))].sort(),
         warnings: result.warnings.length,
         compositeCollapsed: result.stats.compositeCollapsed ?? 0,
         compositePackedByType: result.stats.compositePackedByType ?? {},

@@ -54,6 +54,7 @@ const DENSE_ITEMS = Math.max(0, Number(argOf('--dense-items', '0')) || 0);
 const COMPATIBILITY_MODE = argOf('--compatibility-mode', 'modern');
 const ROUNDTRIP_ONLY = argOf('--roundtrip-only', 'false') === 'true';
 const ROUNDTRIP_REPEATS = Math.max(1, Number(argOf('--roundtrip-repeats', '1')) || 1);
+const HARNESS_PREVIEW = argOf('--harness-preview', 'false') === 'true';
 
 if (!['modern', 'legacy'].includes(COMPATIBILITY_MODE)) {
   throw new Error(`invalid --compatibility-mode: ${COMPATIBILITY_MODE}`);
@@ -824,7 +825,7 @@ async function screenshotEditSheetRoot(page, screenshotPath) {
     window.__perfHook.setPreviewZoom(1);
     window.__perfHook.setMainMode('edit');
   });
-  const frame = await waitForPreviewSheetFrame(page);
+  const frame = await waitForSheetRootFrame(page);
   await clearIframeHighlight(page);
   const element = frame.locator('.charactersheet.charsheet').first();
   await element.waitFor({ state: 'visible', timeout: 30000 });
@@ -1027,11 +1028,9 @@ async function collectEditFormState(page) {
     window.__perfHook.setPreviewZoom(1);
     window.__perfHook.setMainMode('edit');
   });
-  await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
-  return page.evaluate(() => {
-    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
-    const root = host?.shadowRoot?.querySelector('.charactersheet.charsheet');
-    if (!root) return [];
+  const frame = await waitForSheetRootFrame(page);
+  await waitForFrameMode(frame, '1');
+  return frame.locator('.charactersheet.charsheet').first().evaluate((root) => {
     return collectControlState(root);
     function collectControlState(scope) {
       return Array.from(scope.querySelectorAll('input, select, textarea'))
@@ -1069,7 +1068,8 @@ async function collectPreviewFormState(page) {
     window.__perfHook.setPreviewRenderMode('iframe');
     window.__perfHook.setMainMode('preview');
   });
-  const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
+  const frame = await waitForSheetRootFrame(page);
+  await waitForFrameMode(frame, '0');
   const root = frame.locator('.charactersheet.charsheet').first();
   await root.waitFor({ state: 'visible', timeout: 30000 });
   return root.evaluate((rootEl) => {
@@ -1389,11 +1389,10 @@ async function collectEditRootGeometry(page) {
     window.__perfHook.setPreviewZoom(1);
     window.__perfHook.setMainMode('edit');
   });
-  await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
-  return page.evaluate(() => {
-    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
-    const root = host?.shadowRoot?.querySelector('.charactersheet.charsheet');
-    return root ? collectRootGeometry(root) : null;
+  const frame = await waitForSheetRootFrame(page);
+  await waitForFrameMode(frame, '1');
+  return frame.locator('.charactersheet.charsheet').first().evaluate((root) => {
+    return collectRootGeometry(root);
     function collectRootGeometry(rootEl) {
       const rootRect = rootEl.getBoundingClientRect();
       return {
@@ -1429,7 +1428,8 @@ async function collectPreviewRootGeometry(page) {
     window.__perfHook.setPreviewRenderMode('iframe');
     window.__perfHook.setMainMode('preview');
   });
-  const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
+  const frame = await waitForSheetRootFrame(page);
+  await waitForFrameMode(frame, '0');
   const root = frame.locator('.charactersheet.charsheet').first();
   await root.waitFor({ state: 'visible', timeout: 30000 });
   return root.evaluate((rootEl) => {
@@ -1556,15 +1556,20 @@ async function chooseEditTarget(page, excludedIds = []) {
 }
 
 async function waitForPreviewSheetFrame(page) {
+  const frame = await waitForSheetRootFrame(page);
+  await frame
+    .locator('.charactersheet.charsheet [data-r20-block-id]')
+    .first()
+    .waitFor({ state: 'attached', timeout: 30000 });
+  return frame;
+}
+
+async function waitForSheetRootFrame(page) {
   const iframeHandle = await page.locator('[data-testid="preview-iframe"]').elementHandle();
   if (!iframeHandle) throw new Error('persistent preview iframe handle is missing');
   const frame = await iframeHandle.contentFrame();
   if (!frame) throw new Error('persistent preview iframe content frame is missing');
   await frame.locator('.charactersheet.charsheet').waitFor({ state: 'visible', timeout: 30000 });
-  await frame
-    .locator('.charactersheet.charsheet [data-r20-block-id]')
-    .first()
-    .waitFor({ state: 'attached', timeout: 30000 });
   return frame;
 }
 
@@ -3135,9 +3140,10 @@ async function emittedPositionState(page, blockId) {
   }, blockId);
 }
 
-async function reimportCurrentEmit(page, compactWideRows = false) {
-  return page.evaluate(async ({ compactWideRows }) => {
+async function reimportCurrentEmit(page, compactWideRows = false, source = null) {
+  return page.evaluate(async ({ compactWideRows, source }) => {
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const beforeGraphs = captureWorkspaceGraphs();
     const e1 = await waitForSettledEmit();
     const r2 = await importLive({
       html: e1.html,
@@ -3150,6 +3156,20 @@ async function reimportCurrentEmit(page, compactWideRows = false) {
     const n2 = canonicalHtml(e2.html);
     const css1 = canonicalCss(e1.css);
     const css2 = canonicalCss(e2.css);
+    const afterGraphs = captureWorkspaceGraphs();
+    const graphByWorkspace = Object.fromEntries(
+      Object.keys(beforeGraphs).map((key) => [key, beforeGraphs[key] === afterGraphs[key]]),
+    );
+    const sourceComparison = source
+      ? {
+          html: canonicalHtml(source.html || '') === n1,
+          css: canonicalCss(source.css || '') === css1,
+          i18n: canonicalI18n(source.i18n || '') === canonicalI18n(e1.i18n),
+        }
+      : null;
+    if (sourceComparison) {
+      sourceComparison.pass = sourceComparison.html && sourceComparison.css && sourceComparison.i18n;
+    }
     return {
       import: r2,
       emit1: { htmlLen: e1.html.length, cssLen: e1.css.length, i18nLen: e1.i18n.length },
@@ -3161,7 +3181,10 @@ async function reimportCurrentEmit(page, compactWideRows = false) {
         cssRaw: e1.css === e2.css,
         i18n: e1.i18n === e2.i18n,
         blockCount: r2.blockCount > 0,
+        graph: Object.values(graphByWorkspace).every(Boolean),
       },
+      graphByWorkspace,
+      sourceComparison,
       firstDiff: {
         html: n1 === n2 ? null : diffSnippet(n1, n2),
         css: css1 === css2 ? null : diffSnippet(css1, css2),
@@ -3226,6 +3249,44 @@ async function reimportCurrentEmit(page, compactWideRows = false) {
         .trim();
     }
 
+    function canonicalI18n(value) {
+      const text = String(value || '').replace(/\r\n?/g, '\n').trim();
+      if (!text) return '{}';
+      try {
+        return JSON.stringify(sortJson(JSON.parse(text)));
+      } catch {
+        return text;
+      }
+    }
+
+    function sortJson(value) {
+      if (Array.isArray(value)) return value.map(sortJson);
+      if (!value || typeof value !== 'object') return value;
+      return Object.fromEntries(
+        Object.keys(value).sort().map((key) => [key, sortJson(value[key])]),
+      );
+    }
+
+    function captureWorkspaceGraphs() {
+      const keys = ['html', 'css', 'i18n', 'js', 'worker'];
+      return Object.fromEntries(keys.map((key) => {
+        const graph = window.__perfHook.getBlockGraph?.(key) || [];
+        const indexById = new Map(graph.map((node, index) => [node.id, index]));
+        const normalized = graph.map((node) => ({
+          type: node.type,
+          depth: node.depth,
+          parent: node.parentId == null ? null : indexById.get(node.parentId) ?? null,
+          previous: node.previousId == null ? null : indexById.get(node.previousId) ?? null,
+          next: node.nextId == null ? null : indexById.get(node.nextId) ?? null,
+          childCount: node.childCount,
+          fields: (window.__perfHook.getBlockFields?.(key, node.id) || [])
+            .map((field) => ({ ...field }))
+            .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))),
+        }));
+        return [key, JSON.stringify(normalized)];
+      }));
+    }
+
     function diffSnippet(a, b) {
       const n = Math.min(a.length, b.length);
       let i = 0;
@@ -3236,7 +3297,7 @@ async function reimportCurrentEmit(page, compactWideRows = false) {
         after: b.slice(Math.max(0, i - 80), i + 80),
       };
     }
-  }, { compactWideRows });
+  }, { compactWideRows, source });
 }
 
 function closeEnough(a, b, tolerance) {
@@ -3281,7 +3342,8 @@ function isStableReimport(reimport) {
     reimport?.stable?.html &&
     reimport?.stable?.css &&
     reimport?.stable?.i18n &&
-    reimport?.stable?.blockCount,
+    reimport?.stable?.blockCount &&
+    reimport?.stable?.graph,
   );
 }
 
@@ -3693,14 +3755,23 @@ async function main() {
         }
         if (ROUNDTRIP_ONLY) {
           await page.waitForTimeout(500);
+          if (HARNESS_PREVIEW) {
+            entry.sheetVisualSync = await captureSheetRootVisualSync(page, fixture.id);
+            entry.formStateDiff = await compareEditPreviewFormState(page);
+            entry.rootGeometryDiff = await compareEditPreviewRootGeometry(page);
+            entry.localPreviewPass = entry.sheetVisualSync.pass === true
+              && entry.formStateDiff.pass === true
+              && entry.rootGeometryDiff.pass === true;
+          }
           entry.reimportAttempts = [];
           for (let repeat = 0; repeat < ROUNDTRIP_REPEATS; repeat += 1) {
-            const attempt = await reimportCurrentEmit(page, COMPACT_WIDE_ROWS);
+            const attempt = await reimportCurrentEmit(page, COMPACT_WIDE_ROWS, fixture);
             entry.reimportAttempts.push(attempt);
             entry.reimport = attempt;
             if (!isStableReimport(attempt)) break;
           }
-          entry.interactionPass = isStableReimport(entry.reimport);
+          entry.interactionPass = isStableReimport(entry.reimport)
+            && (!HARNESS_PREVIEW || entry.localPreviewPass === true);
           entry.pass = entry.interactionPass;
         } else if (CANONICAL_IFRAME) {
           await page.waitForTimeout(1300);
