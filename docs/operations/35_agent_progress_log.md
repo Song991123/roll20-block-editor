@@ -30,9 +30,16 @@ or source-derived measurement here.
   anonymous modern/legacy browser smokes pass. Both browser modes cover callback,
   Promise, computed result display, five-second automatic posting, and zero
   console or page errors.
-- Claim boundary: this is local shared-runtime evidence. Actual Roll20 execution,
-  action links carrying `originalRollId`, and broader whole-Worker block
-  hydration remain open.
+- Added an anonymous actual-upload payload option that emits HTML, CSS, and
+  translation through the same preparation boundary as export in modern and
+  legacy modes. Its self-test, modern Sandbox-preparation smoke, and
+  modern/legacy fixture visual smoke pass.
+- The supported visible modern Sandbox chooser was reached, but Chrome rejected
+  local-file transfer before transmission because file-URL access is disabled.
+  No bypass or room write was attempted.
+- Claim boundary: this is local shared-runtime and pre-upload evidence. Actual
+  Roll20 execution, action links carrying `originalRollId`, and broader
+  whole-Worker block hydration remain open.
 
 ## 2026-08-04 - Sheet Worker Translation Language Contract
 

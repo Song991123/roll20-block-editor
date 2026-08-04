@@ -169,9 +169,12 @@ contain private source evidence or historical test dumps.
   Custom roll parsing now has structured `startRoll`, `finishRoll`, roll-ID,
   and named-result blocks plus a shared runtime bridge. Local modern and legacy
   browser proof covers callback and Promise results, `computed::<name>` chat
-  fields, and the documented five-second automatic post. Whole complex Worker
-  import remains exact raw source rather than unsafe partial hydration, and
-  actual Roll20 execution of this lifecycle remains open.
+  fields, and the documented five-second automatic post. An anonymous
+  exact-upload payload now passes self-test, modern Sandbox preparation, and
+  modern/legacy fixture visual smoke. The visible modern Sandbox chooser still
+  stops before transmission while Chrome file-URL access is disabled. Whole
+  complex Worker import remains exact raw source rather than unsafe partial
+  hydration, and actual Roll20 execution of this lifecycle remains open.
   Broader Worker syntax and broad full-root candidate coverage remain open.
 - ImportDialog waits for every Blockly model workspace before hydration. Keep
   the cold-load early-click browser check; analysis percentages alone do not

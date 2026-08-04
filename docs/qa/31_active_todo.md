@@ -277,9 +277,15 @@ belong in tracked documents.
   forms, withholds chat until `finishRoll`, renders `computed::<name>` while
   retaining source dice details, and automatically posts after five seconds.
   Anonymous modern and legacy browser smokes pass all three paths with zero
-  console or page errors. Complex whole-Worker imports intentionally stay exact
-  raw source until mixed Blockly hydration is safe. Actual Roll20 execution and
-  action-link `originalRollId` behavior remain open.
+  console or page errors. The actual-upload generator now emits an anonymous
+  HTML/CSS/translation payload for both compatibility modes through the same
+  preparation boundary used by export; its self-test, modern Sandbox-preparation
+  smoke, and modern/legacy fixture visual smoke pass. The visible modern
+  Sandbox chooser still rejects local-file transfer before transmission until
+  Chrome file-URL access is enabled, so actual Roll20 execution remains
+  `VERIFY`. Complex whole-Worker imports intentionally stay exact raw source
+  until mixed Blockly hydration is safe. Action-link `originalRollId` behavior
+  also remains open.
 
 ## P0 - Edit And Preview Unity
 

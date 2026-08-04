@@ -16,6 +16,8 @@ const outIndex = args.indexOf('--out-dir');
 const legacy = args.includes('--legacy');
 const layout = args.includes('--layout');
 const rolltemplate = args.includes('--rolltemplate');
+const customRoll = args.includes('--custom-roll');
+const containsRolltemplate = rolltemplate || customRoll;
 const compositionIndex = args.indexOf('--section-composition');
 const requestedCompositionId = compositionIndex >= 0 ? args[compositionIndex + 1] : null;
 const sectionCompositionId = resolveCompositionId(requestedCompositionId);
@@ -29,16 +31,18 @@ type SyntheticPayloadOptions = {
   legacy: boolean;
   layout: boolean;
   rolltemplate: boolean;
+  customRoll: boolean;
   sectionCompositionId: SectionComposition['id'] | null;
 };
 
 function buildSyntheticSource({
   layout,
   rolltemplate,
+  customRoll,
   sectionCompositionId: compositionId,
 }: Omit<SyntheticPayloadOptions, 'legacy'>) {
   const templateName = rolltemplate ? 'proof' : 'default';
-  const sheetHtml = compositionId ? buildCompositionHtml(compositionId, templateName) : layout ? [
+  const sheetHtml = customRoll ? buildCustomRollHtml() : compositionId ? buildCompositionHtml(compositionId, templateName) : layout ? [
     '<div class="sheet-layout-proof" style="width:760px;min-height:320px;padding:16px">',
     '  <div class="sheet-2colrow">',
     '    <div class="sheet-col">',
@@ -80,7 +84,7 @@ function buildSyntheticSource({
     );
   }
 
-  const sheetCss = compositionId ? buildCompositionCss(compositionId) : layout ? [
+  const sheetCss = customRoll ? buildCustomRollCss() : compositionId ? buildCompositionCss(compositionId) : layout ? [
     '.sheet-layout-proof { background: #fffafc; border: 2px solid #d96b91; box-sizing: border-box; color: #3b2730; }',
     '.sheet-layout-proof .sheet-2colrow { display: flex; gap: 16px; align-items: flex-start; }',
     '.sheet-layout-proof .sheet-col { flex: 1 1 0; min-width: 0; }',
@@ -104,7 +108,14 @@ function buildSyntheticSource({
     );
   }
 
-  const translation: Record<string, string> = compositionId ? {
+  const translation: Record<string, string> = customRoll ? {
+    custom_title: 'Custom roll check',
+    callback_button: 'Callback roll',
+    promise_button: 'Promise roll',
+    timeout_button: 'Automatic post',
+    callback_value: 'Callback value',
+    promise_value: 'Promise value',
+  } : compositionId ? {
     section_title: 'Generated section',
     name: 'Name',
     role: 'Role',
@@ -143,11 +154,13 @@ function contentOf(
 
 function runSelfTest() {
   const variants: SyntheticPayloadOptions[] = [
-    { legacy: false, layout: false, rolltemplate: false, sectionCompositionId: null },
-    { legacy: false, layout: true, rolltemplate: true, sectionCompositionId: null },
-    { legacy: true, layout: true, rolltemplate: true, sectionCompositionId: null },
-    { legacy: false, layout: true, rolltemplate: true, sectionCompositionId: 'mint-sidebar' },
-    { legacy: true, layout: true, rolltemplate: true, sectionCompositionId: 'mint-sidebar' },
+    { legacy: false, layout: false, rolltemplate: false, customRoll: false, sectionCompositionId: null },
+    { legacy: false, layout: true, rolltemplate: true, customRoll: false, sectionCompositionId: null },
+    { legacy: true, layout: true, rolltemplate: true, customRoll: false, sectionCompositionId: null },
+    { legacy: false, layout: true, rolltemplate: true, customRoll: false, sectionCompositionId: 'mint-sidebar' },
+    { legacy: true, layout: true, rolltemplate: true, customRoll: false, sectionCompositionId: 'mint-sidebar' },
+    { legacy: false, layout: false, rolltemplate: false, customRoll: true, sectionCompositionId: null },
+    { legacy: true, layout: false, rolltemplate: false, customRoll: true, sectionCompositionId: null },
   ];
 
   for (const options of variants) {
@@ -160,7 +173,14 @@ function runSelfTest() {
     assert.equal(payload.removedInternalBlockIds, 0);
     assert.doesNotMatch(html, /data-r20-block-id/);
 
-    if (options.sectionCompositionId) {
+    if (options.customRoll) {
+      assert.match(html, /startRoll\(/);
+      assert.match(html, /finishRoll\(/);
+      assert.match(html, /computed::roll1/);
+      assert.match(html, /async function/);
+      assert.match(css, /\.sheet-custom-roll-card/);
+      assert.equal(translation.custom_title, 'Custom roll check');
+    } else if (options.sectionCompositionId) {
       assert.match(html, /sheet-r20-node-composition-root/);
       assert.match(html, /sheet-r20-node-composition-title/);
       assert.match(css, /\.sheet-r20-node-composition-root\.sheet-r20-node-composition-root/);
@@ -169,7 +189,10 @@ function runSelfTest() {
       assert.match(css, /grid-column: 1 \/ -1/);
     }
 
-    if (options.rolltemplate) {
+    if (options.customRoll) {
+      assert.match(html, /sheet-rolltemplate-custom-proof/);
+      assert.match(html, /sheet-rolltemplate-timeout-proof/);
+    } else if (options.rolltemplate) {
       assert.match(html, /&amp;\{template:proof\}/);
       assert.match(html, /sheet-rolltemplate-proof/);
       assert.match(css, /\.sheet-rolltemplate-proof \.sheet-proof-card/);
@@ -195,6 +218,7 @@ async function main() {
     legacy,
     layout: layout || Boolean(sectionCompositionId),
     rolltemplate,
+    customRoll,
     sectionCompositionId,
   });
 
@@ -208,7 +232,8 @@ async function main() {
       synthetic: true,
       legacy,
       layout: layout || Boolean(sectionCompositionId),
-      rolltemplate,
+      rolltemplate: containsRolltemplate,
+      customRoll,
       sectionCompositionId,
       removedInternalBlockIds: payload.removedInternalBlockIds,
       legacyWarnings: payload.legacyWarnings,
@@ -221,7 +246,8 @@ async function main() {
     outDir,
     legacy,
     layout: layout || Boolean(sectionCompositionId),
-    rolltemplate,
+    rolltemplate: containsRolltemplate,
+    customRoll,
     sectionCompositionId,
     files: payload.files.map(({ name, content }) => ({ name, bytes: content.length })),
     removedInternalBlockIds: payload.removedInternalBlockIds,
@@ -240,6 +266,66 @@ function resolveCompositionId(value: string | null): SectionComposition['id'] | 
     throw new Error(`Unknown --section-composition value: ${value}`);
   }
   return match.id;
+}
+
+function buildCustomRollHtml(): string[] {
+  return [
+    '<section class="sheet-custom-roll-proof" style="width:520px;min-height:260px;padding:18px">',
+    '  <h2 data-i18n="custom_title">Custom roll check</h2>',
+    '  <div class="sheet-custom-roll-actions">',
+    '    <button type="action" name="act_custom_callback" data-i18n="callback_button">Callback roll</button>',
+    '    <button type="action" name="act_custom_promise" data-i18n="promise_button">Promise roll</button>',
+    '    <button type="action" name="act_custom_timeout" data-i18n="timeout_button">Automatic post</button>',
+    '  </div>',
+    '  <label><span data-i18n="callback_value">Callback value</span><input type="text" name="attr_callback_total" value="" readonly></label>',
+    '  <label><span data-i18n="promise_value">Promise value</span><input type="text" name="attr_promise_total" value="" readonly></label>',
+    '  <input type="hidden" name="attr_callback_roll_id" value="">',
+    '  <input type="hidden" name="attr_timeout_roll_id" value="">',
+    '</section>',
+    '<rolltemplate class="sheet-rolltemplate-custom-proof">',
+    '  <div class="sheet-custom-roll-card">',
+    '    <div class="sheet-custom-roll-title">{{name}}</div>',
+    '    <div class="sheet-custom-roll-row"><span>{{roll1}}</span><strong>{{computed::roll1}}</strong></div>',
+    '  </div>',
+    '</rolltemplate>',
+    '<rolltemplate class="sheet-rolltemplate-timeout-proof">',
+    '  <div class="sheet-custom-roll-card">',
+    '    <div class="sheet-custom-roll-title">{{name}}</div>',
+    '    <div class="sheet-custom-roll-row"><strong>{{roll1}}</strong></div>',
+    '  </div>',
+    '</rolltemplate>',
+    '<script type="text/worker">',
+    '  on("clicked:custom_callback", function () {',
+    '    startRoll("&{template:custom-proof} {{name=Callback}} {{roll1=[[1d1+4]]}}", function (rollResult) {',
+    '      setAttrs({ callback_total: rollResult.results.roll1.result, callback_roll_id: rollResult.rollId });',
+    '      finishRoll(rollResult.rollId, { roll1: rollResult.results.roll1.result * 2 });',
+    '    });',
+    '  });',
+    '  on("clicked:custom_promise", async function () {',
+    '    const rollResult = await startRoll("&{template:custom-proof} {{name=Promise}} {{roll1=[[1d1+2]]}}");',
+    '    setAttrs({ promise_total: rollResult.results.roll1.result });',
+    '    finishRoll(rollResult.rollId, { roll1: rollResult.results.roll1.result + 1 });',
+    '  });',
+    '  on("clicked:custom_timeout", function () {',
+    '    startRoll("&{template:timeout-proof} {{name=Automatic post}} {{roll1=[[1d1+1]]}}", function (rollResult) {',
+    '      setAttrs({ timeout_roll_id: rollResult.rollId });',
+    '    });',
+    '  });',
+    '</script>',
+  ];
+}
+
+function buildCustomRollCss(): string[] {
+  return [
+    '.sheet-custom-roll-proof { box-sizing: border-box; border: 2px solid #d96b91; background: #fffafc; color: #3b2730; }',
+    '.sheet-custom-roll-proof h2 { margin: 0 0 14px; color: #9f3158; }',
+    '.sheet-custom-roll-actions { display: flex; gap: 8px; margin-bottom: 16px; }',
+    '.sheet-custom-roll-proof label { display: grid; grid-template-columns: 130px 1fr; gap: 10px; align-items: center; margin-top: 8px; }',
+    '.sheet-custom-roll-proof input[type="text"] { width: 100%; box-sizing: border-box; }',
+    '.sheet-rolltemplate-custom-proof .sheet-custom-roll-card, .sheet-rolltemplate-timeout-proof .sheet-custom-roll-card { width: 280px; overflow: hidden; border: 2px solid #d96b91; border-radius: 6px; background: #fffafc; color: #3b2730; }',
+    '.sheet-rolltemplate-custom-proof .sheet-custom-roll-title, .sheet-rolltemplate-timeout-proof .sheet-custom-roll-title { padding: 9px 12px; background: #d96b91; color: #fff; font-weight: 700; }',
+    '.sheet-rolltemplate-custom-proof .sheet-custom-roll-row, .sheet-rolltemplate-timeout-proof .sheet-custom-roll-row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; }',
+  ];
 }
 
 function buildCompositionHtml(
