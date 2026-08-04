@@ -22,6 +22,7 @@ import { type BlockDef, type GeneratorContext, ORDER } from './types';
 import { styleAttr } from './style_field';
 import { isInlineMarkup, startsInlineMarkup } from './inlineMarkup';
 import { normalizeAuthoredClassTokens } from '@/lib/utils/classTokens';
+import { PRESERVED_ATTRS_FIELD, readPreservedAttribute } from './preservedAttributes';
 
 // ---------- 카테고리 / 상수 ----------
 
@@ -91,6 +92,22 @@ function authoredClassAttr(cls: string): string {
   return ` class="${escapeAttr(v)}"`;
 }
 
+function prefixedButtonName(block: Blockly.Block, prefix: 'roll_' | 'act_'): string {
+  const fieldName = String(block.getFieldValue('NAME') ?? '').trim();
+  if (!fieldName) return '';
+  const preserved = readPreservedAttribute(
+    String(block.getFieldValue(PRESERVED_ATTRS_FIELD) ?? ''),
+    'name',
+  );
+  if (preserved != null) {
+    const logicalName = preserved.startsWith(prefix)
+      ? preserved.slice(prefix.length)
+      : preserved;
+    if (logicalName === fieldName) return preserved;
+  }
+  return `${prefix}${fieldName}`;
+}
+
 /** `<tag attrs>\n  content\n</tag>` 형태 wrap. content 비면 self-collapse. */
 function wrapTag(
   ctx: GeneratorContext,
@@ -150,12 +167,11 @@ export const DICE_BLOCKS: BlockDef[] = [
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
       const style = String(b.getFieldValue('STYLE') ?? '');
-      const name = String(b.getFieldValue('NAME') ?? '').trim();
       const label = String(b.getFieldValue('LABEL') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const expr = ctx.valueToCode(block, 'EXPR', ORDER.NONE) || '';
       return (
-        `<button type="roll"${attr('name', name ? `roll_${name}` : '')}` +
+        `<button type="roll"${attr('name', prefixedButtonName(b, 'roll_'))}` +
         `${attr('value', expr)}${authoredClassAttr(cls)}${styleAttr(style)}>${escapeText(label)}</button>`
       );
     },
@@ -194,12 +210,11 @@ export const DICE_BLOCKS: BlockDef[] = [
     generator: (block) => {
       const b = block as Blockly.Block;
       const style = String(b.getFieldValue('STYLE') ?? '');
-      const name = String(b.getFieldValue('NAME') ?? '').trim();
       const label = String(b.getFieldValue('LABEL') ?? '');
       const formula = String(b.getFieldValue('FORMULA') ?? '').trim();
       const cls = String(b.getFieldValue('CLASS') ?? '');
       return (
-        `<button type="roll"${attr('name', name ? `roll_${name}` : '')}`
+        `<button type="roll"${attr('name', prefixedButtonName(b, 'roll_'))}`
         + `${attr('value', formula)}${authoredClassAttr(cls)}${styleAttr(style)}>${escapeText(label)}</button>`
       );
     },
@@ -233,11 +248,10 @@ export const DICE_BLOCKS: BlockDef[] = [
     generator: (block) => {
       const b = block as Blockly.Block;
       const style = String(b.getFieldValue('STYLE') ?? '');
-      const name = String(b.getFieldValue('NAME') ?? '').trim();
       const label = String(b.getFieldValue('LABEL') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       return (
-        `<button type="action"${attr('name', name ? `act_${name}` : '')}` +
+        `<button type="action"${attr('name', prefixedButtonName(b, 'act_'))}` +
         `${authoredClassAttr(cls)}${styleAttr(style)}>${escapeText(label)}</button>`
       );
     },
@@ -275,12 +289,11 @@ export const DICE_BLOCKS: BlockDef[] = [
     generator: (block) => {
       const b = block as Blockly.Block;
       const style = String(b.getFieldValue('STYLE') ?? '');
-      const name = String(b.getFieldValue('NAME') ?? '').trim();
       const label = String(b.getFieldValue('LABEL') ?? '');
       const message = String(b.getFieldValue('MESSAGE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       return (
-        `<button type="roll"${attr('name', name ? `roll_${name}` : '')}` +
+        `<button type="roll"${attr('name', prefixedButtonName(b, 'roll_'))}` +
         `${attr('value', message)}${authoredClassAttr(cls)}${styleAttr(style)}>${escapeText(label)}</button>`
       );
     },

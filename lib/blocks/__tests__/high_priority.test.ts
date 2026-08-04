@@ -269,6 +269,45 @@ function testFriendlyRollButtonEmit(): void {
   expectContains(code, '>Roll</button>', 'friendly Roll label is visible');
 }
 
+function testImportedRollButtonPreservesAuthoredName(): void {
+  const def = findBlock(DICE_BLOCKS as Array<{ type: string }>, 'r20_roll_button');
+  const imported = new FakeBlock({
+    type: 'r20_roll_button',
+    fields: {
+      NAME: 'check',
+      LABEL: 'Roll',
+      CLASS: '',
+      STYLE: '',
+      __R20_PRESERVED_ATTRS: '[["name","check"],["type","roll"]]',
+    },
+  });
+  const importedOut = def.generator!(imported, makeCtx({ EXPR: '1d20' }));
+  const importedCode = Array.isArray(importedOut) ? importedOut[0] : importedOut;
+  expectContains(importedCode, 'name="check"', 'unchanged imported Roll button keeps a bare authored name');
+
+  imported.fields.NAME = 'edited';
+  const editedOut = def.generator!(imported, makeCtx({ EXPR: '1d20' }));
+  const editedCode = Array.isArray(editedOut) ? editedOut[0] : editedOut;
+  expectContains(editedCode, 'name="roll_edited"', 'edited Roll button uses the Roll20 prefix');
+}
+
+function testImportedActionButtonPreservesAuthoredName(): void {
+  const def = findBlock(DICE_BLOCKS as Array<{ type: string }>, 'r20_action_button');
+  const imported = new FakeBlock({
+    type: 'r20_action_button',
+    fields: {
+      NAME: 'toggle',
+      LABEL: 'Toggle',
+      CLASS: '',
+      STYLE: '',
+      __R20_PRESERVED_ATTRS: '[["name","toggle"],["type","action"]]',
+    },
+  });
+  const out = def.generator!(imported, makeCtx());
+  const code = Array.isArray(out) ? out[0] : out;
+  expectContains(code, 'name="toggle"', 'unchanged imported action button keeps a bare authored name');
+}
+
 function testWorkerMathUnaryEmit(): void {
   const def = findBlock(SHEET_WORKER_BLOCKS as Array<{ type: string }>, 'r20_worker_math_unary');
   assert(def.generator, 'r20_worker_math_unary has generator');
@@ -821,6 +860,8 @@ function testAttrRefBogusScopeFallback(): void {
 const tests: Array<[string, () => void]> = [
   ['worker if/else emit', testWorkerIfElseEmit],
   ['friendly Roll button emit', testFriendlyRollButtonEmit],
+  ['imported Roll button preserves authored name', testImportedRollButtonPreservesAuthoredName],
+  ['imported action button preserves authored name', testImportedActionButtonPreservesAuthoredName],
   ['worker unary not emit', testWorkerUnaryNotEmit],
   ['worker Math unary emit', testWorkerMathUnaryEmit],
   ['worker Math binary emit', testWorkerMathBinaryEmit],
