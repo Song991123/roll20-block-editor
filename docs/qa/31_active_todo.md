@@ -276,6 +276,19 @@ Gate weights live in
 - `PARTIAL`: HTML, CSS, translation, Rolltemplate, and a useful Sheet Worker
   subset map to editable blocks. Unsupported content must remain explicit and
   lossless instead of disappearing.
+- `DONE LOCAL BOUNDED / VERIFY BROAD`: focused Corpus Harness runs now resolve
+  anonymous IDs through a sensitive ignored private index. Initial discovery
+  checkpoints each completed root, uses bounded filesystem concurrency, and
+  caches repeated reads; public reports remain path-free. The real protected
+  root that previously exceeded the execution limit now completes discovery,
+  and the following focused run bypasses the root walk. Full current-SHA corpus
+  measurement remains `VERIFY`.
+- `DONE LOCAL REPRESENTATIVE / VERIFY CORPUS`: a generic preserved-attribute
+  rule restores authored `type` spelling only when it is browser-equivalent to
+  the generated input type, including the explicit empty text default. A real
+  type edit still wins. Unit coverage and one anonymous modern protected
+  representative now pass every local mapping, Preview/Edit, runtime, and
+  resource gate. This does not prove the remaining corpus or actual Roll20.
 - `DONE LOCAL`: `@font-face` keeps its four common settings structured and
   preserves every additional or repeated descriptor in an editable fallback
   field. Import, generator, and live browser reimport tests keep descriptor

@@ -1431,3 +1431,27 @@ parity.
   gate, and project listeners again returned to zero.
 - Claim boundary: the 28.9% score belongs to `80029b2`. Current radio changes
   require a new complete baseline before any higher score is claimed.
+
+## 2026-08-05 - Focused Corpus Discovery And Input Type Fidelity
+
+- Added a sensitive ignored discovery index keyed by configured local roots.
+  It is written after each root and lets `--only` resolve one anonymous case
+  without traversing every protected directory again. Public reports and run
+  state remain anonymous and path-free.
+- Reworked read-only discovery from serial directory and file operations to
+  bounded batches. Repeated manifest, source, and translation reads share one
+  process-local cache, while generic root/phase checkpoints expose progress
+  without source identity.
+- The protected discovery that previously exceeded its execution limit now
+  completes, and its next focused execution uses the private index. Synthetic
+  discovery and Harness self-tests, the full Harness test group, and lint pass.
+- The resulting generic diagnostic identified an authored input `type` value
+  normalized by a structured text-input block. Equivalent authored spelling is
+  now restored; an actual type edit still wins. Unit tests cover authored case,
+  explicit empty default, and a real type change.
+- One anonymous modern protected representative passes all current local
+  mapping, Preview/Edit visual/state/geometry, runtime, and resource gates on a
+  fresh production build. The complete current-SHA corpus baseline, legacy
+  breadth, and actual Roll20 evidence remain open.
+- Claim boundary: do not update the Alpha score from this representative. The
+  last complete score still belongs to the earlier full baseline.

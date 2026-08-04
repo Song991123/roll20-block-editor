@@ -217,6 +217,14 @@ contain private source evidence or historical test dumps.
   complex Worker import remains exact raw source rather than unsafe partial
   hydration, and actual Roll20 execution of this lifecycle remains open.
   Broader Worker syntax and broad full-root candidate coverage remain open.
+- Corpus discovery has a sensitive ignored private index under `cacheDir`.
+  It checkpoints completed roots and is the required path for anonymous
+  `--only` reruns; never copy it into reports or tracked documents. Filesystem
+  traversal and source reads use bounded concurrency and generic progress
+  output. One anonymous modern protected representative currently passes every
+  local mapping, Preview/Edit, runtime, and resource gate after equivalent
+  authored input `type` values were preserved. Full current-SHA corpus and
+  actual modern/legacy Roll20 evidence remain open.
 - ImportDialog waits for every Blockly model workspace before hydration. Keep
   the cold-load early-click browser check; analysis percentages alone do not
   prove blocks were applied.

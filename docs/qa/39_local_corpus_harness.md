@@ -49,6 +49,13 @@ corepack pnpm run harness:corpus:select
 - `select`: greedily choose anonymous feature-cover representatives for actual
   Roll20 verification.
 
+Add `--only <anonymous-id>` to `scan`, `changed`, or `full` for a focused local
+rerun. Discovery writes a sensitive private index under `cacheDir`, one root at
+a time. A later focused run resolves the anonymous ID through that index and
+does not walk every protected root again. If the ID is absent from a complete
+private index, run `scan` to refresh discovery instead of guessing a source
+path.
+
 Each browser case runs in its own Node and Chromium process. Temporary source
 copies and child reports are removed after one anonymous result envelope is
 written. A case timeout or crash becomes a failed generic result and does not
@@ -99,6 +106,9 @@ root geometry, console errors, page errors, and resource warnings.
 ## Privacy And Cache
 
 - External roots are read-only.
+- `cacheDir/corpus-private-discovery.json` intentionally contains local source
+  paths so focused reruns can avoid a full tree walk. It is sensitive ignored
+  execution state: never print, copy into a report, or commit it.
 - Persisted rows contain anonymous IDs, hashes, generic feature tokens, level
   booleans, generic diagnostic categories, and aggregate counts only.
 - No source path, sheet name, creator, visible text, class token, attribute
@@ -109,6 +119,10 @@ root geometry, console errors, page errors, and resource warnings.
 - Incremental reuse is conservative. Import changes select matching artifact
   families, legacy sanitizing selects legacy CSS rows, renderer or unknown
   runtime changes select all rows, and input hash changes always rerun the row.
+- Read-only discovery batches directory and file I/O with a fixed upper bound,
+  caches repeated text reads for the current process, and emits only generic
+  root/phase progress. Root checkpoints make an interrupted first discovery
+  resumable without exposing source identity.
 - Commit only synthetic self-tests. Never commit config, cache, results, or
   protected source copies.
 
