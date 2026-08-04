@@ -534,6 +534,15 @@ function testCssSelectorComplexFallback(): void {
   // 핵심: r20_literal_string 으로 박히지 않음 + warning 발생 1+
   const literalCount = (r.css.match(/r20_literal_string/g) || []).length;
   assert(literalCount === 0, 'no r20_literal_string fallback');
+
+  const malformedList = importSheet({
+    css: '.sheet-a, .sheet-b, { color: red; }',
+  });
+  assert(
+    (malformedList.css.match(/r20_selector_complex/g) || []).length === 1,
+    'selector list with an empty item stays one exact complex block',
+  );
+  assert(malformedList.css.includes('.sheet-a, .sheet-b,'), 'malformed selector text is preserved');
 }
 
 function testModernCssAndMixedScriptPreservation(): void {

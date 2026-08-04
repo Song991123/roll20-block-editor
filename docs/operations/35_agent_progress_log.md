@@ -1402,5 +1402,11 @@ parity.
   test now separates 3x linear from 9x quadratic growth, keeps the absolute
   1500 ms limit, passed ten consecutive isolated runs, and passed the complete
   CI rerun.
+- A current-code rerun of an old radio attribute failure now passes its HTML
+  graph, confirming the generic wrapper ownership fix on protected input. Its
+  next failure was a CSS selector list with an empty item: first import created
+  a complex `*` fallback and reimport classified that output as an element.
+  Malformed lists now remain one exact complex selector block instead of being
+  silently completed with a universal selector.
 - Claim boundary: the 28.9% score belongs to `80029b2`. Current radio changes
   require a new complete baseline before any higher score is claimed.

@@ -445,6 +445,17 @@ function buildSelectorBlock(sel: string, ctx: CssMatchContext): MatchedBlock {
   // 1. Comma group at top level — A, B → r20_selector_comma.
   const commaParts = splitTopLevel(trimmed, ',');
   if (commaParts.length > 1) {
+    if (commaParts.some((part) => !part.trim())) {
+      ctx.warnings.push({
+        code: 'css_selector_complex',
+        message: '빈 항목이 있는 셀렉터 목록을 원문 보존 블록으로 가져왔습니다.',
+      });
+      return {
+        blockType: 'r20_selector_complex',
+        fields: { TEXT: trimmed },
+        children: {},
+      };
+    }
     const right = buildSelectorBlock(commaParts.slice(1).join(',').trim(), ctx);
     const left = buildSelectorBlock(commaParts[0].trim(), ctx);
     return {

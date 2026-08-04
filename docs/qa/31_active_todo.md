@@ -215,6 +215,12 @@ Gate weights live in
   3x growth from quadratic 9x growth while retaining the 1500 ms absolute cap.
   Ten consecutive isolated runs and the complete CI suite pass.
 
+- `DONE UNIT / VERIFY BROWSER`: selector lists containing an empty item now
+  stay as one exact `r20_selector_complex` block. This prevents an empty list
+  tail from becoming `*` and then changing into `r20_selector_element` on
+  reimport. The import suite passes; the same protected local target must pass
+  its CSS graph after a clean build.
+
 - `DONE LOCAL / VERIFY BROAD`: ordinary HTML comments now map to the existing
   hidden-note block at the document root and inside nested structure. Compact
   title, button, radio-label, select, option, and inline shapes fall back to a
