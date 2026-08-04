@@ -200,6 +200,11 @@ Gate weights live in
   impact and Harness self-tests pass; synthetic full-to-changed browser reuse
   remains the commit-after-build integration gate.
 
+- `DONE LOCAL`: clean-SHA synthetic corpus `full` executed modern and legacy
+  rows, produced a complete baseline, and passed all required local gates. The
+  next docs-only SHA must report two reused rows and zero executed rows before
+  incremental integration is marked done.
+
 - `DONE LOCAL / VERIFY BROAD`: ordinary HTML comments now map to the existing
   hidden-note block at the document root and inside nested structure. Compact
   title, button, radio-label, select, option, and inline shapes fall back to a

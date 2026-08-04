@@ -1388,5 +1388,8 @@ parity.
   cache key, reruns changed inputs or affected runtime families, and falls back
   to all rows when provenance is missing or unclear. Runtime-dirty worktrees are
   rejected so one SHA cannot hold results from two code states.
+- The first clean-SHA synthetic `full` integration executed both modern and
+  legacy rows with a complete 60-point local result. A following docs-only SHA
+  is reserved to verify cross-SHA `changed` re-keying without runtime impact.
 - Claim boundary: the 28.9% score belongs to `80029b2`. Current radio changes
   require a new complete baseline before any higher score is claimed.
