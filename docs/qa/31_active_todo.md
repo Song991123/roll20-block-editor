@@ -193,6 +193,13 @@ Gate weights live in
   Correctness and the large-input linear budget pass six consecutive isolated
   runs, followed by a complete passing `ci:verify` run.
 
+- `DONE UNIT / VERIFY INTEGRATION`: `harness:corpus:changed` now compares the
+  last complete ignored state, input hashes, and classified Git code impact.
+  It re-keys only unaffected rows, reruns affected or changed rows, falls back
+  to all rows when uncertain, and blocks runtime-dirty measurements. Pure
+  impact and Harness self-tests pass; synthetic full-to-changed browser reuse
+  remains the commit-after-build integration gate.
+
 - `DONE LOCAL / VERIFY BROAD`: ordinary HTML comments now map to the existing
   hidden-note block at the document root and inside nested structure. Compact
   title, button, radio-label, select, option, and inline shapes fall back to a

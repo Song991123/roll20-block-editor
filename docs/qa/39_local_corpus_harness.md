@@ -40,7 +40,10 @@ corepack pnpm run harness:corpus:select
 
 - `scan`: read-only discovery and anonymous inventory. It never reports Alpha
   progress.
-- `changed`: reuse current cache and run only missing current input/code keys.
+- `changed`: compare the last complete ignored run state with current input
+  hashes and Git changes. Unaffected rows are re-keyed to the current Git SHA;
+  changed inputs and affected runtime areas run again. Unknown runtime changes,
+  missing state, or divergent Git history conservatively rerun every row.
 - `full`: require a result for every discovered mode row; `--force` bypasses
   cache when diagnosing transient failures.
 - `select`: greedily choose anonymous feature-cover representatives for actual
@@ -50,6 +53,12 @@ Each browser case runs in its own Node and Chromium process. Temporary source
 copies and child reports are removed after one anonymous result envelope is
 written. A case timeout or crash becomes a failed generic result and does not
 stop later cases.
+
+`full` and `changed` require committed runtime code because Git SHA is part of
+the cache identity. Dirty documentation and test files are allowed; dirty app,
+runtime, dependency, or Harness files stop measurement instead of mixing two
+code states under one key. The ignored `corpus-run-state.json` stores only the
+last complete Git SHA and anonymous row/hash/cache-key tuples.
 
 ## Evidence Levels
 
@@ -97,6 +106,9 @@ root geometry, console errors, page errors, and resource warnings.
 - Cache identity includes SHA-256 digests of every input file, current Git SHA,
   compatibility mode, and Harness version. A file digest is read once per run
   and reused when multiple discovered cases reference the same local asset.
+- Incremental reuse is conservative. Import changes select matching artifact
+  families, legacy sanitizing selects legacy CSS rows, renderer or unknown
+  runtime changes select all rows, and input hash changes always rerun the row.
 - Commit only synthetic self-tests. Never commit config, cache, results, or
   protected source copies.
 

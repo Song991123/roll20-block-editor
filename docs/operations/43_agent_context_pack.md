@@ -46,6 +46,10 @@ contain private source evidence or historical test dumps.
   integration passes. Legacy keyframe sanitizing also uses range accumulation
   after CI exposed unstable character-by-character output growth. A fresh
   complete baseline is required before the 28.9% score can be updated.
+- Corpus `changed` runs now persist an ignored complete-run state and reuse only
+  unchanged input rows outside classified code impact. Missing provenance,
+  unknown runtime changes, or dirty runtime code trigger a safe stop/full rerun
+  instead of stale cache reuse.
 - Dedicated owner-only modern and legacy test rooms now cover current anonymous
   synthetic full-root rendering, translation, controls, Worker action state,
   Roll execution, and result-card output. The modern result-card comparison

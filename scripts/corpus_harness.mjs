@@ -18,6 +18,10 @@ import {
   discoverCorpusCases,
   validateCorpusRoots,
 } from './lib/corpus_discovery.mjs';
+import {
+  classifyCorpusCodeImpact,
+  corpusRowAffected,
+} from './lib/corpus_change_impact.mjs';
 
 const REPO = path.resolve(import.meta.dirname, '..');
 const HARNESS_VERSION = '5';
@@ -28,6 +32,7 @@ const SUMMARY_FILE = 'corpus-summary.json';
 const INVENTORY_FILE = 'corpus-inventory.json';
 const SCAN_SUMMARY_FILE = 'corpus-scan-summary.json';
 const SELECTED_FILE = 'corpus-selected.json';
+const RUN_STATE_FILE = 'corpus-run-state.json';
 const MAX_CAPTURE_BYTES = 8 * 1024 * 1024;
 
 function argOf(args, name, fallback) {
@@ -97,6 +102,46 @@ function currentGitSha() {
   });
   if (result.status !== 0) throw new Error('cannot resolve current Git SHA');
   return result.stdout.trim();
+}
+
+function changedPathsSince(baseSha, currentSha) {
+  if (baseSha === currentSha) return [];
+  const ancestor = spawnSync('git', ['merge-base', '--is-ancestor', baseSha, currentSha], {
+    cwd: REPO,
+    encoding: 'utf8',
+    windowsHide: true,
+  });
+  if (ancestor.status !== 0) return null;
+  const result = spawnSync('git', [
+    'diff', '--name-only', '--diff-filter=ACDMRT', `${baseSha}..${currentSha}`,
+  ], {
+    cwd: REPO,
+    encoding: 'utf8',
+    windowsHide: true,
+  });
+  if (result.status !== 0) return null;
+  return result.stdout.split(/\r?\n/).map((value) => value.trim()).filter(Boolean);
+}
+
+function gitPathList(args) {
+  const result = spawnSync('git', args, {
+    cwd: REPO,
+    encoding: 'utf8',
+    windowsHide: true,
+  });
+  if (result.status !== 0) throw new Error('cannot inspect corpus harness Git state');
+  return result.stdout.split(/\r?\n/).map((value) => value.trim()).filter(Boolean);
+}
+
+function assertMeasurableGitState() {
+  const paths = [...new Set([
+    ...gitPathList(['diff', '--name-only']),
+    ...gitPathList(['diff', '--cached', '--name-only']),
+    ...gitPathList(['ls-files', '--others', '--exclude-standard']),
+  ])];
+  if (classifyCorpusCodeImpact(paths).scope !== 'none') {
+    throw new Error('corpus measurement requires committed runtime code; docs and tests may remain dirty');
+  }
 }
 
 function modesFor(compatibility) {
@@ -215,6 +260,18 @@ function blankResult(row) {
   });
 }
 
+function rowArtifacts(row) {
+  const descriptor = row.caseDescriptor;
+  return {
+    html: descriptor.htmlPaths.length > 0,
+    css: descriptor.cssPaths.length > 0,
+    translation: descriptor.translationPaths.length > 0,
+    javascript: descriptor.javascriptPaths.length > 0,
+    worker: descriptor.workerPaths.length > 0 || descriptor.features.includes('worker:inline-source'),
+    image: descriptor.imagePaths.length > 0,
+  };
+}
+
 function cachePath(config, row) {
   return path.join(config.cacheDir, 'results', `${row.cacheKey}.json`);
 }
@@ -232,6 +289,110 @@ async function readCachedEnvelope(config, row) {
   } catch {
     return null;
   }
+}
+
+function runStatePath(config) {
+  return path.join(config.reportDir, RUN_STATE_FILE);
+}
+
+async function readRunState(config) {
+  try {
+    const value = JSON.parse(await readFile(runStatePath(config), 'utf8'));
+    if (
+      value?.version !== 1
+      || value?.harnessVersion !== HARNESS_VERSION
+      || !/^[a-f0-9]{40,64}$/.test(value?.gitSha ?? '')
+      || value?.baselineComplete !== true
+      || !Array.isArray(value?.rows)
+    ) return null;
+    const rows = value.rows.filter((row) => (
+      /^case-[a-f0-9]{24}$/.test(row?.anonymousId ?? '')
+      && (row?.mode === 'modern' || row?.mode === 'legacy')
+      && /^[a-f0-9]{64}$/.test(row?.inputHash ?? '')
+      && /^cache-[a-f0-9]{32}$/.test(row?.cacheKey ?? '')
+    ));
+    if (rows.length !== value.rows.length) return null;
+    return { ...value, rows };
+  } catch {
+    return null;
+  }
+}
+
+async function readPriorEnvelope(config, stateRow) {
+  try {
+    const parsed = JSON.parse(await readFile(
+      path.join(config.cacheDir, 'results', `${stateRow.cacheKey}.json`),
+      'utf8',
+    ));
+    assertPersistableCorpusCaseResult(parsed.result);
+    if (
+      parsed.harnessVersion !== HARNESS_VERSION
+      || parsed.mode !== stateRow.mode
+      || parsed.result.anonymousId !== stateRow.anonymousId
+      || parsed.result.inputHash !== stateRow.inputHash
+      || parsed.result.cacheKey !== stateRow.cacheKey
+    ) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function rekeyEnvelope(envelope, row) {
+  const result = normalizeCorpusCaseResult({
+    ...envelope.result,
+    inputHash: row.inputHash,
+    features: row.caseDescriptor.features,
+    cacheKey: row.cacheKey,
+  });
+  assertPersistableCorpusCaseResult(result);
+  return {
+    ...envelope,
+    harnessVersion: HARNESS_VERSION,
+    mode: row.mode,
+    result,
+  };
+}
+
+async function prepareChangedReuse(config, rows, currentSha, { force }) {
+  if (force) return { envelopes: new Map(), impactScope: 'all' };
+  const state = await readRunState(config);
+  if (!state) return { envelopes: new Map(), impactScope: 'all' };
+  const changedPaths = changedPathsSince(state.gitSha, currentSha);
+  if (changedPaths === null) return { envelopes: new Map(), impactScope: 'all' };
+  const impact = classifyCorpusCodeImpact(changedPaths);
+  const previousRows = new Map(state.rows.map((row) => [`${row.anonymousId}:${row.mode}`, row]));
+  const envelopes = new Map();
+
+  for (const row of rows) {
+    if (corpusRowAffected(impact, {
+      mode: row.mode,
+      artifacts: rowArtifacts(row),
+      features: row.caseDescriptor.features,
+    })) continue;
+    const previous = previousRows.get(`${row.anonymousId}:${row.mode}`);
+    if (!previous || previous.inputHash !== row.inputHash) continue;
+    const envelope = await readPriorEnvelope(config, previous);
+    if (envelope) envelopes.set(row.cacheKey, rekeyEnvelope(envelope, row));
+  }
+
+  return { envelopes, impactScope: impact.scope };
+}
+
+async function writeRunState(config, gitSha, rows) {
+  const value = {
+    version: 1,
+    harnessVersion: HARNESS_VERSION,
+    gitSha,
+    baselineComplete: true,
+    rows: rows.map((row) => ({
+      anonymousId: row.anonymousId,
+      mode: row.mode,
+      inputHash: row.inputHash,
+      cacheKey: row.cacheKey,
+    })),
+  };
+  await writeFile(runStatePath(config), `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
 function boundedOutput(value) {
@@ -639,10 +800,10 @@ async function runScan(config, rows) {
   const envelopes = rows.map((row) => ({ result: blankResult(row), checks: {} }));
   const summary = aggregate(rows, envelopes, { baselineComplete: false });
   await writeFile(path.join(config.reportDir, SCAN_SUMMARY_FILE), `${JSON.stringify(summary, null, 2)}\n`, 'utf8');
-  return { rows, envelopes, summary, executed: 0, cached: 0 };
+  return { rows, envelopes, summary, executed: 0, cached: 0, reused: 0 };
 }
 
-async function runCases(config, rows, { force }) {
+async function runCases(config, rows, { force, reusable = new Map() }) {
   if (!existsSync(path.join(REPO, 'out', 'index.html'))) {
     throw new Error('static app output missing; run corepack pnpm run build first');
   }
@@ -654,7 +815,16 @@ async function runCases(config, rows, { force }) {
       if (envelope) cached.set(row.cacheKey, envelope);
     }
   }
-  const pending = rows.filter((row) => !cached.has(row.cacheKey));
+  const reused = new Map();
+  for (const row of rows) {
+    if (cached.has(row.cacheKey)) continue;
+    const envelope = reusable.get(row.cacheKey);
+    if (!envelope) continue;
+    reused.set(row.cacheKey, envelope);
+    await mkdir(path.dirname(cachePath(config, row)), { recursive: true });
+    await writeFile(cachePath(config, row), `${JSON.stringify(envelope, null, 2)}\n`, 'utf8');
+  }
+  const pending = rows.filter((row) => !cached.has(row.cacheKey) && !reused.has(row.cacheKey));
   let completed = 0;
   const executedEntries = await mapWithConcurrency(
     pending,
@@ -670,11 +840,20 @@ async function runCases(config, rows, { force }) {
     },
   );
   const executed = new Map(pending.map((row, index) => [row.cacheKey, executedEntries[index]]));
-  const envelopes = rows.map((row) => cached.get(row.cacheKey) ?? executed.get(row.cacheKey));
+  const envelopes = rows.map((row) => (
+    cached.get(row.cacheKey) ?? reused.get(row.cacheKey) ?? executed.get(row.cacheKey)
+  ));
   const baselineComplete = envelopes.every(Boolean) && envelopes.length === rows.length;
   const summary = aggregate(rows, envelopes, { baselineComplete });
   await writeReports(config, rows, envelopes, summary);
-  return { rows, envelopes, summary, executed: pending.length, cached: cached.size };
+  return {
+    rows,
+    envelopes,
+    summary,
+    executed: pending.length,
+    cached: cached.size,
+    reused: reused.size,
+  };
 }
 
 async function runSelect(config) {
@@ -698,15 +877,22 @@ async function runSelect(config) {
 async function executeCommand(command, configPath, { force = false, onlyId = '' } = {}) {
   const config = await loadConfig(configPath);
   if (command === 'select') return runSelect(config);
+  if (command === 'changed' || command === 'full') assertMeasurableGitState();
   const discovery = await discoverCorpusCases(config.roots);
   if (discovery.diagnostics.some((category) => category.startsWith('root:'))) {
     throw new Error('one or more configured corpus roots are unavailable or unsafe');
   }
-  const rows = await makeRows(discovery, currentGitSha(), onlyId);
+  const gitSha = currentGitSha();
+  const rows = await makeRows(discovery, gitSha, onlyId);
   if (rows.length === 0) throw new Error('corpus discovery found no HTML cases');
   await writeInventory(config, rows);
   if (command === 'scan') return runScan(config, rows);
-  return runCases(config, rows, { force });
+  const reuse = command === 'changed'
+    ? await prepareChangedReuse(config, rows, gitSha, { force })
+    : { envelopes: new Map(), impactScope: 'all' };
+  const result = await runCases(config, rows, { force, reusable: reuse.envelopes });
+  if (result.summary.baselineComplete && !onlyId) await writeRunState(config, gitSha, rows);
+  return { ...result, impactScope: reuse.impactScope };
 }
 
 async function selfTest() {
@@ -765,6 +951,8 @@ async function main() {
     rows: result.rows.length,
     executed: result.executed,
     cached: result.cached,
+    reused: result.reused,
+    impactScope: result.impactScope ?? 'none',
     baselineComplete: result.summary.baselineComplete,
     progressPct: result.summary.progressPct,
     requiredLocalPass: result.summary.requiredLocalPass,

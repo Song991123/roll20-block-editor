@@ -1383,5 +1383,10 @@ parity.
   appends retained source ranges and joins once instead of extending the output
   one character at a time. The isolated correctness and linear-budget suite
   passed six consecutive runs, then the complete `ci:verify` rerun passed.
+- `harness:corpus:changed` now has a real code-impact boundary. It reads only a
+  complete ignored run state, reuses unchanged anonymous rows under a new Git
+  cache key, reruns changed inputs or affected runtime families, and falls back
+  to all rows when provenance is missing or unclear. Runtime-dirty worktrees are
+  rejected so one SHA cannot hold results from two code states.
 - Claim boundary: the 28.9% score belongs to `80029b2`. Current radio changes
   require a new complete baseline before any higher score is claimed.

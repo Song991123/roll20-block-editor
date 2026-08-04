@@ -205,7 +205,7 @@
     "test:imported-edit-budget": "node scripts/imported_edit_perf_budget.mjs --self-test",
     "smoke:isolated-import-roundtrip": "node scripts/isolated_import_roundtrip.mjs",
     "test:isolated-import-roundtrip": "node scripts/isolated_import_roundtrip.mjs --self-test",
-    "test:corpus-harness": "tsx lib/perf/__tests__/canonicalBlockGraph.test.ts && node scripts/corpus_harness_core_selftest.mjs && node scripts/corpus_discovery_selftest.mjs && node scripts/corpus_harness.mjs --self-test",
+    "test:corpus-harness": "tsx lib/perf/__tests__/canonicalBlockGraph.test.ts && node scripts/corpus_harness_core_selftest.mjs && node scripts/corpus_discovery_selftest.mjs && node scripts/corpus_change_impact_selftest.mjs && node scripts/corpus_harness.mjs --self-test",
     "harness:corpus:scan": "node scripts/corpus_harness.mjs scan",
     "harness:corpus:changed": "node scripts/corpus_harness.mjs changed",
     "harness:corpus:full": "node scripts/corpus_harness.mjs full",
