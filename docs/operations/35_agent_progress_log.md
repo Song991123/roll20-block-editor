@@ -1572,3 +1572,29 @@ parity.
   unavailable-dropdown warning. A separate HTML root mismatch remains open.
 - Root mismatch diagnostics now report only generic block-type counts and node
   counts. No source values, selectors, paths, or identities enter the report.
+
+## 2026-08-05 - Headless Worker Ownership Parity
+
+- Traced an apparent HTML root mismatch to the diagnostic path, not the product
+  importer. The headless probe omitted the product step that moves imported
+  Worker blocks from HTML into the Worker workspace.
+- The probe now clears stale Worker state, hydrates HTML, moves Worker-owned
+  blocks, rebuilds source Worker scripts, and then hydrates the remaining
+  workspaces in the same order as the browser import path. It records and rejects
+  any Worker block left in HTML.
+- GitHub CI run `30967556296` passed. The targeted anonymous modern case that
+  exposed the mismatch now passes all five workspace graphs.
+
+## 2026-08-05 - Stable Raw Worker Boundaries
+
+- A targeted anonymous legacy probe then isolated a raw Worker `JS` field whose
+  content matched after trimming but changed at the script boundary. Source
+  import now applies one boundary-whitespace rule after line-ending and common
+  indentation normalization.
+- Regression coverage keeps multiple Worker script roots separate, preserves
+  source order, and confirms Worker field values stay stable after emit and
+  reimport. Privacy-safe field diagnostics report normalization booleans only.
+- GitHub CI run `30967891993` passed. The targeted legacy representative now
+  passes HTML, CSS, translation, Page JS, and Worker graph comparison.
+- Claim boundary: both targeted probes are Node graph evidence only. Broad
+  current-SHA corpus, browser runtime, export, and actual Roll20 remain open.

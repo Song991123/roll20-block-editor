@@ -249,8 +249,19 @@ Gate weights live in
   dropdowns now consume one pseudo-class vocabulary. Synthetic coverage includes
   root, state, child/type, and functional pseudo-classes; the real Blockly
   hydrate probe covers `:root` and `:has()`. GitHub CI run `30967170144` passed.
-  A targeted anonymous modern graph probe now passes CSS with no unavailable
-  dropdown warning. Its separate HTML root-structure mismatch remains `VERIFY`.
+  A targeted anonymous modern graph probe now passes all five workspaces with
+  no unavailable-dropdown warning after the probe adopted the product's Worker
+  ownership sequence. A legacy representative from the same old CSS field
+  cluster also passes all five workspaces after Worker boundary normalization.
+  Broad corpus and browser/runtime behavior remain `VERIFY`.
+- `DONE REMOTE + TARGETED MODERN/LEGACY GRAPH / VERIFY BROWSER`: the headless
+  mapping probe now clears Worker state, moves imported Worker blocks out of
+  HTML, and rebuilds Worker source in the same order as the product import path.
+  It fails if Worker blocks leak into the HTML graph. Raw Worker source also
+  normalizes semantically irrelevant script-boundary whitespace while retaining
+  separate script roots and source order. GitHub CI runs `30967556296` and
+  `30967891993` passed; one modern and one legacy anonymous representative each
+  pass HTML, CSS, translation, Page JS, and Worker graph comparison.
 
 - `DONE LOCAL / VERIFY BROAD`: imported roll and action buttons now retain an
   authored bare or prefixed `name` while the visible `NAME` field is unchanged.

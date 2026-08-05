@@ -69,6 +69,11 @@ contain private source evidence or historical test dumps.
   unknown runtime changes, or dirty runtime code trigger a safe stop/full rerun
   instead of stale cache reuse. Synthetic modern/legacy full-to-docs-only-change
   integration passed with zero executions and two cross-SHA reused rows.
+- The lightweight headless mapping probe mirrors the product's Worker import
+  ownership order and rejects Worker blocks left in HTML. Its privacy-safe
+  diagnostics expose only generic block/field names and normalization traits.
+  Targeted modern and legacy representatives currently pass all five workspace
+  graphs; this is not browser, visual, export, or actual Roll20 proof.
 - Dedicated owner-only modern and legacy test rooms now cover current anonymous
   synthetic full-root rendering, translation, controls, Worker action state,
   Roll execution, and result-card output. The modern result-card comparison
