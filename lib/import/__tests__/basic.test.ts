@@ -606,6 +606,44 @@ function testModernCssAndMixedScriptPreservation(): void {
   assert(malformed.css.includes('r20_raw_css'), 'unbalanced at-rule remains raw');
 }
 
+function testCssPseudoVocabularyStaysStructured(): void {
+  const selectors = [
+    ':root',
+    'a:link',
+    'input:enabled',
+    'input:valid',
+    'input:invalid',
+    '.item:only-child',
+    '.item:only-of-type',
+    '.item:is(.active)',
+    '.item:where(.active)',
+    '.item:has(> input)',
+    '.item:target',
+  ];
+  const r = importSheet({
+    css: selectors.map((selector) => `${selector} { display: block; }`).join('\n'),
+  });
+  for (const pseudo of [
+    'root',
+    'link',
+    'enabled',
+    'valid',
+    'invalid',
+    'only-child',
+    'only-of-type',
+    'is',
+    'where',
+    'has',
+    'target',
+  ]) {
+    assert(
+      r.css.includes(`<field name="PSEUDO">${pseudo}</field>`),
+      `pseudo-class ${pseudo} should remain structured`,
+    );
+  }
+  assert(r.stats.cssRawFallback === 0, 'shared pseudo vocabulary needs no raw fallback');
+}
+
 function testCssCompoundSelector(): void {
   // tag.class compound — `input.sheet-hide`.
   const css = `input.sheet-hide { display: none; }`;
@@ -743,6 +781,7 @@ const tests = [
   ['css @keyframes structure', testCssKeyframesStructureAndFallback],
   ['css selector_complex fallback', testCssSelectorComplexFallback],
   ['modern CSS and mixed script preservation', testModernCssAndMixedScriptPreservation],
+  ['css shared pseudo vocabulary', testCssPseudoVocabularyStaysStructured],
   ['css compound selector', testCssCompoundSelector],
   ['css pseudo-element ::-webkit-*', testCssPseudoElementWebkit],
   ['css extended element tags', testCssExtendedElementTags],

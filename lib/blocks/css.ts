@@ -14,6 +14,7 @@
 
 import * as Blockly from 'blockly';
 import { type BlockDef, type GeneratorContext, ORDER } from './types';
+import { CSS_PSEUDO_CLASS_OPTIONS } from '../utils/cssPseudoClasses';
 
 // ---------- 카테고리 / 상수 ----------
 
@@ -60,29 +61,8 @@ const ATTR_OPS: Array<[string, string]> = [
   ['*=', '*='],
 ];
 
-/** 의사 클래스 — hover/focus/checked/disabled + nth-child. */
-const PSEUDOS: Array<[string, string]> = [
-  ['hover', 'hover'],
-  ['focus', 'focus'],
-  ['checked', 'checked'],
-  ['disabled', 'disabled'],
-  ['not', 'not'],
-  ['active', 'active'],
-  ['visited', 'visited'],
-  ['required', 'required'],
-  ['optional', 'optional'],
-  ['valid', 'valid'],
-  ['invalid', 'invalid'],
-  ['empty', 'empty'],
-  ['first-child', 'first-child'],
-  ['last-child', 'last-child'],
-  ['nth-child', 'nth-child'],
-  ['nth-last-child', 'nth-last-child'],
-  ['first-of-type', 'first-of-type'],
-  ['last-of-type', 'last-of-type'],
-  ['nth-of-type', 'nth-of-type'],
-  ['nth-last-of-type', 'nth-last-of-type'],
-];
+/** Parser and Blockly must accept the same pseudo-class vocabulary. */
+const PSEUDOS = CSS_PSEUDO_CLASS_OPTIONS;
 
 /** 의사 요소 (::pseudo-element) — Roll20 시트에서 자주 쓰는 8 종. */
 const PSEUDO_ELEMENTS: Array<[string, string]> = [

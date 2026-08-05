@@ -15,6 +15,7 @@
  */
 
 import type { MatchedBlock } from './block_matcher';
+import { CSS_PSEUDO_CLASS_SET } from '../utils/cssPseudoClasses';
 
 export interface CssMatchContext {
   matched: number;
@@ -411,16 +412,6 @@ const ELEMENT_TAGS_ALLOWED = new Set([
   'label', 'fieldset', 'a', 'img',
 ]);
 
-const PSEUDO_CLASSES_ALLOWED = new Set([
-  'hover', 'focus', 'active', 'visited', 'link',
-  'checked', 'disabled', 'enabled', 'required', 'optional',
-  'first-child', 'last-child', 'only-child',
-  'first-of-type', 'last-of-type', 'only-of-type',
-  'nth-child', 'nth-of-type', 'nth-last-child', 'nth-last-of-type',
-  'not', 'is', 'where', 'has',
-  'empty', 'root', 'target',
-]);
-
 const PSEUDO_ELEMENTS_ALLOWED = new Set([
   'before', 'after', 'placeholder',
   'first-line', 'first-letter',
@@ -517,7 +508,7 @@ function buildSelectorBlock(sel: string, ctx: CssMatchContext): MatchedBlock {
         children: {},
       };
     }
-    if (PSEUDO_CLASSES_ALLOWED.has(pseudo)) {
+    if (CSS_PSEUDO_CLASS_SET.has(pseudo)) {
       const baseBlock = base
         ? buildSelectorBlock(base, ctx)
         : ({ blockType: 'r20_selector_complex', fields: { TEXT: '' }, children: {} } as MatchedBlock);

@@ -373,7 +373,7 @@ async function selfTest(): Promise<void> {
       '<script>window.pageReady = true;</script>',
       '<script type="text/worker">on("sheet:opened", function () { setAttrs({ready: "1"}); });</script>',
     ].join('\n'),
-    css: '.panel { color: red; }',
+    css: ':root { --tone: red; }\n.panel:has(> input) { color: var(--tone); }',
     i18n: '{"title":"Title"}',
   }, true);
   assert.equal(result.pass, true, JSON.stringify({
