@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Blocks, Dice5, Eye, FileText, Languages, PanelsLeftRight, PencilRuler, ShieldAlert, ShieldCheck, SlidersHorizontal, type LucideIcon } from 'lucide-react';
+import { Blocks, Dice5, Eye, FileText, FlaskConical, Languages, PanelsLeftRight, PencilRuler, ShieldAlert, ShieldCheck, SlidersHorizontal, type LucideIcon } from 'lucide-react';
 import { useUiStore, type EditSubmode, type MainMode } from '@/lib/stores/uiStore';
 import { usePreviewStore, type Roll20CompatibilityMode } from '@/lib/stores/previewStore';
 import {
@@ -13,7 +13,8 @@ import {
 /**
  * 화면 모드 전환 툴바 (design-reset).
  * 라벨은 "무엇을 하는 화면인지" 기준의 자연어 — 기술 용어 없이.
- * 순서는 처음 쓰는 사람의 흐름: 미리보기 → 직접 편집 → 블록 조립 → 나란히 보기.
+ * Alpha 기본 흐름은 미리보기 → 고급 블록 편집이다. 화면 직접 편집은
+ * 별도 시험 기능을 켠 사용자에게만 표시한다.
  */
 const MODES: Array<{
   key: MainMode;
@@ -22,10 +23,16 @@ const MODES: Array<{
   tooltip: string;
 }> = [
   { key: 'preview', label: '미리보기', Icon: Eye, tooltip: '완성된 시트가 어떻게 보이는지 화면 가득 확인해요.' },
-  { key: 'edit', label: '직접 편집', Icon: PencilRuler, tooltip: '시트 화면을 직접 클릭해서 요소를 고르고, 옮기고, 고쳐요.' },
   { key: 'assemble', label: '블록 조립', Icon: Blocks, tooltip: '블록을 끼워 맞춰 시트를 만드는 조립 공간을 넓게 써요.' },
   { key: 'split', label: '나란히 보기', Icon: PanelsLeftRight, tooltip: '왼쪽엔 블록, 오른쪽엔 미리보기를 함께 놓고 작업해요.' },
 ];
+
+const DIRECT_EDIT_MODE = {
+  key: 'edit' as const,
+  label: '화면 편집',
+  Icon: PencilRuler,
+  tooltip: '시험 기능입니다. 시트 화면에서 요소를 직접 고르고 옮겨요.',
+};
 
 const SUBMODES: Array<{ key: EditSubmode; label: string; Icon: LucideIcon; tooltip: string }> = [
   { key: 'sheet', label: '시트 디자인', Icon: FileText, tooltip: '캐릭터 시트 화면을 편집해요.' },
@@ -38,6 +45,8 @@ export default function MainAreaToolbar() {
   const mainSplit = useUiStore((s) => s.mainSplit);
   const editSubmode = useUiStore((s) => s.editSubmode);
   const setEditSubmode = useUiStore((s) => s.setEditSubmode);
+  const directEditExperimentalEnabled = useUiStore((s) => s.directEditExperimentalEnabled);
+  const setDirectEditExperimentalEnabled = useUiStore((s) => s.setDirectEditExperimentalEnabled);
   const legacyCssSanitize = usePreviewStore((s) => s.legacyCssSanitize);
   const setRoll20CompatibilityMode = usePreviewStore((s) => s.setRoll20CompatibilityMode);
   const roll20SandboxSanitize = usePreviewStore((s) => s.roll20SandboxSanitize);
@@ -45,39 +54,9 @@ export default function MainAreaToolbar() {
   const documentLanguage = usePreviewStore((s) => s.documentLanguage);
   const setDocumentLanguage = usePreviewStore((s) => s.setDocumentLanguage);
   const roll20Mode: Roll20CompatibilityMode = legacyCssSanitize ? 'legacy' : 'modern';
-
-  if (mainMode === 'preview') {
-    return (
-      <TooltipProvider delayDuration={300}>
-        <div
-          className="r20-strip flex min-h-14 shrink-0 items-center justify-between gap-3 border-b border-[var(--border-subtle)] px-3 py-1.5"
-          data-testid="preview-focus-toolbar"
-        >
-          <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-foreground">
-            <Eye className="h-[18px] w-[18px] text-[var(--primary-strong)]" aria-hidden="true" />
-            <span>미리보기</span>
-            <span className="truncate text-xs font-normal text-muted-foreground">
-              시트만 확인하는 화면
-            </span>
-          </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                className="r20-seg-btn shrink-0"
-                data-testid="preview-exit-edit"
-                onClick={() => setMainMode('edit')}
-              >
-                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-                편집하기
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>같은 시트 화면 위에서 요소를 편집해요.</TooltipContent>
-          </Tooltip>
-        </div>
-      </TooltipProvider>
-    );
-  }
+  const visibleModes = directEditExperimentalEnabled
+    ? [MODES[0], DIRECT_EDIT_MODE, ...MODES.slice(1)]
+    : MODES;
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -85,8 +64,9 @@ export default function MainAreaToolbar() {
         className="r20-strip flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-b border-[var(--border-subtle)] px-3 py-1.5"
         data-testid="main-area-toolbar"
       >
+        {mainMode === 'preview' && <span className="sr-only" data-testid="preview-focus-toolbar" />}
         <div role="tablist" aria-label="화면 모드" className="r20-seg shrink-0">
-          {MODES.map((mode) => {
+          {visibleModes.map((mode) => {
             const isActive = mainMode === mode.key;
             const Icon = mode.Icon;
             return (
@@ -149,6 +129,25 @@ export default function MainAreaToolbar() {
               {Math.round(mainSplit.left)}% / {Math.round(mainSplit.right)}%
             </span>
           )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <label className="inline-flex h-9 cursor-pointer select-none items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-elevated-2)] px-3 text-xs font-medium">
+                <FlaskConical className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="hidden 2xl:inline">화면 편집 시험 기능</span>
+                <input
+                  type="checkbox"
+                  checked={directEditExperimentalEnabled}
+                  onChange={(event) => setDirectEditExperimentalEnabled(event.target.checked)}
+                  aria-label="화면 직접 편집 시험 기능"
+                  data-testid="direct-edit-experimental-toggle"
+                  className="h-4 w-4 accent-[var(--primary)]"
+                />
+              </label>
+            </TooltipTrigger>
+            <TooltipContent>
+              개발 중인 화면 직접 편집을 사용할 때만 켜세요. 설정은 이 브라우저에 저장됩니다.
+            </TooltipContent>
+          </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <label className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-elevated-2)] px-3 text-xs font-medium">

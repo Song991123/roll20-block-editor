@@ -126,7 +126,10 @@ async function main() {
       try {
         window.localStorage.setItem('__perfOn', '1');
         window.localStorage.removeItem('r20be-autosave');
-        window.localStorage.removeItem('r20-ui');
+        window.localStorage.setItem('r20-ui', JSON.stringify({
+          state: { directEditExperimentalEnabled: true, mainMode: 'edit' },
+          version: 0,
+        }));
       } catch {}
     });
 
@@ -939,7 +942,7 @@ async function main() {
     await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '0');
     const scaledPreview = await readScaledPlacement();
     const affinePreview = await readAffinePlacement();
-    await page.click('[data-testid="preview-exit-edit"]');
+    await page.click('[data-testid="main-mode-edit"]');
     await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '1');
     const scaledEditAgain = await readScaledPlacement();
     const affineEditAgain = await readAffinePlacement();
@@ -1511,7 +1514,7 @@ async function main() {
     await page.click('[data-testid="main-mode-preview"]');
     await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '0');
     const keyboardPreview = await readArrangementGeometry();
-    await page.click('[data-testid="preview-exit-edit"]');
+    await page.click('[data-testid="main-mode-edit"]');
     await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '1');
     const keyboardEditAgain = await readArrangementGeometry();
     assert(
@@ -1613,7 +1616,7 @@ async function main() {
         - Math.min(...alignmentPreview.map((item) => item.top)) <= 0.5,
       `Preview geometry differs after alignment: ${JSON.stringify(alignmentPreview)}`,
     );
-    await page.click('[data-testid="preview-exit-edit"]');
+    await page.click('[data-testid="main-mode-edit"]');
     await alignmentToolbar.waitFor({ state: 'visible', timeout: 10000 });
     const alignmentEditAgain = await readArrangementGeometry();
     assert(
@@ -2069,7 +2072,7 @@ async function main() {
     await page.click('[data-testid="main-mode-preview"]');
     await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '0');
     const multiFlowPreview = await readMultiFlowFrame();
-    await page.click('[data-testid="preview-exit-edit"]');
+    await page.click('[data-testid="main-mode-edit"]');
     await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '1');
     const multiFlowEditAgain = await readMultiFlowFrame();
     assert(
@@ -2859,7 +2862,7 @@ async function main() {
     await page.click('[data-testid="main-mode-preview"]');
     await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '0');
     result.tests.touchPlacementPreview = await readTouchPlacement(touchSubjectId);
-    await page.click('[data-testid="preview-exit-edit"]');
+    await page.click('[data-testid="main-mode-edit"]');
     await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '1');
     result.tests.touchPlacementEditAgain = await readTouchPlacement(touchSubjectId);
     assert(
@@ -2882,7 +2885,10 @@ async function main() {
       try {
         window.localStorage.setItem('__perfOn', '1');
         window.localStorage.removeItem('r20be-autosave');
-        window.localStorage.removeItem('r20-ui');
+        window.localStorage.setItem('r20-ui', JSON.stringify({
+          state: { directEditExperimentalEnabled: true, mainMode: 'edit' },
+          version: 0,
+        }));
       } catch {}
     });
     await touchPage.goto(result.url, { waitUntil: 'load' });
@@ -3907,7 +3913,7 @@ async function main() {
       const rect = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`)?.getBoundingClientRect();
       return rect ? { width: rect.width, height: rect.height } : null;
     }, resizeTargetId);
-    await page.click('[data-testid="preview-exit-edit"]');
+    await page.click('[data-testid="main-mode-edit"]');
     await frame.waitForFunction(() => document.body?.getAttribute('data-r20-edit-mode') === '1');
     const resizeEditRect = await frame.evaluate((blockId) => {
       const rect = document.querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`)?.getBoundingClientRect();
@@ -5125,7 +5131,7 @@ async function main() {
     }));
     assert(result.tests.rollButtonPreview.cards === 1, 'preview Roll click did not create one chat template card');
     assert(result.tests.rollButtonPreview.debugLabels === 0, 'preview Roll card exposed a debug label');
-    await page.click('[data-testid="preview-exit-edit"]');
+    await page.click('[data-testid="main-mode-edit"]');
     await page.waitForSelector('[data-testid="edit-canvas-root"]');
 
     await page.mouse.move(0, 0);
@@ -5541,7 +5547,10 @@ async function main() {
       try {
         window.localStorage.setItem('__perfOn', '1');
         window.localStorage.removeItem('r20be-autosave');
-        window.localStorage.removeItem('r20-ui');
+        window.localStorage.setItem('r20-ui', JSON.stringify({
+          state: { directEditExperimentalEnabled: true, mainMode: 'edit' },
+          version: 0,
+        }));
       } catch {}
     });
     await creationPage.goto(result.url, { waitUntil: 'load' });

@@ -492,12 +492,12 @@ Gate weights live in
   persistent iframe. Fresh-sheet drag, full edit-flow, six anonymous imported
   structures, and all anonymous synthetic modern/legacy Preview/Edit pairs
   pass; ignored reports remain the only screenshot store.
-- `DONE LOCAL`: a fresh browser now opens on Direct Edit instead of the
-  technical split/block workspace. A valid saved mode is still respected.
-  Before the first element exists, the editor displays an editor-only 850px
-  white canvas without emitting a placeholder block. The first iframe replaces
-  that canvas at the same horizontal origin and width, so the user's initial
-  drop does not jump when source generation finishes.
+- `VERIFY CI/BROWSER`: Alpha first-run policy now opens Preview and leads with
+  sheet import. Blank-sheet block assembly remains available as a secondary
+  action. Direct Edit code and regressions stay intact but its UI appears only
+  after a browser-local experimental preference is enabled; disabling it while
+  active returns to Preview. Existing saved Direct Edit state migrates to
+  Preview unless that preference was explicitly enabled.
 - `DONE LOCAL`: structural layer selection and friendly-widget selection use
   separate iframe markers. Three consecutive full browser runs preserved
   multi-selection through the forced collision case and later multi-object
@@ -668,13 +668,15 @@ Gate weights live in
 Every coherent code batch must pass:
 
 - focused tests for the changed contract;
-- `corepack pnpm run ci:verify`;
-- `corepack pnpm run lint`;
-- `corepack pnpm run build`;
+- GitHub Actions `ci:verify`, lint, and build for the pushed commit;
 - relevant browser smoke;
 - `git diff --check`;
 - project server hygiene;
 - GitHub CI after push.
+
+While the user is active on this workstation, run only focused local tests.
+Local full CI, production build, broad Corpus, and broad browser suites require
+an explicit idle window.
 
 Local synthetic success is not actual Roll20 parity. Keep the full product goal
 open until modern and legacy actual-screen evidence both pass with a current

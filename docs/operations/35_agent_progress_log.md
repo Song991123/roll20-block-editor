@@ -1598,3 +1598,17 @@ parity.
   passes HTML, CSS, translation, Page JS, and Worker graph comparison.
 - Claim boundary: both targeted probes are Node graph evidence only. Broad
   current-SHA corpus, browser runtime, export, and actual Roll20 remain open.
+
+## 2026-08-05 - Import-First Alpha Surface
+
+- Changed the first-run and new-sheet mode from Direct Edit to Preview. The
+  empty rendered sheet now leads with HTML/CSS/translation import and keeps
+  blank block assembly as a secondary path.
+- Preserved block assembly, split view, and all Direct Edit code. Direct Edit
+  is shown only after enabling a browser-local experimental preference;
+  disabling it while active returns to Preview without mutating sheet source.
+- A completed import now selects Preview. The import dialog keeps its truthful
+  structured/raw diagnostics and offers an explicit Preview handoff.
+- Local full CI, build, broad browser checks, and Figma were not started on the
+  active workstation. Focused policy proof and GitHub Actions remain the
+  verification boundary for this batch.

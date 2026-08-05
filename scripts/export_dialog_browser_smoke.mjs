@@ -554,6 +554,10 @@ async function main() {
       try {
         window.localStorage.setItem('__perfOn', '1');
         window.localStorage.removeItem('r20be-autosave');
+        window.localStorage.setItem('r20-ui', JSON.stringify({
+          state: { directEditExperimentalEnabled: true },
+          version: 0,
+        }));
       } catch {}
     });
     await page.goto(result.url, { waitUntil: 'load' });
@@ -571,6 +575,7 @@ async function main() {
       return {
         hasHeaderTitle: bodyText.includes('Roll20 시트 편집기'),
         hasEmptyTitle:
+          bodyText.includes('시트 불러오기') ||
           bodyText.includes('빈 시트') ||
           bodyText.includes('캐릭터 시트, 여기서 만들어요') ||
           bodyText.includes('새 Roll20 시트를 만들어볼까요?'),
@@ -717,15 +722,16 @@ async function main() {
       selected: document.querySelector('[data-testid="main-split-container"]')?.getAttribute('data-main-mode') === 'preview'
         && document.querySelector('[data-preview-focus="true"]')?.getAttribute('data-preview-focus') === 'true',
       hasPreviewToolbar: Boolean(document.querySelector('[data-testid="preview-focus-toolbar"]')),
-      hasExitEdit: Boolean(document.querySelector('[data-testid="preview-exit-edit"]')),
+      hasDirectEdit: Boolean(document.querySelector('[data-testid="main-mode-edit"]')),
       hasLayoutToolbar: Boolean(document.querySelector('[data-testid="main-mode-assemble"]')),
       hasRoll20ModeControl: Boolean(document.querySelector('[data-testid="roll20-mode-control"]')),
       hasUploadRules: Boolean(document.querySelector('[data-testid="roll20-sandbox-sanitize-toggle"]')),
       hasDocumentLanguage: Boolean(document.querySelector('[data-testid="roll20-document-language"]')),
+      hasExperimentalToggle: Boolean(document.querySelector('[data-testid="direct-edit-experimental-toggle"]')),
       leftOpen: document.querySelector('[data-testid="sidebar-left"]')?.getAttribute('data-open'),
       rightOpen: document.querySelector('[data-testid="sidebar-right"]')?.getAttribute('data-open'),
     }));
-    await page.click('[data-testid="preview-exit-edit"]');
+    await page.click('[data-testid="main-mode-edit"]');
     await page.waitForFunction(() =>
       document.querySelector('[data-testid="main-mode-edit"]')?.getAttribute('aria-selected') === 'true',
     );
@@ -826,11 +832,12 @@ async function main() {
     if (result.checks.shell.hasSampleCta || result.checks.shell.hasSampleMenu) failures.push('sample UI visible with empty public catalog');
     if (result.checks.shell.hasMojibake) failures.push('mojibake detected in initial shell text');
     if (!result.checks.previewFocus || result.checks.previewFocus.selected !== true) failures.push('preview focus mode did not select');
-    if (!result.checks.previewFocus?.hasPreviewToolbar || !result.checks.previewFocus?.hasExitEdit) failures.push('preview focus controls missing');
-    if (result.checks.previewFocus.hasLayoutToolbar) failures.push('preview focus still exposes layout mode controls');
-    if (result.checks.previewFocus.hasRoll20ModeControl) failures.push('preview focus still exposes Roll20 mode controls');
-    if (result.checks.previewFocus.hasUploadRules) failures.push('preview focus still exposes upload rules');
-    if (result.checks.previewFocus.hasDocumentLanguage) failures.push('preview focus still exposes document language control');
+    if (!result.checks.previewFocus?.hasPreviewToolbar || !result.checks.previewFocus?.hasDirectEdit) failures.push('preview focus controls missing');
+    if (!result.checks.previewFocus.hasLayoutToolbar) failures.push('preview focus hides advanced block controls');
+    if (!result.checks.previewFocus.hasRoll20ModeControl) failures.push('preview focus hides Roll20 mode controls');
+    if (!result.checks.previewFocus.hasUploadRules) failures.push('preview focus hides upload rules');
+    if (!result.checks.previewFocus.hasDocumentLanguage) failures.push('preview focus hides document language control');
+    if (!result.checks.previewFocus.hasExperimentalToggle) failures.push('preview focus hides experimental preference');
     if (result.checks.previewFocus.leftOpen !== 'false' || result.checks.previewFocus.rightOpen !== 'false') failures.push('preview focus sidebars remain open');
     if (!result.checks.codeTabs.hasCodeTab) failures.push('code tab missing');
     if (!result.checks.codeTabs.workerSelected) failures.push('worker code tab did not become active');

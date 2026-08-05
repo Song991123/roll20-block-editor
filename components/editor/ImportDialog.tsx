@@ -246,6 +246,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       workspaceStore.markSaved('i18n');
       workspaceStore.markSaved('js');
       workspaceStore.markSaved('worker');
+      uiStore.setMainMode('preview');
 
       const importErrorCount = result.warnings.filter(({ severity }) => severity === 'error').length;
       setReport({
@@ -584,11 +585,21 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
 
         <DialogFooter className="gap-2">
           <Button type="button" variant="ghost" onClick={handleReset} disabled={busy}>
-            초기화
+            {report ? '다른 파일 준비' : '초기화'}
           </Button>
-          <Button type="button" onClick={handleImport} disabled={busy || !anyInput} data-testid="import-submit">
-            {busy ? (progress ? `${progress.pct}% 불러오는 중...` : '변환 중...') : '블록으로 변환하기'}
-          </Button>
+          {report ? (
+            <Button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              data-testid="import-open-preview"
+            >
+              미리보기 보기
+            </Button>
+          ) : (
+            <Button type="button" onClick={handleImport} disabled={busy || !anyInput} data-testid="import-submit">
+              {busy ? (progress ? `${progress.pct}% 불러오는 중...` : '불러오는 중...') : '시트 불러오기'}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

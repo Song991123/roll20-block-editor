@@ -132,11 +132,12 @@ invent separate DOM models.
     the centered configured sheet canvas, including zoom and snap. A friendly
     card must keep its preset fields and managed presentation; it must not fall
     through to raw block creation or use application-screen coordinates.
-21. A fresh browser starts on Direct Edit, while a valid saved mode remains the
-    user's choice. The empty edit surface must visibly draw the configured sheet
-    width as editor chrome only. It cannot emit a placeholder DOM block. When
-    the first element creates the persistent iframe, the canvas origin and
-    scaled width must remain continuous so the dropped element does not jump.
+21. Alpha starts on Preview. Direct Edit is a browser-local experimental mode
+    until Beta resumes this plan. When enabled, its empty surface must visibly
+    draw the configured sheet width as editor chrome only. It cannot emit a
+    placeholder DOM block. When the first element creates the persistent iframe,
+    the canvas origin and scaled width must remain continuous so the dropped
+    element does not jump.
 22. The layer tree becomes a toggleable overlay whenever its default 248-pixel
     track would leave less than the default 850-pixel sheet width. It remains
     docked when both fit. Opening or closing the overlay must not move or resize
@@ -426,8 +427,10 @@ drop markers, selection, emitted HTML, rendered order, and cleanup after drop.
 Landscape-phone ergonomics and dense real imports remain outside this proof.
 The fresh-sheet path additionally verifies pointer-aligned 850px sheet
 coordinates and reuse of the first persistent iframe.
-It also verifies Direct Edit as the clean-browser default and requires the
-visible empty sheet and first iframe to share their horizontal origin and width.
+The earlier clean-browser Direct Edit assertion is superseded by Alpha's
+Preview-first policy. Direct Edit browser coverage must enable the experimental
+preference first, then require the visible empty sheet and first iframe to share
+their horizontal origin and width.
 
 ## Composite And Shadow Role Contract
 

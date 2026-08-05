@@ -34,6 +34,7 @@ const tasks = [
   'test:blockly-render-policy',
   'test:blockly-layer-operations',
   'test:workspace-generation',
+  'test:ui-mode-policy',
   'test:design-position',
   'test:iframe-drop-target',
   'test:drop-indicator',

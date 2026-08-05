@@ -14,6 +14,10 @@ contain private source evidence or historical test dumps.
   editing remains code-preserved but experimental until Beta. Branding and
   shell polish do not close renderer or mapping gates.
 - Preview and Edit share one persistent Roll20 iframe.
+- Alpha now starts on Preview. The empty Preview leads with sheet import and
+  keeps blank-sheet block assembly as a secondary action. Figma-like direct
+  manipulation remains code-preserved and appears only after enabling its
+  browser-local experimental preference.
 - Modern and legacy compatibility paths are separate.
 - Export handoff copy follows that same mode. Modern directs the three final
   files to Custom Sheet Sandbox; legacy directs their contents to a dedicated
@@ -133,10 +137,10 @@ contain private source evidence or historical test dumps.
   friendly cards keep their preset and managed CSS instead of falling through
   to raw block creation. Browser proof covers the default 850px sheet and the
   same persistent iframe after creation.
-- A fresh browser enters Direct Edit while preserving any valid saved mode.
-  The empty surface visibly draws an editor-only 850px white sheet; it emits no
-  placeholder block, and the first persistent iframe takes over the same scaled
-  horizontal origin and width after a real gallery drop.
+- A fresh browser enters Preview. Existing block assembly and split modes stay
+  available as advanced work surfaces. Direct Edit remains available only
+  after its browser-local experimental preference is enabled; disabling it
+  while active returns to Preview without changing source.
 - The edit layer panel has a persisted, pointer- and keyboard-resizable width.
   One responsive track positions both its edge and the persistent iframe, so
   resizing editor chrome does not create a Preview/Edit coordinate split.
@@ -145,9 +149,9 @@ contain private source evidence or historical test dumps.
   opening the overlay does not move either surface. Current 1280px browser proof
   measures 580px instead of the former 376px canvas width.
 - At 920px and below, split view is unavailable because two fixed-width work
-  surfaces become unusable side by side. Direct Edit receives the full center
-  width, while the same layer tree opens as a contained overlay and desktop
-  panel sizing remains unchanged.
+  surfaces become unusable side by side. Preview receives the full center
+  width by default; an explicitly enabled Direct Edit session still uses the
+  contained layer overlay without changing desktop panel sizing.
 - At 844x390, short-landscape chrome compaction preserves primary 44px touch
   targets and raises visible sheet height from 148px to 206px. Horizontal
   overflow is zero; the layer overlay and both side drawers remain contained.

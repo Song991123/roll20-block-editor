@@ -115,12 +115,11 @@ async function main() {
       const snap = window.__perfHook.getWorkspace();
       return snap.blockCount.html === 0 && snap.blockCount.css === 0 && snap.blockCount.i18n === 0;
     }, null, { timeout: 15000 });
-    await page.waitForSelector('[data-testid="main-mode-edit"][aria-selected="true"]', {
+    await page.waitForSelector('[data-testid="main-mode-preview"][aria-selected="true"]', {
       state: 'visible',
       timeout: 15000,
     });
     await page.waitForSelector('[data-testid="empty-sheet-canvas"]', { state: 'visible', timeout: 15000 });
-    await page.waitForSelector('[data-testid="widget-card-text-input"]', { state: 'visible', timeout: 15000 });
     await page.screenshot({ path: path.join(REPORT_DIR, 'empty-sheet-canvas.png') });
 
     const blank = await page.evaluate(() => {
@@ -138,12 +137,17 @@ async function main() {
     assert(blank.workspace.blockCount.html === 0, 'fresh sheet has HTML blocks');
     assert(blank.layerIds.length === 0, 'fresh sheet has layer entries');
     assert(!blank.hasGhostSection, 'fresh sheet emitted a ghost sheet-section');
-    assert(blank.mainMode === 'edit', 'fresh users do not start on the direct editing surface');
+    assert(blank.mainMode === 'preview', 'fresh users do not start on the Alpha Preview surface');
 
     await page.waitForSelector('[data-testid="empty-import-button"]', { state: 'visible', timeout: 15000 });
     await page.click('[data-testid="empty-import-button"]');
     await page.waitForSelector('[data-testid="import-dialog"]', { state: 'visible', timeout: 15000 });
     await page.keyboard.press('Escape');
+
+    await page.click('[data-testid="direct-edit-experimental-toggle"]');
+    await page.waitForSelector('[data-testid="main-mode-edit"]', { state: 'visible', timeout: 5000 });
+    await page.click('[data-testid="main-mode-edit"]');
+    await page.waitForSelector('[data-testid="widget-card-text-input"]', { state: 'visible', timeout: 15000 });
 
     await page.waitForTimeout(1300);
     const emptyDropCanvas = page.locator('[data-testid="empty-sheet-canvas"]');

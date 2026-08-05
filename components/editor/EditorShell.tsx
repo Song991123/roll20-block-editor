@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
 import { cn } from '@/lib/utils/cn';
-import { useUiStore, type MainMode } from '@/lib/stores/uiStore';
+import { useUiStore } from '@/lib/stores/uiStore';
 import EditorHeader from './EditorHeader';
 import SidebarLeft from './SidebarLeft';
 import SidebarRight from './SidebarRight';
@@ -77,13 +77,6 @@ function Resizer({ onResize }: { onResize: (deltaX: number) => void }) {
   );
 }
 
-function cycleMode(m: MainMode): MainMode {
-  if (m === 'split') return 'edit';
-  if (m === 'edit') return 'assemble';
-  if (m === 'assemble') return 'preview';
-  return 'split';
-}
-
 /**
  * BlocklyModelHost dynamic import — Blockly 12 코어 (~500KB) 를 별도 chunk 로 split.
  * cold-load critical path 단축 + 첫 assemble entry 까지 chunk 로딩이 idle 시간에 진행.
@@ -135,6 +128,8 @@ export default function EditorShell() {
   const editSubmode = useUiStore((s) => s.editSubmode);
   const editLayerPanelWidth = useUiStore((s) => s.editLayerPanelWidth);
   const setMainMode = useUiStore((s) => s.setMainMode);
+  const toggleMainMode = useUiStore((s) => s.toggleMainMode);
+  const directEditExperimentalEnabled = useUiStore((s) => s.directEditExperimentalEnabled);
   const mainSplit = useUiStore((s) => s.mainSplit);
   const setMainSplit = useUiStore((s) => s.setMainSplit);
   const leftCollapsed = useUiStore((s) => s.sidebarLeftCollapsed);
@@ -158,10 +153,12 @@ export default function EditorShell() {
   useEffect(() => {
     if (!isMobile) return;
     const st = useUiStore.getState();
-    if (mainMode === 'split') setMainMode('edit');
+    if (mainMode === 'split') {
+      setMainMode(directEditExperimentalEnabled ? 'edit' : 'preview');
+    }
     if (!st.sidebarLeftCollapsed) st.toggleSidebarLeft();
     if (!st.sidebarRightCollapsed) st.toggleSidebarRight();
-  }, [isMobile, mainMode, setMainMode]);
+  }, [directEditExperimentalEnabled, isMobile, mainMode, setMainMode]);
 
   const splitContainerRef = useRef<HTMLDivElement>(null);
   const [compactEditLayerPanel, setCompactEditLayerPanel] = useState(false);
@@ -197,7 +194,7 @@ export default function EditorShell() {
         toggleRight();
       } else if (e.key === 'b' || e.key === 'B') {
         e.preventDefault();
-        setMainMode(cycleMode(mainMode));
+        toggleMainMode();
       } else if (e.key === '1') {
         e.preventDefault();
         setLeftMode('blocks');
@@ -211,7 +208,7 @@ export default function EditorShell() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [toggleLeft, toggleRight, setLeftMode, setRightTab, setMainMode, mainMode]);
+  }, [toggleLeft, toggleRight, setLeftMode, setRightTab, toggleMainMode]);
 
   const previewFocus = mainMode === 'preview';
   // Preview hides editor chrome until a roll exists. Once ChatPane has a
@@ -313,6 +310,7 @@ export default function EditorShell() {
     >
       <EditorHeader onNewSheet={() => {
         resetCanvasWidths();
+        setMainMode('preview');
         setRecovered(null);
       }} />
       {recovered && (

@@ -24,8 +24,8 @@ export type SidebarRightTab = 'attrs' | 'code' | 'chat'; // D49 + chat (dice 굴
 export type CodeSubTab = 'html' | 'css' | 'i18n' | 'js' | 'worker';
 export type WorkspaceKey = 'html' | 'css' | 'i18n' | 'js' | 'worker';
 export type PreviewZoom = 'fit' | number;               // D52
-// Direct editing is the product's primary surface. Split/block modes remain
-// available for users who want to inspect or assemble the underlying model.
+// Alpha starts from the rendered sheet. Direct manipulation stays available
+// behind a local experimental preference while its Beta contract is unfinished.
 export type MainMode = 'split' | 'assemble' | 'preview' | 'edit';
 
 // Phase A — WYSIWYG 모드. 편집 모드일 때 시트 / 굴림틀 sub-tab.
@@ -54,6 +54,7 @@ export interface MainSplit {
 export interface UiState {
   // 메인 영역 모드 — 분할 (default) | 조립만 | 미리보기만.
   mainMode: MainMode;
+  directEditExperimentalEnabled: boolean;
   // 분할 모드에서 좌/우 비율.
   mainSplit: MainSplit;
 
@@ -110,6 +111,7 @@ export interface UiState {
   // Actions
   setMainMode: (m: MainMode) => void;
   toggleMainMode: () => void;
+  setDirectEditExperimentalEnabled: (enabled: boolean) => void;
   setMainSplit: (left: number, right: number) => void;
   setSidebarLeftMode: (m: SidebarLeftMode) => void;
   setSidebarRightTab: (t: SidebarRightTab) => void;
@@ -143,7 +145,8 @@ export interface UiState {
 }
 
 const DEFAULT_STATE = {
-  mainMode: 'edit' as MainMode,
+  mainMode: 'preview' as MainMode,
+  directEditExperimentalEnabled: false,
   mainSplit: { left: 50, right: 50 } as MainSplit,
   sidebarLeftMode: 'blocks' as SidebarLeftMode,
   sidebarLeftCollapsed: false,
@@ -175,13 +178,28 @@ const DEFAULT_STATE = {
   sfxVolume: 0.6,
 };
 
-// 분할 모드 cycle: split → edit → assemble → preview → split.
-// (Phase A — 'edit' 추가)
-function nextMainMode(m: MainMode): MainMode {
-  if (m === 'split') return 'edit';
-  if (m === 'edit') return 'assemble';
-  if (m === 'assemble') return 'preview';
-  return 'split';
+export function availableMainModes(directEditExperimentalEnabled: boolean): MainMode[] {
+  return directEditExperimentalEnabled
+    ? ['preview', 'edit', 'assemble', 'split']
+    : ['preview', 'assemble', 'split'];
+}
+
+export function nextMainMode(
+  current: MainMode,
+  directEditExperimentalEnabled: boolean,
+): MainMode {
+  const modes = availableMainModes(directEditExperimentalEnabled);
+  const index = modes.indexOf(current);
+  return modes[(index < 0 ? 0 : index + 1) % modes.length];
+}
+
+export function restoreMainMode(
+  value: unknown,
+  directEditExperimentalEnabled: boolean,
+): MainMode {
+  const valid = value === 'split' || value === 'assemble' || value === 'preview' || value === 'edit';
+  if (!valid || (value === 'edit' && !directEditExperimentalEnabled)) return 'preview';
+  return value;
 }
 
 // 비율 합이 양수가 아니면 무시. 합 100 으로 normalize.
@@ -202,7 +220,13 @@ export const useUiStore = create<UiState>()(
       ...DEFAULT_STATE,
 
       setMainMode: (m) => set({ mainMode: m }),
-      toggleMainMode: () => set((s) => ({ mainMode: nextMainMode(s.mainMode) })),
+      toggleMainMode: () => set((s) => ({
+        mainMode: nextMainMode(s.mainMode, s.directEditExperimentalEnabled),
+      })),
+      setDirectEditExperimentalEnabled: (enabled) => set((s) => ({
+        directEditExperimentalEnabled: enabled,
+        mainMode: !enabled && s.mainMode === 'edit' ? 'preview' : s.mainMode,
+      })),
       setMainSplit: (left, right) => set({ mainSplit: normalizeSplit(left, right) }),
       setSidebarLeftMode: (m) => set({ sidebarLeftMode: m }),
       setSidebarRightTab: (t) => set({ sidebarRightTab: t }),
@@ -290,14 +314,11 @@ export const useUiStore = create<UiState>()(
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<UiState>;
         const merged = { ...current, ...p } as UiState;
-        if (
-          merged.mainMode !== 'split' &&
-          merged.mainMode !== 'assemble' &&
-          merged.mainMode !== 'preview' &&
-          merged.mainMode !== 'edit'
-        ) {
-          merged.mainMode = 'edit';
-        }
+        merged.directEditExperimentalEnabled = p.directEditExperimentalEnabled === true;
+        merged.mainMode = restoreMainMode(
+          p.mainMode,
+          merged.directEditExperimentalEnabled,
+        );
         if (!merged.mainSplit || typeof merged.mainSplit.left !== 'number') {
           merged.mainSplit = { left: 50, right: 50 };
         }
@@ -306,6 +327,7 @@ export const useUiStore = create<UiState>()(
       },
       partialize: (s) => ({
         mainMode: s.mainMode,
+        directEditExperimentalEnabled: s.directEditExperimentalEnabled,
         mainSplit: s.mainSplit,
         editSubmode: s.editSubmode,
         editLayerPanelWidth: s.editLayerPanelWidth,
