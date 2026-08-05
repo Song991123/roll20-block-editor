@@ -6,7 +6,11 @@ import path from 'node:path';
 import * as Blockly from 'blockly';
 import { registerAllBlocks } from '@/lib/blocks/registry';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
-import { replaceWorkerWorkspaceFromSourceHtml } from '@/lib/blockly/workerWorkspace';
+import {
+  isWorkerBlockType,
+  moveImportedWorkerBlocksToWorkspace,
+  replaceWorkerWorkspaceFromSourceHtml,
+} from '@/lib/blockly/workerWorkspace';
 import { importSheet } from '@/lib/import';
 import {
   canonicalizeBlockGraph,
@@ -326,14 +330,17 @@ async function graphRoundtrip(input: RuntimeInput, includeSyntheticValues = fals
     WORKSPACE_KEYS.map((key) => [key, new Blockly.Workspace()]),
   ) as Record<WorkspaceKey, Blockly.Workspace>;
   for (const key of WORKSPACE_KEYS) adapter.registerWorkspace(key, workspaces[key]);
+  const emptyXml = '<xml xmlns="https://developers.google.com/blockly/xml"></xml>';
 
   const hydrate = (source: RuntimeInput) => {
     const imported = importSheet(source);
+    adapter.hydrateFromXml('worker', emptyXml);
     adapter.hydrateFromXml('html', imported.html);
+    moveImportedWorkerBlocksToWorkspace();
+    replaceWorkerWorkspaceFromSourceHtml(source.html);
     adapter.hydrateFromXml('css', imported.css);
     adapter.hydrateFromXml('i18n', imported.i18n);
     adapter.hydrateFromXml('js', imported.js);
-    replaceWorkerWorkspaceFromSourceHtml(source.html);
     return imported;
   };
 
@@ -351,10 +358,17 @@ async function graphRoundtrip(input: RuntimeInput, includeSyntheticValues = fals
       key,
       JSON.stringify(before[key]) === JSON.stringify(after[key]),
     ])) as Record<WorkspaceKey, boolean>;
+    const htmlWorkerLeakCounts = {
+      before: before.html.nodes.filter((node) => isWorkerBlockType(node.type)).length,
+      after: after.html.nodes.filter((node) => isWorkerBlockType(node.type)).length,
+    };
     const failedWorkspace = WORKSPACE_KEYS.find((key) => !graphByWorkspace[key]) ?? null;
     return {
-      pass: Object.values(graphByWorkspace).every(Boolean),
+      pass: Object.values(graphByWorkspace).every(Boolean)
+        && htmlWorkerLeakCounts.before === 0
+        && htmlWorkerLeakCounts.after === 0,
       graphByWorkspace,
+      htmlWorkerLeakCounts,
       firstDifference: failedWorkspace
         ? {
             workspace: failedWorkspace,
@@ -406,6 +420,7 @@ async function selfTest(): Promise<void> {
     js: true,
     worker: true,
   });
+  assert.deepEqual(result.htmlWorkerLeakCounts, { before: 0, after: 0 });
   assert.equal(result.firstDifference, null);
   assert.deepEqual(
     firstDifference(
