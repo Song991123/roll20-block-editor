@@ -1527,3 +1527,18 @@ parity.
   and Worker graph comparison in Node.
 - Claim boundary: this probe is not L2, Preview, runtime, export, or actual
   Roll20 proof. Full current-SHA corpus and browser-backed evidence remain open.
+
+## 2026-08-05 - Owned Checked-State Snapshot Fidelity
+
+- Headless probing isolated a preserved-attribute mismatch on structured radio
+  controls. The shared attribute injector treated imported `checked` metadata
+  as an unknown attribute and could re-add it after the block field was turned
+  off.
+- Radio and checkbox controls now own `checked`. An unchanged checked control
+  restores the authored boolean form; an explicit unchecked field omits it and
+  stale snapshot data cannot override that edit.
+- Focused preserved-attribute tests pass, including both radio and checkbox
+  edit precedence. The anonymous five-workspace graph probe that exposed the
+  issue now passes.
+- Claim boundary: broad default-state corpus impact, browser form state, and
+  actual Roll20 remain `VERIFY`.

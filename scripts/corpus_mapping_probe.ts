@@ -199,6 +199,42 @@ function captureGraph(key: WorkspaceKey, workspace: Blockly.Workspace): Canonica
   })));
 }
 
+function preservedAttributeDelta(beforeValue: unknown, afterValue: unknown) {
+  const parse = (value: unknown): Array<[string, string]> => {
+    try {
+      const parsed = JSON.parse(String(value ?? ''));
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .filter((entry) => Array.isArray(entry) && entry.length >= 2)
+        .map((entry) => [String(entry[0]), String(entry[1])]);
+    } catch {
+      return [];
+    }
+  };
+  const group = (entries: Array<[string, string]>) => {
+    const values = new Map<string, string[]>();
+    for (const [name, value] of entries) {
+      const current = values.get(name) ?? [];
+      current.push(value);
+      values.set(name, current);
+    }
+    for (const current of values.values()) current.sort();
+    return values;
+  };
+  const before = group(parse(beforeValue));
+  const after = group(parse(afterValue));
+  const names = [...new Set([...before.keys(), ...after.keys()])].sort();
+  return {
+    added: names.filter((name) => !before.has(name) && after.has(name)),
+    removed: names.filter((name) => before.has(name) && !after.has(name)),
+    changed: names.filter((name) => (
+      before.has(name)
+      && after.has(name)
+      && JSON.stringify(before.get(name)) !== JSON.stringify(after.get(name))
+    )),
+  };
+}
+
 function firstDifference(
   before: CanonicalBlockGraph,
   after: CanonicalBlockGraph,
@@ -232,10 +268,19 @@ function firstDifference(
       return JSON.stringify(beforeField) !== JSON.stringify(afterField);
     }).sort();
     if (changedFieldNames.length > 0) {
+      const preservedBefore = left.fields.find(
+        (field) => field.name === '__R20_PRESERVED_ATTRS',
+      )?.value;
+      const preservedAfter = right.fields.find(
+        (field) => field.name === '__R20_PRESERVED_ATTRS',
+      )?.value;
       return {
         kind: 'fields',
         blockType: left.type,
         changedFieldNames,
+        ...(changedFieldNames.includes('__R20_PRESERVED_ATTRS') ? {
+          preservedAttributeDelta: preservedAttributeDelta(preservedBefore, preservedAfter),
+        } : {}),
         ...(includeSyntheticValues ? {
           syntheticValues: Object.fromEntries(changedFieldNames.map((name) => [
             name,
@@ -315,6 +360,13 @@ async function graphRoundtrip(input: RuntimeInput, includeSyntheticValues = fals
 }
 
 async function selfTest(): Promise<void> {
+  assert.deepEqual(
+    preservedAttributeDelta(
+      '[["class","before"],["name","field"]]',
+      '[["class","after"],["type","text"]]',
+    ),
+    { added: ['type'], removed: ['name'], changed: ['class'] },
+  );
   const result = await graphRoundtrip({
     html: [
       '<section class="panel"><!--first\n  second--><input type="text" name="attr_name" value="A"></section>',

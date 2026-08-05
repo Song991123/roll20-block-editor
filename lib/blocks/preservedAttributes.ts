@@ -165,6 +165,34 @@ function restoreEquivalentTypeFormatting(
   );
 }
 
+function inputTypeFromAttributes(rawAttributes: string): string {
+  const match = /(?:^|\s)type\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i.exec(rawAttributes);
+  return String(match?.[1] ?? match?.[2] ?? match?.[3] ?? 'text').toLowerCase();
+}
+
+function restoreOwnedBooleanFormatting(
+  rawAttributes: string,
+  entries: Array<[string, string]>,
+  ownedNames: ReadonlySet<string>,
+): string {
+  let result = rawAttributes;
+  for (const [authoredName, authoredValue] of entries) {
+    const normalized = authoredName.toLowerCase();
+    if (!ownedNames.has(normalized)) continue;
+    const pattern = new RegExp(
+      `(^|\\s)${normalized}(?:\\s*=\\s*(?:"[^"]*"|'[^']*'|[^\\s>]+))?`,
+      'i',
+    );
+    result = result.replace(pattern, (full, prefix: string) => {
+      if (!full.trim()) return full;
+      return authoredValue
+        ? `${prefix}${authoredName}="${escapeAttribute(authoredValue)}"`
+        : `${prefix}${authoredName}`;
+    });
+  }
+  return result;
+}
+
 /** Add imported attributes to the first generated opening element. */
 export function injectPreservedAttributes(code: string, raw: string): string {
   const entries = parsePreservedAttributes(raw);
@@ -187,13 +215,27 @@ function injectIntoFirstOpeningTag(code: string, entries: Array<[string, string]
   return code.replace(
     /<([A-Za-z][A-Za-z0-9:.-]*)(\s[^<>]*?)?(\/?)>/,
     (full, _tag: string, rawAttributes = '', close = '') => {
-      const restoredAttributes = restoreEquivalentClassFormatting(
+      const classAndTypeRestored = restoreEquivalentClassFormatting(
         restoreEquivalentTypeFormatting(rawAttributes, entries),
         entries,
       );
+      const inputType = _tag.toLowerCase() === 'input'
+        ? inputTypeFromAttributes(classAndTypeRestored)
+        : '';
+      const ownedBooleanNames = new Set<string>(
+        inputType === 'radio' || inputType === 'checkbox' ? ['checked'] : [],
+      );
+      const restoredAttributes = restoreOwnedBooleanFormatting(
+        classAndTypeRestored,
+        entries,
+        ownedBooleanNames,
+      );
       const existing = existingAttributeNames(restoredAttributes);
       const additions = entries
-        .filter(([name]) => !existing.has(name.toLowerCase()))
+        .filter(([name]) => (
+          !existing.has(name.toLowerCase())
+          && !ownedBooleanNames.has(name.toLowerCase())
+        ))
         .map(([name, value]) => (value ? ` ${name}="${escapeAttribute(value)}"` : ` ${name}`))
         .join('');
       if (restoredAttributes === rawAttributes && !additions) return full;

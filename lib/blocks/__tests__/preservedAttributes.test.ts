@@ -150,6 +150,38 @@ assert(
   'empty preserved state still removes target marker',
 );
 
+const checkedRadio = serializePreservedAttributes({
+  type: 'radio',
+  name: 'attr_mode',
+  value: 'a',
+  checked: '',
+});
+assert(
+  injectPreservedAttributes(
+    `<label><input ${PRESERVED_ATTRIBUTE_TARGET} type="radio" name="attr_mode" value="a" checked="checked"></label>`,
+    checkedRadio,
+  ).includes(' value="a" checked>'),
+  'unchanged radio restores authored boolean checked form',
+);
+assert(
+  !injectPreservedAttributes(
+    `<label><input ${PRESERVED_ATTRIBUTE_TARGET} type="radio" name="attr_mode" value="a"></label>`,
+    checkedRadio,
+  ).includes(' checked'),
+  'editing an imported radio to unchecked wins over the old snapshot',
+);
+
+const checkedCheckbox = serializePreservedAttributes({ type: 'checkbox', checked: 'checked' });
+assert(
+  injectPreservedAttributes('<input type="checkbox" checked>', checkedCheckbox)
+    .includes('checked="checked"'),
+  'unchanged checkbox restores authored checked value',
+);
+assert(
+  !injectPreservedAttributes('<input type="checkbox">', checkedCheckbox).includes(' checked'),
+  'editing an imported checkbox to unchecked wins over the old snapshot',
+);
+
 const styled = serializePreservedAttributes({
   style: 'position:absolute;left:8px;color:red;padding:4px',
   'data-hook': 'value',

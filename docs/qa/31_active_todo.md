@@ -232,6 +232,13 @@ Gate weights live in
   Preview/Edit pixels, form state, geometry, runtime, and resource gates. The
   broader old class-only cluster remains `VERIFY` until a fresh baseline.
 
+- `DONE LOCAL GRAPH / VERIFY BROWSER`: radio and checkbox `checked` snapshots
+  restore the authored boolean representation when the control remains checked,
+  but no longer re-add `checked` after a user turns the block field off. The
+  focused snapshot test and one anonymous legacy five-workspace graph probe
+  pass. Broad default-state coverage and browser/runtime behavior remain
+  `VERIFY`.
+
 - `DONE LOCAL / VERIFY BROAD`: imported roll and action buttons now retain an
   authored bare or prefixed `name` while the visible `NAME` field is unchanged.
   A real name edit emits the Roll20-standard `roll_` or `act_` prefix instead

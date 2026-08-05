@@ -45,8 +45,11 @@ contain private source evidence or historical test dumps.
   broad L2 failures with L3 open. A follow-up fix now keeps collapsed radio
   input attributes separate from wrapper ownership; attributed wrappers use an
   exact raw block instead of losing either side. Synthetic modern/legacy
-  integration passes. Legacy keyframe sanitizing also uses range accumulation
-  after CI exposed unstable character-by-character output growth. Empty
+  integration passes. Radio and checkbox `checked` snapshots restore the
+  authored boolean form only while the block field remains checked; an explicit
+  user uncheck wins over stale snapshot data. Legacy keyframe sanitizing also
+  uses range accumulation after CI exposed unstable character-by-character
+  output growth. Empty
   selector-list items and internal selector line breaks now remain exact raw
   complex blocks; a protected local target passes all five workspace graphs
   and local Preview/runtime/resource checks. Equivalent generated class token
