@@ -1557,3 +1557,18 @@ parity.
   terminated, with no project child left running. GitHub CI run `30966513521`
   then passed safety/unit verification, lint, and build. The single anonymous
   graph reproduction and browser/runtime behavior remain `VERIFY`.
+
+## 2026-08-05 - Shared CSS Pseudo-Class Vocabulary
+
+- Found a generic parser/editor contract split: the parser structured several
+  valid pseudo-classes that Blockly's dropdown could not represent, allowing a
+  hydrated value to fall back to a different selector.
+- Added one shared pseudo-class vocabulary consumed by both parser and block
+  generator. Synthetic import coverage spans root, state, child/type, and
+  functional selectors. The headless Blockly self-test now hydrates `:root`
+  and `:has()` rather than checking parser output alone.
+- GitHub CI run `30967170144` passed safety/unit verification, lint, and build.
+  One targeted anonymous modern probe now passes its CSS workspace without the
+  unavailable-dropdown warning. A separate HTML root mismatch remains open.
+- Root mismatch diagnostics now report only generic block-type counts and node
+  counts. No source values, selectors, paths, or identities enter the report.

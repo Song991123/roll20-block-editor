@@ -245,6 +245,12 @@ Gate weights live in
   snapshots. GitHub CI run `30966513521` passed safety/unit verification, lint,
   and build. One targeted anonymous graph probe plus browser/runtime evidence
   remain required.
+- `DONE REMOTE + TARGETED CSS GRAPH / VERIFY BROAD`: CSS parser and Blockly
+  dropdowns now consume one pseudo-class vocabulary. Synthetic coverage includes
+  root, state, child/type, and functional pseudo-classes; the real Blockly
+  hydrate probe covers `:root` and `:has()`. GitHub CI run `30967170144` passed.
+  A targeted anonymous modern graph probe now passes CSS with no unavailable
+  dropdown warning. Its separate HTML root-structure mismatch remains `VERIFY`.
 
 - `DONE LOCAL / VERIFY BROAD`: imported roll and action buttons now retain an
   authored bare or prefixed `name` while the visible `NAME` field is unchanged.

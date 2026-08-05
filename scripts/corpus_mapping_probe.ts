@@ -235,13 +235,32 @@ function preservedAttributeDelta(beforeValue: unknown, afterValue: unknown) {
   };
 }
 
+function rootTypeCounts(graph: CanonicalBlockGraph): Record<string, number> {
+  const counts = new Map<string, number>();
+  for (const index of graph.roots) {
+    const type = graph.nodes[index]?.type ?? 'missing';
+    counts.set(type, (counts.get(type) ?? 0) + 1);
+  }
+  return Object.fromEntries([...counts.entries()].sort(([left], [right]) => (
+    left.localeCompare(right)
+  )));
+}
+
 function firstDifference(
   before: CanonicalBlockGraph,
   after: CanonicalBlockGraph,
   includeSyntheticValues = false,
 ) {
   if (JSON.stringify(before.roots) !== JSON.stringify(after.roots)) {
-    return { kind: 'roots' };
+    return {
+      kind: 'roots',
+      beforeRootCount: before.roots.length,
+      afterRootCount: after.roots.length,
+      beforeRootTypes: rootTypeCounts(before),
+      afterRootTypes: rootTypeCounts(after),
+      beforeNodeCount: before.nodes.length,
+      afterNodeCount: after.nodes.length,
+    };
   }
   if (before.cycleEdges !== after.cycleEdges) return { kind: 'cycle-edges' };
   const length = Math.max(before.nodes.length, after.nodes.length);
@@ -388,6 +407,29 @@ async function selfTest(): Promise<void> {
     worker: true,
   });
   assert.equal(result.firstDifference, null);
+  assert.deepEqual(
+    firstDifference(
+      {
+        roots: [0],
+        nodes: [{ type: 'r20_div', fields: [], inputs: [], next: null }],
+        cycleEdges: 0,
+      },
+      {
+        roots: [],
+        nodes: [{ type: 'r20_div', fields: [], inputs: [], next: null }],
+        cycleEdges: 0,
+      },
+    ),
+    {
+      kind: 'roots',
+      beforeRootCount: 1,
+      afterRootCount: 0,
+      beforeRootTypes: { r20_div: 1 },
+      afterRootTypes: {},
+      beforeNodeCount: 1,
+      afterNodeCount: 1,
+    },
+  );
   console.log('corpus mapping probe self-test PASS');
 }
 

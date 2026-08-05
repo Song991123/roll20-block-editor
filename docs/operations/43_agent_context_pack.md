@@ -59,7 +59,10 @@ contain private source evidence or historical test dumps.
   five-graph and local visual/state/runtime/resource gates. Imported roll and
   action button names likewise retain their authored bare/prefixed form until
   the visible name is edited; an isolated protected legacy target closes the
-  same local gates. A fresh complete baseline is required before the 28.9%
+  same local gates. CSS pseudo-class parsing and Blockly editing now use one
+  shared vocabulary, so structured selectors such as `:root`, `:has()`, and
+  state/child/type selectors cannot hydrate into unavailable dropdown values.
+  A fresh complete baseline is required before the 28.9%
   score can be updated.
 - Corpus `changed` runs now persist an ignored complete-run state and reuse only
   unchanged input rows outside classified code impact. Missing provenance,
