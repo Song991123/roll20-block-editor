@@ -172,7 +172,7 @@ function testTopLevelHtmlCommentDoesNotGainLayoutWrapper(): void {
   comment.setFieldValue('top note', 'TEXT');
 
   const emitted = emitWorkspace(workspace, 'html').code;
-  assert(emitted === '<!-- top note -->', 'top-level HTML comment emits without a layout wrapper');
+  assert(emitted === '<!--top note-->', 'top-level HTML comment emits without a layout wrapper');
   assert(!emitted.includes('<div'), 'hidden source comment does not create a visible sheet object');
 
   const imported = importSheet({ html: emitted });
@@ -181,6 +181,33 @@ function testTopLevelHtmlCommentDoesNotGainLayoutWrapper(): void {
     'top-level HTML comment remains one block after re-import',
   );
   workspace.dispose();
+}
+
+function testNestedMultilineHtmlCommentKeepsAuthoredWhitespace(): void {
+  registerAllBlocks();
+  const source = '<section><!--first\n    second\n\tthird--><span>After</span></section>';
+  const imported = importSheet({ html: source });
+  const workspace = new Blockly.Workspace();
+  Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(imported.html), workspace);
+
+  const emitted = emitAll({ html: workspace }).html;
+  assert(
+    emitted.includes('<!--first\n    second\n\tthird-->'),
+    'nested multiline HTML comment keeps authored internal whitespace',
+  );
+
+  const reimported = importSheet({ html: emitted });
+  const roundTripWorkspace = new Blockly.Workspace();
+  Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(reimported.html), roundTripWorkspace);
+  const roundTrip = emitAll({ html: roundTripWorkspace }).html;
+  assert(
+    emitted.replace(/\sdata-r20-block-id="[^"]*"/g, '')
+      === roundTrip.replace(/\sdata-r20-block-id="[^"]*"/g, ''),
+    'nested multiline HTML comment stays stable after re-import',
+  );
+
+  workspace.dispose();
+  roundTripWorkspace.dispose();
 }
 
 function testBlockIdAttributeEscaping(): void {
@@ -912,6 +939,7 @@ testComposedWorkspaceCacheResultsKeepTheOutputContract();
 testBuilderLayoutCssIsEmittedWithItsBlock();
 testSemanticContainerEmit();
 testTopLevelHtmlCommentDoesNotGainLayoutWrapper();
+testNestedMultilineHtmlCommentKeepsAuthoredWhitespace();
 testBlockIdAttributeEscaping();
 testStaleRawBlockIdIsReplaced();
 testNestedStaleRawBlockIdIsRemoved();

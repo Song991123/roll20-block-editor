@@ -47,14 +47,16 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 - Before using any existing Roll20 room, perform a participant preflight from the current visible room state. If the participant/member count cannot be read reliably, do not use the room. If any other user is present, exclude the room from all verification and never upload, save, send chat, or change settings there. A room name or stale chat history is not evidence of solitude.
 - Generated-sheet interaction is allowed only in Custom Sheet Sandbox or a newly created dedicated test room. When a room's participant state changes or becomes ambiguous, stop the run and return to the Sandbox/new-room path.
 - Optimization and security work must keep render truthfulness first: performance improvements cannot bypass Roll20 wrapper/context, source/intrinsic, legacy/modern, asset, and private-evidence gates.
-- Keep local resource use bounded on the interactive workstation. Run heavy
-  browser, CI, and production-build jobs sequentially; keep Corpus Harness
-  concurrency at 1 or 2; use below-normal process priority for long local runs;
-  and avoid repeating a full build or full CI between small edits in one
-  coherent batch. Prefer the pushed GitHub CI gate for the final broad rerun
-  when equivalent focused tests, lint, and one production build already pass.
-- On the interactive workstation, use `corepack pnpm run build:low-resource`
-  instead of the default production-build command. CI keeps the normal build.
+- While the user is actively using the workstation, do not run local full CI,
+  a production build, a broad Corpus Harness run, or a broad browser suite.
+  Run only task-focused tests, then push and use GitHub Actions for lint, build,
+  and the broad public-repository gate. Figma MCP is off-scope for Alpha render
+  and mapping work and must not be started for it.
+- Local heavy verification requires an explicit idle or maintenance window.
+  During that window, run heavy jobs sequentially, keep Corpus Harness
+  concurrency at 1 or 2, and use below-normal process priority. If a local
+  production build is specifically required, use
+  `corepack pnpm run build:low-resource`; CI keeps the normal build.
 - After every local browser, Harness, CI, or production-build run, verify both
   project/CDP listener hygiene and that no project-owned child process remains.
   Never terminate unrelated Node processes by name alone.

@@ -246,10 +246,11 @@ Gate weights live in
   title, button, radio-label, select, option, and inline shapes fall back to a
   structure-preserving element block when comments would otherwise be
   flattened. Reserved Page JS slot comments remain internal, and top-level
-  comments emit without a layout wrapper. Import/emit tests plus anonymous
-  modern and legacy browser roundtrips keep comment count, block count, HTML,
-  and CSS stable with zero console or page errors. Broader malformed-comment
-  recovery remains part of the general parser boundary.
+  comments emit without a layout wrapper. Authored comment boundary spaces and
+  multiline payload whitespace now survive nested indentation and re-import;
+  focused generator and emit-contract tests pass. The protected representative,
+  broad corpus baseline, and malformed-comment recovery remain `VERIFY` until
+  a fresh remote build artifact is available.
 - `DONE LOCAL / VERIFY BROAD`: HTML emission now preserves RCDATA and preformatted
   content, multiline quoted attributes, inline sibling order, and edited
   boundary whitespace across import -> emit -> import. Internal editor IDs are

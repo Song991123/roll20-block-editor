@@ -27,8 +27,10 @@ contain private source evidence or historical test dumps.
 - Ordinary HTML comments map to hidden note blocks instead of disappearing.
   Commented compact elements use the generic structure-preserving path, while
   reserved Page JS slot comments remain internal. Top-level comments emit
-  without adding an editor layout wrapper; modern and legacy local roundtrips
-  are stable.
+  without adding an editor layout wrapper. Comment payload and multiline
+  whitespace remain exact while a parent is indented. Focused emit roundtrip
+  proof passes; the protected representative and broad baseline still require
+  a fresh build artifact before their status can be updated.
 - Structural layer and friendly-widget selection channels are isolated.
 - Public product assets contain no bundled real sheet sample.
 - Local corpus discovery, anonymous result validation, cache keys, failure
@@ -308,7 +310,11 @@ input, and record only the generic finding.
 
 ## Standard Verification
 
-Run from the canonical worktree:
+While the user is actively using this workstation, run only task-focused tests
+locally, then push and let GitHub Actions run lint, build, and the broad public
+gate. Do not start Figma MCP for Alpha renderer or mapping work.
+
+Run this heavier local set only in an explicit idle or maintenance window:
 
 ```powershell
 corepack pnpm run ci:verify
@@ -321,9 +327,7 @@ Also run focused tests and the relevant browser smoke. After push, check the
 exact GitHub Actions run for the pushed commit.
 
 Keep heavy local jobs sequential and below-normal priority. Corpus concurrency
-stays at 1 or 2. When focused tests, lint, and one production build pass, prefer
-the pushed GitHub CI job over repeating another broad local run on the
-interactive workstation. Finish every browser/build batch with listener and
+stays at 1 or 2. Finish every browser/build batch with listener and
 project-owned-process hygiene checks.
 
 ## Handoff

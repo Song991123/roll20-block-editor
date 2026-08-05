@@ -120,6 +120,7 @@ class EmitEngine implements GeneratorContext {
     };
     let source = code;
     if (this.kind === 'html') {
+      source = source.replace(/<!--[\s\S]*?-->/g, protect);
       source = source.replace(/<(pre|textarea)\b[^>]*>[\s\S]*?<\/\1>/gi, protect);
       source = source.replace(/"[^"]*"|'[^']*'/g, (segment) => (
         /[\r\n]/.test(segment) ? protect(segment) : segment

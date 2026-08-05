@@ -1497,3 +1497,18 @@ parity.
   build remains unchanged.
 - Claim boundary: focused local proof only. L3, current-SHA full corpus, and
   actual Roll20 evidence remain open.
+
+## 2026-08-05 - Exact Comment Payload And Remote-CI Resource Policy
+
+- HTML comment generation no longer adds boundary spaces that were absent from
+  the imported payload. The parent indentation pass now protects complete HTML
+  comments, so nested multiline whitespace remains exact through re-import.
+- Focused generator, import-structure, and emit-contract tests pass. The
+  protected representative and broad corpus result remain `VERIFY`; no broad
+  local browser rerun was used as proof.
+- Interactive-workstation policy is stricter: no local full CI, production
+  build, broad Corpus run, or broad browser suite while the user is active.
+  Focused tests run locally; GitHub Actions owns lint, build, and broad public
+  gates. `build:low-resource` is reserved for an explicit idle window.
+- Project servers, Harness processes, CDP listeners, and Figma MCP processes
+  were all absent before this batch.
