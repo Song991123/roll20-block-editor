@@ -7,6 +7,7 @@
 
 export const PRESERVED_ATTRS_FIELD = '__R20_PRESERVED_ATTRS';
 export const PRESERVED_ATTRIBUTE_TARGET = 'data-r20-preserved-target';
+const EMPTY_OWNED_BOOLEAN_NAMES: ReadonlySet<string> = new Set();
 
 const EVENT_ATTRIBUTE = /^on[a-z0-9_-]+$/i;
 const SAFE_ATTRIBUTE_NAME = /^[A-Za-z_:][A-Za-z0-9:._-]*$/;
@@ -165,11 +166,6 @@ function restoreEquivalentTypeFormatting(
   );
 }
 
-function inputTypeFromAttributes(rawAttributes: string): string {
-  const match = /(?:^|\s)type\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i.exec(rawAttributes);
-  return String(match?.[1] ?? match?.[2] ?? match?.[3] ?? 'text').toLowerCase();
-}
-
 function restoreOwnedBooleanFormatting(
   rawAttributes: string,
   entries: Array<[string, string]>,
@@ -194,7 +190,11 @@ function restoreOwnedBooleanFormatting(
 }
 
 /** Add imported attributes to the first generated opening element. */
-export function injectPreservedAttributes(code: string, raw: string): string {
+export function injectPreservedAttributes(
+  code: string,
+  raw: string,
+  ownedBooleanNames: ReadonlySet<string> = EMPTY_OWNED_BOOLEAN_NAMES,
+): string {
   const entries = parsePreservedAttributes(raw);
   const targetMarker = ` ${PRESERVED_ATTRIBUTE_TARGET}`;
   const markerIndex = code.indexOf(targetMarker);
@@ -203,14 +203,22 @@ export function injectPreservedAttributes(code: string, raw: string): string {
     const end = code.indexOf('>', markerIndex);
     if (start >= 0 && end > markerIndex) {
       const opening = code.slice(start, end + 1);
-      const injected = injectIntoFirstOpeningTag(opening, entries).replace(targetMarker, '');
+      const injected = injectIntoFirstOpeningTag(
+        opening,
+        entries,
+        ownedBooleanNames,
+      ).replace(targetMarker, '');
       return `${code.slice(0, start)}${injected}${code.slice(end + 1)}`;
     }
   }
-  return injectIntoFirstOpeningTag(code, entries);
+  return injectIntoFirstOpeningTag(code, entries, ownedBooleanNames);
 }
 
-function injectIntoFirstOpeningTag(code: string, entries: Array<[string, string]>): string {
+function injectIntoFirstOpeningTag(
+  code: string,
+  entries: Array<[string, string]>,
+  ownedBooleanNames: ReadonlySet<string>,
+): string {
   if (!entries.length) return code;
   return code.replace(
     /<([A-Za-z][A-Za-z0-9:.-]*)(\s[^<>]*?)?(\/?)>/,
@@ -218,12 +226,6 @@ function injectIntoFirstOpeningTag(code: string, entries: Array<[string, string]
       const classAndTypeRestored = restoreEquivalentClassFormatting(
         restoreEquivalentTypeFormatting(rawAttributes, entries),
         entries,
-      );
-      const inputType = _tag.toLowerCase() === 'input'
-        ? inputTypeFromAttributes(classAndTypeRestored)
-        : '';
-      const ownedBooleanNames = new Set<string>(
-        inputType === 'radio' || inputType === 'checkbox' ? ['checked'] : [],
       );
       const restoredAttributes = restoreOwnedBooleanFormatting(
         classAndTypeRestored,

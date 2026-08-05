@@ -35,6 +35,24 @@ import { isRoll20WorkerScript } from '@/lib/import/worker_source';
 import { mergePageJsSlots } from '@/lib/import/pageJsWorkspace';
 import { isInlineMarkup } from '@/lib/blocks/inlineMarkup';
 
+const OWNED_BOOLEAN_ATTRIBUTE_FIELDS = Object.freeze([
+  ['CHECKED', 'checked'],
+  ['DISABLED', 'disabled'],
+  ['READONLY', 'readonly'],
+  ['SELECTED', 'selected'],
+  ['REQUIRED', 'required'],
+  ['MULTIPLE', 'multiple'],
+  ['AUTOFOCUS', 'autofocus'],
+] as const);
+const EMPTY_OWNED_BOOLEAN_ATTRIBUTES: ReadonlySet<string> = new Set();
+
+function ownedBooleanAttributes(block: Blockly.Block): ReadonlySet<string> {
+  const names = OWNED_BOOLEAN_ATTRIBUTE_FIELDS
+    .filter(([fieldName]) => Boolean(block.getField(fieldName)))
+    .map(([, attributeName]) => attributeName);
+  return names.length ? new Set(names) : EMPTY_OWNED_BOOLEAN_ATTRIBUTES;
+}
+
 export interface EmitResult {
   code: string;
   warnings: EmitWarning[];
@@ -173,7 +191,11 @@ class EmitEngine implements GeneratorContext {
       const raw = def.generator(block, this);
       const normalized = normalizeGen(raw);
       const preserved = String(block.getFieldValue(PRESERVED_ATTRS_FIELD) ?? '');
-      normalized.code = injectPreservedAttributes(normalized.code, preserved);
+      normalized.code = injectPreservedAttributes(
+        normalized.code,
+        preserved,
+        ownedBooleanAttributes(block),
+      );
       // Phase B coverage 확대 — element 를 emit 하는 모든 block (stack / c /
       //   cap / hat / e) 의 첫 opening tag 에 `data-r20-block-id` 주입.
       //   top-level 만이 아니라 statementToCode / valueToCode 경유 nested

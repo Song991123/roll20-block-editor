@@ -45,9 +45,10 @@ contain private source evidence or historical test dumps.
   broad L2 failures with L3 open. A follow-up fix now keeps collapsed radio
   input attributes separate from wrapper ownership; attributed wrappers use an
   exact raw block instead of losing either side. Synthetic modern/legacy
-  integration passes. Radio and checkbox `checked` snapshots restore the
-  authored boolean form only while the block field remains checked; an explicit
-  user uncheck wins over stale snapshot data. Legacy keyframe sanitizing also
+  integration passes. Structured controls declare ownership of boolean
+  attributes such as `checked`, `disabled`, `readonly`, and `selected`.
+  Unchanged fields restore the authored boolean form, while an explicit user
+  edit wins over stale snapshot data. Legacy keyframe sanitizing also
   uses range accumulation after CI exposed unstable character-by-character
   output growth. Empty
   selector-list items and internal selector line breaks now remain exact raw

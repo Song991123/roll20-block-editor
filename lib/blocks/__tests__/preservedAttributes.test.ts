@@ -160,6 +160,7 @@ assert(
   injectPreservedAttributes(
     `<label><input ${PRESERVED_ATTRIBUTE_TARGET} type="radio" name="attr_mode" value="a" checked="checked"></label>`,
     checkedRadio,
+    new Set(['checked']),
   ).includes(' value="a" checked>'),
   'unchanged radio restores authored boolean checked form',
 );
@@ -167,20 +168,49 @@ assert(
   !injectPreservedAttributes(
     `<label><input ${PRESERVED_ATTRIBUTE_TARGET} type="radio" name="attr_mode" value="a"></label>`,
     checkedRadio,
+    new Set(['checked']),
   ).includes(' checked'),
   'editing an imported radio to unchecked wins over the old snapshot',
 );
 
 const checkedCheckbox = serializePreservedAttributes({ type: 'checkbox', checked: 'checked' });
 assert(
-  injectPreservedAttributes('<input type="checkbox" checked>', checkedCheckbox)
+  injectPreservedAttributes(
+    '<input type="checkbox" checked>',
+    checkedCheckbox,
+    new Set(['checked']),
+  )
     .includes('checked="checked"'),
   'unchanged checkbox restores authored checked value',
 );
 assert(
-  !injectPreservedAttributes('<input type="checkbox">', checkedCheckbox).includes(' checked'),
+  !injectPreservedAttributes(
+    '<input type="checkbox">',
+    checkedCheckbox,
+    new Set(['checked']),
+  ).includes(' checked'),
   'editing an imported checkbox to unchecked wins over the old snapshot',
 );
+
+for (const attribute of ['disabled', 'readonly', 'selected']) {
+  const snapshot = serializePreservedAttributes({ [attribute]: '' });
+  assert(
+    injectPreservedAttributes(
+      `<input ${attribute}="${attribute}">`,
+      snapshot,
+      new Set([attribute]),
+    ).includes(` ${attribute}>`),
+    `unchanged ${attribute} restores authored boolean form`,
+  );
+  assert(
+    !injectPreservedAttributes(
+      '<input>',
+      snapshot,
+      new Set([attribute]),
+    ).includes(` ${attribute}`),
+    `editing ${attribute} off wins over the old snapshot`,
+  );
+}
 
 const styled = serializePreservedAttributes({
   style: 'position:absolute;left:8px;color:red;padding:4px',

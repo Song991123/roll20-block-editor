@@ -1542,3 +1542,17 @@ parity.
   issue now passes.
 - Claim boundary: broad default-state corpus impact, browser form state, and
   actual Roll20 remain `VERIFY`.
+
+## 2026-08-05 - Generic Owned Boolean Attribute Contract
+
+- Generalized preserved-attribute ownership beyond `checked`. Structured
+  blocks now identify boolean fields they actually own before emission, covering
+  `disabled`, `readonly`, `selected`, `required`, `multiple`, and `autofocus`
+  without source-specific branches.
+- An unchanged owned field restores its authored bare or valued form. Turning
+  the field off omits the attribute instead of allowing stale snapshot metadata
+  to override the edit. Composite checkbox emission uses the same contract.
+- Added focused regressions for authored formatting and edit precedence. The
+  local test process exceeded the 30-second active-workstation limit and was
+  terminated, with no project child left running. GitHub CI and the single
+  anonymous graph reproduction remain `VERIFY`.

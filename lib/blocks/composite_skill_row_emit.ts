@@ -17,6 +17,8 @@
 
 import { injectPreservedAttributes } from './preservedAttributes';
 
+const EMPTY_OWNED_BOOLEAN_NAMES: ReadonlySet<string> = new Set();
+
 export interface SkillRowFields {
   /** `<tr>` 자체의 class. */
   TR_CLASS: string;
@@ -196,8 +198,12 @@ function isTrue(value: string): boolean {
   return String(value ?? '').toUpperCase() === 'TRUE';
 }
 
-function withPreservedAttributes(code: string, raw: string): string {
-  return injectPreservedAttributes(code, String(raw ?? ''));
+function withPreservedAttributes(
+  code: string,
+  raw: string,
+  ownedBooleanNames: ReadonlySet<string> = EMPTY_OWNED_BOOLEAN_NAMES,
+): string {
+  return injectPreservedAttributes(code, String(raw ?? ''), ownedBooleanNames);
 }
 
 function tdOpen(cls: string, rawAttrs = ''): string {
@@ -226,6 +232,7 @@ function renderCheckboxInner(f: SkillRowFields, warn: CompositeWarn): string | n
   return withPreservedAttributes(
     `<input type="checkbox" name="${escapeAttr('attr_' + rawName)}"${clsAttr}${valueAttr}${checkedAttr}>`,
     f.CHECKBOX_ATTRS,
+    new Set(['checked']),
   );
 }
 
