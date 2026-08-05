@@ -492,12 +492,16 @@ Gate weights live in
   persistent iframe. Fresh-sheet drag, full edit-flow, six anonymous imported
   structures, and all anonymous synthetic modern/legacy Preview/Edit pairs
   pass; ignored reports remain the only screenshot store.
-- `DONE CI / VERIFY BROWSER`: Alpha first-run policy now opens Preview and leads with
+- `DONE CI + FOCUSED BROWSER / VERIFY BROAD`: Alpha first-run policy now opens Preview and leads with
   sheet import. Blank-sheet block assembly remains available as a secondary
   action. Direct Edit code and regressions stay intact but its UI appears only
   after a browser-local experimental preference is enabled; disabling it while
   active returns to Preview. Existing saved Direct Edit state migrates to
-  Preview unless that preference was explicitly enabled.
+  Preview unless that preference was explicitly enabled. The first CI artifact
+  passed the complete focused interaction path with zero console/page errors.
+  The follow-up desktop-label artifact reached 1440px visual capture and 1280px
+  overflow assertions, but its headless browser stalled during teardown; keep
+  the latest full browser exit/error gate open.
 - `DONE LOCAL`: structural layer selection and friendly-widget selection use
   separate iframe markers. Three consecutive full browser runs preserved
   multi-selection through the forced collision case and later multi-object

@@ -1617,3 +1617,15 @@ parity.
   artifact uploader then moved from the Node 20 based v4 action to the current
   Node 24 based v7 action; that workflow-only update requires its own remote
   recheck.
+- Run `30969232917` passed the same gates with the v7 uploader and no Node 20
+  annotation. Its downloaded static artifact passed a focused browser path:
+  Preview first, import dialog, hidden Direct Edit, experimental enable/edit/
+  disable, persisted return to Preview, zero horizontal overflow, and zero
+  console/page errors. The temporary server was stopped after the check.
+- A visual review found critical mode names hidden as icons at a common 1440px
+  width. Commit `6bb68d0` exposes the core mode and modern/legacy labels on
+  desktop while keeping narrow layouts compact; run `30969638036` passed CI.
+  The updated artifact produced a clean 1440px capture and reached the 1280px
+  no-overflow assertions, but Playwright stalled during browser teardown. The
+  latest full browser process-exit and error gate stays `VERIFY`; no server or
+  Playwright-owned Chrome process remains.

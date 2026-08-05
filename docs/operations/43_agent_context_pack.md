@@ -18,6 +18,11 @@ contain private source evidence or historical test dumps.
   keeps blank-sheet block assembly as a secondary action. Figma-like direct
   manipulation remains code-preserved and appears only after enabling its
   browser-local experimental preference.
+- The CI artifact at `5f3a678` passes the focused import-first interaction path
+  with zero console/page errors. The current `6bb68d0` desktop-label artifact
+  has CI plus 1440px visual and 1280px overflow evidence, but its Playwright
+  teardown stalled; rerun the current full browser exit/error gate before
+  upgrading that evidence.
 - Modern and legacy compatibility paths are separate.
 - Export handoff copy follows that same mode. Modern directs the three final
   files to Custom Sheet Sandbox; legacy directs their contents to a dedicated
