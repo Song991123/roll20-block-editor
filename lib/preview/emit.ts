@@ -188,9 +188,10 @@ class EmitEngine implements GeneratorContext {
       //   `<input>` 은 wrapTopLevel 이 별도 처리).
       const shape: BlockShape = def.shape ?? 'stack';
       if (
-        normalized.code &&
-        shape !== 'reporter' &&
-        shape !== 'boolean'
+        this.kind === 'html'
+        && normalized.code
+        && shape !== 'reporter'
+        && shape !== 'boolean'
       ) {
         const injected = injectBlockIdAttr(normalized.code, block.id);
         if (injected !== null) {

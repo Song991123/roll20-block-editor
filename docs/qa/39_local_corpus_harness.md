@@ -36,6 +36,7 @@ corepack pnpm run harness:corpus:scan
 corepack pnpm run harness:corpus:changed
 corepack pnpm run harness:corpus:full
 corepack pnpm run harness:corpus:select
+corepack pnpm run harness:corpus:probe -- --only <anonymous-id>
 corepack pnpm run harness:corpus:cluster
 ```
 
@@ -49,6 +50,11 @@ corepack pnpm run harness:corpus:cluster
   cache when diagnosing transient failures.
 - `select`: greedily choose anonymous feature-cover representatives for actual
   Roll20 verification.
+- `probe`: resolve one anonymous case through the ignored private index and run
+  import -> emit -> reimport canonical graph comparison in headless Node. It
+  starts no browser or server and records only workspace pass/fail plus generic
+  block/field difference types under ignored `.tmp/`. It is a fast mapping
+  diagnostic, not Preview, runtime, L2, or actual Roll20 evidence.
 
 Add `--only <anonymous-id>` to `scan`, `changed`, or `full` for a focused local
 rerun. Discovery writes a sensitive private index under `cacheDir`, one root at
@@ -56,6 +62,10 @@ a time. A later focused run resolves the anonymous ID through that index and
 does not walk every protected root again. If the ID is absent from a complete
 private index, run `scan` to refresh discovery instead of guessing a source
 path.
+
+Use `probe -- --only <anonymous-id>` while the workstation is active. Use the
+full browser-backed focused rerun only in an explicit idle window or with a
+downloaded CI static artifact when visual/runtime evidence is required.
 
 Each browser case runs in its own Node and Chromium process. Temporary source
 copies and child reports are removed after one anonymous result envelope is

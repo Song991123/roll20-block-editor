@@ -771,6 +771,35 @@ function testImportedPageScriptReturnsToItsHtmlSlot(): void {
   jsWorkspace.dispose();
 }
 
+function testImportedPageScriptBodyWhitespaceRoundTrip(): void {
+  registerAllBlocks();
+  const source = '<section>Before</section><script data-role="page">first();\n  second();</script>';
+  const imported = importSheet({ html: source });
+  const htmlWorkspace = new Blockly.Workspace();
+  const jsWorkspace = new Blockly.Workspace();
+  Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(imported.html), htmlWorkspace);
+  Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(imported.js), jsWorkspace);
+
+  const emitted = emitAll({ html: htmlWorkspace, js: jsWorkspace });
+  assert(
+    emitted.html.includes('<script data-role="page">first();\n  second();</script>'),
+    'page script body whitespace stays authored',
+  );
+  assert(
+    !emitted.html.match(/<script\b[^>]*data-r20-block-id/i),
+    'page script does not receive an editor-only block marker',
+  );
+  const reimported = importSheet({ html: emitted.html });
+  const firstScript = Blockly.utils.xml.textToDom(imported.js).querySelector('block');
+  const secondScript = Blockly.utils.xml.textToDom(reimported.js).querySelector('block');
+  const firstJs = firstScript?.querySelector('field[name="JS"]')?.textContent;
+  const secondJs = secondScript?.querySelector('field[name="JS"]')?.textContent;
+  assert(firstJs === secondJs, 'page script body remains exact after re-import');
+
+  htmlWorkspace.dispose();
+  jsWorkspace.dispose();
+}
+
 function testOrphanedPageScriptDoesNotDisappear(): void {
   registerAllBlocks();
   const htmlWorkspace = new Blockly.Workspace();
@@ -967,6 +996,7 @@ testUntypedPageScriptExportPreserved();
 testEditablePageScriptExportPreserved();
 testDedicatedPageScriptWorkspaceAppendsExportOnly();
 testImportedPageScriptReturnsToItsHtmlSlot();
+testImportedPageScriptBodyWhitespaceRoundTrip();
 testOrphanedPageScriptDoesNotDisappear();
 testPageScriptOrderAndWorkerUniqueness();
 testMultipleWorkerScriptBoundariesSurviveReimport();

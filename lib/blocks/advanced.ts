@@ -183,7 +183,7 @@ export const ADVANCED_BLOCKS: BlockDef[] = [
       const slot = String(b.getFieldValue('SLOT') ?? '').trim();
       const attrs = safeScriptAttrs(String(b.getFieldValue('ATTRS') ?? ''));
       const js = safeScriptText(String(b.getFieldValue('JS') ?? ''));
-      const script = `<script${attrs ? ` ${attrs}` : ''}>\n${js}\n</script>`;
+      const script = `<script${attrs ? ` ${attrs}` : ''}>${js}</script>`;
       return `${slot ? `${makePageJsSlotComment(slot)}\n` : ''}${script}`;
     },
     inspectorSchema: [

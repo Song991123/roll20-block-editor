@@ -180,7 +180,10 @@ contain private source evidence or historical test dumps.
 - Ordinary JavaScript has a separate inert source workspace. Authored emission
   preserves it, Preview/Edit never execute or display it, and final Roll20
   `sheet.html` excludes every non-Worker script while the ZIP keeps an explicit
-  non-executable text backup.
+  non-executable text backup. Page JS emission does not add body whitespace or
+  editor-only block attributes. A headless Node corpus probe compares all five
+  canonical workspaces without starting a browser; it is diagnostic only and
+  cannot close Preview, runtime, L2, or actual Roll20 gates.
 - Raw Sheet Worker blocks derive plain-language unsupported-syntax reasons from
   their current source. Import results expose the actual raw statement count,
   block selection opens the matching inspector, and diagnostics never enter

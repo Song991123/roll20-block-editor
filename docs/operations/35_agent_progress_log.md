@@ -1512,3 +1512,18 @@ parity.
   gates. `build:low-resource` is reserved for an explicit idle window.
 - Project servers, Harness processes, CDP listeners, and Figma MCP processes
   were all absent before this batch.
+
+## 2026-08-05 - Headless Mapping Probe And Page JS Fidelity
+
+- Added an anonymous single-case Node probe for import -> emit -> reimport
+  canonical graph comparison. It reads through the ignored private discovery
+  index, starts no browser or server, and persists no source path, value, or
+  content in its ignored result.
+- The synthetic probe exposed two generic Page JS mutations: inserted body
+  newlines and an editor-only block attribute on the emitted `<script>`.
+  Page JS now preserves authored body whitespace and receives no canvas marker.
+- Probe self-test and the focused emit-contract suite pass. The previously
+  failing anonymous comment case now passes HTML, CSS, translation, Page JS,
+  and Worker graph comparison in Node.
+- Claim boundary: this probe is not L2, Preview, runtime, export, or actual
+  Roll20 proof. Full current-SHA corpus and browser-backed evidence remain open.

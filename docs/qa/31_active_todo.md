@@ -248,9 +248,14 @@ Gate weights live in
   flattened. Reserved Page JS slot comments remain internal, and top-level
   comments emit without a layout wrapper. Authored comment boundary spaces and
   multiline payload whitespace now survive nested indentation and re-import;
-  focused generator and emit-contract tests pass. The protected representative,
-  broad corpus baseline, and malformed-comment recovery remain `VERIFY` until
-  a fresh remote build artifact is available.
+  focused generator and emit-contract tests pass. The previous anonymous
+  failure now passes all five workspaces in the headless graph probe. Browser
+  Preview/runtime, the broad corpus baseline, and malformed-comment recovery
+  remain `VERIFY`.
+- `DONE LOCAL GRAPH / VERIFY BROWSER`: ordinary Page JS no longer gains forced
+  body newlines or `data-r20-block-id` in its `<script>` attributes. The
+  synthetic five-workspace probe and emit-contract regression pass. Broad
+  corpus impact, ZIP backup behavior, and browser export smoke remain `VERIFY`.
 - `DONE LOCAL / VERIFY BROAD`: HTML emission now preserves RCDATA and preformatted
   content, multiline quoted attributes, inline sibling order, and edited
   boundary whitespace across import -> emit -> import. Internal editor IDs are
