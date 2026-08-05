@@ -1612,3 +1612,8 @@ parity.
 - Local full CI, build, broad browser checks, and Figma were not started on the
   active workstation. Focused policy proof and GitHub Actions remain the
   verification boundary for this batch.
+- GitHub Actions run `30969040936` passed safety/unit verification, lint,
+  production build, and static artifact upload for commit `1737750`. The
+  artifact uploader then moved from the Node 20 based v4 action to the current
+  Node 24 based v7 action; that workflow-only update requires its own remote
+  recheck.

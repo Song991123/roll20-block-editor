@@ -492,7 +492,7 @@ Gate weights live in
   persistent iframe. Fresh-sheet drag, full edit-flow, six anonymous imported
   structures, and all anonymous synthetic modern/legacy Preview/Edit pairs
   pass; ignored reports remain the only screenshot store.
-- `VERIFY CI/BROWSER`: Alpha first-run policy now opens Preview and leads with
+- `DONE CI / VERIFY BROWSER`: Alpha first-run policy now opens Preview and leads with
   sheet import. Blank-sheet block assembly remains available as a secondary
   action. Direct Edit code and regressions stay intact but its UI appears only
   after a browser-local experimental preference is enabled; disabling it while
