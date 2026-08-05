@@ -312,7 +312,9 @@ input, and record only the generic finding.
 
 While the user is actively using this workstation, run only task-focused tests
 locally, then push and let GitHub Actions run lint, build, and the broad public
-gate. Do not start Figma MCP for Alpha renderer or mapping work.
+gate. A successful CI run uploads its public `out/` export as a one-day
+artifact for later local browser checks. Download that artifact instead of
+rebuilding. Do not start Figma MCP for Alpha renderer or mapping work.
 
 Run this heavier local set only in an explicit idle or maintenance window:
 

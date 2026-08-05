@@ -32,6 +32,12 @@ GitHub Pages normally exposes one Pages site per repository. The current `action
 | Deploy both production and dev builds into subfolders of one Pages artifact | One site with `/` and `/dev/` | More complex workflow; easy to overwrite production if not careful. |
 | Use Actions artifacts for `dev` only | Safe predeploy build checks | Not a public test page. |
 
+The CI workflow uploads the public static `out/` export as a one-day Actions
+artifact. This is a verification handoff, not a deployment or private evidence
+store. It must never include local fixtures, source sheets, screenshots, or
+generated comparison reports. Agents should download this artifact instead of
+rebuilding locally while the interactive workstation is in use.
+
 Recommended next step: keep `main` as GitHub Pages production, create `dev` with CI now, then add Vercel/Netlify or a separate Pages repo when the user wants a public test URL.
 
 ## Promotion Flow
