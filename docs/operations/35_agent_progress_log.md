@@ -1492,5 +1492,8 @@ parity.
   After the focused run, project-owned processes and project/CDP listeners were
   both zero. Final broad reruns should use pushed GitHub CI when focused tests,
   lint, and one production build already pass locally.
+- Added a local-only low-resource production build command. It uses Next's
+  installed `experimental.cpus` contract with two workers while the default CI
+  build remains unchanged.
 - Claim boundary: focused local proof only. L3, current-SHA full corpus, and
   actual Roll20 evidence remain open.

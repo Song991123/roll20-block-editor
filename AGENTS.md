@@ -53,6 +53,8 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
   and avoid repeating a full build or full CI between small edits in one
   coherent batch. Prefer the pushed GitHub CI gate for the final broad rerun
   when equivalent focused tests, lint, and one production build already pass.
+- On the interactive workstation, use `corepack pnpm run build:low-resource`
+  instead of the default production-build command. CI keeps the normal build.
 - After every local browser, Harness, CI, or production-build run, verify both
   project/CDP listener hygiene and that no project-owned child process remains.
   Never terminate unrelated Node processes by name alone.

@@ -313,7 +313,7 @@ Run from the canonical worktree:
 ```powershell
 corepack pnpm run ci:verify
 corepack pnpm run lint
-corepack pnpm run build
+corepack pnpm run build:low-resource
 corepack pnpm run check:server-hygiene
 ```
 

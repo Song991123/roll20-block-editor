@@ -5,6 +5,10 @@ import bundleAnalyzer from '@next/bundle-analyzer';
 // production 빌드 (CI) 에서만 basePath / assetPrefix 켜고, 로컬 dev 에서는 끔.
 const isProd = process.env.NODE_ENV === 'production';
 const repoName = 'roll20-block-editor';
+const requestedBuildCpus = Number(process.env.NEXT_BUILD_CPUS ?? '');
+const buildCpus = Number.isSafeInteger(requestedBuildCpus) && requestedBuildCpus > 0
+  ? requestedBuildCpus
+  : undefined;
 
 const nextConfig: NextConfig = {
   output: 'export',
@@ -13,6 +17,7 @@ const nextConfig: NextConfig = {
   trailingSlash: true,
   images: { unoptimized: true },
   reactStrictMode: true,
+  experimental: buildCpus ? { cpus: buildCpus } : undefined,
   // The in-app browser commonly opens the local editor at 127.0.0.1 while
   // Next serves the dev page from localhost. Allow that HMR origin explicitly.
   allowedDevOrigins: ['127.0.0.1'],

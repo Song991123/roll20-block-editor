@@ -47,7 +47,6 @@ function setStatementHooks(b: Blockly.Block): void {
 function safeHtmlComment(value: string): string {
   let s = String(value ?? '');
   s = s.replace(/\r\n/g, '\n').replace(/-->/g, '--&gt;');
-  s = s.trim();
   if (s.endsWith('-')) s += ' ';
   return s;
 }
@@ -255,7 +254,7 @@ export const ADVANCED_BLOCKS: BlockDef[] = [
     generator: (block) => {
       const b = block as Blockly.Block;
       const text = safeHtmlComment(String(b.getFieldValue('TEXT') ?? ''));
-      return `<!-- ${text} -->`;
+      return `<!--${text}-->`;
     },
     inspectorSchema: [
       {
