@@ -254,6 +254,15 @@ Gate weights live in
   ownership sequence. A legacy representative from the same old CSS field
   cluster also passes all five workspaces after Worker boundary normalization.
   Broad corpus and browser/runtime behavior remain `VERIFY`.
+- `DONE SYNTHETIC / VERIFY REPRESENTATIVE+BROAD`: CSS declaration property
+  names are no longer passed through a character-deleting identifier sanitizer.
+  One shared grammar preserves standard, vendor-prefixed, custom, escaped,
+  non-ASCII, and legacy star/underscore property names verbatim. A declaration
+  that cannot be emitted safely becomes an explicit raw CSS child with a
+  diagnostic instead of being mutated or skipped. The focused synthetic parser
+  and generator regression passes. The protected representative that exposed
+  the generic `PROPERTY` mismatch, browser behavior, and a fresh complete v5
+  corpus baseline remain `VERIFY` until an idle window.
 - `DONE REMOTE + TARGETED MODERN/LEGACY GRAPH / VERIFY BROWSER`: the headless
   mapping probe now clears Worker state, moves imported Worker blocks out of
   HTML, and rebuilds Worker source in the same order as the product import path.

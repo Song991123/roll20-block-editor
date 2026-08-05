@@ -16,6 +16,7 @@
 
 import type { MatchedBlock } from './block_matcher';
 import { CSS_PSEUDO_CLASS_SET } from '../utils/cssPseudoClasses';
+import { preserveCssDeclarationProperty } from '../utils/cssDeclarationProperty';
 
 export interface CssMatchContext {
   matched: number;
@@ -233,7 +234,7 @@ function readBraceBlock(
 
 function ruleToBlock(head: string, body: string, ctx: CssMatchContext): MatchedBlock {
   const selector = buildSelectorBlock(head.trim(), ctx);
-  const decls = parseDecls(body);
+  const decls = parseDecls(body, ctx);
   return {
     blockType: 'r20_css_rule',
     fields: {},
@@ -367,7 +368,7 @@ function parseKeyframeStops(body: string, ctx: CssMatchContext): MatchedBlock[] 
       return {
         blockType: 'r20_keyframe_stop',
         fields: { PERCENT: percent.toLowerCase() },
-        children: { DECLS: parseDecls(rule.body) },
+        children: { DECLS: parseDecls(rule.body, ctx) },
       };
     }
 
@@ -797,16 +798,24 @@ function findCombinator(sel: string): { op: string; left: string; right: string 
   return null;
 }
 
-function parseDecls(body: string): MatchedBlock[] {
+function parseDecls(body: string, ctx: CssMatchContext): MatchedBlock[] {
   const out: MatchedBlock[] = [];
   // 간단한 split — `;` 로 자르되 string / paren 보호.
   const decls = splitDeclarations(body);
-  for (const d of decls) {
+  for (const segment of decls) {
+    const d = segment.text;
     const idx = d.indexOf(':');
-    if (idx < 0) continue;
+    if (idx < 0) {
+      pushRawDeclaration(out, segment, ctx, 'css_declaration_fragment_raw');
+      continue;
+    }
     const prop = d.slice(0, idx).trim();
     const value = d.slice(idx + 1).trim();
-    if (!prop) continue;
+    const preservedProperty = preserveCssDeclarationProperty(prop);
+    if (!preservedProperty) {
+      pushRawDeclaration(out, segment, ctx, 'css_declaration_property_raw');
+      continue;
+    }
     // Stage 22 §3 — `--name: value;` 변수 선언은 r20_css_var_decl 로.
     // VAR_NAME 슬롯 + VALUE_TEXT fallback. (slot 형태로 잘려 들어온 값은 raw 보존.)
     if (prop.startsWith('--')) {
@@ -822,15 +831,20 @@ function parseDecls(body: string): MatchedBlock[] {
     }
     out.push({
       blockType: 'r20_css_decl',
-      fields: { PROPERTY: prop, VALUE: value },
+      fields: { PROPERTY: preservedProperty, VALUE: value },
       children: {},
     });
   }
   return out;
 }
 
-function splitDeclarations(body: string): string[] {
-  const out: string[] = [];
+interface CssDeclarationSegment {
+  text: string;
+  terminated: boolean;
+}
+
+function splitDeclarations(body: string): CssDeclarationSegment[] {
+  const out: CssDeclarationSegment[] = [];
   let buf = '';
   let depthParen = 0;
   let i = 0;
@@ -864,7 +878,7 @@ function splitDeclarations(body: string): string[] {
     else if (c === ')') depthParen--;
     if (c === ';' && depthParen === 0) {
       const t = buf.trim();
-      if (t) out.push(t);
+      if (t) out.push({ text: t, terminated: true });
       buf = '';
       i++;
       continue;
@@ -873,8 +887,24 @@ function splitDeclarations(body: string): string[] {
     i++;
   }
   const t = buf.trim();
-  if (t) out.push(t);
+  if (t) out.push({ text: t, terminated: false });
   return out;
+}
+
+function pushRawDeclaration(
+  out: MatchedBlock[],
+  segment: CssDeclarationSegment,
+  ctx: CssMatchContext,
+  code: string,
+): void {
+  const raw = `${segment.text}${segment.terminated ? ';' : ''}`;
+  out.push(rawCssBlock(raw));
+  ctx.rawFallback += 1;
+  ctx.warnings.push({
+    code,
+    message: 'CSS declaration kept as raw CSS to avoid changing its meaning',
+    hint: segment.text.slice(0, 60),
+  });
 }
 
 function rawCssBlock(text: string): MatchedBlock {

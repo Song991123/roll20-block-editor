@@ -1629,3 +1629,18 @@ parity.
   no-overflow assertions, but Playwright stalled during browser teardown. The
   latest full browser process-exit and error gate stays `VERIFY`; no server or
   Playwright-owned Chrome process remains.
+
+## 2026-08-05 - Lossless CSS Declaration Properties
+
+- Isolated a generic CSS graph mismatch to declaration-property emission. The
+  parser kept the authored field, but the block generator deleted every
+  character outside an ASCII identifier subset and could silently change a
+  legacy or escaped property.
+- Added one shared declaration-property grammar for parser and generator.
+  Safe standard, vendor, custom, escaped, non-ASCII, and legacy property names
+  emit verbatim. Unsupported declaration fragments become explicit raw CSS and
+  increment diagnostics instead of disappearing.
+- One synthetic parser/generator regression passes. No local full CI, build,
+  browser suite, or Corpus Harness was run on the active workstation. The
+  protected representative and fresh broad baseline remain `VERIFY`; the Alpha
+  score therefore remains 28.9% until a complete current-SHA baseline exists.

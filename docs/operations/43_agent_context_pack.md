@@ -83,6 +83,11 @@ contain private source evidence or historical test dumps.
   diagnostics expose only generic block/field names and normalization traits.
   Targeted modern and legacy representatives currently pass all five workspace
   graphs; this is not browser, visual, export, or actual Roll20 proof.
+- CSS declaration-property parsing and emission now share a lossless grammar.
+  It preserves standard, vendor, custom, escaped, non-ASCII, and legacy names
+  verbatim, while unsupported fragments fall back to explicit raw CSS instead
+  of being sanitized into different source. Focused synthetic proof passes;
+  the protected representative and broad current-SHA corpus remain `VERIFY`.
 - Dedicated owner-only modern and legacy test rooms now cover current anonymous
   synthetic full-root rendering, translation, controls, Worker action state,
   Roll execution, and result-card output. The modern result-card comparison

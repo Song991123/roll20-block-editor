@@ -15,6 +15,7 @@
 import * as Blockly from 'blockly';
 import { type BlockDef, type GeneratorContext, ORDER } from './types';
 import { CSS_PSEUDO_CLASS_OPTIONS } from '../utils/cssPseudoClasses';
+import { preserveCssDeclarationProperty } from '../utils/cssDeclarationProperty';
 
 // ---------- 카테고리 / 상수 ----------
 
@@ -625,7 +626,7 @@ export const CSS_BLOCKS: BlockDef[] = [
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
-      const prop = sanitizeIdent(String(b.getFieldValue('PROPERTY') ?? ''));
+      const prop = preserveCssDeclarationProperty(String(b.getFieldValue('PROPERTY') ?? ''));
       const value = safeDeclValue(String(b.getFieldValue('VALUE') ?? ''));
       if (!prop) return '';
       return `${prop}: ${value};`;
