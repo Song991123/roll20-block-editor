@@ -52,6 +52,14 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
   Run only task-focused tests, then push and use GitHub Actions for lint, build,
   and the broad public-repository gate. Figma MCP is off-scope for Alpha render
   and mapping work and must not be started for it.
+- GitHub Actions is the canonical full-CI environment. Do not duplicate its
+  lint, production build, broad browser, or full public-gate jobs locally just
+  to gain the same evidence. A local check is allowed only when it isolates the
+  current defect, cannot be answered by the existing workflow, and is announced
+  before it starts.
+- The product and Alpha workflow must not depend on a paid Figma plan, Figma
+  API, Figma MCP, or imported Figma assets. "Figma-like" describes the intended
+  direct-manipulation experience only.
 - Local heavy verification requires an explicit idle or maintenance window.
   During that window, run heavy jobs sequentially, keep Corpus Harness
   concurrency at 1 or 2, and use below-normal process priority. If a local
@@ -100,19 +108,30 @@ Do not say these unless the exact current report proves them:
 - `main` is production and deploys to GitHub Pages.
 - `dev` is integration/predeploy testing and runs CI only.
 - Short-lived task branches may use `codex/*`.
-- Push coherent batches to GitHub after lint/build.
+- Push coherent batches after the smallest relevant local regression check, or
+  directly for documentation-only changes. Let GitHub Actions run lint, build,
+  and the broad public-repository gate. Do not repeat those jobs locally while
+  the user is active.
 - After pushing to `main`, check GitHub Actions and the public Pages URL.
 - Do not create a public `dev` deploy without choosing a hosting strategy in `docs/operations/34_branch_and_deployment_plan.md`.
 
 ## Minimum Verification
 
-Run these unless the task is documentation-only and the user explicitly says not to:
+GitHub Actions must run these for code changes:
 
 - `corepack pnpm run guard:docs-privacy`
 - `corepack pnpm run lint`
 - `corepack pnpm run build`
 
-For preview/parity work, also run the relevant fixture/report script and record the output path in TODO.
+Do not automatically run that full set locally. While the user is active,
+local verification is limited to the smallest task-focused regression. For a
+documentation-only change, inspect the diff and rely on GitHub Actions after
+push; no local CI, build, browser, or Corpus Harness run is required.
+
+For preview/parity work, run a relevant local fixture/report only when it is the
+announced task-focused regression or when the user has provided an idle window.
+Otherwise leave that evidence as `VERIFY` and use the available GitHub Actions
+gate without starting a broad local run.
 
 ## Reporting
 
