@@ -250,6 +250,23 @@ function rootTypeCounts(graph: CanonicalBlockGraph): Record<string, number> {
   )));
 }
 
+function fieldDifferenceTraits(
+  before: CanonicalBlockGraph['nodes'][number]['fields'][number] | undefined,
+  after: CanonicalBlockGraph['nodes'][number]['fields'][number] | undefined,
+) {
+  const beforeValue = String(before?.value ?? '');
+  const afterValue = String(after?.value ?? '');
+  const normalizeLines = (value: string) => value.replace(/\r\n?/g, '\n');
+  const normalizeWhitespace = (value: string) => normalizeLines(value).replace(/\s+/g, ' ').trim();
+  return {
+    trimmedEqual: beforeValue.trim() === afterValue.trim(),
+    lineEndingNormalizedEqual: normalizeLines(beforeValue) === normalizeLines(afterValue),
+    whitespaceNormalizedEqual: normalizeWhitespace(beforeValue) === normalizeWhitespace(afterValue),
+    kindEqual: before?.kind === after?.kind,
+    optionsEqual: JSON.stringify(before?.options ?? null) === JSON.stringify(after?.options ?? null),
+  };
+}
+
 function firstDifference(
   before: CanonicalBlockGraph,
   after: CanonicalBlockGraph,
@@ -301,6 +318,13 @@ function firstDifference(
         kind: 'fields',
         blockType: left.type,
         changedFieldNames,
+        fieldDifferenceTraits: Object.fromEntries(changedFieldNames.map((name) => [
+          name,
+          fieldDifferenceTraits(
+            left.fields.find((field) => field.name === name),
+            right.fields.find((field) => field.name === name),
+          ),
+        ])),
         ...(changedFieldNames.includes('__R20_PRESERVED_ATTRS') ? {
           preservedAttributeDelta: preservedAttributeDelta(preservedBefore, preservedAfter),
         } : {}),
@@ -443,6 +467,44 @@ async function selfTest(): Promise<void> {
       afterRootTypes: {},
       beforeNodeCount: 1,
       afterNodeCount: 1,
+    },
+  );
+  assert.deepEqual(
+    firstDifference(
+      {
+        roots: [0],
+        nodes: [{
+          type: 'r20_raw_worker',
+          fields: [{ name: 'JS', kind: 'text', value: 'worker();' }],
+          inputs: [],
+          next: null,
+        }],
+        cycleEdges: 0,
+      },
+      {
+        roots: [0],
+        nodes: [{
+          type: 'r20_raw_worker',
+          fields: [{ name: 'JS', kind: 'text', value: '\nworker();\n' }],
+          inputs: [],
+          next: null,
+        }],
+        cycleEdges: 0,
+      },
+    ),
+    {
+      kind: 'fields',
+      blockType: 'r20_raw_worker',
+      changedFieldNames: ['JS'],
+      fieldDifferenceTraits: {
+        JS: {
+          trimmedEqual: true,
+          lineEndingNormalizedEqual: false,
+          whitespaceNormalizedEqual: true,
+          kindEqual: true,
+          optionsEqual: true,
+        },
+      },
     },
   );
   console.log('corpus mapping probe self-test PASS');

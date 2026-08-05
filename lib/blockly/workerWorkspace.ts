@@ -291,7 +291,7 @@ function normalizeSourceWorkerBody(body: string): string {
       .replace(/\r\n?/g, '\n')
       .replace(/^\n+/, '')
       .replace(/\n+[ \t]*$/g, ''),
-  );
+  ).trim();
 }
 
 function dedentCommonIndent(text: string): string {

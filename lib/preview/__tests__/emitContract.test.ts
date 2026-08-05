@@ -862,8 +862,8 @@ function testMultipleWorkerScriptBoundariesSurviveReimport(): void {
     const firstBody = 'on("sheet:opened", function () { setAttrs({ hp: 10 }); });';
     const secondBody = 'on("change:hp", function () { setAttrs({ mp: 5 }); });';
     const source = [
-      `<script type="text/worker">${firstBody}</script>`,
-      `<script type="text/worker">${secondBody}</script>`,
+      `<script type="text/worker"> \n  ${firstBody}\n </script>`,
+      `<script type="text/worker">\t\n  ${secondBody}\n\t</script>`,
     ].join('\n');
 
     const imported = replaceWorkerWorkspaceFromSourceHtml(source);
@@ -873,6 +873,10 @@ function testMultipleWorkerScriptBoundariesSurviveReimport(): void {
       adapter.listAllBlocks('worker').every((block) => block.type === 'r20_raw_worker'),
       'multi-script input uses exact raw roots until script containers exist',
     );
+    const firstImportedBodies = workspace.getAllBlocks(false)
+      .map((block) => String(block.getFieldValue('JS') ?? ''));
+    assert(firstImportedBodies.includes(firstBody), 'first worker body trims wrapper whitespace');
+    assert(firstImportedBodies.includes(secondBody), 'second worker body trims wrapper whitespace');
 
     const firstEmit = emitAll({ worker: adapter.getWorkspace('worker') });
     const firstCount = (firstEmit.html.match(/<script\b[^>]*type="text\/worker"/g) ?? []).length;
@@ -880,6 +884,12 @@ function testMultipleWorkerScriptBoundariesSurviveReimport(): void {
     assert(firstEmit.html.indexOf(firstBody) < firstEmit.html.indexOf(secondBody), 'script order is preserved');
 
     replaceWorkerWorkspaceFromSourceHtml(firstEmit.html);
+    const secondImportedBodies = workspace.getAllBlocks(false)
+      .map((block) => String(block.getFieldValue('JS') ?? ''));
+    assert(
+      JSON.stringify(secondImportedBodies) === JSON.stringify(firstImportedBodies),
+      'worker fields remain stable after emit and reimport',
+    );
     const secondEmit = emitAll({ worker: adapter.getWorkspace('worker') });
     const secondCount = (secondEmit.html.match(/<script\b[^>]*type="text\/worker"/g) ?? []).length;
     assert(secondCount === 2, 'reimport and emit preserve worker script count');
