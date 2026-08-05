@@ -238,12 +238,13 @@ Gate weights live in
   focused snapshot test and one anonymous legacy five-workspace graph probe
   pass. Broad default-state coverage and browser/runtime behavior remain
   `VERIFY`.
-- `IMPLEMENTED / VERIFY CI`: preserved-attribute ownership is now generic for
+- `DONE REMOTE / VERIFY GRAPH+BROWSER`: preserved-attribute ownership is now generic for
   structured boolean fields (`checked`, `disabled`, `readonly`, `selected`,
   `required`, `multiple`, and `autofocus`). Unchanged fields may recover the
   authored bare/value form; fields switched off cannot be re-added from stale
-  snapshots. The focused local rerun exceeded its 30-second workstation limit,
-  so CI and one targeted anonymous graph probe remain required evidence.
+  snapshots. GitHub CI run `30966513521` passed safety/unit verification, lint,
+  and build. One targeted anonymous graph probe plus browser/runtime evidence
+  remain required.
 
 - `DONE LOCAL / VERIFY BROAD`: imported roll and action buttons now retain an
   authored bare or prefixed `name` while the visible `NAME` field is unchanged.

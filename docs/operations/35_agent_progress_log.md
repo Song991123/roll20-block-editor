@@ -1554,5 +1554,6 @@ parity.
   to override the edit. Composite checkbox emission uses the same contract.
 - Added focused regressions for authored formatting and edit precedence. The
   local test process exceeded the 30-second active-workstation limit and was
-  terminated, with no project child left running. GitHub CI and the single
-  anonymous graph reproduction remain `VERIFY`.
+  terminated, with no project child left running. GitHub CI run `30966513521`
+  then passed safety/unit verification, lint, and build. The single anonymous
+  graph reproduction and browser/runtime behavior remain `VERIFY`.
